@@ -23,12 +23,12 @@ import type { BuffId } from '../simulation/buffs';
  *    `exp.scale.x = (width/exp.width) * hero.exp / hero.maxExp()`.
  *  - avatar: `HeroSprite.avatar(class, tier)` - the 12x15 tier row matching the worn armor
  *    (`HeroSprite.updateArmor()`'s tier rows), centred at (15,16).
- *  - `large` variant (`SPDSettings.interfaceSize() == 1`): the pane doubles its bar widths
- *    and buff icon stride; this port renders the same content at 1.5x scale with a taller
- *    buff row rather than Java's exact large pixel cuts (stated simplification). The buff
- *    icons themselves do switch to Java's real separate `BUFFS_LARGE` 16x16 sheet though
- *    (`BuffIcon`'s `large ? BUFFS_LARGE : BUFFS_SMALL`), not just a stretched copy of the
- *    small one.
+ *  - `large` variant (`SPDSettings.interfaceSize() > 0`, Java's exact cuts, ported 2026-09-28):
+ *    frame `NinePatch(asset, 0, 64, 41, 39, 33, 0, 4, 0)` sized 160x39; HP strip
+ *    `Image(asset, 0, 103, 128, 9)` at (30,19), shielded/raw `(0, 112, 128, 9)`; EXP strip
+ *    `Image(asset, 0, 121, 128, 7)` at (30,30); centred `hp/max` and `exp/max` readouts on the strips
+ *    at 0.6 alpha; the level as `lv. N` under the portrait; buffs at (31,0) on the real
+ *    `BUFFS_LARGE` 16x16 sheet. No place label (Java has none; the depth lives in the menu pane).
  *
  * Simplifications, all deliberate and listed in PORT_COVERAGE.md: shielding is represented
  * numerically in the HP bar/stats rather than with Java's separate gold strip, and no
@@ -200,10 +200,22 @@ export class StatusPane extends Container {
 	private busyPip: Label;
 	private talentDot: Graphics;
 	private large = false;
+	private readonly statusSheet: Texture;
+	private smallParts: Container[] = [];
+	private largeGroup = new Container();
+	private largeFrame!: NinePatch;
+	private largeHp!: Sprite;
+	private largeShielded!: Sprite;
+	private largeRaw!: Sprite;
+	private largeExp!: Sprite;
+	private largeHpText!: Label;
+	private largeExpText!: Label;
+	private largeLevel!: Label;
 	private onBuffClick?: (buff: string) => void;
 
     constructor(statusSheet: Texture, buffs: Texture, buffsLarge: Texture, heroSheet: Texture, onBuffClick?: (buff: string) => void) {
 		super();
+		this.statusSheet = statusSheet;
 		this.buffIconsSmall = buffs;
 		this.buffIconsLarge = buffsLarge;
 		this.onBuffClick = onBuffClick;
@@ -330,15 +342,56 @@ export class StatusPane extends Container {
 		this.buffLayer.x = 30 * SCALE;
 		this.buffLayer.y = 9 * SCALE;
 		this.addChild(this.buffLayer);
+		this.smallParts = [frame, this.hpFill, this.expFill, this.hpText, this.levelText, this.placeText, this.busyPip];
+		this.buildLarge();
 	}
 
+	private strip(y: number, h: number): Sprite {
+		return new Sprite(new Texture({ source: this.statusSheet.source, frame: new Rectangle(0, y, PANE_WIDTH, h) }));
+	}
+
+	/** `StatusPane`'s `large` constructor/layout branch, kept in its own group and swapped in by `update`. */
+	private buildLarge(): void {
+		const frameTexture = new Texture({ source: this.statusSheet.source, frame: new Rectangle(0, 64, 41, 39) });
+		this.largeFrame = new NinePatch(frameTexture, { border: { left: 33, top: 0, right: 4, bottom: 0 } });
+		this.largeFrame.resize(160, 39);
+		this.largeFrame.scale.set(SCALE);
+		this.largeRaw = this.strip(112, 9);
+		this.largeRaw.alpha = 0.5;
+		this.largeShielded = this.strip(112, 9);
+		this.largeHp = this.strip(103, 9);
+		this.largeExp = this.strip(121, 7);
+		for (const [sprite, y] of [[this.largeRaw, 19], [this.largeShielded, 19], [this.largeHp, 19], [this.largeExp, 30]] as const) {
+			sprite.position.set(30 * SCALE, y * SCALE);
+			sprite.scale.set(SCALE);
+		}
+		//pixel-font BitmapText at scale 1 is this port's size-12 Label (the level tag's size)
+		this.largeHpText = new Label({ size: 12, color: 0xffffff });
+		this.largeHpText.alpha = 0.6;
+		this.largeExpText = new Label({ size: 12, color: 0xffffaa });
+		this.largeExpText.alpha = 0.6;
+		this.largeLevel = new Label({ size: 12, color: 0xffffaa });
+		this.largeLevel.anchor.set(0.5, 0.5);
+		this.largeLevel.position.set(15 * SCALE, 35 * SCALE);
+		this.largeGroup.addChild(this.largeFrame, this.largeRaw, this.largeShielded, this.largeHp, this.largeExp, this.largeHpText, this.largeExpText, this.largeLevel);
+		this.largeGroup.visible = false;
+		//behind the avatar, like the small frame
+		this.addChildAt(this.largeGroup, 0);
+	}
+
+	/** Rendered height of the current layout (`StatusPane.layout()`: 39 large, 32 small; the small frame is 36 tall). */
+	get paneHeight(): number { return (this.large ? 39 : 36) * SCALE; }
+
 	update(state: StatusPaneState): void {
-		//`SPDSettings.interfaceSize()`: large renders the same pane at 1.5x with a taller buff
-		//row rather than Java's exact large pixel cuts (stated simplification above).
+		//`SPDSettings.interfaceSize() > 0`: Java's exact large cuts (see the header).
 		const wantLarge = (state.interfaceSize ?? 0) === 1;
 		if (wantLarge !== this.large) {
 			this.large = wantLarge;
-			this.scale.set(wantLarge ? 1.5 : 1);
+			this.largeGroup.visible = wantLarge;
+			for (const part of this.smallParts) part.visible = !wantLarge;
+			this.avatar.position.set(9 * SCALE, (wantLarge ? 7.5 : 8) * SCALE);
+			this.buffLayer.position.set((wantLarge ? 31 : 30) * SCALE, (wantLarge ? 0 : 9) * SCALE);
+			this.hitArea = new Rectangle(0, 0, (wantLarge ? 160 : PANE_WIDTH) * SCALE, (wantLarge ? 39 : 36) * SCALE);
 			//force layoutBuffs to rebuild with the other sheet even if the buff set itself
 			//did not change across this toggle
 			this.lastBuffs = '';
@@ -354,8 +407,9 @@ export class StatusPane extends Container {
 			this.lastAvatarTier = tier;
 			this.avatar.texture = new Texture({ source: this.avatarSheet.source, frame: new Rectangle(1, tier * 15, 12, 15) });
 		}
-		this.busyPip.visible = state.busy === true;
+		this.busyPip.visible = !this.large && state.busy === true;
 		this.talentDot.visible = state.talentPointsAvailable === true;
+		if (this.large) this.talentDot.position.set(20 * SCALE, 9 * SCALE);
 		//hp.scale.x = max(0, (health - shield)/max); no shielding here, so health/max
 		const shield = state.shield ?? 0;
 		const hpFraction = state.maxHp > 0 ? Math.max(0, state.hp - shield) / state.maxHp : 0;
@@ -370,6 +424,18 @@ export class StatusPane extends Container {
 		this.expFill.scale.x = SCALE * expFraction;
 
 		this.levelText.setText(String(state.level));
+		if (this.large) {
+			const max = Math.max(1, state.maxHp);
+			this.largeHp.scale.x = SCALE * Math.max(0, state.hp - shield) / max;
+			this.largeShielded.scale.x = SCALE * Math.max(0, state.hp) / max;
+			this.largeRaw.scale.x = shield > state.hp ? SCALE * Math.min(1, shield / max) : 0;
+			this.largeExp.scale.x = SCALE * expFraction;
+			this.largeHpText.setText(shield <= 0 ? `${Math.max(0, state.hp)}/${state.maxHp}` : `${Math.max(0, state.hp)}+${shield}/${state.maxHp}`);
+			this.largeHpText.position.set((30 + (128 - this.largeHpText.width / SCALE) / 2) * SCALE, 20 * SCALE);
+			this.largeExpText.setText(`${state.exp}/${state.maxExp}`);
+			this.largeExpText.position.set((30 + (128 - this.largeExpText.width / SCALE) / 2) * SCALE, 30 * SCALE);
+			this.largeLevel.setText(`lv. ${state.level}`);
+		}
 		this.placeText.setText(state.place);
 
 		const hunger =

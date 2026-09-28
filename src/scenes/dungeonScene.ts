@@ -118,7 +118,7 @@ import { SpdToolbar } from '../ui/toolbar';
 import { StatusPane } from '../ui/statusPane';
 import { DungeonHud } from '../ui/dungeonHud';
 import { SpdAudio } from '../audio';
-import { onBrightnessChanged, onZoomChanged, screenShake, setZoomOffset, zoomForOffset, zoomOffset } from '../settings';
+import { onBrightnessChanged, onZoomChanged, screenShake, setZoomOffset, uiMode, zoomForOffset, zoomOffset } from '../settings';
 import { arcaneVisionDuration, assassinReachBonus, bountyHunterDropBonus, canImproviseProjectile, cleaveComboSeed, deathlessFuryTriggers, EMPOWERING_SCROLLS_BONUS, enhancedRingsDuration, enragedCatalystBonus, evasiveArmorBonus, empoweredStrikeBonus, farsightMultiplier, ironStomachReduction, lethalHasteDuration, lightCloakArtifactBonus, lightCloakRechargeRate, allyWarpRange, monasticVigorShield, preservationChance, projectileMomentumBonus, rejuvenatingStepHeal, seerShotDuration, SEER_SHOT_COOLDOWN, shieldBatteryGain, soulSiphonCharge, unencumberedSpiritEvasion, weaponRechargingDamage } from '../talentEffects';
 import pixelFontUrl from '../assets/pixel_font.ttf';
 import { SpdJavaRandom, spdScramble, spdSeedForDepth, SpdRandom } from '../spdRng';
@@ -1128,7 +1128,7 @@ export class DungeonScene extends Scene2D {
 	 * has been spawned yet. */
 	tenguFightStarted = false;
 	/** `SPDSettings.interfaceSize()`: 0 small, 1 large. Persisted per run. */
-	interfaceSize: 0 | 1 = 0;
+	interfaceSize: 0 | 1 = uiMode() > 0 ? 1 : 0; //new runs follow `SPDSettings.interfaceSize()` (desktop default 2)
 	/**
 	 * Java's four `QuickslotButton`s: assigned item id + instance per slot, persisted per run.
 	 * Assignment is automatic (the most recently used consumable fills its family's slot -

@@ -1308,8 +1308,10 @@ export const weaponSpellsGearMethods = {
 			//`StatusPane.layout()` in Java attaches the status chrome to the bottom-left of the
 			//UI camera. The port's status pane is already authored at 2x, so its rendered height
 			//is 72px; keep the same small inset as the Java HUD while preserving the whole pane.
-			this.statusPane.x = 8;
-			this.statusPane.y = Math.max(0, height - 72 - 8);
+			//Java's large pane sits flush in the corner (`status.setRect(0, height-39, ..)`).
+			const inset = this.interfaceSize === 1 ? 0 : 8;
+			this.statusPane.x = inset;
+			this.statusPane.y = Math.max(0, height - this.statusPane.paneHeight - inset);
 		}
 		if (this.dungeonHud) this.dungeonHud.layout(width);
 		if (this.actionBar) {
