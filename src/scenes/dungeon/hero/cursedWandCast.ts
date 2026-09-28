@@ -41,7 +41,7 @@ export const cursedWandCastMethods = {
 	},
 
 	/** `CursedWand.cursedZap()`'s VeryRare tier (`CursedWand.java`, tag `v4.0.0`: eight effects;
-	 * `v3.3.8` had only four, without HeroShapeShift/SuperNova/SinkHole/GravityChaos). Ported: `SuperNova`,
+	 * `v3.3.8` had only four, without HeroShapeShift/SuperNova/SinkHole/GravityChaos). Ported: `GravityChaos`, `SuperNova`,
 	 * `ForestFire` and `AbortRetryFail`. The other six are picked and then do nothing (see the
 	 * `PORT_COVERAGE` CursedWand row) rather than borrowing another tier's effect. */
 	castCursedWandVeryRareEffect(this: DungeonScene, cell: Step): void {
@@ -63,6 +63,12 @@ export const cursedWandCastMethods = {
 			//WondrousResin), so the blast always harms everyone.
 			this.superNova = { x: cell.x, y: cell.y, depth: this.depth, turnsLeft: 10 };
 			this.say(t('items.wands.cursedwand.supernova'), 'warning');
+		} else if (effect === 'gravityChaos') {
+			//`GravityChaos.effect()`: `Buff.append(GravityChaosTracker)` on the caster (`positiveOnly`
+			//unreachable, so allies are pushed too). Lasts `NormalIntRange(30, 70)` pushes.
+			this.gravityChaos = { left: Math.round(Random.normalRange(30, 70)), wait: 0 };
+			runState.audio.cue('teleport', 0.7);
+			this.say(t('items.wands.cursedwand.gravity'), 'warning');
 		} else if (effect === 'abortRetryFail') {
 			//Java saves, then shows an English-only "CURSED WAND ERROR" dialog whose every button calls
 			//`Game.instance.finish()`. Deliberate divergence: a web port must not close the tab, so the
@@ -91,6 +97,35 @@ export const cursedWandCastMethods = {
 		runState.audio.cue('blast', 0.7);
 		this.shakeScreen(5, 2);
 		for (const cell of cells) this.explodeConjuredBomb(cell);
+	},
+
+	/** `GravityChaosTracker.act()` (`v4.0.0`), once per hero action: on each of its `left` turns (spaced
+	 * `IntRange(1, 3)` apart) every non-IMMOVABLE character, the hero included, is thrown 3 cells in one
+	 * shared random `NEIGHBOURS8` direction, and sleeping mobs wake. **Simplified:** a push stops at a wall or
+	 * occupant and before a chasm cell (Java's `throwChar` lets a non-flyer fall), and a character blocked by
+	 * another is not re-pushed the same turn once the blocker moves (Java's `blocked` retry loop). */
+	tickGravityChaos(this: DungeonScene): void {
+		const gravity = this.gravityChaos;
+		if (!gravity) return;
+		if (gravity.wait > 0) { gravity.wait--; return; }
+		const [dx, dy] = Random.element(Roguelike.neighbourOffsets(8) as ReadonlyArray<readonly [number, number]>)!;
+		for (const ch of [...this.creatures]) {
+			if (ch.hp <= 0 || (ch.kind !== undefined && IMMOVABLE_KINDS.has(ch.kind))) continue;
+			if (ch.sleeping) ch.sleeping = false;
+			let last: Step | undefined;
+			for (let step = 1, x = ch.x, y = ch.y; step <= 3; step++) {
+				x += dx; y += dy;
+				if (!this.level.inside(x, y) || !this.level.passable(x, y) || this.creatureAt(x, y) !== null) break;
+				if (this.isChasmCell(x, y) && !ch.flying) break;
+				last = { x, y };
+			}
+			if (last) this.moveTo(ch, last);
+		}
+		if (--gravity.left <= 0) {
+			this.gravityChaos = null;
+			runState.audio.cue('degrade', 0.7);
+			this.say(t('items.wands.cursedwand.gravity_end'), 'warning');
+		} else gravity.wait = Random.int(3);
 	},
 
 	/** `new Bomb.ConjuredBomb().explode(cell)`, shared by `Explosion` and `SuperNova`. */

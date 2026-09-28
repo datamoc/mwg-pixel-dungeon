@@ -1616,6 +1616,7 @@ export const deathSaveRefreshMethods = {
 			elementalFurrow: this.elementalFurrow,
 			timeBubbleTurns: this.timeBubbleTurns,
 			superNova: this.superNova,
+			gravityChaos: this.gravityChaos,
 			timeBubblePresses: [...this.timeBubblePresses],
 			hourglassFreeze: this.hourglassFreeze,
 			hourglassTurnsToCost: this.hourglassTurnsToCost,

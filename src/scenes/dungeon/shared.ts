@@ -621,6 +621,7 @@ export interface SaveShape {
 	kineticStored?: number;
 	elementalFurrow?: number;
 	timeBubbleTurns?: number;
+	gravityChaos?: { left: number; wait: number } | null;
 	superNova?: { x: number; y: number; depth: number; turnsLeft: number } | null;
 	timeBubblePresses?: number[];
 	hourglassFreeze?: boolean;

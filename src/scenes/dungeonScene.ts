@@ -863,7 +863,7 @@ export class DungeonScene extends Scene2D {
 	unstableDelegated: string | null = null;
 	/** Swiftthistle's TimeBubble: hero actions advance while automatic actors are frozen. */
 	timeBubbleTurns = 0;
-	timeBubblePresses = new Set<number>();	superNova: { x: number; y: number; depth: number; turnsLeft: number } | null = null; //`SuperNovaTracker` (CursedWand VeryRare, v4.0.0)
+	timeBubblePresses = new Set<number>();	superNova: { x: number; y: number; depth: number; turnsLeft: number } | null = null; gravityChaos: { left: number; wait: number } | null = null; //`SuperNovaTracker`/`GravityChaosTracker` (CursedWand VeryRare, v4.0.0)
 	/** `Buff.mnemonicExtended`: which of the hero's own current buffs `MnemonicPrayer`
 	 * has already extended once - cleared per id as soon as that buff is no longer on
 	 * the hero (Java's flag lives on the buff instance itself, so it vanishes with it). */

@@ -100,6 +100,6 @@ B9's coord tasks are T159 (residuals, re-filed after T18-T21 were cancelled as d
 
 - [ ] Fine-grained armor-ability residuals, each recorded in its own `PORT_COVERAGE.md` row:
   - ShadowClone's remaining gear-proc shares and the `CityLevel.Smoke` pour;
-  - CursedWand's VeryRare tier (`v4.0.0` has eight effects; `ForestFire`, `AbortRetryFail` and `SuperNova` are ported 2026-09-28, still open: `SpawnGoldenMimic`, `RandomTransmogrify`, `HeroShapeShift`, `SinkHole`, `GravityChaos`);
+  - CursedWand's VeryRare tier (`v4.0.0` has eight effects; `ForestFire`, `AbortRetryFail`, `SuperNova` and `GravityChaos` are ported 2026-09-28, still open: `SpawnGoldenMimic`, `RandomTransmogrify`, `HeroShapeShift`, `SinkHole`);
   - Trinity BodyForm's remaining unsupported positive glyph entries, and MindForm's discovery and projectile reductions;
   - Java's ref-counted `TimeStasis` and the purely visual `FireBall` blast ripple stay simplified.

@@ -225,6 +225,7 @@ export const panelsSingleUseMethods = {
 		this.elementalFurrow = s.elementalFurrow ?? 0;
 		this.timeBubbleTurns = s.timeBubbleTurns ?? 0;
 		this.superNova = s.superNova ?? null;
+		this.gravityChaos = s.gravityChaos ?? null;
 		this.timeBubblePresses = new Set(s.timeBubblePresses ?? []);
 		this.mnemonicExtended = s.mnemonicExtended ?? [];
 		this.hourglassFreeze = s.hourglassFreeze ?? false;
