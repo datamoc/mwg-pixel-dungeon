@@ -185,6 +185,7 @@ export const panelsSingleUseMethods = {
 		this.weaponSourceClass = (s as { weaponSourceClass?: string }).weaponSourceClass ?? this.weaponId;
 		this.armorId = s.armorId ?? 'clothArmor';
 		this.armorInstanceId = s.armorInstanceId;
+		this.armorSourceClass = (s as { armorSourceClass?: string }).armorSourceClass ?? this.armorId;
 		this.weaponAffix = s.weaponAffix ?? null;
 		//Older saves carried no independent equipped-item curse bit. Their former equip gate
 		//treated a cursed enchant/glyph as the binding state, so use that only as a migration
@@ -1828,6 +1829,7 @@ export const panelsSingleUseMethods = {
 		if (!kept(this.armorId, this.armorInstanceId)) {
 			this.armorId = 'clothArmor';
 			this.armorInstanceId = undefined;
+			this.armorSourceClass = 'clothArmor';
 			this.armorTier = 1;
 			this.armorLevel = 0;
 			this.armorGlyph = null;

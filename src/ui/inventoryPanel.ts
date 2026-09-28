@@ -109,7 +109,12 @@ export function refreshInventoryPanel(context: InventoryPanelContext): void {
 	if (armor) Object.assign(armor, strain(context.armorStrReq));
 	const ring = context.equippedRing ? entry({ ...context.equippedRing, quantity: 1, identified: true }) : null;
 	if (ring) ring.action = undefined;
-	const carried = rows.filter(item => item !== artifact && item.id !== context.armorId);
+	//Only the WORN instance leaves the carried list (scene start keeps the worn cloth armor in
+	//the bag as well, so its bag copy must stay hidden while equipped). Filtering by id alone,
+	//as this did, hid EVERY `armorReward` row while one was worn - a second generated armor was
+	//unreachable in the UI (Java lists both; the worn piece simply is not in the backpack).
+	const carried = rows.filter(item => item !== artifact
+		&& !(item.id === context.armorId && item.instanceId === context.armorInstanceId));
 	if (context.dock) context.dock.setItems([weapon, armor, artifact, null, ring], carried, context.gold);
 	if (context.open) {
 		panel.setWide(context.wide);

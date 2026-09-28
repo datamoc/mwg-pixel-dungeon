@@ -1389,6 +1389,7 @@ export const deathSaveRefreshMethods = {
 			weaponSourceClass: this.weaponSourceClass,
 			armorId: this.armorId,
 			armorInstanceId: this.armorInstanceId,
+			armorSourceClass: this.armorSourceClass,
 			waterskin: this.waterskin,
 			hunger: this.hunger,
 			hungerPartialDamage: this.hungerPartialDamage,

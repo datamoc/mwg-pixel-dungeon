@@ -125,6 +125,12 @@ export function useQuickslot(ctx: QuickslotContext, slot: number): void {
 }
 
 export function useItemById(scene: ItemActionContext, id: string, instanceId?: string): void {
+	//Deliberate standing guard: an item action arriving while the scene is mid-transition
+	//(descend, death, a window that took input away) is dropped silently rather than running
+	//against half-built state. Java has no router seam like this - its `Item.execute` runs
+	//whenever a window button fires - so a click that lands in that window here loses the
+	//action with no log line; noted as a known reduction rather than redesigned (the guard
+	//prevents real corruption, and the transition windows accept no input in practice).
 	if (!scene.awaitingInput) return;
 	scene.setRequestedItem(id, instanceId);
 	try {

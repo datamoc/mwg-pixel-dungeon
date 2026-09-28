@@ -172,6 +172,10 @@
           { tag: "row", item: "ankh", actionKey: "items.ankh.ac_bless", capitalize: true },
           { tag: "row", item: "ring", actionKey: "items.equipableitem.ac_equip", capitalize: true },
           { tag: "row", item: "armor", actionKey: "items.equipableitem.ac_equip", capitalize: true },
+          // `clothArmor` needs its own row now that a swapped-off cloth armor returns to the bag
+          // (Java's `doUnequip(collect=true)`); without it the entry has no ÉQUIPER button and
+          // the hero could never re-wear it, unlike `EquipableItem.actions()` in Java.
+          { tag: "row", item: "clothArmor", actionKey: "items.equipableitem.ac_equip", capitalize: true },
           { tag: "row", item: "armorReward", actionKey: "items.equipableitem.ac_equip", capitalize: true },
           { tag: "row", item: "weaponReward", actionKey: "items.equipableitem.ac_equip", capitalize: true },
           { tag: "row", item: "wand", actionKey: "items.equipableitem.ac_equip", capitalize: true },

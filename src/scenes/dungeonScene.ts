@@ -672,6 +672,10 @@ export class DungeonScene extends Scene2D {
 	armorCurseInfusionBonus = false;
 	armorId = 'clothArmor';
 	armorInstanceId: string | undefined;
+	/** The equipped armor's own class (`MailArmor` for a mail armor) - the armor-side mirror of
+	 * `weaponSourceClass` (same reason: every generated armor shares the `armorReward` id), used
+	 * by the equipped entry's display name and the bag copy a swap sends back. */
+	armorSourceClass: string | undefined;
 	/** whether the Wandmaker's frost wand was chosen (zap also dazes) */
 	frostWand = false;
 	/** Concrete equipped wand family; old saves fall back to the Wandmaker's boolean. */

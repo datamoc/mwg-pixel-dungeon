@@ -107,6 +107,12 @@ export interface ItemDisplayContext {
 	readonly wandType: WandType;
 	readonly weaponId: string; readonly weaponInstanceId?: string; readonly weaponHardened: boolean;
 	readonly armorId: string; readonly armorInstanceId?: string; readonly armorHardened: boolean;
+	/** The equipped slot's class tracker (`weaponSourceClass`/`armorSourceClass`) - the fallback
+	 * for an EQUIPPED minted `weaponReward`/`armorReward`, which `bag.find` cannot answer for
+	 * because Java's slot holds the item object itself while the port's worn piece is not in the
+	 * bag. Optional so callers without a scene (plain bag lookups) stay valid. */
+	readonly weaponSourceClass?: string;
+	readonly armorSourceClass?: string;
 	/** Ring ids whose type stands revealed while level/curse stay hidden (Thief's Intuition rank 1). */
 	readonly ringTypesKnown: ReadonlySet<string>;
 }
@@ -183,8 +189,19 @@ export function itemDisplayName(scene: ItemDisplayContext, id: string, identifie
 	}
 	if (identified) {
 		const item = scene.bag.find(id, instanceId);
+		//Matches the queried (id, instanceId) against a worn slot - Java's slots hold the item
+		//object itself, which is what makes a name resolvable there; the port's worn piece is out
+		//of the bag instead.
+		const isEquipped = (slotId: string, slotInstanceId: string | undefined): boolean =>
+			id === slotId && (instanceId === undefined ? slotInstanceId === undefined : instanceId === slotInstanceId);
 		//`sourceClass` is the port's own minted-id payload field (`InventoryItem` does not declare it)
-		const sourceClass = (item as (typeof item | undefined) & { sourceClass?: string })?.sourceClass;
+		const sourceClass = (item as (typeof item | undefined) & { sourceClass?: string })?.sourceClass
+			//An EQUIPPED minted payload is no longer in the bag (`equipWeapon`/`equipArmor` removed
+			//it on equip), so its class comes from the slot tracker instead - consulted only for
+			//`weaponReward`/`armorReward`, the two ids that cannot name a class; every other
+			//equipped id (`clothArmor`, a class armor, ...) names itself through `ITEM_KEYS`.
+			?? (id === 'armorReward' && isEquipped(scene.armorId, scene.armorInstanceId) ? scene.armorSourceClass : undefined)
+			?? (id === 'weaponReward' && isEquipped(scene.weaponId, scene.weaponInstanceId) ? scene.weaponSourceClass : undefined);
 		//A carried wand names its *own* class: `scene.wandType` is the hero's wielded wand, so every
 		//other wand in the bag used to be labelled as the equipped one. `sourceClass` is the Java
 		//class the port minted the entry from (`WandOfFireblast`), which the same `WAND_KEYS` lookup
@@ -226,8 +243,6 @@ export function itemDisplayName(scene: ItemDisplayContext, id: string, identifie
 				: armor ? ARMOR_NAME_BY_CLASS[sourceClass.toLowerCase()] : undefined)
 			: undefined;
 		const hardenedFlag = (item as (typeof item | undefined) & { hardened?: boolean })?.hardened;
-		const isEquipped = (slotId: string, slotInstanceId: string | undefined): boolean =>
-			id === slotId && (instanceId === undefined ? slotInstanceId === undefined : instanceId === slotInstanceId);
 		const hardened = weapon ? (hardenedFlag ?? (isEquipped(scene.weaponId, scene.weaponInstanceId) ? scene.weaponHardened : false))
 			: armor ? (hardenedFlag ?? (isEquipped(scene.armorId, scene.armorInstanceId) ? scene.armorHardened : false)) : false;
 		const hardenedNote = hardened ? ` ${t(weapon ? 'port.item.hardened.weapon' : 'port.item.hardened.armor')}` : '';

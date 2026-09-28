@@ -427,6 +427,9 @@ export interface SaveShape {
 	weaponSourceClass?: string;
 	armorId?: string;
 	armorInstanceId?: string;
+	/** The worn armor's class tracker (`armorSourceClass`) - absent on saves written before it
+	 * existed, which fall back to the armor id itself on load. */
+	armorSourceClass?: string;
 	waterskin: number;
 	hunger: number;
 	hungerPartialDamage?: number;

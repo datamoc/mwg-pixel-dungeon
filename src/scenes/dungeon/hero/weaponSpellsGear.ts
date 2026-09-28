@@ -1161,19 +1161,27 @@ export const weaponSpellsGearMethods = {
 			markRingTypesKnown: (ids) => markRingTypesKnown(this, ids),
 			procIdentifyTalents: this.procIdentifyTalents.bind(this),
 			syncHeroFromStats: this.syncHeroFromStats.bind(this), say: this.say.bind(this),
+			spendTurn: (cost: number) => {
+				if (cost <= 0) return;
+				scene.actionSpentTurn = true;
+				scene.spendHeroTurn(cost);
+			},
 		};
 	},
 
-	/** Found armor replaces the cloth armor entry and preserves the current effective level. */
+	/** `Armor.execute(AC_EQUIP)` goes through `Armor.doEquip` - the swap is the item transaction
+	 *  itself (`items/equipment.ts`), including the class a minted `armorReward` id cannot carry. */
 	equipArmor(this: DungeonScene, id: string, instanceId?: string): void {
 		equipInventoryArmor(this.gearEquipmentContext(), id, instanceId);
 	},
 
-	/** Generated quest weapons feed the same upgrade level used by the active class weapon. */
+	/** `Weapon.execute(AC_EQUIP)` (`KindOfWeapon.doEquip`, tag `v3.3.8`): the swap is the item
+	 *  transaction itself - `equipWeapon` owns every slot write, including the class. It used to
+	 *  be set HERE first, before the equip could still refuse on the curse gate, so a refused
+	 *  swap left the old weapon wearing the new one's class; the upgrade-level sentence this
+	 *  comment carried ("generated quest weapons feed the same upgrade level...") fossilized the
+	 *  pre-instance model too and is now wrong: the incoming item carries its own level. */
 	equipWeapon(this: DungeonScene, id: string, instanceId?: string): void {
-		const found = this.bag.find(id, instanceId) as { sourceClass?: string } | undefined;
-		if (found?.sourceClass !== undefined) this.weaponSourceClass = found.sourceClass;
-		else if (id !== 'weaponReward') this.weaponSourceClass = id;
 		equipInventoryWeapon(this.gearEquipmentContext(), id, instanceId);
 	},
 
@@ -1188,7 +1196,7 @@ export const weaponSpellsGearMethods = {
 			get armorGlyph() { return scene.armorGlyph; }, set armorGlyph(value) { scene.armorGlyph = value; },
 			get armorHardened() { return scene.armorHardened; }, set armorHardened(value) { scene.armorHardened = value; },
 			get armorCursed() { return scene.armorCursed; }, set armorCursed(value) { scene.armorCursed = value; },
-			get armorCursedKnown() { return scene.armorCursedKnown; },
+			get armorCursedKnown() { return scene.armorCursedKnown; }, set armorCursedKnown(value) { scene.armorCursedKnown = value; },
 			get armorSealed() { return scene.armorSealed; }, set armorSealed(value) { scene.armorSealed = value; },
 			get weaponId() { return scene.weaponId; }, set weaponId(value) { scene.weaponId = value; },
 			get weaponInstanceId() { return scene.weaponInstanceId; }, set weaponInstanceId(value) { scene.weaponInstanceId = value; },
@@ -1197,9 +1205,11 @@ export const weaponSpellsGearMethods = {
 			get weaponAffix() { return scene.weaponAffix; }, set weaponAffix(value) { scene.weaponAffix = value; },
 			get weaponHardened() { return scene.weaponHardened; }, set weaponHardened(value) { scene.weaponHardened = value; },
 			get weaponCursed() { return scene.weaponCursed; }, set weaponCursed(value) { scene.weaponCursed = value; },
-			get weaponCursedKnown() { return scene.weaponCursedKnown; },
+			get weaponCursedKnown() { return scene.weaponCursedKnown; }, set weaponCursedKnown(value) { scene.weaponCursedKnown = value; },
 			get weaponIdentified() { return scene.weaponIdentified; }, set weaponIdentified(value) { scene.weaponIdentified = value; },
 			get armorIdentified() { return scene.armorIdentified; }, set armorIdentified(value) { scene.armorIdentified = value; },
+			get weaponSourceClass() { return scene.weaponSourceClass; }, set weaponSourceClass(value) { scene.weaponSourceClass = value; },
+			get armorSourceClass() { return scene.armorSourceClass; }, set armorSourceClass(value) { scene.armorSourceClass = value; },
 			get weaponCurseInfusionBonus() { return scene.weaponCurseInfusionBonus; },
 			set weaponCurseInfusionBonus(value) { scene.weaponCurseInfusionBonus = value; },
 			get armorCurseInfusionBonus() { return scene.armorCurseInfusionBonus; },
@@ -1211,6 +1221,14 @@ export const weaponSpellsGearMethods = {
 			setArmorGlyph: this.setArmorGlyph.bind(this),
 			talentRank: this.talentRank.bind(this), syncHeroFromStats: this.syncHeroFromStats.bind(this), say: this.say.bind(this),
 			procIdentifyTalents: this.procIdentifyTalents.bind(this),
+			//A cost of 0 (SwiftEquip's instant swap) spends nothing and does not mark the action
+			//as having consumed the turn, so the hero simply stays ready - Java reaches the same
+			//place through `spendAndNext( 0 )`.
+			spendTurn: (cost: number) => {
+				if (cost <= 0) return;
+				scene.actionSpentTurn = true;
+				scene.spendHeroTurn(cost);
+			},
 		};
 	},
 
@@ -1533,8 +1551,10 @@ export const weaponSpellsGearMethods = {
 	itemDisplayContext(this: DungeonScene): ItemDisplayContext {
 		return { bag: this.bag, appearances: this.appearances, wandType: this.wandType,
 			weaponId: this.weaponId, weaponInstanceId: this.weaponInstanceId, weaponHardened: this.weaponHardened,
+			weaponSourceClass: this.weaponSourceClass,
 			ringTypesKnown: ringTypesKnownFor(this),
-			armorId: this.armorId, armorInstanceId: this.armorInstanceId, armorHardened: this.armorHardened };
+			armorId: this.armorId, armorInstanceId: this.armorInstanceId, armorHardened: this.armorHardened,
+			armorSourceClass: this.armorSourceClass };
 	},
 
 	worldOf(this: DungeonScene, creature: Creature): [number, number] {
