@@ -4155,3 +4155,4 @@ Known.json proposal for the mobdata owner (8 accepted/by-design entries): warloc
 Register items extracted from PORT_COVERAGE on 2026-09-26 and closed since; the evidence is a row in `coverage/`.
 
 - [x] **R057** _(Shaman.random() subtype and Shaman.zap() debuff)_ Dedicated colour sprites and debuff audio remain unported.
+- [x] **R018** _(Mage `WarpBeacon` (`actors/hero/abilities/mage/WarpBeacon.java`, tag `v3.3.8`))_ Stale register item: this ability was already ported on 2026-09-16; its coverage row was lost during the register lift and has now been restored in `coverage/rows-hero-and-armor-abilities.md`.
