@@ -1,6 +1,6 @@
 import type { DungeonScene } from '../../dungeonScene';
 import { Game, Random, Roguelike } from 'mwg';
-import { effectiveInterfaceSize } from '../../../ui/interfaceMode';
+import { effectiveInterfaceSize, hudZoom } from '../../../ui/interfaceMode';
 import { exoticRecycleAlternatives } from '../../../items/alchemy';
 import { HOLSTER_RECHARGE_BASE, NORMAL_RECHARGE_BASE, ownsBag } from '../../../items/bags';
 import { abilityFlatBoost, accrueWeaponCharge, counterAbilityRefund, gainWeaponCharge, preciseAssaultAccuracy, spendWeaponCharge, weaponAbilityChargeCost, weaponAbilityFor, weaponChargeCap } from '../../../items/weaponAbilities';
@@ -1313,15 +1313,19 @@ export const weaponSpellsGearMethods = {
 			const large = effectiveInterfaceSize(this.interfaceSize, width, height) === 1;
 			this.gameLog.setInterfaceSize(large ? 1 : 0);
 			const inset = large ? 0 : 8;
+			//The pane is authored at 2x; `hudZoom / 2` brings it to Java's UI zoom (3 on a normal desktop window).
+			const zoom = hudZoom(width, height);
+			this.statusPane.scale.set(zoom / 2);
 			this.statusPane.x = inset;
-			this.statusPane.y = Math.max(0, height - this.statusPane.paneHeight - inset);
+			this.statusPane.y = Math.max(0, height - this.statusPane.paneHeight * zoom / 2 - inset);
+			if (this.inventoryDock) this.inventoryDock.setZoom(zoom);
 		}
-		if (this.dungeonHud) this.dungeonHud.layout(width);
+		if (this.dungeonHud) this.dungeonHud.layout(width, height);
 		//The docked inventory pane owns the bottom-right corner; the toolbar sits on top of it (`GameScene`: `toolbar.setRect(0, height - toolbar.height() - inventory.height(), ..)`).
 		const dockInset = this.inventoryDock?.visible ? this.inventoryDock.renderedHeight : 0;
 		if (this.inventoryDock) this.inventoryDock.position.set(width - this.inventoryDock.renderedWidth, height - this.inventoryDock.renderedHeight);
 		if (this.actionBar) {
-			this.actionBar.layout(width, height - dockInset);
+			this.actionBar.layout(width, height - dockInset, height);
 			if (this.gameLog) {
 				const toolbarTop = height - dockInset - this.actionBar.occupiedHeight - 8 - this.gameLog.logHeight;
 				//GameScene.java keeps the message log above the bottom-left StatusPane; otherwise

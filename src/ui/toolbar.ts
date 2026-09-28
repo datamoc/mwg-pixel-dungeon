@@ -4,6 +4,7 @@ import { runState } from '../runState';
 import { t } from '../i18n';
 import { SpdButton } from './spdButton';
 import { titleIcon } from './titleIcons';
+import { hudZoom } from './interfaceMode';
 
 /** Toolbar.java GROUP layout and original toolbar.png frames.
  * Fixed item actions substitute for assignable quickslots; extra port verbs live
@@ -120,8 +121,9 @@ export class SpdToolbar extends Container {
 		});
 	}
 
-	layout(width: number, height: number): void {
-		this.zoom = width >= 360 ? 2 : 1;
+	/** `height` is where the row's bottom edge sits; `windowHeight` (the whole window) picks the zoom, which must not shrink when a docked pane takes height. */
+	layout(width: number, height: number, windowHeight = height): void {
+		this.zoom = hudZoom(width, windowHeight);
 		this.scale.set(this.zoom);
 		this.position.set(Math.floor(width - this.rowWidth * this.zoom), height - 26 * this.zoom);
 	}

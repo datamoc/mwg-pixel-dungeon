@@ -23,3 +23,14 @@ export function quickslotsToShow(uiWidth: number): number {
 export function inventoryDocked(choice: 0 | 1, uiModeSetting: number, width: number, height: number): boolean {
 	return effectiveInterfaceSize(choice, width, height) === 1 && uiModeSetting === 2;
 }
+
+/**
+ * `PixelScene.defaultZoom` at density 1 (a browser page): `ceil(2.5 * density)` = 3, lowered until the
+ * canvas still holds the minimum logical size (`MIN_WIDTH_L`/`MIN_HEIGHT_L` 240x160 landscape,
+ * `MIN_WIDTH_P`/`MIN_HEIGHT_P` 135x225 portrait). Every docked HUD piece is authored in Java's own
+ * pixels and scaled by this, like Java's UI camera.
+ */
+export function hudZoom(width: number, height: number): number {
+	const landscape = width > height;
+	return Math.max(1, Math.min(3, Math.floor(Math.min(width / (landscape ? 240 : 135), height / (landscape ? 160 : 225)))));
+}

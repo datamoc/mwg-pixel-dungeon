@@ -1,6 +1,7 @@
 import { Container, Rectangle, Sprite, Texture } from 'mwg/two-d/pixi-interop';
 import { Label } from 'mwg';
 import { APP_VERSION, runState } from '../runState';
+import { hudZoom } from './interfaceMode';
 
 export interface DungeonHudState {
 	place: string;
@@ -113,8 +114,8 @@ export class DungeonHud extends Container {
 		}
 	}
 
-	layout(width: number): void {
-		const zoom = width >= 360 ? 2 : 1;
+	layout(width: number, height: number): void {
+		const zoom = hudZoom(width, height);
 		this.scale.set(zoom);
 		this.position.set(Math.floor(width - DungeonHud.WIDTH * zoom), 0);
 	}

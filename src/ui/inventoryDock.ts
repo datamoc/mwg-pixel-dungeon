@@ -10,7 +10,7 @@ import type { InventoryEntry } from './inventoryWindow';
  * `ui/InventorySlot.java` and `ui/ItemSlot.java`, tag `v3.3.8`): a `TOAST_TR` panel 187 wide with
  * the five equipped slots (weapon, armor, artifact, misc, ring) on top, the gold count beside
  * them and the bag in 17x24 slots, ten to a row. Laid out in Java's native pixels and scaled by
- * `DOCK_SCALE` like the rest of this port's HUD (`statusPane.ts`'s `SCALE`).
+ * `hudZoom` (Java's UI-camera zoom).
  *
  * The `BagButton` row (17x14 at y+14, `ACTIVE`/`INACTIVE` tints) shows the backpack and each bag
  * the hero owns, but is display-only: this port's bag is one flat list, so the grid simply grows
@@ -18,7 +18,6 @@ import type { InventoryEntry } from './inventoryWindow';
  * to. Also not ported (see `PORT_COVERAGE.md`): `LostInventory` greying, the selector/prompt mode,
  * the throw crosshair and the `energy` counter. Clicking a slot opens the port's existing item window.
  */
-export const DOCK_SCALE = 2;
 const WIDTH = 187;
 const SLOT_W = 17;
 const SLOT_H = 24;
@@ -54,13 +53,16 @@ export class InventoryDock extends Container {
 
 	constructor(private readonly onSelect: (entry: InventoryEntry) => void) {
 		super();
-		this.scale.set(DOCK_SCALE);
+		this.setZoom(2);
 		this.addChild(this.art);
 	}
 
 	/** Rendered size in screen pixels. */
-	get renderedWidth(): number { return WIDTH * DOCK_SCALE; }
-	get renderedHeight(): number { return this.paneHeight * DOCK_SCALE; }
+	get renderedWidth(): number { return WIDTH * this.zoom; }
+	get renderedHeight(): number { return this.paneHeight * this.zoom; }
+
+	private zoom = 2;
+	setZoom(zoom: number): void { this.zoom = zoom; this.scale.set(zoom); }
 
 	setItems(equipment: (InventoryEntry | null)[], carried: InventoryEntry[], gold: number): void {
 		this.equipment = equipment;
