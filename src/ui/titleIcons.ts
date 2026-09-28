@@ -17,6 +17,8 @@ const REGIONS: Record<string, [x: number, y: number, w: number, h: number]> = {
 	news: [68, 0, 16, 15],
 	changes: [85, 0, 15, 15],
 	shpx: [119, 0, 16, 16],
+	//`Icons.JOURNAL`: `uvRectBySize(136, 0, 17, 15)`, on the same first row as the entries above.
+	journal: [136, 0, 17, 15],
 	prefs: [102, 0, 14, 14],
 	langs: [80, 32, 14, 11],
 	//`WndGame`'s two remaining entries, `Icons.CHALLENGE_COLOR` (Java 144,32,15,12) and `DISPLAY`'s
