@@ -2,6 +2,7 @@ import { capitalize, t } from '../i18n/index';
 import { SPECIALTY_BOMB_IDS } from '../items/itemKinds';
 import { generatorItemOrder } from '../items/generator';
 import { InventoryWindow, type InventoryEntry } from './inventoryWindow';
+import type { InventoryDock } from './inventoryDock';
 import { MWL_CONSUMABLE_DESCRIPTION_KEYS, MWL_EQUIPMENT_DESCRIPTION_KEYS, MWL_ITEM_ACTION_RULES, MWL_ITEM_FRAMES, MWL_ITEM_SPECIFIC_FRAMES, MWL_MISSILE_DESCRIPTION_KEYS } from '../mwlContent';
 import { getArtifact, getAllArtifactIds } from '../items/artifacts';
 import { isClassArmorId } from '../items/catalog';
@@ -31,6 +32,12 @@ export interface InventoryPanelContext {
 	readonly armorSealed: boolean;
 	readonly weaponInstanceId?: string;
 	readonly weaponName: string;
+	/** The docked pane (`InventoryPane`), when the large interface shows it, and the strength readouts its slots print. */
+	readonly dock: InventoryDock | null;
+	readonly weaponLevel: number;
+	readonly weaponStrReq: number;
+	readonly armorStrReq: number;
+	readonly heroStr: number;
 	readonly weaponFrame: number;
 	/** `MeleeWeapon.info()`: the equipped weapon's own flavour text, plus - for a Duelist,
 	 * `!(this instanceof MagesStaff)` - its real `ability_desc` (this port has no MagesStaff
@@ -59,7 +66,7 @@ export function refreshInventoryPanel(context: InventoryPanelContext): void {
 	const panel = context.panel;
 	if (!panel) return;
 	panel.visible = context.open;
-	if (!context.open) return;
+	if (!context.open && !context.dock) return;
 	const entry = (item: InventoryItem): InventoryEntry => {
 		const id = item.id;
 		let frame = MWL_ITEM_SPECIFIC_FRAMES[id] ?? 0;
@@ -95,11 +102,19 @@ export function refreshInventoryPanel(context: InventoryPanelContext): void {
 	if (armor) armor.action = context.armorSealed ? t('items.armor.armor.detach_seal') : isClassArmorId(context.armorId) ? t('items.armor.classarmor.ac_transfer') : undefined;
 	const artifact = rows.find(item => ARTIFACT_SLOT_IDS.has(item.id)) ?? null;
 	const weapon: InventoryEntry = { id: 'equippedWeapon', instanceId: context.weaponInstanceId, name: context.weaponName,
-		frame: context.weaponFrame, quantity: 1, identified: true, description: context.weaponDescription };
+		frame: context.weaponFrame, quantity: 1, identified: true, description: context.weaponDescription, level: context.weaponLevel };
+	//`ItemSlot.updateText()`: `:%d` strength requirement, red when the hero is too weak for it.
+	const strain = (req: number) => ({ extra: `:${req}`, extraColor: req > context.heroStr ? 0xff4444 : 0xffffff });
+	Object.assign(weapon, strain(context.weaponStrReq));
+	if (armor) Object.assign(armor, strain(context.armorStrReq));
 	const ring = context.equippedRing ? entry({ ...context.equippedRing, quantity: 1, identified: true }) : null;
 	if (ring) ring.action = undefined;
-	panel.setWide(context.wide);
-	panel.setItems([weapon, armor, artifact, null, ring], rows.filter(item => item !== artifact && item.id !== context.armorId), context.gold);
+	const carried = rows.filter(item => item !== artifact && item.id !== context.armorId);
+	if (context.dock) context.dock.setItems([weapon, armor, artifact, null, ring], carried, context.gold);
+	if (context.open) {
+		panel.setWide(context.wide);
+		panel.setItems([weapon, armor, artifact, null, ring], carried, context.gold);
+	}
 	context.addToStage(panel);
 	context.positionInterface();
 }

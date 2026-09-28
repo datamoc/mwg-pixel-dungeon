@@ -1231,7 +1231,7 @@ export class DungeonScene extends Scene2D {
 	windowZoom = windowBaseZoom(Game.current.width, Game.current.height);
 	actionBar!: SpdToolbar;
 	inventoryPanel!: InventoryWindow;
-	inventoryOpen = false;
+	inventoryOpen = false; inventoryDock!: import('../ui/inventoryDock').InventoryDock;
 	journalWindow?: Window;
 	journalOpen = false;
 	talentPanel!: Container;

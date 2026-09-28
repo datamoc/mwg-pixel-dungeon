@@ -2,6 +2,9 @@ import type { DungeonScene } from '../../dungeonScene';
 import { refreshInventoryPanel as refreshInventoryPanelView, type InventoryPanelContext } from '../../../ui/inventoryPanel';
 import { createJournalWindow } from '../../../ui/journalWindow';
 import { createJournalTabs } from '../../../ui/journalContent';
+import { inventoryDocked } from '../../../ui/interfaceMode';
+import { uiMode } from '../../../settings';
+import { armorSTRReq, weaponSTRReq } from '../../../items/strReq';
 import { Actors, Blob, Camera, Game, Random, Roguelike, TintedSprite, Window } from 'mwg';
 import { spawnDeathBursts, spawnFlare, spawnHitFlash, spawnShadowBurst, spawnTeleportBurst, syncBlobCells, syncPourAuras } from '../../../ui/effectBursts';
 import { BOOMERANG_RETURN_ACC_FACTOR, BOOMERANG_RETURN_TURNS, MISSILE_DEFAULT_QUANTITY, MISSILE_MAX_DURABILITY, bolasCrippleTurns, missileDamageRange, missileStackId, recordMissileUpgrade, tomahawkBleedRange } from '../../../items/missiles';
@@ -220,8 +223,13 @@ export const inventoryQuickslotMethods = {
 			: undefined;
 		const weaponDescKey = `${weaponNameKey?.slice(0, -'.name'.length)}.desc`;
 		const weaponAbilityDescKey = `${weaponNameKey?.slice(0, -'.name'.length)}.ability_desc`;
+		const docked = inventoryDocked(this.interfaceSize, uiMode(), Game.current.width, Game.current.height);
+		this.inventoryDock.visible = docked && this.inventoryDock.shown;
 		const context: InventoryPanelContext = {
 			panel: this.inventoryPanel,
+			dock: docked ? this.inventoryDock : null,
+			weaponLevel: this.weaponLevel, weaponStrReq: weaponSTRReq(this.weaponTier, this.weaponLevel),
+			armorStrReq: armorSTRReq(this.armorTier, this.armorLevel), heroStr: this.hero?.str ?? 0,
 			open: this.inventoryOpen,
 			items: this.bag.items,
 			itemVerbs: (id, known) => this.itemVerbs(id, known),

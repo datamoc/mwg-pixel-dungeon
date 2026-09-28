@@ -30,6 +30,9 @@ export interface InventoryEntry {
 	equipped?: boolean;
 	action?: string;
 	sourceClass?: string;
+	/** `ItemSlot.extra`: the strength requirement (`:10`) and its colour, shown by the docked pane. */
+	extra?: string;
+	extraColor?: number;
 	/** `Item.AC_DROP`/`AC_THROW` and, for a known malevolent potion, a guarded Drink - shown as a second row of buttons. */
 	verbs?: { drop: boolean; throw: boolean; drink: boolean };
 }
@@ -88,6 +91,8 @@ export class InventoryWindow extends Container2D {
 	private vh = 0;
 	private chosen: InventoryEntry | null = null;
 	private wide = false;
+	/** Opened from the docked pane: only the item's detail card shows, and dismissing it closes. */
+	private detailOnly = false;
 	private width_ = 156;
 	private height_ = 226;
 
@@ -324,11 +329,21 @@ export class InventoryWindow extends Container2D {
 		this.layout(this.vw, this.vh);
 	}
 
-	private dismissDetail(): void {
-		this.chosen = null; this.detail.visible = false; this.panel.alpha = 1; this.panel.eventMode = 'static'; this.draw();
+	/** A docked-pane slot tap: the same detail card the bag grid opens, without the bag behind it. */
+	inspect(item: InventoryEntry): void {
+		this.showItem(item);
+		this.detailOnly = true;
+		this.panel.visible = false;
 	}
 
-	reset(): void { this.chosen = null; this.detail.visible = false; this.panel.alpha = 1; this.panel.eventMode = 'static'; }
+	private dismissDetail(): void {
+		const closing = this.detailOnly;
+		this.chosen = null; this.detail.visible = false; this.panel.alpha = 1; this.panel.eventMode = 'static';
+		this.detailOnly = false; this.panel.visible = true;
+		if (closing) this.close(); else this.draw();
+	}
+
+	reset(): void { this.chosen = null; this.detail.visible = false; this.panel.alpha = 1; this.panel.eventMode = 'static'; this.detailOnly = false; this.panel.visible = true; }
 
 	handleAction(action: string): boolean {
 		if (this.chosen) {

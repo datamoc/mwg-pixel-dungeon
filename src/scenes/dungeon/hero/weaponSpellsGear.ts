@@ -1,5 +1,6 @@
 import type { DungeonScene } from '../../dungeonScene';
 import { Game, Random, Roguelike } from 'mwg';
+import { effectiveInterfaceSize } from '../../../ui/interfaceMode';
 import { exoticRecycleAlternatives } from '../../../items/alchemy';
 import { HOLSTER_RECHARGE_BASE, NORMAL_RECHARGE_BASE, ownsBag } from '../../../items/bags';
 import { abilityFlatBoost, accrueWeaponCharge, counterAbilityRefund, gainWeaponCharge, preciseAssaultAccuracy, spendWeaponCharge, weaponAbilityChargeCost, weaponAbilityFor, weaponChargeCap } from '../../../items/weaponAbilities';
@@ -1309,15 +1310,20 @@ export const weaponSpellsGearMethods = {
 			//UI camera. The port's status pane is already authored at 2x, so its rendered height
 			//is 72px; keep the same small inset as the Java HUD while preserving the whole pane.
 			//Java's large pane sits flush in the corner (`status.setRect(0, height-39, ..)`).
-			const inset = this.interfaceSize === 1 ? 0 : 8;
+			const large = effectiveInterfaceSize(this.interfaceSize, width, height) === 1;
+			this.gameLog.setInterfaceSize(large ? 1 : 0);
+			const inset = large ? 0 : 8;
 			this.statusPane.x = inset;
 			this.statusPane.y = Math.max(0, height - this.statusPane.paneHeight - inset);
 		}
 		if (this.dungeonHud) this.dungeonHud.layout(width);
+		//The docked inventory pane owns the bottom-right corner; the toolbar sits on top of it (`GameScene`: `toolbar.setRect(0, height - toolbar.height() - inventory.height(), ..)`).
+		const dockInset = this.inventoryDock?.visible ? this.inventoryDock.renderedHeight : 0;
+		if (this.inventoryDock) this.inventoryDock.position.set(width - this.inventoryDock.renderedWidth, height - this.inventoryDock.renderedHeight);
 		if (this.actionBar) {
-			this.actionBar.layout(width, height);
+			this.actionBar.layout(width, height - dockInset);
 			if (this.gameLog) {
-				const toolbarTop = height - this.actionBar.occupiedHeight - 8 - this.gameLog.logHeight;
+				const toolbarTop = height - dockInset - this.actionBar.occupiedHeight - 8 - this.gameLog.logHeight;
 				//GameScene.java keeps the message log above the bottom-left StatusPane; otherwise
 				//the later-added log layer covers the pane's HP/XP strips even though they are drawn.
 				this.gameLog.y = Math.min(toolbarTop, this.statusPane.y - 8 - this.gameLog.logHeight);
@@ -1345,7 +1351,7 @@ export const weaponSpellsGearMethods = {
 			this.bossNameLabel.y = this.bossHealthBar.y;
 			this.bossNameLabel.anchor.set(0, 0);
 		}
-		this.badgeBanner.resize(width, height);
+		this.badgeBanner?.resize(width, height);
 	},
 
 	say(this: DungeonScene, line: string, level: LogLevel = 'info'): void {

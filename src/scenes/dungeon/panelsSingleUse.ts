@@ -6,6 +6,9 @@ import { recallTrackedPortId } from '../../items/scrollEffects';
 import { getCurse } from '../../items/itemCurses';
 import { showBuffInfoWindow } from '../../ui/buffInfoWindow';
 import { InventoryWindow } from '../../ui/inventoryWindow';
+import { InventoryDock } from '../../ui/inventoryDock';
+import { inventoryDocked } from '../../ui/interfaceMode';
+import { uiMode } from '../../settings';
 import { Container, Graphics, Rectangle, Sprite, Texture } from 'mwg/two-d/pixi-interop';
 import { Actors, Bar, Blob, Button, Game, Label, Random, Roguelike, Rpg, Window, WindowStack, theme } from 'mwg';
 import { MISSILE_MAX_DURABILITY } from '../../items/missiles';
@@ -513,8 +516,11 @@ export const panelsSingleUseMethods = {
 			[ITEM_FRAME.scroll, ITEM_FRAME.potion, ITEM_FRAME.food, specialFrame].map(frame => this.itemsSheet.get(frame)),
 			(action) => {
 				if (action === 'inventory') {
-					this.inventoryOpen = !this.inventoryOpen;
+					//`Toolbar.btnInventory`: with the docked pane the button toggles the pane, else it opens the bag.
+					if (inventoryDocked(this.interfaceSize, uiMode(), Game.current.width, Game.current.height)) this.inventoryDock.shown = !this.inventoryDock.shown;
+					else this.inventoryOpen = !this.inventoryOpen;
 					this.refreshInventoryPanel();
+					this.positionInterface(Game.current.width, Game.current.height);
 				} else if (action === 'journal') this.openJournal();
 				else this.onAction(action);
 			},
@@ -522,6 +528,9 @@ export const panelsSingleUseMethods = {
 		);
 		this.stage.addChild(this.actionBar);
 
+		this.inventoryDock = new InventoryDock((entry) => { this.inventoryOpen = true; this.refreshInventoryPanel(); this.inventoryPanel.inspect(entry); });
+		this.inventoryDock.visible = false;
+		this.stage.addChild(this.inventoryDock);
 		this.inventoryPanel = new InventoryWindow(
 			(id, instanceId) => this.useItemById(id, instanceId),
 			() => { this.inventoryOpen = false; this.inventoryPanel.reset(); this.refreshInventoryPanel(); },

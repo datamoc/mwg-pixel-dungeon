@@ -2,6 +2,7 @@ import type { DungeonScene } from '../dungeonScene';
 import { fallenItemStore } from './fallenItems';
 import { FogOfWar } from '../../ui/fogOfWar';
 import { wallBlockingFrame } from '../../spdLevelGen/wallBlocking';
+import { effectiveInterfaceSize } from '../../ui/interfaceMode';
 import { Actors, AnimatedSprite, Bar, Game, Random, Roguelike, SaveSystem, theme } from 'mwg';
 import { groundKindForItem, portItemKind, sourceInventoryItem } from '../../items/itemKinds';
 import { ringWealthBonus, ringWealthMultiplier } from '../../items/ringModifiers';
@@ -1239,7 +1240,7 @@ export const deathSaveRefreshMethods = {
 			ammo: CLASS_AMMO.has(this.heroClass) ? this.ammo : null,
 			carriedCount,
 			armorTier: this.armorTier,
-			interfaceSize: this.interfaceSize,
+			interfaceSize: effectiveInterfaceSize(this.interfaceSize, Game.current.width, Game.current.height),
 			busy: !this.awaitingInput && !this.gameOver,
 			talentPointsAvailable: this.talentPoints.some((points) => points > 0),
 		});
