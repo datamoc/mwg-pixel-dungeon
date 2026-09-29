@@ -144,4 +144,3 @@ the correction to the row's file) when it turns out to be closed. Find the sourc
 - `npx tsc --noEmit`, `npm run build`, automated verification, and browser verification pass (`tools/browserTest.mjs`).
 
 See `PORT_COVERAGE.md` for the closed record and its layout.
-
