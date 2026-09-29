@@ -62,10 +62,10 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	compile(join(root, 'src/simulation/mwlMonsterImmunities.ts'), 'simulation/mwlMonsterImmunities.js');
 	compile(join(root, 'src/simulation/mwlBuffDurations.ts'), 'simulation/mwlBuffDurations.js');
 	compile(join(root, 'src/simulation/buffs.ts'), 'simulation/buffs.js');
-	// Several item modules import `doomDamage` (and friends) as a *value* from `../combat`
-	// since the Doom work landed; `wands.js` is the first of them required below. Node
-	// caches the module on first load, so this stub must exist before any of those
-	// requires — writing it only at the meal-test site below is too late. Re-export the
+	// The meal chain value-imports `addBuff`/`reigniteBuff` from `../combat`, and the scroll drive
+	// below needs `doomDamage` from it (`wands.js`'s combat import is type-only now, so
+	// `consumables.js` is the first loader - it reads the meal-site write below, and this
+	// early write stays as the backstop. Re-export the
 	// pure helpers from the already-compiled real buffs module; keep `addCalls` for the
 	// meal assertions, and leave `addBuff`/`reigniteBuff`/`buffBlocked` as observation
 	// stubs (this drive still never observes real buff application).
@@ -3978,9 +3978,9 @@ function talismanDrive(overrides = {}) {
 	// shared by ordinary food and `HornOfPlenty.doEatEffect()` (horn callers pass base 0 -
 	// the horn grants satiety, never HP). combat.ts is stubbed: the helper under test never
 	// touches addBuff/reigniteBuff (only the mystery-meat branch does, untested here), and
-	// nothing under test reads buffBlocked (the retribution branch does - stubbed open);
+	// nothing under test reads buffBlocked (the retribution branch does - stubbed open); doomDamage rides along for the later scroll drive's applyDamage
 	// the challenges/i18n stubs above already cover this module's other two imports.
-	writeFileSync(join(out, 'combat.js'), 'exports.BUFF_DURATION = { aggression: 20 };\nexports.addCalls = [];\nexports.addBuff = (target, id, duration) => exports.addCalls.push({ target, id, duration });\nexports.reigniteBuff = () => {};\nexports.buffBlocked = () => false;\n');
+	writeFileSync(join(out, 'combat.js'), 'exports.BUFF_DURATION = { aggression: 20 };\nexports.addCalls = [];\nexports.addBuff = (target, id, duration) => exports.addCalls.push({ target, id, duration });\nexports.reigniteBuff = () => {};\nexports.buffBlocked = () => false;\nexports.doomDamage = require("./simulation/buffs.js").doomDamage;\n');
 	compile(join(root, 'src/talentEffects.ts'), 'talentEffects.js');
 	compile(join(root, 'src/items/consumables.ts'), 'items/consumables.js');
 	const { applyMealEatenEffects, eatFood } = require('./items/consumables.js');
@@ -4230,6 +4230,36 @@ function scrollReadDrive(overrides = {}) {
 	assert.match(readFileSync(join(root, 'src/items/scrollEffects.ts'), 'utf8'), /addBuff\(hero, 'weakness'\)/);
 	assert.match(readFileSync(join(root, 'src/items/scrollEffects.ts'), 'utf8'), /context\.applyDamage\(creature, rawDamage\)/,
 		'Retribution delegates its rolled hit to the scene Char.damage dispatcher');
+	//`ScrollOfTerror.doRead()` (tag `v3.3.8`) skips ALLY alignment: every visible
+	//non-ally takes terror, the hero/NPCs/allies are left alone, and the line
+	//counts the scattered. `addBuff` rides the stub here, so the scatter is
+	//pinned through its observation calls, not buff maps.
+	const { addCalls: terrorCalls } = require('./combat.js');
+	const foeA = { isHero: false, isNPC: false, isAlly: false, buffs: {}, x: 1, y: 1, name: 'rat' };
+	const foeB = { isHero: false, isNPC: false, isAlly: false, buffs: {}, x: 2, y: 2, name: 'crab' };
+	const friend = { isHero: false, isNPC: false, isAlly: true, buffs: {}, x: 3, y: 3, name: 'mirror' };
+	const bystander = { isHero: false, isNPC: true, isAlly: false, buffs: {}, x: 4, y: 4, name: 'ghost' };
+	const self = { isHero: true, isNPC: false, isAlly: false, buffs: {}, x: 0, y: 0, name: 'hero' };
+	const before = terrorCalls.length;
+	const terror = scrollReadDrive({
+		items: [{ id: 'scrollTerror', quantity: 1, identified: true }],
+		creatures: [foeA, foeB, friend, bystander, self],
+	});
+	assert.equal(terror.result, true, 'terror reads');
+	assert.deepEqual(terrorCalls.slice(before).map((c) => c.target), [foeA, foeB], 'only visible enemies take terror');
+	assert.ok(terrorCalls.slice(before).every((c) => c.id === 'terror'), 'taking terror itself');
+	assert.ok(terror.said.some((l) => l.includes('items.scrolls.scrollofterror.many')), 'counting the scattered');
+	assert.deepEqual(terror.flags.recalled, ['ScrollOfTerror'], 'arming its Java class');
+	const solo = scrollReadDrive({
+		items: [{ id: 'scrollTerror', quantity: 1, identified: true }],
+		creatures: [{ isHero: false, isNPC: false, isAlly: false, buffs: {}, x: 1, y: 1, name: 'gnoll' }],
+	});
+	assert.ok(solo.said.some((l) => l.includes('items.scrolls.scrollofterror.one[gnoll]')), 'naming the lone scattered');
+	const calm = scrollReadDrive({
+		items: [{ id: 'scrollTerror', quantity: 1, identified: true }],
+		creatures: [{ isHero: false, isNPC: false, isAlly: true, buffs: {}, x: 1, y: 1, name: 'mirror' }],
+	});
+	assert.ok(calm.said.some((l) => l.startsWith('negative:items.scrolls.scrollofterror.none')), 'allies alone mean nothing to scatter');
 }
 {
 	// A free re-read (RecallInscription's talentChance = 0): the effect runs, but
