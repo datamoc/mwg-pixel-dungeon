@@ -4307,6 +4307,31 @@ assert.deepEqual(lullabyCalls.slice(napStart).map((c) => c.target), [awakeA, awa
 assert.ok(lullabyCalls.slice(napStart).every((c) => c.id === 'drowsy'), 'taking drowsy itself');
 assert.ok(lullaby.said.some((l) => l.includes('port.log.lullaby')), 'singing the shared line');
 assert.deepEqual(lullaby.flags.recalled, ['ScrollOfLullaby'], 'arming its Java class');
+//`ScrollOfRage.doRead()` (tag `v3.3.8`): the beckon stand-in wakes every non-hero
+//non-NPC creature (sleeping false, seesHero true) while amok itself goes only to
+//visible non-allies. A sleeping Crystal Guardian ignores the beckon but still
+//takes amok. The beckon is pinned through object flags, amok through the stub's
+//observation calls.
+const { addCalls: rageCalls } = require('./combat.js');
+const raging = { isHero: false, isNPC: false, isAlly: false, buffs: {}, sleeping: true, seesHero: false, x: 1, y: 1 };
+const ragingAlly = { isHero: false, isNPC: false, isAlly: true, buffs: {}, sleeping: true, seesHero: false, x: 2, y: 2 };
+const ragingWatcher = { isHero: false, isNPC: true, isAlly: false, buffs: {}, sleeping: true, seesHero: false, x: 3, y: 3 };
+const ragingGuardian = { isHero: false, isNPC: false, isAlly: false, buffs: {}, sleeping: true, seesHero: false, kind: 'crystalGuardian', x: 4, y: 4 };
+const rageStart = rageCalls.length;
+const rageMob = scrollReadDrive({
+	items: [{ id: 'scrollRage', quantity: 1, identified: true }],
+	creatures: [raging, ragingAlly, ragingWatcher, ragingGuardian],
+});
+assert.equal(rageMob.result, true, 'rage reads enemies and allies alike');
+assert.equal(raging.sleeping, false, 'the beckon wakes the foe');
+assert.equal(raging.seesHero, true, 'and turns it toward the hero');
+assert.equal(ragingAlly.sleeping, false, 'allies hear the beckon too');
+assert.equal(ragingAlly.seesHero, true, 'and turn as well');
+assert.equal(ragingWatcher.sleeping, true, 'NPCs sleep through it');
+assert.equal(ragingGuardian.sleeping, true, 'a sleeping guardian ignores the beckon');
+assert.deepEqual(rageCalls.slice(rageStart).map((c) => c.target), [raging, ragingGuardian], 'amok itself is enemies-only, guardian included');
+assert.ok(rageCalls.slice(rageStart).every((c) => c.id === 'amok'), 'taking amok itself');
+//(read, line, and recall already pinned on the registry drive above; this drive adds targeting.)
 }
 {
 	// A free re-read (RecallInscription's talentChance = 0): the effect runs, but
