@@ -51,6 +51,8 @@ import { useAnkhFlow, type AnkhContext } from '../../items/selfUse';
 import { Banner } from '../../ui/banner';
 import { showDefeatPanel as showDefeatPanelUi, showVictoryPanel as showVictoryPanelUi } from '../../ui/endPanels';
 import { createItemPickerWindow } from '../../ui/itemPicker';
+import { itemFrameFor } from '../../ui/itemFrame';
+import { appearanceItemFrame } from '../../items/appearanceFrames';
 import { CLASS_ARMOR_ID_BY_CLASS, isClassArmorId, weaponCombat } from '../../items/catalog';
 import { MWL_HERO_BASE_STATS, mwlItemEffectValue } from '../../mwlContent';
 import { useAlchemizeFlow, useStylusFlow, type AlchemizeContext, type StylusContext } from '../../items/spells';
@@ -1089,6 +1091,13 @@ export const panelsSingleUseMethods = {
 			body,
 			entries,
 			displayName: (id, identified, instanceId) => this.itemDisplayName(id, identified, instanceId),
+			iconFrame: (id) => {
+				//The bag's own frame resolution, including a dealt potion/scroll appearance (`Potion.reset()`).
+				const category = id.startsWith('potion') ? 'potion' as const : id.startsWith('scroll') ? 'scroll' as const : null;
+				let appearance: number | undefined;
+				if (category) { try { appearance = appearanceItemFrame(category, this.appearances.appearanceOf(category, id)); } catch { appearance = undefined; } }
+				return itemFrameFor(id, appearance);
+			},
 			onPick: (index) => this.chooseItemPicker(index),
 			onCancel: () => this.clearItemPicker(),
 		});
