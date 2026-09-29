@@ -40,6 +40,8 @@ import { menuScale } from '../../ui/spdButton';
 import { allyIdentityColorAdd, buildMonsterCreature, buildMonsterSprite } from '../monsterSpawn';
 import { repairBossUnsealStairs } from '../bossUnseal';
 import { timeBubbleTurnCost } from '../../simulation/timeBubble';
+import { gridFrames } from '../dungeonGridFrames';
+import { visualGrid } from '../../settings';
 import { mineTileFrames, foregroundGrassFrames as buildForegroundGrassFrames, terrainFrameAt as buildTerrainFrameAt, terrainFrames as buildTerrainFrames, wallFrameAt as buildWallFrameAt, wallFrames as buildWallFrames, waterFrames as buildWaterFrames, type DungeonTileFrameContext } from '../dungeonTileFrames';
 import { bindZoomShortcuts } from './zoomShortcuts';
 import { STARTING_WEAPON_CLASS, armorReductionRange, isClassArmorId, weaponCombat } from '../../items/catalog';
@@ -1437,6 +1439,11 @@ export const coreSpawnTilesMethods = {
 		const regionProfile = dungeonRegion(region);
 		this.waterSurface = new WaterSurface(runState.sprites[regionProfile.waterSprite], runState.sprites.effects, this.level.width, this.level.height, (x, y) => this.level.get(x, y) === WATER);
 		this.camera.world.addChild(this.waterSurface, this.map);
+		//`GameScene`: the `GridTileMap` sits right above the terrain and the custom tiles, below the terrain features.
+		this.gridMap = new TileMap({ width: this.level.width, height: this.level.height, sheet: SpriteSheet.fromTexture(runState.sprites.visualGrid, TILE) });
+		this.gridMap.addLayer('grid', gridFrames(this.tileFrameContext(), visualGrid()));
+		this.gridApplied = visualGrid();
+		this.camera.world.addChild(this.gridMap);
 		if (this.miningBranchActive) {
 			//MiningLevel.BorderDarken maps the 64x16 CAVES_QUEST atlas as [top=2,
 			//sides=1,bottom-two=3,interior=-1]. TileMap is the direct equivalent of Java's
@@ -1772,6 +1779,13 @@ export const coreSpawnTilesMethods = {
 	},
 
 	/** DungeonTerrainTilemap direct visuals and DungeonTileSheet alternates. */
+	/** `GridTileMap.updateMap()`: re-reads `SPDSettings.visualGrid()` and the terrain. Called wherever the terrain layer is redrawn and each turn. */
+	refreshVisualGrid(this: DungeonScene): void {
+		if (!this.gridMap) return;
+		this.gridApplied = visualGrid();
+		this.gridMap.setLayerData('grid', gridFrames(this.tileFrameContext(), this.gridApplied));
+	},
+
 	terrainFrameAt(this: DungeonScene, x: number, y: number): number {
 		return buildTerrainFrameAt(this.tileFrameContext(), x, y);
 	},

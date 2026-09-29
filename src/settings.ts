@@ -255,8 +255,8 @@ export function brightnessFogAlpha(value: number): number {
 	return 153;
 }
 
-/** `SPDSettings.visualGrid()` - default 0, gated -1..2. No grid seam exists yet, so this
- * is persistence only: the value round-trips and the verifier pins it. */
+/** `SPDSettings.visualGrid()` - default 0, gated -1..2. Drawn by `scenes/dungeonGridFrames.ts` as `GridTileMap`'s
+ * checkerboard overlay; a change applies on the next `refresh()`. */
 export function visualGrid(): number {
 	return gateInt(settingsStore().getItem(GRID_KEY), 0, -1, 2);
 }
