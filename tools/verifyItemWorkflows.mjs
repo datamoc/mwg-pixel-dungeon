@@ -518,7 +518,15 @@ assert.equal(missileAdjacentAccFactor(false, true, 3), 1.5, 'thrown weapons and 
 	// turns into a flat 1.5 rather than the melee-range penalty.
 	assert.equal(BOOMERANG_RETURN_TURNS, 5, 'CircleBack counts down from 5 hero turns');
 	assert.equal(BOOMERANG_RETURN_ACC_FACTOR, 1.5, 'the return throw is a flat 1.5, adjacency or not');
-	const { canCraftPotionSeed, craftPotionSeed, craftAlchemy, craftScrollToStone, craftAlchemize, craftScrollToExotic, canCraftScrollToExotic, scrollExoticResult, craftPotionToExotic, canCraftPotionToExotic, potionExoticResult, alchemyRecipe, alchemyEnergyFor } = require('./items/alchemy.js');
+	const { canCraftPotionSeed, craftPotionSeed, canCraftAlchemy, craftAlchemy, craftScrollToStone, craftAlchemize, craftScrollToExotic, canCraftScrollToExotic, scrollExoticResult, craftPotionToExotic, canCraftPotionToExotic, potionExoticResult, alchemyRecipe, alchemyEnergyFor } = require('./items/alchemy.js');
+	const identifiedGateBag = new Inventory();
+	identifiedGateBag.add({ id: 'scrollUpgrade', quantity: 1, stackable: true, identified: false });
+	assert.equal(canCraftAlchemy(identifiedGateBag, 'magicalInfusion'), false, 'an unidentified scroll cannot enable the spell recipe');
+	assert.equal(craftAlchemy(identifiedGateBag, 'magicalInfusion'), false, 'the craft path independently rejects unidentified ingredients');
+	assert.equal(identifiedGateBag.find('scrollUpgrade')?.quantity, 1, 'a rejected unidentified craft consumes nothing');
+	identifiedGateBag.items[0].identified = true;
+	assert.equal(canCraftAlchemy(identifiedGateBag, 'magicalInfusion'), true, 'identifying the scroll enables the recipe');
+	assert.equal(craftAlchemy(identifiedGateBag, 'magicalInfusion'), true, 'the identified spell recipe crafts');
 
 	// `Item.isUpgradable()` (tag `v3.3.8`) and the two infusion selectors that read it. Java's
 	// default is true with 42 classes overriding it false, so the assertions below are built from
@@ -1129,12 +1137,13 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 	assert.deepEqual(craftPotionSeed(selectBag, [{ id: 'seedSungrass' }, { id: 'seedSungrass' }, { id: 'seedSungrass' }]), { id: 'potionHealing', identified: true }, 'three chosen sungrass brew healing');
 	assert.equal(selectBag.items.length, 0, 'the chosen units are consumed');
 	const selectScroll = new Inventory();
-	selectScroll.add({ id: 'scrollRage', quantity: 1, stackable: true });
+	selectScroll.add({ id: 'scrollRage', quantity: 2, stackable: true, identified: false });
 	assert.equal(craftScrollToStone(selectScroll, { id: 'potionHealing' }), false, 'a non-scroll cannot transmute');
-	assert.equal(selectScroll.items[0].quantity, 1, '...unconsumed');
+	assert.equal(selectScroll.items[0].quantity, 2, '...unconsumed');
 	assert.equal(craftScrollToStone(selectScroll, { id: 'scrollRage' }), true, 'the chosen rage scroll transmutes');
 	assert.equal(selectScroll.find('stoneOfAggression')?.quantity, 2, 'into two aggression stones');
-	assert.equal(selectScroll.find('scrollRage'), undefined, 'and the chosen scroll is consumed');
+	assert.equal(selectScroll.find('scrollRage')?.quantity, 1, 'one scroll is consumed');
+	assert.equal(selectScroll.find('scrollRage')?.identified, true, 'and the remaining scroll of that kind is identified');
 	// `ExoticScroll.ScrollToExotic` (tag `v3.3.8`): one regular scroll, cost 6, into its
 	// exotic - only the MirrorImage -> PrismaticImage pair exists here so far.
 	assert.equal(scrollExoticResult('scrollMirror'), 'scrollPrismatic');
@@ -1301,6 +1310,26 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 	// `Brew.energyVal()` is 12 a unit, like the brewed exotic scroll.
 	assert.equal(alchemyEnergyFor('shockingBrew', true), 12, 'a scrapped shocking brew yields 12 energy');
 	assert.equal(alchemyEnergyFor('causticBrew', true), 12, 'a scrapped caustic brew yields 12 energy');
+	assert.equal(alchemyEnergyFor('food', true), 0, 'base Food has no energy value');
+	assert.equal(alchemyEnergyFor('chargrilledMeat', true), 0, 'Food subclasses without an override retain the zero default');
+	assert.equal(alchemyEnergyFor('stoneOfAugmentation', true), 5, 'augmentation stones override the runestone base');
+	assert.equal(alchemyEnergyFor('stoneOfEnchantment', true), 5, 'enchantment stones override the runestone base');
+	assert.equal(alchemyEnergyFor('seedRotberry', true), 3, 'Rotberry seeds override the seed base');
+	assert.equal(alchemyEnergyFor('seedStarflower', true), 3, 'Starflower seeds override the seed base');
+	assert.equal(alchemyEnergyFor('gooBlob', true), 3, 'Goo blobs have their own energy value');
+	assert.equal(alchemyEnergyFor('metalShard', true), 3, 'metal shards have their own energy value');
+	assert.equal(alchemyEnergyFor('elixirMight', true), 12, 'elixirs use Elixir.energyVal');
+	assert.equal(alchemyEnergyFor('featherFall', true), 12, 'the Java ElixirOfFeatherFall class has Elixir.energyVal');
+	assert.equal(alchemyEnergyFor('magicalInfusion', true), 12, 'MagicalInfusion returns 12 per spell');
+	assert.equal(alchemyEnergyFor('phaseShift', true), 2, 'PhaseShift scales 12 energy across six recipe outputs');
+	assert.equal(alchemyEnergyFor('reclaimTrap', true), 2, 'ReclaimTrap scales 12 energy across five recipe outputs');
+	assert.equal(alchemyEnergyFor('recycle', true), 1, 'Recycle scales 12 energy across twelve recipe outputs');
+	assert.equal(alchemyEnergyFor('wildEnergy', true), 2, 'WildEnergy scales 12 energy across five recipe outputs');
+	assert.equal(alchemyEnergyFor('telekineticGrab', true), 1, 'TelekineticGrab scales 10 energy across eight recipe outputs');
+	assert.equal(alchemyEnergyFor('curseInfusion', true), 3, 'CurseInfusion scales 12 energy across four recipe outputs');
+	assert.equal(alchemyEnergyFor('beaconOfReturning', true), 2, 'BeaconOfReturning scales 12 energy across five recipe outputs');
+	assert.equal(alchemyEnergyFor('unstableBrew', true), 8, 'UnstableBrew retains its Java value for when the item is ported');
+	assert.equal(alchemyEnergyFor('unstableSpell', true), 8, 'UnstableSpell retains its Java value for when the item is ported');
 	// `Bomb.EnhanceBomb` (tag `v3.3.8`): invisibility brews a smoke bomb and recharging
 	// a flashbang, 2 energy each - the port's old invisibility-flashbang /
 	// recharging-shockbomb pairing matched a pre-v3.3.8 tree whose ShockBomb Java dropped.
@@ -4260,6 +4289,24 @@ function scrollReadDrive(overrides = {}) {
 		creatures: [{ isHero: false, isNPC: false, isAlly: true, buffs: {}, x: 1, y: 1, name: 'mirror' }],
 	});
 	assert.ok(calm.said.some((l) => l.startsWith('negative:items.scrolls.scrollofterror.none')), 'allies alone mean nothing to scatter');
+//`ScrollOfLullaby.doRead()` (tag `v3.3.8`): drowsy has no ally exception, unlike
+//terror - every visible non-hero non-NPC creature takes it (allies included),
+//plus the reader, with the shared lullaby line. Pinned through the stub's
+//observation calls, like terror.
+const { addCalls: lullabyCalls } = require('./combat.js');
+const awakeA = { isHero: false, isNPC: false, isAlly: false, buffs: {}, x: 1, y: 1 };
+const awakeB = { isHero: false, isNPC: false, isAlly: true, buffs: {}, x: 2, y: 2 };
+const watcher = { isHero: false, isNPC: true, isAlly: false, buffs: {}, x: 3, y: 3 };
+const napStart = lullabyCalls.length;
+const lullaby = scrollReadDrive({
+	items: [{ id: 'scrollLullaby', quantity: 1, identified: true }],
+	creatures: [awakeA, awakeB, watcher],
+});
+assert.equal(lullaby.result, true, 'lullaby reads');
+assert.deepEqual(lullabyCalls.slice(napStart).map((c) => c.target), [awakeA, awakeB, lullaby.hero], 'drowsy reaches foes, allies, and the reader');
+assert.ok(lullabyCalls.slice(napStart).every((c) => c.id === 'drowsy'), 'taking drowsy itself');
+assert.ok(lullaby.said.some((l) => l.includes('port.log.lullaby')), 'singing the shared line');
+assert.deepEqual(lullaby.flags.recalled, ['ScrollOfLullaby'], 'arming its Java class');
 }
 {
 	// A free re-read (RecallInscription's talentChance = 0): the effect runs, but
