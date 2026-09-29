@@ -739,6 +739,13 @@ export function randomUsingDefaults(cat: Cat): GenItem {
 	const def = CATS[cat];
 	if (def.defaultProbs === null || cat === Cat.ARTIFACT) return randomCategory(cat);
 	const i = SpdRandom.chances(def.defaultProbs);
+	if (cat === Cat.POTION) {
+		//`Generator.randomUsingDefaults(Category)` (`items/Generator.java:758-759`) checks the
+		//selected regular class against `ExoticPotion.regToExo` and consumes `Random.Float()`
+		//for ExoticCrystals even at chance 0 (`ExoticCrystals.java:48-55` returns 0 with no trinket).
+		//The port has no ExoticCrystals or exotic-potion model, so retain the draw and regular result.
+		SpdRandom.float();
+	}
 	return itemRandom(cat, def.classes[i < 0 ? 0 : i] ?? def.name);
 }
 

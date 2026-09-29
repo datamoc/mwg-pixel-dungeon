@@ -12,7 +12,7 @@ writeFileSync(join(output, 'cursedWand.cjs'), ts.transpileModule(readFileSync(so
 	compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
 }).outputText);
 const { CURSED_COMMON_EFFECT_IDS, CURSED_RANDOM_AREA_EFFECTS, CURSED_RARE_EFFECT_IDS, CURSED_VERY_RARE_EFFECT_IDS, pickCursedCommonEffect,
-	pickCursedRandomAreaEffect, pickCursedRareEffect, pickCursedVeryRareEffect, cursedForestFireSeeds, cursedGoldenMimicSpawnCell, pickCursedEquipmentSlot, pickCursedTier } = createRequire(import.meta.url)(join(output, 'cursedWand.cjs'));
+	pickCursedRandomAreaEffect, pickCursedRareEffect, pickCursedVeryRareEffect, pickCursedUncommonEffect, cursedForestFireSeeds, cursedGoldenMimicSpawnCell, pickCursedEquipmentSlot, pickCursedTier } = createRequire(import.meta.url)(join(output, 'cursedWand.cjs'));
 
 const rolls = [];
 for (let roll = 0; roll < 100; roll++) {
@@ -64,6 +64,13 @@ assert.deepEqual(cursedInterfloorDepthWeights(11), [1, 2, 3, 4, 5, 6, 7, 8, 9, 1
 assert.deepEqual(cursedInterfloorDepthWeights(15), [0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 assert.equal(cursedInterfloorDepthWeights(26).length, 25);
 assert.deepEqual(cursedInterfloorDepthWeights(26).slice(-10), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+const uncommonWithoutHerbalism = [];
+for (let i = 0; i < 7; i++) {
+	const picked = pickCursedUncommonEffect((bound) => { assert.equal(bound, 7); return i; }, false);
+	assert.notEqual(picked, 'randomPlant', 'Java RandomPlant.valid rejects No Herbalism');
+	uncommonWithoutHerbalism.push(picked);
+}
+assert.deepEqual(new Set(uncommonWithoutHerbalism).size, 7, 'all other uncommon cursed effects retain equal eligibility');
 assert.equal(pickCursedEquipmentSlot(true, false, true, true, (bound) => { assert.equal(bound, 1); return 0; }), 'weapon');
 assert.equal(pickCursedEquipmentSlot(true, true, true, true, (bound) => { assert.equal(bound, 2); return 1; }), 'armor');
 assert.equal(pickCursedEquipmentSlot(false, false, true, false, (bound) => { assert.equal(bound, 1); return 0; }), 'armor');
@@ -75,6 +82,8 @@ assert.match(scene, /this\.depth > 1 && !this\.floorLocked\(\)[\s\S]*?this\.mini
 assert.match(scene, /Java returnPos=-1 selects the destination entrance[\s\S]*?this\.beaconArrival = null/);
 console.log('PASS CursedWand Rare roster dispatches SummonMonsters and preference-picks a curseable gear slot.');
 assert.match(scene, /effect === 'randomAreaEffect'/);
+assert.match(scene, /pickCursedUncommonEffect\(\(bound\) => Random\.int\(bound\), !isPlantBlocked\(\)\)/,
+	'RandomPlant is excluded from the eligible effect pool under No Herbalism');
 assert.match(scene, /this\.fire\.seed\(x, y, 2\)/);
 assert.match(scene, /this\.plantFreeze\.seed\(x, y, 10\)/);
 assert.match(scene, /this\.electricity\.seed\(x, y, 10\)/);

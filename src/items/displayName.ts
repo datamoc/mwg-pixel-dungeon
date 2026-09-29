@@ -119,6 +119,7 @@ export interface ItemDisplayContext {
 
 /** Resolves the player-facing name of a bag item, including appearances and enhancement notes. */
 export function itemDisplayName(scene: ItemDisplayContext, id: string, identified: boolean, instanceId?: string): string {
+	if (id === 'toolkit' && instanceId === 'toolkit-energize') return t('items.artifacts.alchemiststoolkit.ac_energize');
 	//`LloydsBeacon.actions()`'s own `AC_ZAP`/`AC_SET`/`AC_RETURN` labels: `useBeaconArtifact`'s
 	//picker rows all share the real `beacon` id (so its own icon/frame render correctly), and
 	//distinguish themselves only by these synthetic instance ids - the same trick

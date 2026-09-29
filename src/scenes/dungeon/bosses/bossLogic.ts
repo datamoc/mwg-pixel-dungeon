@@ -8,6 +8,7 @@ import { planRatKingWave, ratKingP1Summon, type RatKingAddKind, type RatKingWave
 import { chooseDM300Ability, dm300VentPath, planDM300Knockback, planDM300Rockfall } from '../../../simulation/dm300Boss';
 import { aimYogDeathGaze } from '../../../simulation/yogBoss';
 import { preparationLevel } from '../../../simulation/preparation';
+import { isOpenSpace } from '../../../simulation/crystalSpire';
 import { CLASS_KEYS, has, t, titleCase } from '../../../i18n/index';
 import { bountyHunterDropBonus, rejuvenatingStepHeal } from '../../../talentEffects';
 import { SpdRandom, spdSeedForDepth } from '../../../spdRng';
@@ -23,7 +24,7 @@ import { teleportCandidates, type TeleportCell } from '../../../simulation/telep
 import { randomPatrolDestination as randomPatrolDestinationFlow } from '../../../simulation/wandering';
 import { DOOR, DOOR_CLOSED, EMBERS, FLOOR, GRASS, HIGH_GRASS, TILE, TRAP, WALL, WATER, type TrapKind } from '../../../dungeonConstants';
 import { addBuff, buffBlocked, doomDamage, reigniteBuff, rollDamage, rollHit, setBleeding, type Creature, type Step } from '../../../combat';
-import { IMMATERIAL_KINDS, IMMOVABLE_KINDS, YOG_FIST_SUMMON_STATS, liveStats } from '../../../monsters';
+import { IMMATERIAL_KINDS, IMMOVABLE_KINDS, YOG_FIST_SUMMON_STATS, isLargeCreature, liveStats } from '../../../monsters';
 
 /** DungeonScene methods, moved verbatim from `dungeonScene.ts` (group `bossLogic`). Each takes the scene as `this`;
  * `dungeonScene.ts` merges them back onto the class prototype. */
@@ -1445,16 +1446,18 @@ export const bossLogicMethods = {
 		});
 	},
 
-	randomFreeCell(this: DungeonScene, exclude: Step): Step | undefined {
+	randomFreeCell(this: DungeonScene, exclude?: Step & Partial<Creature>): Step | undefined {
 		//`ScrollOfTeleportation.teleportChar` (`items/scrolls/ScrollOfTeleportation.java`, tag
 		//`v3.3.8`) lands on `Level.randomRespawnCell`: passable, unoccupied, outside the
 		//hero's FOV, with secret cells re-rolled (up to 20 tries before `no_tele`). The port
 		//collects the accepted set instead of probing with a cap, so it never fails spuriously
 		//where Java can return -1. Chasms read passable in this port's level (the hero can
 		//fall in), so they need the explicit refusal Java's own `passable[]` gives it.
-		//LARGE chars needing `openSpace` stay unmodeled here (LARGE kinds and `isOpenSpace` exist now, but this respawn draw still doesn't gate), as does
-		//`teleportPreferringUnseen`'s unseen-room preference for the scroll itself.
+		//Java `Level.randomRespawnCell(ch)` also requires `openSpace` for LARGE chars;
+		//`isLargeCreature` includes the rusted Yog fist subtype. The scroll's own
+		//`teleportPreferringUnseen` room preference remains outside this shared draw.
 		const cells: TeleportCell[] = [];
+		const large = !!exclude && !exclude.isHero && isLargeCreature(exclude.kind, exclude.yogFistType);
 		for (let y = 1; y < this.level.height - 1; y++) {
 			for (let x = 1; x < this.level.width - 1; x++) {
 				cells.push({
@@ -1462,14 +1465,18 @@ export const bossLogicMethods = {
 					passable: this.level.passable(x, y),
 					//`creatureAt` returns null for an empty cell; comparing against undefined marked every cell
 					//occupied, so no random teleport (fadeleaf, displacement, the scroll's fallback) ever found a cell.
-					occupied: (x === exclude.x && y === exclude.y) || this.creatureAt(x, y) !== null,
+					occupied: (!!exclude && x === exclude.x && y === exclude.y) || this.creatureAt(x, y) !== null,
 					visible: this.fov.isVisible(x, y),
 					secret: this.secrets.isSecret(x, y),
 					chasm: this.isChasmCell(x, y),
+					openSpace: isOpenSpace(this.level.index(x, y), this.level.width, (cell) => {
+						const sx = cell % this.level.width, sy = Math.floor(cell / this.level.width);
+						return !this.level.inside(sx, sy) || !this.level.passable(sx, sy);
+					}),
 				});
 			}
 		}
-		return Random.element(teleportCandidates(cells)) ?? undefined;
+		return Random.element(teleportCandidates(cells, large)) ?? undefined;
 	},
 
 	/** `Level.randomDestination(Mob)`: Java samples any passable cell, while the port also

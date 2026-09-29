@@ -12,26 +12,26 @@ import { lethalHasteDuration, soulSiphonCharge } from '../../talentEffects';
 import { SpdRandom } from '../../spdRng';
 import { runState } from '../../runState';
 import { recordRun } from '../../rankings';
-import { isChallengeEnabled } from '../../challenges';
+import { isChallengeEnabled, isItemBlocked } from '../../challenges';
 import { PRISMATIC_FADE_TURNS } from '../../simulation/prismatic';
 import { shieldOfLightRange } from '../../simulation/clericSpells';
 import { absorbEarthrootArmor } from '../../simulation/plantPools';
-import { mobLootChance } from '../../simulation/mobLoot';
+import { eyeLootOutcome, gnollTricksterMissileQuantity, mobLootChance } from '../../simulation/mobLoot';
 import { SKELETON_BONE_NEIGHBOURS, skeletonBoneEarthrootDamage, skeletonBoneExplosionDamage, skeletonBoneShieldOfLightDamage } from '../../simulation/skeletonExplosion';
 import { CLASS_AMMO } from '../../classes';
 import { applyDM300DeathUnseal, applyGooDeathUnseal, applyKingDeathUnseal, applyYogDeathUnseal } from '../bossUnseal';
 import { processSacrifice } from '../../simulation/environmentalBlobs';
-import { buildYogMinionDeck, chooseYogSpawnCell } from '../../simulation/yogBoss';
+import { buildYogMinionDeck, chooseYogSpawnCell, yogBossChallengeQualified } from '../../simulation/yogBoss';
 import { deathBurstsFor } from '../../simulation/deathBursts';
 import { colorblind, highContrast } from '../../settings';
 import { ringTypesKnownFor } from '../../simulation/ringKnow';
 import { staffImbueFor } from '../../items/wands';
 import { Banner } from '../../ui/banner';
-import { bruteLootArmor, randomArmor, randomUsingDefaultsAnyCategory, type GenItem } from '../../items/generator';
+import { bruteLootArmor, randomArmor, randomMissile, randomUsingDefaults, randomUsingDefaultsAnyCategory, Cat, type GenItem } from '../../items/generator';
 import { generatedInventoryItem } from '../../items/generatedItems';
 import { initialiseWealthTrackers, planWealthDrops, wealthEquipBonus, type WealthTrackers } from '../../items/wealthDrops';
 import { wandmakerQuestType, wandmakerQuestWands } from '../../spdLevelGen/wandmaker';
-import { FLOOR, TILE, WALL, WATER, WATERSKIN_MAX } from '../../dungeonConstants';
+import { FLOOR, SOLID, TILE, WALL, WATER, WATERSKIN_MAX } from '../../dungeonConstants';
 import { regionForDepth } from '../../genericDungeon';
 import { BUFF_DURATION, addBuff, buffBlocked, doomDamage, reigniteBuff, rollHit, type BuffId, type Creature, type GroundItem } from '../../combat';
 import { BOSSES, BOSS_KINDS, LIMITED_DROP_DECAY, MINIBOSS_KINDS, MOB_LOOT, MONSTERS, type AnyMonsterId, type MonsterId } from '../../monsters';
@@ -554,7 +554,40 @@ export const deathSaveRefreshMethods = {
 				this.spawnGroundItem(groundKindForItem(item, 'armor'), creature.x, creature.y, item);
 				this.say(t('port.log.drops', { who: capitalize(creature.name), item: t(GROUND_ITEM_KEYS.armor) }));
 			}
-			for (const entry of MOB_LOOT[creature.kind] ?? []) {
+			//`GnollTrickster.createLoot()` (`GnollTrickster.java`, tag `v3.3.8`) always
+			//generates a random MISSILE-category weapon, then sets level 0, clears curses,
+			//and halves its default quantity rounded up. A generic `stone` loot row cannot
+			//represent that class/payload; retain the category generator's depth-tier roll.
+			if (!overleveled && creature.kind === 'gnollTrickster') {
+				if (Actors.rollLoot({ entries: [{ id: 'drop', weight: 1 }], chance: 1 })) {
+					const item = generatedInventoryItem(randomMissile(), { newItemInstanceId: (kind) => this.newItemInstanceId(kind) });
+					item.level = 0;
+					item.cursed = false;
+					item.quantity = gnollTricksterMissileQuantity(item.quantity);
+					item.identified = false;
+					this.spawnGroundItem('stone', creature.x, creature.y, item);
+				}
+			}
+			//`Eye.createLoot()` (`Eye.java`, tag `v3.3.8`) rolls `Random.Int(4)`: two
+			//outcomes return a Dewdrop and also drop a second Dewdrop on a random nearby
+			//valid cell; the other outcomes return a default Seed or Runestone.
+			if (!overleveled && creature.kind === 'eye') {
+				const roll = Random.int(0, 4);
+				const outcome = eyeLootOutcome(roll);
+				if (outcome === 'dewdrop') {
+					this.spawnGroundItem('dewdrop', creature.x, creature.y);
+					const neighbours = Roguelike.neighbourOffsets(8)
+						.map(([dx, dy]) => ({ x: creature.x + dx, y: creature.y + dy }))
+						.filter(({ x, y }) => this.level.inside(x, y) && (this.level.get(x, y) !== SOLID || this.level.passable(x, y)));
+					const at = Random.element(neighbours);
+					if (at) this.spawnGroundItem('dewdrop', at.x, at.y);
+				} else {
+					const generated = randomUsingDefaults(outcome === 'seed' ? Cat.SEED : Cat.STONE);
+					const item = generatedInventoryItem(generated, { newItemInstanceId: (kind) => this.newItemInstanceId(kind) });
+					this.spawnGroundItem(outcome, creature.x, creature.y, item);
+				}
+			}
+			for (const entry of (creature.kind === 'gnollTrickster' || creature.kind === 'eye' ? [] : MOB_LOOT[creature.kind] ?? [])) {
 				//Mob.rollToDropLoot()'s own `maxLvl + 2` gate, sharing `overleveled` above.
 				if (overleveled) break;
 				//Dungeon.LimitedDrops: Bat/Necromancer/Guard each scale their own lootChance()
@@ -593,6 +626,9 @@ export const deathSaveRefreshMethods = {
 					//field. Every other MOB_LOOT `armor` entry keeps its authored kind unchanged.
 					const kind = (creature.kind === 'dm200' || creature.kind === 'golem') && entry.kind === 'armor' && Random.chance(0.5)
 						? 'weapon' : entry.kind;
+					//`Level.drop()` returns null for Java's `Challenges.isItemBlocked()` items;
+					//do not print the port's drop notice when No Herbalism suppresses a Dewdrop.
+					if (isItemBlocked(kind)) break;
 					// `PhantomPiranha` inherits Piranha's guaranteed food drop but its
 					// Java `loot` class is `PhantomMeat`, not `MysteryMeat`.
 					const payload = creature.kind === 'phantomPiranha' && kind === 'meat'
@@ -782,7 +818,11 @@ export const deathSaveRefreshMethods = {
 				this.say(t('port.log.pickup', { item: t('items.kingscrown.name') }), 'positive');
 			}
 			if (creature.kind === 'yog') {
-				if (this.qualifiedForBossChallenge) this.awardBadge('boss_challenge_yog');
+				//`YogDzewa.die()` awards this only for STRONGER_BOSSES with all four
+				//DemonSpawners alive; unlike the other boss challenges, it does not use
+				//the general weapon-only qualification flag.
+				const livingSpawners = this.creatures.filter((c) => c.kind === 'demonSpawner' && c.hp > 0).length;
+				if (yogBossChallengeQualified(isChallengeEnabled('stronger_bosses'), livingSpawners)) this.awardBadge('boss_challenge_yog');
 				//`YogDzewa.die()` kills every summoned minion: Larva, YogRipper, YogEye,
 				//YogScorpio (fists die through their own `YogFist.die()` cascade). The list
 				//used to omit `'larva'`, so larvae outlived their summoner - found by the
@@ -1166,7 +1206,7 @@ export const deathSaveRefreshMethods = {
 		for (let y = 0; y < this.level.height; y++) for (let x = 0; x < this.level.width; x++) {
 			this.waterSurface?.setCellColor(x, y, this.fov.isExplored(x, y) || this.fov.isVisible(x, y) ? 0xffffff : 0);
 		}
-		this.fog?.refresh(this.visualTerrainAt, (x, y) =>
+		this.fog?.update(this.visualTerrainAt, (x, y) =>
 			this.fov.isVisible(x, y) ? 0 : this.fov.isExplored(x, y) ? 1 : 3);
 		this.wallBlocking?.setLayerData('blocking', Array.from(this.tileVariance, (_, cell) =>
 			this.depth === 25 ? -1 : wallBlockingFrame(cell % this.level.width, Math.floor(cell / this.level.width),
@@ -1434,6 +1474,7 @@ export const deathSaveRefreshMethods = {
 			wealthDropsToEquip: this.wealthDropsToEquip,
 			suckerPunchTargets: [...this.suckerPunchTargets],
 			upgradeScrollDrops: this.upgradeScrollDrops,
+			cookingHpCount: this.cookingHpCount,
 			blacksmithAlternative: this.blacksmithAlternative,
 			blacksmithQuestType: this.blacksmithQuestType,
 			blacksmithQuestStarted: this.blacksmithQuestStarted,
@@ -1597,7 +1638,6 @@ export const deathSaveRefreshMethods = {
 			sungrassPos: this.sungrassPos,
 			deathlessFuryUsed: this.deathlessFuryUsed,
 			alchemyEnergy: this.alchemyEnergy,
-			cookingHpCount: this.cookingHpCount,
 			weaponAffix: this.weaponAffix,
 			weaponCurseDurability: this.weaponCurseDurability,
 			weaponAugment: this.weaponAugment,

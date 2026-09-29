@@ -156,7 +156,7 @@ Do not add new authored content as object literals or scattered constants in the
       (`AlchemicalCatalyst.Recipe`/`ArcaneCatalyst.Recipe` - a regular potion/scroll plus a
       concrete seed or runestone, Java's zero/one energy cost by secondary ingredient, and
       `randomAlchemicalPotion`/`randomArcaneScroll` reproducing Java's weighted regular-class
-      pools including the `no_healing` challenge's reroll), `craftScrollToStone`
+      pools), `craftScrollToStone`
       (`Scroll.ScrollToStone`, any of the twelve eligible regular scrolls to its matching
       runestone pair), `craftPotionSeed` (`Potion.SeedToPotion.brew()`, three carried seed units
       to a regular potion with Java's 1/4 and 1/2 random-result chances for two/three distinct

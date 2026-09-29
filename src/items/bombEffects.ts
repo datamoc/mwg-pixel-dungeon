@@ -21,7 +21,7 @@ export interface BombEffectsContext {
 	readonly spawnSheep: (at: Step) => void;
 	readonly seedFire: (x: number, y: number, duration: number) => void;
 	readonly seedSmoke: (x: number, y: number, volume: number) => void;
-	readonly plantBloomingGrass: (x: number, y: number) => void;
+	readonly growRegrowthBomb: (x: number, y: number) => void;
 	readonly cureHeroBuffs: () => void;
 	readonly noHealing: boolean;
 	readonly healHeroFromRegrowth: () => void;
@@ -232,14 +232,16 @@ export function detonateBomb(ground: GroundItem, chained: Set<string>, context: 
 		if (plan.centerVolume > 0) context.seedSmoke(at.x, at.y, plan.centerVolume);
 	}
 	else if (payload === 'regrowthBomb') {
+		//Simplification: Java's RegrowthBomb heals and cures every aligned character in its flood;
+		//this adapter currently exposes potion cures/healing only for the hero (`Bomb.java`/`RegrowthBomb.java`).
 		context.cureHeroBuffs();
 		if (context.noHealing) {
 			if (!buffBlocked(context.hero, 'poison')) context.hero.buffs['poison'] = mwlItemEffectValue('regrowthBomb', 'noHealingPoisonBase')
 				+ Math.floor(context.progressionLevel / mwlItemEffectValue('regrowthBomb', 'noHealingPoisonLevelDivisor'));
 			context.onPharmacophobia();
 		} else context.healHeroFromRegrowth();
-		const radius = mwlItemEffectValue('regrowthBomb', 'bloomRadius');
-		for (let y = at.y - radius; y <= at.y + radius; y++) for (let x = at.x - radius; x <= at.x + radius; x++) if (context.level.inside(x, y) && Roguelike.chebyshevDistance(at, { x, y }) <= radius) context.plantBloomingGrass(x, y);
+		//RegrowthBomb adds a Regrowth blob and seeds through Level.plant(); it does not instantly paint blooming grass.
+		context.growRegrowthBomb(at.x, at.y);
 	}
 	else if (payload === 'arcaneBomb') {
 		for (const target of affected) if (!target.magicImmune && applyBlastDamage(target, Math.round(Random.normalRange(lo, hi)), rule.piercesArmor, context)) heroDied = true;

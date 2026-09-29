@@ -106,13 +106,16 @@ function tableRows(id) {
 }
 
 function validateRosterReferences() {
-  for (const tableId of ['monsterRosterByDepth', 'monsterRosterFallback']) {
-    for (const row of tableRows(tableId)) {
-      for (const id of row.roster ?? []) {
-        if (!monsterIds.has(String(id))) throw new Error(`MWL roster ${tableId} references unknown monster: ${id}`);
-      }
-    }
-  }
+	const rows = tableRows('monsterRosterByDepth');
+	const depths = new Set(rows.map((row) => Number(row.depth)));
+	for (let depth = 1; depth <= 26; depth++) {
+		if (!depths.has(depth)) throw new Error(`MWL monsterRosterByDepth is missing Java depth ${depth}`);
+	}
+	for (const row of rows) {
+		for (const id of row.roster ?? []) {
+			if (!monsterIds.has(String(id))) throw new Error(`MWL roster monsterRosterByDepth references unknown monster: ${id}`);
+		}
+	}
 }
 
 function validateBossReferences() {

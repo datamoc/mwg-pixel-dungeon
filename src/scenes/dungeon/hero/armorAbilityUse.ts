@@ -1406,15 +1406,18 @@ export const armorAbilityUseMethods = {
 			if (occupant && occupant !== this.hero) {
 				const telefrag = this.talentRank('telefrag');
 				if (telefrag > 0) {
-					//`Math.min(heroDmg, heroHP-1)`: the self-inflicted half can never kill the hero, and
-					//it is a real hit (armor, shields, Tenacity and the rest apply through the usual
-					//hero-damage boundary).
+					//`WarpBeacon.java` (tag v3.3.8) computes this half itself - `Math.min(5*points,
+					//HP + shielding() - 1)` - and then calls `hero.damage(...)`: Java's own `Hero.damage()`
+					//-> `Char.damage()` boundary (Endure/Tenacity, shields, Doom x1.67, the floater). The
+					//port keeps Java's clamp as the roll and finishes the hit through the shared dispatch;
+					//this used to hand-roll the hero branch's absorb + HP write + floater beside it, which
+					//are exactly the lines that branch runs, so non-fatal results are identical while the
+					//fatal booking Java has is no longer skipped (only Doom's multiply can get there, as
+					//in Java - the clamp blocks the direct hit). `magical: true` because `WarpBeacon.class`
+					//sits in Java's `AntiMagic.RESISTS` (Char.java), so the hero's AntiMagic glyph `drRoll`
+					//applies, as it does in Java.
 					const selfDamage = Math.min(5 * telefrag, this.hero.hp + this.heroBarrier.total - 1);
-					if (selfDamage > 0) {
-						const dealt = this.absorbHeroDamage(selfDamage);
-						this.hero.hp -= dealt;
-						this.showDamage(this.hero, dealt);
-					}
+					if (selfDamage > 0) this.applyCharacterDamage(this.hero, selfDamage, { pierceArmor: true, cause: 'foe', magical: true });
 					this.applyAbilityDamage(occupant, Random.normalRange(10 * telefrag, 15 * telefrag));
 				}
 				//Java pushes the occupant to a random free neighbour from a shuffled candidate list.

@@ -383,7 +383,7 @@ export function verifyArmorAbilities(require, check) {
 	check('castCursedWandUncommonEffect ports all 8 of CursedWand.cursedZap\'s Uncommon effects', () => {
 		const source = readSceneSource();
 		for (const marker of [
-			"pickCursedUncommonEffect((bound) => Random.int(bound))",
+			"pickCursedUncommonEffect((bound) => Random.int(bound), !isPlantBlocked())",
 			"effect === 'healthTransfer'",
 			"effect === 'geyser'",
 			"effect === 'summonSheep'",
@@ -1026,6 +1026,24 @@ export function verifyArmorAbilities(require, check) {
 			'the recall must read the LARGE property off the occupant');
 		assert.match(source, /\(!pushLarge \|\| isOpenSpace\(this\.level\.index\(next\.x, next\.y\), pushWidth, pushSolid\)\)/,
 			'a large occupant must only move into open space');
+	});
+	check('The WarpBeacon telefrag self-hit finishes through the shared Char.damage dispatch', () => {
+		//`WarpBeacon.java` (tag v3.3.8): Java computes `Math.min(heroDmg, heroHP-1)` itself and
+		//then calls `hero.damage(...)`, i.e. the full Hero.damage() -> Char.damage() boundary.
+		//The port must keep that Java clamp as the roll and route the hit through
+		//`applyCharacterDamage`'s hero branch rather than hand-rolling absorb + HP write +
+		//floater beside it (the old shape); `magical: true` is required because
+		//`WarpBeacon.class` sits in Java's `AntiMagic.RESISTS` (the glyph `drRoll` gate).
+		//Pinned at source level like the checks above: the scene cannot load in this harness.
+		const source = readSceneSource();
+		const warp = /	warpToBeacon\(this: DungeonScene[^)]*\)[\s\S]*?telefrag > 0[\s\S]*?\n\t\},/.exec(source);
+		assert.ok(warp, 'warpToBeacon still exists');
+		assert.match(warp[0], /Math\.min\(5 \* telefrag, this\.hero\.hp \+ this\.heroBarrier\.total - 1\)/,
+			'the clamp must stay Java\'s own `Math.min(heroDmg, heroHP-1)`');
+		assert.match(warp[0], /if \(selfDamage > 0\) this\.applyCharacterDamage\(this\.hero, selfDamage, \{ pierceArmor: true, cause: \'foe\', magical: true \}\)/,
+			'the self-hit must finish through the shared dispatch with Java\'s RESISTS magic flag');
+		assert.ok(!/this\.hero\.hp -=/.test(warp[0]),
+			'no hand-rolled hero HP write may remain in the telefrag');
 	});
 	check('CombinedLethality tests only on a weapon-changed hero melee swing, executing at `0.4*points/3`', () => {
 		//`Char.java` 541-561: the tracker's weapon must differ from the attacking weapon

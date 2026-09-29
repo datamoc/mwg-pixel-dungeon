@@ -118,6 +118,11 @@ export function wandDamageRange(type: WandType, level: number): [number, number]
 	return [rule.minBase + rule.minPerLevel * safeLevel, rule.maxBase + rule.maxPerLevel * safeLevel];
 }
 
+/** `WandOfPrismaticLight.onZap()` (`items/wands/WandOfPrismaticLight.java:73-76`): Light lasts `2+level` under DARKNESS and `10+5*level` otherwise. The caller gates this on base Level.viewDistance < 6, using DARKNESS/Halls/final depth ids because `viewRadius()` includes Light itself. */
+export function prismaticWandLightDuration(level: number, darknessChallenged: boolean): number {
+	return darknessChallenged ? 2 + level : 10 + 5 * level;
+}
+
 /** `WandOfLivingEarth.damageRoll()`: `NormalIntRange(2, 4 + scalingDepth()/2)` - the
  * only wand roll that scales with depth instead of wand level, so it cannot live in the
  * level-parameterized MWL damage table (which carries no livingEarth row). `depth` is the

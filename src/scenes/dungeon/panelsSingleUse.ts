@@ -1,5 +1,6 @@
 import type { DungeonScene } from '../dungeonScene';
 import { fallenItemStore } from './fallenItems';
+import { growRegrowthBomb } from './regrowthBomb';
 import { InfoWindow } from '../../ui/infoWindow';
 import { buffInfo } from '../../ui/buffInfo';
 import { recallTrackedPortId } from '../../items/scrollEffects';
@@ -100,7 +101,6 @@ export const panelsSingleUseMethods = {
 		this.miningBranchActive = s.miningBranchActive ?? false;
 		this.heroStr = s.str ?? MWL_HERO_BASE_STATS.strength;
 		this.alchemyEnergy = s.alchemyEnergy ?? 0;
-		this.cookingHpCount = s.cookingHpCount ?? 0;
 		this.reclaimedTrap = s.reclaimedTrap ?? null;
 		this.heroAttackSkill = s.attackSkill ?? MWL_HERO_BASE_STATS.attackSkill;
 		this.heroDefenseSkill = s.defenseSkill ?? MWL_HERO_BASE_STATS.defenseSkill;
@@ -284,6 +284,7 @@ export const panelsSingleUseMethods = {
 		this.wealthDropsToEquip = s.wealthDropsToEquip ?? -1;
 		this.suckerPunchTargets = new Set(s.suckerPunchTargets ?? []);
 		this.upgradeScrollDrops = s.upgradeScrollDrops ?? 0;
+		this.cookingHpCount = s.cookingHpCount ?? 0;
 		this.blacksmithAlternative = s.blacksmithAlternative ?? this.blacksmithAlternative;
 		this.blacksmithQuestType = s.blacksmithQuestType ?? this.blacksmithQuestType;
 		//A save from before the entry prompt existed and already inside the quest keeps its access.
@@ -1151,8 +1152,9 @@ export const panelsSingleUseMethods = {
 			set alchemyEnergy(value: number) { scene.alchemyEnergy = value; },
 			get cookingHpCount() { return scene.cookingHpCount; },
 			set cookingHpCount(value: number) { scene.cookingHpCount = value; },
+			get magicImmune() { return scene.hero.magicImmune ?? false; },
+			viaToolkit: false,
 			onArtifactUsed: () => scene.armEnhancedRingsFromArtifact(),
-			isMagicImmune: () => Boolean(scene.hero.magicImmune),
 			say: this.say.bind(this),
 			openItemPicker: (title, entries, onPick) => this.openItemPicker(title, entries, onPick),
 			itemDisplayName: (id, identified) => this.itemDisplayName(id, identified),
@@ -1633,7 +1635,7 @@ export const panelsSingleUseMethods = {
 			spawnSheep: (at) => this.spawnSheep(at, this.depth in BOSSES ? 20 : 200),
 			seedFire: (x, y, duration) => this.fire.seed(x, y, duration),
 			seedSmoke: (x, y, volume) => this.smokeScreen.seed(x, y, volume),
-			plantBloomingGrass: (x, y) => this.plantBloomingGrass(x, y),
+			growRegrowthBomb: (x, y) => growRegrowthBomb(this, x, y),
 			cureHeroBuffs: () => this.cureHeroBuffs(),
 			noHealing: isChallengeEnabled('no_healing'),
  			healHeroFromRegrowth: () => {

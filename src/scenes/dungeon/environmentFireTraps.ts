@@ -27,6 +27,8 @@ import { Terrain } from '../../spdLevelGen/paintLevel';
 import { Feeling } from '../../spdLevelGen/regularPainter';
 import { mwlTrapTable } from '../../spdLevelGen/mwlDungeonRules';
 import { runState } from '../../runState';
+import { applyPlantChallengeTerrain } from './plantChallenge';
+import { isChallengeEnabled } from '../../challenges';
 import { useFireblastWand as useFireblastWandEffect, useRegrowthWand as useRegrowthWandEffect, useTransfusionWand as useTransfusionWandEffect, useWardingWand as useWardingWandEffect } from '../../items/wandEffects';
 import { coneCells } from '../../mechanics/cone';
 import { traceRayToTarget } from '../../mechanics/rays';
@@ -42,7 +44,6 @@ import { ignoresCrystalGuardianBeckon } from '../../simulation/crystalSpire';
 import { mwlItemEffectValue } from '../../mwlContent';
 import { applySandalsNaturalismCharge, sandalsNaturalismLevel } from '../../items/sandals';
 import { regrowthMethods } from './regrowth';
-import { gatewayGuardianTrapMethods } from './gatewayGuardianTraps';
 import { DOOR, DOOR_CLOSED, EMBERS, FLOOR, GRASS, HIGH_GRASS, TILE, TRAP, WALL, WATER, modeledTrapTable, sewerTrapTable, type TrapKind } from '../../dungeonConstants';
 import { regionForDepth, type Region } from '../../genericDungeon';
 import { addBuff, applyElementalBacklash, buffBlocked, electricDamageHalved, explosiveTrapBounds, grimTrapDamage, icyBuffImmune, reigniteBuff, rollDamage, setBleeding, type Creature, type GroundItem, type Step } from '../../combat';
@@ -50,6 +51,23 @@ import { applyChillFreeze } from '../../simulation/buffs';
 import { BLOB_IMMUNE_KINDS, BOSSES, FLYING_KINDS, IMMOVABLE_KINDS, INORGANIC_KINDS, MONSTERS, UNDEAD_KINDS, mobRosterForDepth, type AnyMonsterId, type MonsterId } from '../../monsters';
 import { ETERNAL_FIRE_BURN, wardTexture, type BonesShape } from './shared';
 import { spawnTrapSpecks } from '../../ui/effectBursts';
+import { nonSolidDistanceMap } from '../../simulation/trapAreas';
+import { tenguDartPoisonAmount } from '../../simulation/tenguDart';
+
+/** Java traps flood cells where `!level.solid`; this floor model exposes passability plus pit identity. */
+function trapAreaDistances(scene: DungeonScene, x: number, y: number, maxDistance: number): number[] {
+	const width = scene.level.width;
+	return nonSolidDistanceMap(width, scene.level.height, scene.level.index(x, y),
+		Roguelike.neighbourOffsets(8).map(([dx, dy]) => dy * width + dx),
+		(cell) => {
+			const cx = cell % width, cy = Math.floor(cell / width);
+			return scene.level.inside(cx, cy) && (scene.level.passable(cx, cy) || scene.isChasmCell(cx, cy));
+		}, maxDistance);
+}
+
+function isNonSolidTrapCell(scene: DungeonScene, x: number, y: number): boolean {
+	return scene.level.inside(x, y) && (scene.level.passable(x, y) || scene.isChasmCell(x, y));
+}
 
 /** DungeonScene methods, moved verbatim from `dungeonScene.ts` (group `environmentFireTraps`). Each takes the scene as `this`;
  * `dungeonScene.ts` merges them back onto the class prototype. */
@@ -57,19 +75,15 @@ import { spawnTrapSpecks } from '../../ui/effectBursts';
 type UtilityTrap = 'alarm' | 'teleportation' | 'summoning' | 'chilling' | 'ooze' | 'flock' | 'warping' | 'gripping' | 'rockfall' | 'pitfall' | 'frost' | 'geyser' | 'gateway' | 'guardian';
 const UTILITY_TRAPS: ReadonlySet<TrapKind> = new Set<TrapKind>(['alarm', 'teleportation', 'summoning', 'chilling', 'ooze', 'flock', 'warping', 'gripping', 'rockfall', 'pitfall', 'frost', 'geyser', 'gateway', 'guardian']);
 function isUtilityTrap(kind: TrapKind): kind is UtilityTrap { return UTILITY_TRAPS.has(kind); }
-/** The utility traps that get no blanket 3x3 `markHazardArea` after the activation. Alarm, Summoning,
-	* Pitfall and Guardian never touch `HazardAssistTracker` in Java (`v3.3.8`); the rest mark from INSIDE
-	* `activateUtilityTrap`, at the scope and moment their own `activate()` does (R007/R075): Gripping the
-	* non-flying stepper, Rockfall each char of its room/5x5 before the hit, Frost every mob in its
-	* distance-2 flood, Flock every mob already standing in the flood, Ooze non-flying mobs on non-solid
-	* cells, Teleportation/Warping (`WarpingTrap.activate()` calls `super`) only a teleported HUNTING mob,
-	* Gateway only the hunting mob it relocates. Chilling keeps the ordinary 3x3 area mark. */
-const UNMARKED_TRAPS: ReadonlySet<TrapKind> = new Set<TrapKind>(['alarm', 'teleportation', 'summoning', 'flock', 'warping', 'gripping', 'pitfall', 'gateway', 'guardian', 'frost', 'rockfall', 'ooze']);
+/** The utility traps that aim at no one, so mark no mob for the hazard-assist tracker (Freezing
+ * and Ooze are gas/buff producers like the shock and gas traps, and stay marked; Gateway marks
+ * only the hunting mob it relocates on the linking trigger, Guardian only beckons). */
+const UNMARKED_TRAPS: ReadonlySet<TrapKind> = new Set<TrapKind>(['alarm', 'teleportation', 'summoning', 'flock', 'warping', 'gripping', 'pitfall', 'gateway', 'guardian']);
+const PRE_DAMAGE_HAZARD_TRAPS: ReadonlySet<TrapKind> = new Set<TrapKind>(['grim', 'poisonDart', 'tenguDart', 'wornDart', 'explosive', 'rockfall']);
 function isUnmarkedTrap(kind: TrapKind): boolean { return UNMARKED_TRAPS.has(kind); }
 
 export const environmentFireTrapsMethods = {
 	...regrowthMethods,
-	...gatewayGuardianTrapMethods,
 	...missileThrowConfirmationMethods,
 	scrollEffectsContext(this: DungeonScene): ScrollEffectsContext {
 		return {
@@ -394,6 +408,8 @@ export const environmentFireTrapsMethods = {
 			spawnLotus: (cell, wandLevel) => this.spawnLotus(cell, wandLevel),
 			seedPlantKind: (sourceClass) => this.seedPlantKind(sourceClass),
 			placePlant: (cell, kind) => {
+				//WandOfRegrowth uses Level.plant(): preserve terrain effects, then suppress under NO_HERBALISM (Java Level.java:1038).
+				if (applyPlantChallengeTerrain(this, cell % this.level.width, Math.floor(cell / this.level.width))) return;
 				this.manualPlants.set(cell, kind);
 				this.placePortedFeature(cell, kind);
 			},
@@ -410,7 +426,6 @@ export const environmentFireTrapsMethods = {
 			message: t('port.log.wandregrowth'),
 		});
 	},
-
 	/**
 	 * `WandOfFireblast.onZap()` (checked against tag v3.3.8). Java's order: seed `1 + charges` of
 	 * Fire on every cone cell except the caster's own, holding back only the cells adjacent to the
@@ -639,7 +654,8 @@ export const environmentFireTrapsMethods = {
 				const kind = plant.kind.slice('wellWater:'.length) as 'awareness' | 'health' | 'waterOfAwareness' | 'waterOfHealth';
 				this.portedWellWater.set(plant.pos, kind);
 				this.placePortedFeature(plant.pos, `well:${kind}`);
-			} else {
+			} else if (!applyPlantChallengeTerrain(this, plant.pos % floor.paint.w, Math.floor(plant.pos / floor.paint.w))) {
+				//Room seeds also use Level.plant(); the helper retains its terrain conversion first.
 				this.placePortedFeature(plant.pos, plant.kind);
 			}
 		}
@@ -1425,7 +1441,6 @@ export const environmentFireTrapsMethods = {
 		//reveal state, tag `v3.3.8`) - only the reveal itself needs the secret check.
 		if (this.secrets.isSecret(x, y)) this.secrets.discover(x, y);
 		const kind = this.trapKinds.get(this.level.index(x, y)) ?? 'poisonDart';
-		let fallAfter = false;
 		this.featuresMap?.setLayerData('features', this.featureFrames());
 
 		if (kind === 'toxic') {
@@ -1459,7 +1474,7 @@ export const environmentFireTrapsMethods = {
 				const nx = x + dx, ny = y + dy;
 				if (this.level.inside(nx, ny) && this.level.passable(nx, ny)) this.fire.seed(nx, ny, 2);
 			}
-		} else if (kind === 'poisonDart') {
+		} else if (kind === 'poisonDart' || kind === 'tenguDart') {
 			//`PoisonDartTrap.activate()` (tag `v3.3.8`): 4-8 minus a full `drRoll()`, plus
 			//depth-scaled poison. The old roll skipped armor entirely, which is why darts
 			//hit the early cloth hero so hard.
@@ -1469,7 +1484,10 @@ export const environmentFireTrapsMethods = {
 			this.showDamage(this.hero, damage);
 			this.say(t('port.log.trap.poisondart', { damage }), 'negative');
 			addBuff(this.hero, 'poison');
-			if (!buffBlocked(this.hero, 'poison')) this.hero.buffs['poison'] = 8 + Math.round((2 * this.depth) / 3);
+			const poisonAmount = kind === 'tenguDart'
+				? tenguDartPoisonAmount(isChallengeEnabled('stronger_bosses'))
+				: 8 + Math.round((2 * this.depth) / 3);
+			if (!buffBlocked(this.hero, 'poison')) this.hero.buffs['poison'] = poisonAmount;
 		} else if (kind === 'wornDart') {
 			//WornDartTrap (WornDartTrap.java, tag 3.3.8) is the poison dart's weak
 			//sibling: the same 4-8-minus-armor dart with no poison, and the only trap
@@ -1492,7 +1510,7 @@ export const environmentFireTrapsMethods = {
 			this.showDamage(this.hero, damage);
 			this.say(t('port.log.trap.grim', { damage }), 'negative');
 		} else if (isUtilityTrap(kind)) {
-			fallAfter = this.activateUtilityTrap(kind, x, y);
+			this.activateUtilityTrap(kind, x, y);
 		} else if (kind === 'shockingTrap') {
 				//ShockingTrap.activate() (tag `v3.3.8`): seeds Electricity 10 on every
 				//non-solid NEIGHBOURS9 cell. The LIGHTNING sound has no layer here (stated); the
@@ -1531,18 +1549,17 @@ export const environmentFireTrapsMethods = {
 		}
 		//A hero-stepped trap marks nearby mobs exactly like a mob-stepped one - Grim,
 		//PoisonDart and WornDart only ever mark their aimed target (here, the hero), so they mark nothing.
-		if (kind !== 'grim' && kind !== 'poisonDart' && kind !== 'wornDart' && kind !== 'stormTrap' && !isUnmarkedTrap(kind)) this.markHazardArea(x, y);
+		if (kind !== 'stormTrap' && !isUnmarkedTrap(kind) && !PRE_DAMAGE_HAZARD_TRAPS.has(kind)) this.markHazardArea(x, y);
 		this.sprite(this.hero).setColorAdd(1, 0.2, 0.2);
 		if (this.hero.hp <= 0) this.kill(this.hero, kind === 'burning' || kind === 'explosive' ? 'fire' : 'trap');
 		//`GatewayTrap` sets `disarmedByActivation = false` - the one reusable trap in the
 		//set, so it never lands in the spent set no matter who steps on it.
 		if (kind !== 'gateway') this.spentTrapCells.add(this.level.index(x, y));
-		if (fallAfter && this.hero.hp > 0) this.pitfallDrop();
 	},
 
 	/**
 	 * `AlarmTrap`/`TeleportationTrap`/`SummoningTrap.activate()` (tag v3.3.8), shared by the hero and
-	 * mob step paths.
+	 * mob step paths. The alert sound and scream/light specks use the port's presentation layer.
 	 * - Alarm: `mob.beckon(pos)` on every mob - wakes it and sends it to the trap cell. `lastSeen` is
 	 *   this port's hunt-to-last-known-cell target, the same field `takeWanderingTurn` paths to.
 	 *   Allies and NPCs are left alone (their AI never used `beckon`'s target here).
@@ -1552,7 +1569,7 @@ export const environmentFireTrapsMethods = {
 	 *   wandering. Java's `createMob()` walks the level's mob rotation; this picks a random entry
 	 *   of the depth's roster instead (stated simplification), never a water-bound piranha.
 	 */
-	activateUtilityTrap(this: DungeonScene, kind: UtilityTrap, x: number, y: number): boolean {
+	activateUtilityTrap(this: DungeonScene, kind: UtilityTrap, x: number, y: number): void {
 		if (kind === 'gripping') {
 			//`GrippingTrap.activate()`: whoever stands on it (unless flying) gets `Bleeding` of
 			//`max(0, 2 + depth/2 - drRoll/2)` and a keep-max `Cripple`. Java leaves this trap armed
@@ -1564,10 +1581,8 @@ export const environmentFireTrapsMethods = {
 				const dr = Math.floor(Random.normalRange(c.armor[0], c.armor[1]) / 2);
 				setBleeding(c, Math.max(0, 2 + Math.floor(this.depth / 2) - dr));
 				reigniteBuff(c, 'cripple');
-				//Java marks a mob stepper (`c instanceof Mob`, non-flying branch only).
-				this.markHazardMob(c);
-				}
-				if (this.fov.isVisible(x, y)) spawnTrapSpecks(this.effectLayer, this.effectBursts, x, y, 'wound');
+			}
+			if (this.fov.isVisible(x, y)) spawnTrapSpecks(this.effectLayer, this.effectBursts, x, y, 'wound');
 		} else if (kind === 'rockfall') {
 			//`RockfallTrap.activate()`: rocks land on every non-solid cell of the trap's room (a 5x5
 			//flood when it is not in one), each char there taking `NormalIntRange(5+d, 10+2d)` minus its
@@ -1579,13 +1594,13 @@ export const environmentFireTrapsMethods = {
 			const room = this.level.rooms.find((rm) => x >= rm.left && x <= rm.right && y >= rm.top && y <= rm.bottom);
 			if (room) {
 				for (let ry = room.top; ry <= room.bottom; ry++) for (let rx = room.left; rx <= room.right; rx++) {
-					if (this.level.inside(rx, ry) && this.level.passable(rx, ry)) cells.push({ x: rx, y: ry });
+					if (isNonSolidTrapCell(this, rx, ry)) cells.push({ x: rx, y: ry });
 				}
 			} else {
-				const reach = this.pathfinder.distanceMap({ x, y });
+				const reach = trapAreaDistances(this, x, y, 2);
 				for (let ry = 0; ry < this.level.height; ry++) for (let rx = 0; rx < this.level.width; rx++) {
 					const steps = reach[this.level.index(rx, ry)] ?? -1;
-					if (steps >= 0 && steps <= 2 && this.level.passable(rx, ry)) cells.push({ x: rx, y: ry });
+					if (steps >= 0 && steps <= 2) cells.push({ x: rx, y: ry });
 				}
 			}
 			const seenCells = cells.filter((cell) => this.fov.isVisible(cell.x, cell.y));
@@ -1597,9 +1612,9 @@ export const environmentFireTrapsMethods = {
 			for (const cell of cells) {
 				const ch = this.creatureAt(cell.x, cell.y);
 				if (!ch || ch.hp <= 0) continue;
-				//`Buff.prolong(HazardAssistTracker)` runs for every Mob in the room BEFORE the hit, so a mob the
-				//rocks kill still counts toward the assist badge (the old post-hoc 3x3 mark skipped it).
-				this.markHazardMob(ch);
+				//`RockfallTrap.activate()` marks each Mob immediately before `damage()`;
+				//the room-wide loop must mark every affected mob, including lethal hits.
+				if (!ch.isHero) this.markHazardMob(ch);
 				let damage = Math.max(0, Random.normalRange(5 + this.depth, 10 + this.depth * 2) - Random.normalRange(ch.armor[0], ch.armor[1]));
 				// Challenge.SpectatorFreeze keeps Java's damage/armor rolls but blocks HP damage.
 				if (ch.buffs['spectatorFreeze'] !== undefined) { /* no HP damage */
@@ -1627,23 +1642,22 @@ export const environmentFireTrapsMethods = {
 			}
 		} else if (kind === 'pitfall') {
 			//`PitfallTrap.activate()`: refuses on boss floors, past depth 25 and off the main branch;
-			//otherwise the ground gives way around the trap. Java queues a one-turn `DelayedPit` on the
-			//hero that drops every non-flying char in the NEIGHBOURS9 (and destroys the heaps there);
-			//the caller runs `pitfallDrop` right after the trap is spent instead of a turn later, and
-			//only the hero falls - mobs and items around it stay put (stated simplification).
+			//otherwise the ground gives way around the trap. Java queues a one-turn `DelayedPit` on
+			//the hero and collapses every non-flying char and ordinary heap in NEIGHBOURS9 after
+			//automatic actors act; `pitfallCollapse.ts` carries the delayed effect.
 			if (this.depth in BOSSES || this.depth > 25 || this.miningBranchActive) {
 				this.say(t('levels.traps.pitfalltrap.no_pit'), 'warning');
-				return false;
+				return;
 			}
 			const near = Roguelike.chebyshevDistance(this.hero, { x, y }) <= 1;
 			for (const [dx, dy] of [[0, 0], ...Roguelike.neighbourOffsets(8)] as const) {
 				const px = x + dx, py = y + dy;
-				if (this.level.inside(px, py) && this.level.passable(px, py) && this.fov.isVisible(px, py)) {
+				if (isNonSolidTrapCell(this, px, py) && this.fov.isVisible(px, py)) {
 					spawnTrapSpecks(this.effectLayer, this.effectBursts, px, py, 'pitfall');
 				}
 			}
+			this.schedulePitfallCollapse(x, y);
 			this.say(t(near && this.hero.x === x && this.hero.y === y ? 'levels.traps.pitfalltrap.triggered_hero' : 'levels.traps.pitfalltrap.triggered'), 'negative');
-			return near;
 		} else if (kind === 'frost') {
 			//`FrostTrap.activate()`: `Freezing` volume 20 on every non-solid cell within distance 2 (the
 			//chilling trap seeds 10 on the 3x3 only). Java's visible ice splash and SHATTER cue
@@ -1652,15 +1666,10 @@ export const environmentFireTrapsMethods = {
 				spawnTrapSpecks(this.effectLayer, this.effectBursts, x, y, 'frost');
 				runState.audio.cue('shatter', 0.7);
 			}
-			const reach = this.pathfinder.distanceMap({ x, y });
+			const reach = trapAreaDistances(this, x, y, 2);
 			for (let fy = 0; fy < this.level.height; fy++) for (let fx = 0; fx < this.level.width; fx++) {
 				const steps = reach[this.level.index(fx, fy)] ?? -1;
-				if (steps >= 0 && steps <= 2 && this.level.passable(fx, fy)) {
-				this.plantFreeze.seed(fx, fy, 20);
-				//Every mob standing in the flood is marked (Java: `Actor.findChar(i) instanceof Mob`).
-				const floodMob = this.creatureAt(fx, fy);
-				if (floodMob) this.markHazardMob(floodMob);
-				}
+				if (steps >= 0 && steps <= 2) this.plantFreeze.seed(fx, fy, 20);
 			}
 		} else if (kind === 'chilling') {
 			//`ChillingTrap.activate()`: `Freezing` volume 10 on every non-solid NEIGHBOURS9 cell (the
@@ -1680,10 +1689,7 @@ export const environmentFireTrapsMethods = {
 				if (this.level.inside(x + dx, y + dy) && this.level.passable(x + dx, y + dy)
 					&& this.fov.isVisible(x + dx, y + dy)) spawnTrapSpecks(this.effectLayer, this.effectBursts, x + dx, y + dy, 'ooze');
 				const ch = this.level.passable(x + dx, y + dy) ? this.creatureAt(x + dx, y + dy) : null;
-				if (ch && ch.hp > 0 && !ch.flying) {
-				addBuff(ch, 'ooze');
-				this.markHazardMob(ch);
-				}
+				if (ch && ch.hp > 0 && !ch.flying) addBuff(ch, 'ooze');
 			}
 		} else if (kind === 'flock') {
 			//`FlockTrap.activate()`: a `Sheep` (lifespan 6) on every free non-pit cell within distance 2
@@ -1696,10 +1702,7 @@ export const environmentFireTrapsMethods = {
 				for (let cx = 0; cx < this.level.width; cx++) {
 					const steps = distances[this.level.index(cx, cy)] ?? -1;
 					if (steps < 0 || steps > 2 || !this.level.passable(cx, cy)) continue;
-					//Java's else-branch: a Mob already on the cell (or on a pit cell) is marked instead of getting a sheep.
-					const occupant = this.creatureAt(cx, cy);
-					if (occupant) { this.markHazardMob(occupant); continue; }
-					if (this.isChasmCell(cx, cy)) continue;
+					if (this.creatureAt(cx, cy) || this.isChasmCell(cx, cy)) continue;
 					const sheep = this.spawnSheep({ x: cx, y: cy }, 6);
 					if (this.fov.isVisible(cx, cy)) spawnTrapSpecks(this.effectLayer, this.effectBursts, cx, cy, 'wool');
 					this.triggerMobTrapAt(sheep);
@@ -1722,61 +1725,52 @@ export const environmentFireTrapsMethods = {
 			}
 			runState.audio.cue('alert', 0.7);
 		} else if (kind === 'teleportation' || kind === 'warping') {
+			//Java `TeleportationTrap` does not push/collide characters; it calls teleportChar,
+			//whose `Level.occupyCell()` destination effects are the remaining R006 gap below.
 			//`WarpingTrap` is a `TeleportationTrap` that first wipes the map memory (visited and
 			//mapped cells) when the hero is within one cell of it.
 			if (kind === 'warping' && Roguelike.chebyshevDistance(this.hero, { x, y }) <= 1) this.fov.explored.clear();
-			const victims: Creature[] = [];
 			for (const [dx, dy] of [[0, 0], ...Roguelike.neighbourOffsets(8)] as const) {
-				const ch = this.creatureAt(x + dx, y + dy);
-				if (ch && ch.hp > 0) victims.push(ch);
+				const cx = x + dx, cy = y + dy;
+				const ch = this.creatureAt(cx, cy);
+				if (ch && ch.hp > 0 && (ch.isHero || ch.kind === undefined || !IMMOVABLE_KINDS.has(ch.kind as MonsterId))) {
+					const destination = this.randomFreeCell(ch);
+					if (!destination) {
+						if (ch.isHero) this.say(t('items.scrolls.scrollofteleportation.no_tele'), 'negative');
+					} else {
+						const from = { x: ch.x, y: ch.y };
+						if (ch.isHero) {
+							//`teleportChar` detaches Roots and cancels the hero's queued action.
+							delete ch.buffs['roots'];
+							this.travelTarget = null;
+							this.moveTo(ch, destination);
+						} else {
+							ch.x = destination.x;
+							ch.y = destination.y;
+							this.sprite(ch).position.set(destination.x * TILE, destination.y * TILE);
+							//a hunting mob loses the hero and wanders on
+							ch.seesHero = false;
+							ch.lastSeen = undefined;
+						}
+						this.playTeleportAppear(from, destination, ch);
+						//Java teleportChar calls Level.occupyCell() after moving; destination
+						//traps, water, webs and grass are not dispatched from this direct relocation yet (R006).
+					}
+					}
+				//TeleportationTrap moves the top item of each plain Heap. If this port finds
+				//no destination, leave it intact; Java's empty-cell result can consume the top item.
+				const heap = this.groundItemAt(cx, cy);
+				if (heap && !heap.forSale && heap.chest === undefined && heap.item) {
+					const destination = this.randomFreeCell();
+					if (destination) {
+						this.removeGroundItem(heap);
+						this.spawnGroundItem(heap.kind, destination.x, destination.y, heap.item);
+						runState.audio.cue('teleport', 0.7);
+						spawnTrapSpecks(this.effectLayer, this.effectBursts, x, y, 'light');
+					}
+				}
 			}
-			for (const ch of victims) {
-				if (!ch.isHero && ch.kind !== undefined && IMMOVABLE_KINDS.has(ch.kind as MonsterId)) continue;
-				const destination = this.randomFreeCell(ch);
-				if (!destination) {
-					if (ch.isHero) this.say(t('items.scrolls.scrollofteleportation.no_tele'), 'negative');
-					continue;
-				}
-				const from = { x: ch.x, y: ch.y };
-				//`TeleportationTrap.activate()` marks only a mob that was HUNTING when it teleported.
-				const wasHunting = !ch.isHero && (ch.seesHero || ch.lastSeen !== undefined);
-				if (ch.isHero) {
-				//`teleportChar` detaches Roots and cancels the hero's queued action.
-					delete ch.buffs['roots'];
-					this.travelTarget = null;
-					this.moveTo(ch, destination);
-				} else {
-					ch.x = destination.x;
-					ch.y = destination.y;
-					this.sprite(ch).position.set(destination.x * TILE, destination.y * TILE);
-					//a hunting mob loses the hero and wanders on
-					ch.seesHero = false;
-					ch.lastSeen = undefined;
-				}
-				this.playTeleportAppear(from, destination, ch);
-				if (wasHunting) this.markHazardMob(ch);
-				}
-				//`TeleportationTrap.activate()` also relocates every plain floor heap (`Heap.Type.HEAP`, so not chests or
-				//shop stands) on the 3x3 to `Level.randomRespawnCell(null)`, then plays TELEPORT and a 4-mote LIGHT burst at the
-				//TRAP's own cell (both un-gated by the hero's FOV, per `CellEmitter.get(pos)`/`Sample.play`). A heap keeps one
-				//payload per cell here, as in the Gateway relocation (stated: Java's `pickUp()` moves the top item of a stack);
-				//`Honeypot.ShatteredPot.movePot` has no counterpart (no shattered-pot item exists).
-				for (const [dx, dy] of [[0, 0], ...Roguelike.neighbourOffsets(8)] as const) {
-				const heap = this.groundItemAt(x + dx, y + dy);
-				if (!heap || heap.chest || heap.forSale) continue;
-				let destination: Step | undefined;
-				for (let attempt = 0; attempt < 5 && !destination; attempt++) {
-				const candidate = this.randomFreeCell({ x, y });
-				if (candidate && !this.groundItemAt(candidate.x, candidate.y)) destination = candidate;
-				}
-				if (!destination) continue;
-				const { kind, item, chest, forSale } = heap;
-				this.removeGroundItem(heap);
-				this.spawnGroundItem(kind, destination.x, destination.y, item, chest, forSale);
-				runState.audio.cue('teleport', 0.7);
-				spawnTrapSpecks(this.effectLayer, this.effectBursts, x, y, 'light');
-				}
-				} else if (kind === 'geyser') {
+		} else if (kind === 'geyser') {
 			activateGeyserTrapFlow({ depth: this.depth, random: Random, neighbourOffsets: Roguelike.neighbourOffsets(8) as ReadonlyArray<readonly [number, number]>, randomElement: <T>(values: readonly T[]) => Random.element(values), width: this.level.width, height: this.level.height, distanceMap: (origin) => this.pathfinder.distanceMap(origin), passable: (gx, gy) => this.level.passable(gx, gy), setWater: (gx, gy) => this.level.set(gx, gy, WATER), clearFire: (gx, gy) => this.fire.clear(gx, gy), restitch: () => this.restitchAllTiles(), creatureAt: (gx, gy) => this.creatureAt(gx, gy), hero: this.hero, absorbHeroDamage: (damage) => this.absorbHeroDamage(damage), showDamage: (target, damage) => this.showDamage(target, damage), kill: (target, cause) => this.kill(target, cause), moveTo: (creature, destination) => this.moveTo(creature, destination) }, x, y);
 		} else if (kind === 'gateway') {
 			this.activateGatewayTrap(x, y);
@@ -1803,16 +1797,166 @@ export const environmentFireTrapsMethods = {
 				count--;
 			}
 		}
-		return false;
 	},
 
-	/** `PitfallTrap.DelayedPit` for the hero: `Chasm.heroFall`, minus the one-turn delay. A levitating
-	 * hero is flying and does not fall; the landing (cripple, bleeding, damage) is `landFromChasm`. */
+	/**
+	 * `GatewayTrap.activate()` (`levels/traps/GatewayTrap.java`, tag `v3.3.8`), shared by the
+	 * hero and mob step paths. The trap is reusable (`disarmedByActivation = false` - the
+	 * callers skip the spent set for this kind), and its `telePos` link lives on the scene
+	 * (`gatewayTelePos`, floor-scoped and persisted). First trigger links the trap: the first
+	 * char in `NEIGHBOURS9` order (Java's top-left-to-bottom-right offsets, center fifth) is
+	 * sent to a random respawn cell - or, if no char teleports, the first loose heap is
+	 * relocated there instead - and that destination is recorded. Every trigger (including
+	 * the linking one) then gathers everything in the trap's own 3x3 around the recorded
+	 * cell: chars ride `teleportToLocation` onto free cells around it (center preferred),
+	 * heaps are dropped on it. Stated simplifications: LARGE chars' `openSpace` shortlist has
+	 * no counterpart here (a size property exists now - `LARGE_KINDS` - but this draw still doesn't gate; everyone draws from the one shuffled list);
+	 * heap stacking collapses to one payload per cell (a blocked destination leaves the heap
+	 * where it is); `Honeypot.ShatteredPot`'s pot-link move has no counterpart (no shattered
+	 * pot item here); the TELEPORT sample/speck presentation is the shared appear effect.
+	 */
+	activateGatewayTrap(this: DungeonScene, x: number, y: number): void {
+		const trapCell = this.level.index(x, y);
+		//Java's `PathFinder.NEIGHBOURS9` order: top-left to bottom-right, center fifth.
+		const around9: ReadonlyArray<readonly [number, number]> = [[-1, -1], [0, -1], [1, -1], [-1, 0], [0, 0], [1, 0], [-1, 1], [0, 1], [1, 1]];
+		if (!this.gatewayTelePos.has(trapCell)) {
+			for (const [dx, dy] of around9) {
+				const cx = x + dx, cy = y + dy;
+				if (!this.level.inside(cx, cy)) continue;
+				const ch = this.creatureAt(cx, cy);
+				if (ch && ch.hp > 0) {
+					if (ch.isHero || (ch.kind !== undefined && !IMMOVABLE_KINDS.has(ch.kind as MonsterId))) {
+						const destination = this.randomFreeCell(ch);
+						if (destination) {
+							const hunting = !ch.isHero && (ch.seesHero || ch.lastSeen !== undefined);
+							const from = { x: ch.x, y: ch.y };
+							if (ch.isHero) {
+								delete ch.buffs['roots'];
+								this.travelTarget = null;
+								this.moveTo(ch, destination);
+							} else {
+								ch.x = destination.x;
+								ch.y = destination.y;
+								this.sprite(ch).position.set(destination.x * TILE, destination.y * TILE);
+								ch.seesHero = false;
+								ch.lastSeen = undefined;
+							}
+							this.playTeleportAppear(from, destination, ch);
+							if (hunting) this.markHazardMob(ch);
+							this.gatewayTelePos.set(trapCell, this.level.index(destination.x, destination.y));
+							break;
+						}
+					}
+				}
+				const heap = this.groundItemAt(cx, cy);
+				if (heap) {
+					let destination: Step | undefined;
+					for (let attempt = 0; attempt < 5 && !destination; attempt++) {
+						const candidate = this.randomFreeCell({ x, y });
+						if (candidate && !this.groundItemAt(candidate.x, candidate.y)) destination = candidate;
+					}
+					if (destination) {
+						const { kind, item, chest, forSale } = heap;
+						this.removeGroundItem(heap);
+						this.spawnGroundItem(kind, destination.x, destination.y, item, chest, forSale);
+						if (this.groundItemAt(destination.x, destination.y)) {
+							this.gatewayTelePos.set(trapCell, this.level.index(destination.x, destination.y));
+							break;
+						}
+					}
+				}
+			}
+		}
+		const linked = this.gatewayTelePos.get(trapCell);
+		if (linked === undefined) return;
+		const lx = linked % this.level.width, ly = Math.floor(linked / this.level.width);
+		//Java's `NEIGHBOURS8` order (same ring minus the center), shuffled, with the free
+		//center itself prepended - so the center wins when it is open.
+		const ring8: ReadonlyArray<readonly [number, number]> = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]];
+		const telePositions: Step[] = [];
+		for (const [dx, dy] of ring8) {
+			const px = lx + dx, py = ly + dy;
+			if (this.level.inside(px, py) && this.level.passable(px, py) && !this.creatureAt(px, py)) telePositions.push({ x: px, y: py });
+		}
+		Random.shuffle(telePositions);
+		if (this.level.inside(lx, ly) && this.level.passable(lx, ly) && !this.creatureAt(lx, ly)) telePositions.unshift({ x: lx, y: ly });
+		for (const [dx, dy] of around9) {
+			const cx = x + dx, cy = y + dy;
+			if (!this.level.inside(cx, cy)) continue;
+			const ch = this.creatureAt(cx, cy);
+			if (ch && ch.hp > 0 && (ch.isHero || (ch.kind !== undefined && !IMMOVABLE_KINDS.has(ch.kind as MonsterId)))) {
+				const next = telePositions.shift();
+				if (!next) continue;
+				const from = { x: ch.x, y: ch.y };
+				//`teleportToLocation` refuses an occupied or impassable cell - the list only
+				//holds free passable cells, so it always lands; Roots still detaches.
+				if (ch.isHero) {
+					delete ch.buffs['roots'];
+					this.travelTarget = null;
+					this.moveTo(ch, next);
+				} else {
+					ch.x = next.x;
+					ch.y = next.y;
+					this.sprite(ch).position.set(next.x * TILE, next.y * TILE);
+					ch.seesHero = false;
+					ch.lastSeen = undefined;
+				}
+				this.playTeleportAppear(from, next, ch);
+			}
+			const heap = this.groundItemAt(cx, cy);
+			if (heap && !this.groundItemAt(lx, ly)) {
+				const { kind, item, chest, forSale } = heap;
+				this.removeGroundItem(heap);
+				this.spawnGroundItem(kind, lx, ly, item, chest, forSale);
+				if (!this.groundItemAt(lx, ly)) this.spawnGroundItem(kind, cx, cy, item, chest, forSale);
+				else this.playTeleportAppear({ x: cx, y: cy }, { x: lx, y: ly }, this.hero);
+			}
+		}
+	},
+
+	/**
+	 * `GuardianTrap.activate()` (`levels/traps/GuardianTrap.java`, tag `v3.3.8`), shared by
+	 * the hero and mob step paths: every mob is beckoned to the trap cell (Java's `beckon`
+	 * wakes and, unless hunting/fleeing, retargets to wandering - the port's `lastSeen`
+	 * retarget with the same guards), the alarm line logs when visible, and
+	 * `(scalingDepth() - 5) / 5` guardians (Java integer division, truncating toward zero -
+	 * none below depth 6) arrive on random respawn cells, awake and beckoned to the hero.
+	 * Stated simplifications: the guardians are ordinary depth-scaled statues (Java's
+	 * `Guardian extends Statue` rolls a fresh uncursed level-0 unenchanted melee weapon per
+	 * spawn - this port's statue damage comes from its depth table, with no per-instance
+	 * weapon to roll); the ALERT sample and SCREAM specks have no layer here; the blue tint
+	 * on `GuardianSprite` has no sprite layer to carry it.
+	 */
+	activateGuardianTrap(this: DungeonScene, x: number, y: number): void {
+		for (const mob of this.creatures) {
+			if (mob.isHero || mob.isNPC || mob.isAlly || mob.hp <= 0) continue;
+			mob.sleeping = false;
+			if (!mob.fleeing && !mob.seesHero) mob.lastSeen = { x, y };
+		}
+		if (this.fov.isVisible(x, y)) this.say(t('levels.traps.guardiantrap.alarm'), 'warning');
+		//`scalingDepth()` is `this.depth` everywhere else in this port; Java's `(d - 5) / 5`
+		//is integer division truncating toward zero, so depths 1-9 spawn nothing.
+		const count = Math.max(0, Math.trunc((this.depth - 5) / 5));
+		for (let i = 0; i < count; i++) {
+			const at = this.randomFreeCell({ x, y });
+			if (!at) continue;
+			const guardian = this.spawnMonster('statue', at, false);
+			guardian.sleeping = false;
+			guardian.seesHero = false;
+			guardian.lastSeen = { x: this.hero.x, y: this.hero.y };
+			this.playTeleportAppear(at, at, guardian);
+		}
+	},
+
+	/** `Chasm.heroFall` for a Pitfall DelayedPit hero victim, called last after all other cells. A
+	 * levitating hero does not fall; landing (cripple, bleeding, damage) is `landFromChasm`. */
 	pitfallDrop(this: DungeonScene): void {
 		if (this.hero.buffs['levitation']) return;
 		this.say(t('port.log.fallchasm'), 'negative');
 		this.depth++;
 		this.justDescended = true;
+		//`Chasm.heroFall()` calls `Level.beforeTransition()` before generating the landing floor.
+		this.disarmTimeBubblePresses();
 		this.enterLevel();
 		this.landFromChasm();
 	},
@@ -1891,7 +2035,7 @@ export const environmentFireTrapsMethods = {
 		}
 		//PoisonDart/WornDart/Grim with no victim mark nothing (their branches only ever
 		//mark the aimed target) and only spend - see above.
-		if (kind !== 'grim' && kind !== 'poisonDart' && kind !== 'wornDart' && kind !== 'stormTrap' && !isUnmarkedTrap(kind)) this.markHazardArea(x, y);
+		if (kind !== 'stormTrap' && !isUnmarkedTrap(kind) && !PRE_DAMAGE_HAZARD_TRAPS.has(kind)) this.markHazardArea(x, y);
 		if (kind !== 'gateway') this.spentTrapCells.add(cell);
 	},
 
@@ -1905,10 +2049,15 @@ export const environmentFireTrapsMethods = {
 		const cell = this.level.index(monster.x, monster.y);
 		if (!this.trapKinds.has(cell) || this.secrets.isSecret(monster.x, monster.y) || this.spentTrapCells.has(cell)) return;
 		const kind = this.trapKinds.get(cell)!;
-		let fallAfter = false;
+		if (kind === 'tenguDart' && monster.kind === 'tengu') {
+			//`TenguDartTrap.canTarget()` (`TenguDartTrap.java`, v3.3.8) excludes Tengu.
+			//This step-based trap seam spends the trap instead of Java's ranged retarget search.
+			this.spentTrapCells.add(cell);
+			return;
+		}
 		if (kind === 'toxic') this.toxicGas.seed(monster.x, monster.y, 300 + 20 * this.depth);
 		else if (kind === 'confusionGas') this.confusionGas.seed(monster.x, monster.y, 300 + 20 * this.depth);
-		else if (isUtilityTrap(kind)) fallAfter = this.activateUtilityTrap(kind, monster.x, monster.y);
+		else if (isUtilityTrap(kind)) this.activateUtilityTrap(kind, monster.x, monster.y);
 		else if (kind === 'corrosionGas') {
 			this.corrosiveGas.seed(monster.x, monster.y, 80 + 5 * this.depth);
 			this.corrosiveGasStrength = Math.max(this.corrosiveGasStrength, 1 + Math.floor(this.depth / 4));
@@ -1919,8 +2068,9 @@ export const environmentFireTrapsMethods = {
 				const nx = monster.x + dx, ny = monster.y + dy;
 				if (this.level.inside(nx, ny) && this.level.passable(nx, ny)) this.fire.seed(nx, ny, 2);
 			}
-		} else if (kind === 'poisonDart') {
+		} else if (kind === 'poisonDart' || kind === 'tenguDart') {
 			const damage = Math.max(0, Random.normalRange(4, 8) - Random.normalRange(monster.armor[0], monster.armor[1]));
+			this.markHazardMob(monster);
 			//`Char.damage()` through the shared dispatch (T63): Java's caller already
 			//rolled `drRoll()` (`PoisonDartTrap.java` 137), and aura/Doom/shields/hooks
 			//plus the `trap` death bucket live there now.
@@ -1931,10 +2081,14 @@ export const environmentFireTrapsMethods = {
 			});
 			//`reigniteBuff` keeps the max-duration semantics and routes through the shared
 			//immunity gate, so INORGANIC kinds refuse the dart's poison like Java's isImmune.
-			reigniteBuff(monster, 'poison', 8 + Math.round((2 * this.depth) / 3));
+			const poisonAmount = kind === 'tenguDart'
+				? tenguDartPoisonAmount(isChallengeEnabled('stronger_bosses'))
+				: 8 + Math.round((2 * this.depth) / 3);
+			reigniteBuff(monster, 'poison', poisonAmount);
 		} else if (kind === 'wornDart') {
 			//Same dart as poisonDart above, minus the poison, like Java's WornDartTrap.
 			const damage = Math.max(0, Random.normalRange(4, 8) - Random.normalRange(monster.armor[0], monster.armor[1]));
+			this.markHazardMob(monster);
 			//`Char.damage()` through the shared dispatch (`WornDartTrap.java` 115 rolls
 			//the `drRoll()` at the caller, hence `pierceArmor`).
 			this.applyCharacterDamage(monster, damage, {
@@ -1953,6 +2107,7 @@ export const environmentFireTrapsMethods = {
 			//quarter-max mix with it).
 			if (!monster.magicImmune) {
 				const damage = grimTrapDamage(monster.hp, monster.maxHp);
+				this.markHazardMob(monster);
 				//Aura, Doom, the shield pools, the hooks and the `trap` death bucket all
 				//ride the shared dispatch; only the source-class gate above stays put.
 				this.applyCharacterDamage(monster, damage, {
@@ -1984,6 +2139,9 @@ export const environmentFireTrapsMethods = {
 			//fire seeding.
 			const damage = Math.max(0, Random.normalRange(...explosiveTrapBounds(this.depth))
 				- Random.normalRange(monster.armor[0], monster.armor[1]));
+			//`ExplosiveTrap.activate()` marks every Mob in NEIGHBOURS9 before the
+			//stock Bomb hits any of them, including this stepper in the centre cell.
+			this.markHazardArea(monster.x, monster.y);
 			//`Char.damage()` through the shared dispatch, in the same death bucket the
 			//old tail kill used (`fire` for `explosive`, `trap` for the rest).
 			this.applyCharacterDamage(monster, damage, {
@@ -1993,19 +2151,9 @@ export const environmentFireTrapsMethods = {
 			});
 			this.applyTrapBlast(monster.x, monster.y);
 		}
-		//Every trap kind modelled for mobs is a Java `HazardAssistTracker` producer:
-		//gas/burning/explosive/shocking mark NEIGHBOURS9, StormTrap marked its distance-2
-		//flood cell-by-cell above, Grim/PoisonDart/WornDart only ever aim at one target.
-		//Deviation from Java's own order: `GrimTrap.java` 92, `PoisonDartTrap.java` 106,
-		//`WornDartTrap.java` 92, `RockfallTrap.java` 100 and `ExplosiveTrap.java` 44 all
-		//prolong the tracker BEFORE damaging, so an immediately-lethal trap kill still
-		//carries it into `die()` and counts for `ENEMY_HAZARDS`. This port marks after the
-		//branch and `markHazardMob` refuses `hp <= 0`, and T63's dispatch kills inside the
-		//damage call, so a kill landing in this same trigger is never credited (non-lethal
-		//and later kills still count; unchanged by T63 - the old order refused the same
-		//way). Open `ROADMAP.md` R075.
-		if (kind === 'grim' || kind === 'poisonDart' || kind === 'wornDart') this.markHazardMob(monster);
-		else if (kind !== 'stormTrap' && !isUnmarkedTrap(kind)) this.markHazardArea(monster.x, monster.y);
+		//The single-target darts/Grim, explosive centre cell and room-wide Rockfall
+		//were marked before damage above; other non-damaging activations mark here.
+		if (kind !== 'stormTrap' && !isUnmarkedTrap(kind) && !PRE_DAMAGE_HAZARD_TRAPS.has(kind)) this.markHazardArea(monster.x, monster.y);
 		monster.sleeping = false;
 		//Same reusable-trap rule as the hero path: a gateway never spends itself.
 		if (kind !== 'gateway') this.spentTrapCells.add(cell);
@@ -2014,13 +2162,18 @@ export const environmentFireTrapsMethods = {
 		//`trap` for the rest) - rockfall included, whose mob loop dispatches too; the
 		//gas/burning/shocking/storm branches deal no instant damage, so nothing can
 		//leave the monster at 0 HP here.
-		if (fallAfter && this.hero.hp > 0) this.pitfallDrop();
 	},
 
 	/** `Bomb.explode`: the blast reaches all characters in the 3x3 NEIGHBOURS9 area,
 	 * each for its own `4+d..12+3d` roll with NO distance falloff - Java rolls full
 	 * damage per char. The old 0.67 neighbour cut was invented, as was the range. */
 	applyTrapBlast(this: DungeonScene, x: number, y: number): void {
+		//`ExplosiveTrap.activate()` marks each Mob in NEIGHBOURS9 before Bomb.explode;
+		//the triggering mob's centre hit is marked by triggerMobTrapAt before its own hit.
+		for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
+			const mob = this.creatureAt(x + dx, y + dy);
+			if (mob && !mob.isHero) this.markHazardMob(mob);
+		}
 		for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
 			const target = this.creatureAt(x + dx, y + dy);
 			if (!target || target.isHero || target.hp <= 0) continue;

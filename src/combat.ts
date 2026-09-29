@@ -573,8 +573,9 @@ export function buffBlocked(c: Creature, id: BuffId): boolean {
 	if (elementalBacklashApplies(c.kind, c.elementalType, id)) return true;
 	//`Char.Property.ICY` (`Char.java`, tag `v3.3.8`) refuses Frost and Chill on FrostElemental.
 	if (icyBuffImmune(c.kind, c.elementalType, id)) return true;
-	//`Char.Property.FIERY` (Char.java, tag `v3.3.8`) refuses Burning and Blazing
+	//`Char.Property.FIERY` (Char.java, tag `v3.3.8`) refuses the Burning buff
 	//for every Elemental and BurningFist, even when a direct caller skips fire spread.
+	//Its separate `Blazing.class` source immunity is applied at that enchantment's damage seam.
 	if (fieryDamageHalved(c.kind, c.elementalType, c.yogFistType) && id === 'burning') return true;
 	//Brimstone.java grants Burning immunity through Char.isImmune(), before the
 	//effect can be attached. Keep this check at the shared buff boundary so fire

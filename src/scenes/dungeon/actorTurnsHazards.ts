@@ -40,6 +40,7 @@ import { STARVING } from '../../simulation/hunger';
 import { NEGATIVE_BUFFS, addBuff, doomDamage, reigniteBuff, rollHit, setAscensionActive, setBleeding, tickBuffs, type BuffId, type Creature, type Step } from '../../combat';
 import { BOSSES, IMMOVABLE_KINDS } from '../../monsters';
 import { ignoresCrystalGuardianBeckon } from '../../simulation/crystalSpire';
+import { beckonSwarmIntelligence } from './swarmIntelligence';
 
 /** `Mob.intelligentAlly` (tag `v3.3.8`) is set by `DirectableAlly` subclasses - the Dried
  * Rose's `GhostHero`, `HawkAlly`, `PowerOfMany.LightAlly`, `ShadowClone.ShadowAlly` - and by
@@ -399,6 +400,7 @@ export const actorTurnsHazardsMethods = {
 			mob.seesHero = true;
 		}
 	},
+
 
 	/** Consumes a generated Java well once, applying the two WellWater hero effects. */
 	usePortedWellAtCell(this: DungeonScene, cell: number): void {
@@ -1086,6 +1088,9 @@ export const actorTurnsHazardsMethods = {
 				monster.seesHero = false;
 				return;
 			}
+			//Mob.Wandering.noticeEnemy(): Java's second SWARM_INTELLIGENCE hook runs
+			//when an already-awake enemy first acquires the hero, not only on wake-up.
+			beckonSwarmIntelligence(this, monster);
 		}
 		//ChampionEnemy.Growing.act(): its own real per-turn tick, `+0.01` to the multiplier
 		//`meleeDamageFactor`/`damageTakenFactor`/`evasionAndAccuracyFactor` all read from
@@ -1329,24 +1334,7 @@ export const actorTurnsHazardsMethods = {
 		//DoT-woken Goo gets no `notice()` either, so those stay on the generic line.
 		if (monster.kind === 'goo' && !debuffed) this.say(t('actors.mobs.goo.notice'), 'warning');
 		else this.say(t('port.log.wakes', { who: capitalize(monster.name) }), 'warning');
-			//Mob.Sleeping.act()'s real SWARM_INTELLIGENCE hook: every other non-paralyzed,
-			//not-yet-HUNTING enemy mob within 8 tiles of the noticing mob (not the hero) also
-			//beckons toward the hero's position immediately, rather than each mob only ever
-			//noticing independently. This port has no HUNTING/WANDERING state machine, so "not
-			//yet HUNTING" is approximated as "not already awake-and-seesHero"; beckoning itself
-			//reuses the same `sleeping=false`/`seesHero=true` stand-in ScrollOfRage's own beckon
-			//already uses, and distance is this port's usual Chebyshev metric.
-			if (isChallengeEnabled('swarm_intelligence')) {
-				for (const other of this.creatures) {
-					if (other === monster || other.isHero || other.isNPC || other.buffs['paralysis']) continue;
-					//The Java hook calls `beckon()`; a sleeping CrystalGuardian's override refuses it.
-					if (ignoresCrystalGuardianBeckon(other.kind, other.sleeping === true)) continue;
-					if (other.sleeping === false && other.seesHero) continue;
-					if (Roguelike.chebyshevDistance(monster, other) > 8) continue;
-					other.sleeping = false;
-					other.seesHero = true;
-				}
-			}
+			beckonSwarmIntelligence(this, monster);
 			return;
 		}
 		const aggressionTarget = this.aggressionTarget(monster);
@@ -2006,7 +1994,13 @@ export const actorTurnsHazardsMethods = {
 		guardian.accuracy = 2 * guardian.earthGuardianDefense + 5;
 		guardian.evasion = guardian.earthGuardianDefense;
 		guardian.damage = [2, 4 + Math.floor(this.depth / 2)];
-		guardian.armor = [guardian.earthGuardianWandLevel, 3 + 3 * guardian.earthGuardianWandLevel];
+		//Java's WandOfLivingEarth.upgradeStat3()/EarthGuardian.description() also
+		//show this range in upgrade/character-info UI; this port has neither window.
+		//WandOfLivingEarth.EarthGuardian.drRoll() (tag v3.3.8) caps Faith is my
+		//armor's guardian defense at lvl..2+lvl; ordinary runs use lvl..3+3*lvl.
+		guardian.armor = isChallengeEnabled('no_armor')
+			? [guardian.earthGuardianWandLevel, 2 + guardian.earthGuardianWandLevel]
+			: [guardian.earthGuardianWandLevel, 3 + 3 * guardian.earthGuardianWandLevel];
 		this.livingEarthArmor = 0;
 		this.say(t('port.log.wandlivingearth'), 'positive');
 	},

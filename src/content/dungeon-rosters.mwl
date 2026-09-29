@@ -5,33 +5,6 @@
     children: [
       {
         tag: "table",
-        id: "monsterRosterFallback",
-        columns: "region:string|roster:list",
-        list_delimiter: ",",
-        children: [
-          {
-            tag: "row",
-            region: "sewers",
-            roster: "skeleton,thief,dm100,dm100,guard,guard,necromancer,necromancer",
-          },
-          {
-            tag: "row",
-            region: "caves",
-            roster: "bat,brute,shaman,shaman,spinner,spinner,dm200,dm200",
-          },
-          {
-            tag: "row",
-            region: "city",
-            roster: "elemental,warlock,warlock,monk,monk,golem,golem,golem",
-          },
-          {
-            tag: "row",
-            region: "halls",
-            roster: "succubus,eye,eye,scorpio,scorpio,scorpio",
-          },
-        ],
-      },
-      {
         tag: "table",
         id: "monsterRosterByDepth",
         columns: "depth:number|roster:list",
@@ -59,6 +32,11 @@
           },
           {
             tag: "row",
+            depth: 5,
+            roster: "gnoll,swarm,crab,crab,slime,slime",
+          },
+          {
+            tag: "row",
             depth: 6,
             roster: "skeleton,skeleton,skeleton,thief,swarm",
           },
@@ -75,6 +53,11 @@
           {
             tag: "row",
             depth: 9,
+            roster: "skeleton,thief,dm100,dm100,guard,guard,necromancer,necromancer",
+          },
+          {
+            tag: "row",
+            depth: 10,
             roster: "skeleton,thief,dm100,dm100,guard,guard,necromancer,necromancer",
           },
           {
@@ -99,6 +82,11 @@
           },
           {
             tag: "row",
+            depth: 15,
+            roster: "bat,brute,shaman,shaman,spinner,spinner,dm200,dm200",
+          },
+          {
+            tag: "row",
             depth: 16,
             roster: "ghoul,ghoul,ghoul,elemental,warlock",
           },
@@ -119,6 +107,11 @@
           },
           {
             tag: "row",
+            depth: 20,
+            roster: "elemental,warlock,warlock,monk,monk,golem,golem,golem",
+          },
+          {
+            tag: "row",
             depth: 21,
             roster: "succubus,succubus,eye",
           },
@@ -135,6 +128,16 @@
           {
             tag: "row",
             depth: 24,
+            roster: "succubus,eye,eye,scorpio,scorpio,scorpio",
+          },
+          {
+            tag: "row",
+            depth: 25,
+            roster: "succubus,eye,eye,scorpio,scorpio,scorpio",
+          },
+          {
+            tag: "row",
+            depth: 26,
             roster: "succubus,eye,eye,scorpio,scorpio,scorpio",
           },
         ],

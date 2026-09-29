@@ -373,20 +373,17 @@ if (Object.values(YOG_FIST_SUMMON_STATS).some((stats) =>
 	throw new Error('MWL yog fist summon stats must be finite numbers');
 }
 
-/** Standard mob rotations are authored as typed MWL tables (`monsterRosterByDepth` /
- * `monsterRosterFallback`); this adapter preserves the Java region fallback selection. */
+/** Standard mob rotations are authored by depth in MWL. Java's `MobSpawner.standardMobRotation()`
+ * (`v3.3.8`) explicitly shares each preceding floor's roster on boss depths, and defines depth 26;
+ * require every supported depth here instead of silently inventing a regional fallback. */
 const rosterOf = (row: Readonly<Record<string, unknown>>): MonsterId[] =>
 	(Array.isArray(row.roster) ? row.roster.map((kind) => String(kind) as MonsterId) : []);
 const ROSTER_BY_DEPTH = new Map(MWL_TABLE_ROWS('monsterRosterByDepth', 'depth').map((row) => [String(row.depth), rosterOf(row)]));
-const ROSTER_FALLBACK = new Map(MWL_TABLE_ROWS('monsterRosterFallback', 'region').map((row) => [String(row.region), rosterOf(row)]));
 
 export function mobRosterForDepth(depth: number): MonsterId[] {
 	const direct = ROSTER_BY_DEPTH.get(String(depth));
-	if (direct) return direct;
-	const region = depth < 6 ? 'sewers' : depth < 11 ? 'caves' : depth < 16 ? 'city' : 'halls';
-	const fallback = ROSTER_FALLBACK.get(region);
-	if (!fallback) throw new Error(`MWL dungeon roster has no fallback for ${region}`);
-	return fallback;
+	if (!direct) throw new Error(`MWL dungeon roster has no Java depth row for ${depth}`);
+	return direct;
 }
 
 // Combat formulas live in the framework-free simulation; retained export for callers.

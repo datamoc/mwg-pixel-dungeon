@@ -1,0 +1,7 @@
+- status [ref=f1e3]:
+  - generic [ref=f1e4]:
+    - paragraph [ref=f1e5]: MWG // PIXEL DUNGEON
+    - heading "Chargement" [level=1] [ref=f1e6]
+    - paragraph [ref=f1e7]: Le donjon est prêt.
+    - progressbar "Progression du chargement" [ref=f1e8]
+    - generic [ref=f1e10]: 100 %

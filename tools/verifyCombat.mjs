@@ -6,6 +6,7 @@ import { readSceneSource } from './sceneSource.mjs';
 // Called by verifySimulation.mjs after compiling actual production modules into its temp tree.
 export function verifyCombat(require, check) {
 	const { rollHit, rollDamage, liveStats, stoneGlyphReduction, grimTrapDamage, explosiveTrapBounds } = require('./simulation/combat');
+	const { eyeLootOutcome, gnollTricksterMissileQuantity } = require('./simulation/mobLoot');
 	const { applyBuff, advanceBuffs, reigniteBuff, absorbShield, doomDamage, BUFF_DURATION } = require('./simulation/buffs');
 	const record = process.env.RECORD_FIXTURES === '1';
 	const facade = require('./combat');
@@ -15,6 +16,37 @@ export function verifyCombat(require, check) {
 	const blastSource = readFileSync(new URL('../src/scenes/dungeon/panelsSingleUse.ts', import.meta.url), 'utf8');
 	const geyserSource = readFileSync(new URL('../src/simulation/geyserTrap.ts', import.meta.url), 'utf8');
 	const saveSource = readFileSync(new URL('../src/scenes/dungeon/deathSaveRefresh.ts', import.meta.url), 'utf8');
+	const groundPlacementSource = readFileSync(new URL('../src/items/groundPlacement.ts', import.meta.url), 'utf8');
+	const wandAimingSource = readFileSync(new URL('../src/scenes/dungeon/turnLoopAiming.ts', import.meta.url), 'utf8');
+	check('Gnoll Trickster and Evil Eye use their v3.3.8 createLoot distributions', () => {
+		assert.deepEqual([0, 1, 2, 3].map(eyeLootOutcome), ['dewdrop', 'dewdrop', 'seed', 'stone']);
+		assert.deepEqual([1, 2, 5, 8].map(gnollTricksterMissileQuantity), [1, 1, 3, 4]);
+		assert.throws(() => eyeLootOutcome(4), RangeError);
+		assert.match(saveSource, /creature\.kind === 'gnollTrickster'[\s\S]*?randomMissile\(\)[\s\S]*?item\.level = 0[\s\S]*?gnollTricksterMissileQuantity\(item\.quantity\)/);
+		assert.match(saveSource, /creature\.kind === 'eye'[\s\S]*?Random\.int\(0, 4\)[\s\S]*?eyeLootOutcome\(roll\)[\s\S]*?randomUsingDefaults\(outcome === 'seed' \? Cat\.SEED : Cat\.STONE\)/);
+		assert.match(saveSource, /creature\.kind === 'gnollTrickster' \|\| creature\.kind === 'eye' \? \[\] : MOB_LOOT/);
+	});
+	check('Darkness places floor Torches and Prismatic Light grants self illumination', () => {
+		assert.match(groundPlacementSource, /if \(context\.darknessChallenge\)[\s\S]*?context\.largeFeeling \? 2 : 1[\s\S]*?context\.placeTorch\(x, y\)/);
+		assert.match(wandAimingSource, /wandType === 'prismaticLight' && \(isChallengeEnabled\('darkness'\) \|\| this\.depth === 25 \|\| this\.depth === 26\)[\s\S]*?addBuff\(this\.hero, 'light', prismaticWandLightDuration/);
+	});
+	check('lethal trap kills are hazard-marked before damage and Rockfall uses its full area', () => {
+		const mobTrapSource = trapSource.split('triggerMobTrapAt(this: DungeonScene, monster: Creature): void {')[1]?.split('applyTrapBlast(this: DungeonScene')[0];
+		assert.ok(mobTrapSource, 'mob trap handler exists');
+		for (const kind of ['poisonDart', 'wornDart', 'grim']) {
+			const branchHead = kind === 'poisonDart'
+				? "} else if (kind === 'poisonDart' || kind === 'tenguDart') {"
+				: `} else if (kind === '${kind}') {`;
+			const branch = mobTrapSource.split(branchHead)[1]?.split('} else if (kind === ')[0];
+			assert.ok(branch, `${kind} mob branch exists`);
+			assert.ok(branch.indexOf('this.markHazardMob(monster)') >= 0
+				&& branch.indexOf('this.markHazardMob(monster)') < branch.indexOf('this.applyCharacterDamage(monster'),
+				`${kind} marks before its lethal damage dispatch`);
+		}
+		assert.match(trapSource, /RockfallTrap\.activate\(\)` marks each Mob immediately before `damage\(\)`[\s\S]*?if \(!ch\.isHero\) this\.markHazardMob\(ch\);[\s\S]*?this\.applyCharacterDamage\(ch/);
+		assert.match(mobTrapSource, /`ExplosiveTrap\.activate\(\)` marks every Mob in NEIGHBOURS9 before the[\s\S]*?this\.markHazardArea\(monster\.x, monster\.y\);[\s\S]*?this\.applyCharacterDamage\(monster/);
+		assert.match(trapSource, /applyTrapBlast\(this: DungeonScene, x: number, y: number\): void \{[\s\S]*?if \(mob && !mob\.isHero\) this\.markHazardMob\(mob\);[\s\S]*?const target = this\.creatureAt/);
+	});
 	const mobOnHitSource = readFileSync(new URL('../src/scenes/mobOnHit.ts', import.meta.url), 'utf8');
 	const fixture = JSON.parse(readFileSync(new URL('./fixtures/combat-before-extraction.json', import.meta.url), 'utf8'));
 	const base = (extra = {}) => ({ x: 0, y: 0, hp: 20, maxHp: 20, accuracy: 10,

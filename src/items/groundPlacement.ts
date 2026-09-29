@@ -10,12 +10,15 @@ export interface GroundPlacementContext {
 	depth: number;
 	isBossDepth: boolean;
 	largeFeeling: boolean;
+	darknessChallenge: boolean;
 	upgradeScrollDrops: number;
 	noScrolls: boolean;
 	randomSpawnRoom(): Room;
 	generateItem(): GenItem;
 	materialize(generated: GenItem): ItemPayload;
 	canPlaceFloorItem(x: number, y: number): boolean;
+	canPlaceTorch(x: number, y: number): boolean;
+	placeTorch(x: number, y: number): void;
 	canPlaceKey(x: number, y: number): boolean;
 	spawnMimic(x: number, y: number, item: ItemPayload): void;
 	spawnGround(kind: string, x: number, y: number, item: ItemPayload, chest?: 'normal' | 'locked'): void;
@@ -66,6 +69,23 @@ export function placeGroundItems(context: GroundPlacementContext): number {
 			context.spawnGround(groundKindForItem(item, 'food'), at.x, at.y, item,
 				heapRoll >= 1 && heapRoll <= 4 ? 'normal' : undefined);
 			break;
+		}
+	}
+	//`RegularLevel.createItems()` (`RegularLevel.java:474-489`, tag `v3.3.8`) drops one
+	//Torch under DARKNESS and a second on LARGE floors, after ordinary generated heaps.
+	//The Java path uses its own pushed RNG seeded from the level stream; this adapter
+	//uses the live RNG for candidate selection because the framework scene has no Java
+	//Random generator stack. It preserves the item count and eligible-cell constraints.
+	if (context.darknessChallenge) {
+		for (let i = 0; i < (context.largeFeeling ? 2 : 1); i++) {
+			for (let attempt = 0; attempt < 100; attempt++) {
+				const room = context.randomSpawnRoom();
+				const x = Random.range(room.left, room.right);
+				const y = Random.range(room.top, room.bottom);
+				if (!context.canPlaceTorch(x, y)) continue;
+				context.placeTorch(x, y);
+				break;
+			}
 		}
 	}
 

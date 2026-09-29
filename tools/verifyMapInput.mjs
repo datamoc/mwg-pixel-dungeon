@@ -18,11 +18,12 @@ export function verifyMapInput(require, check) {
 	const ui = (file) => readFileSync(new URL(`../src/ui/${file}`, import.meta.url), 'utf8');
 
 	check('water-surface tiles never capture pointer hits', () => {
-		const source = ui('waterSurface.ts');
-		assert.match(source, /tile\.eventMode = 'none'/,
-			'each water TilingSprite opts out - the layer container\'s own none does not cover children');
-		assert.match(source, /sprite\.eventMode = 'none'/,
-			'transient ripple sprites opt out too');
+		//the opt-outs now live in the framework's LiquidLayer (pinned by mwg's own tests)
+		assert.match(ui('waterSurface.ts'), /extends LiquidLayer/,
+			'the water surface is the framework LiquidLayer, whose cells and ripples opt out of pointer events');
+		const layer = readFileSync(new URL('../node_modules/mwg/dist/two-d/render/LiquidLayer.js', import.meta.url), 'utf8');
+		assert.match(layer, /tile\.eventMode = 'none'/);
+		assert.match(layer, /sprite\.eventMode = 'none'/);
 	});
 	check('well ripples and torch glows never capture pointer hits', () => {
 		const source = ui('wallDecorations.ts');

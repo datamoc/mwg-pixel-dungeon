@@ -53,11 +53,11 @@ function compile(source, destination) {
 
 try {
 	writeFileSync(join(output, 'package.json'), '{"type":"commonjs"}');
-	for (const file of ['simulation/movement', 'simulation/heroTurn', 'simulation/hunger', 'simulation/turns', 'adapters/sceneSimulation',
+	for (const file of ['simulation/movement', 'simulation/heroTurn', 'simulation/hunger', 'simulation/turns', 'simulation/mobLoot', 'adapters/sceneSimulation',
 		'adapters/hungerSimulation', 'simulation/random', 'simulation/combatState', 'simulation/mwlBuffDurations', 'simulation/mwlStatusImmunities', 'simulation/mwlMonsterImmunities', 'simulation/mwlMonsterStateStats', 'simulation/buffs', 'simulation/combat', 'simulation/entityId', 'talentEffects',
 		'adapters/combatSimulation', 'adapters/mwgRandom', 'combat', 'simulation/heroActions', 'adapters/heroActionSimulation', 'adapters/heroActions',
 	'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/warriorAbilities', 'simulation/huntressAbilities', 'simulation/duelistAbilities', 'simulation/mageAbilities', 'simulation/rogueAbilities', 'simulation/ratmogrify', 'talents', 'armorAbilities', 'simulation/tenguAbility', 'simulation/tenguBeam', 'simulation/gooBoss', 'simulation/ratKingBoss', 'simulation/dm300Boss', 'simulation/gnollGeomancer', 'simulation/yogBoss', 'simulation/defenderDamageCurves', 'simulation/preparation', 'simulation/disintegration', 'items/wands', 'items/missiles', 'mechanics/cone', 'dungeonConstants',
-	'simulation/javaBlob', 'simulation/fireSpread', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops', 'simulation/plantTriggers', 'simulation/teleport', 'simulation/teleportAppear', 'simulation/timeBubble', 'simulation/targeting', 'simulation/ripperLeap', 'simulation/succubusBlink', 'simulation/prismatic', 'simulation/mirrorImage', 'simulation/sentryTurn', 'simulation/brews', 'simulation/levelPopulation', 'simulation/smoke', 'simulation/deathBursts', 'simulation/pourAuras', 'simulation/skeletonExplosion', 'simulation/vertigo', 'simulation/ringKnow', 'simulation/actorCollision', 'simulation/wandering', 'simulation/zoomStep', 'simulation/chasmJump', 'simulation/spareWands', 'simulation/clericSpells', 'simulation/shockArc', 'simulation/geyserTrap', 'simulation/cursedWand', 'ui/buffOverlays', 'settings',
+	'simulation/javaBlob', 'simulation/fireSpread', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops', 'simulation/plantTriggers', 'simulation/teleport', 'simulation/trapAreas', 'simulation/tenguDart', 'simulation/teleportAppear', 'simulation/timeBubble', 'simulation/targeting', 'simulation/ripperLeap', 'simulation/succubusBlink', 'simulation/prismatic', 'simulation/mirrorImage', 'simulation/sentryTurn', 'simulation/brews', 'simulation/levelPopulation', 'simulation/smoke', 'simulation/deathBursts', 'simulation/pourAuras', 'simulation/skeletonExplosion', 'simulation/vertigo', 'simulation/ringKnow', 'simulation/actorCollision', 'simulation/wandering', 'simulation/zoomStep', 'simulation/chasmJump', 'simulation/spareWands', 'simulation/clericSpells', 'simulation/shockArc', 'simulation/geyserTrap', 'simulation/cursedWand', 'ui/buffOverlays', 'settings',
 	// `actors/monsterSpawn` (plus its `monsters`/`challenges`/i18n chain) for the spawn-profile
 	// checks: the chaos-elemental roll, the rare-alt table, and the unported-mob absences.
 	'monsters', 'challenges', 'i18n/index', 'i18n/portStrings', 'i18n/portMineStrings', 'i18n/languages', 'i18n/spdKeys', 'generated/spdMessages', 'items/artifacts', 'actors/monsterSpawn',
@@ -820,7 +820,7 @@ check('Pursuit strikes adjacent targets and steps around blockers', () => {
 	assert.deepEqual(calls, [['step', { x: 0, y: 0 }, { x: 3, y: 0 }], ['moved', { x: 0, y: 1 }]]);
 });
 check('Teleport lands passable, unoccupied, unseen, non-secret and out of pits', () => {
-	const open = { passable: true, occupied: false, visible: false, secret: false, chasm: false };
+	const open = { passable: true, occupied: false, visible: false, secret: false, chasm: false, openSpace: true };
 	assert.deepEqual(teleportCandidates([
 		{ x: 0, y: 0, ...open },
 		{ x: 1, y: 0, ...open, passable: false },
@@ -829,6 +829,15 @@ check('Teleport lands passable, unoccupied, unseen, non-secret and out of pits',
 		{ x: 4, y: 0, ...open, secret: true },
 		{ x: 5, y: 0, ...open, chasm: true },
 	]), [{ x: 0, y: 0 }]);
+	assert.deepEqual(teleportCandidates([
+		{ x: 6, y: 0, ...open, openSpace: false },
+		{ x: 7, y: 0, ...open, openSpace: true },
+	], true), [{ x: 7, y: 0 }], 'LARGE movers require Java Level.openSpace');
+	assert.deepEqual(teleportCandidates([{ x: 8, y: 0, ...open, openSpace: false }]), [{ x: 8, y: 0 }],
+		'ordinary movers may use any accepted respawn cell');
+	const bossLogic = readFileSync(new URL('../src/scenes/dungeon/bosses/bossLogic.ts', import.meta.url), 'utf8');
+	assert.match(bossLogic, /isLargeCreature\(exclude\.kind, exclude\.yogFistType\)[\s\S]*?openSpace: isOpenSpace\([\s\S]*?teleportCandidates\(cells, large\)/,
+		'runtime random teleport sends the LARGE subtype through the openSpace filter');
 });
 check('Teleport appear plays visibility-gated sound, bursts and fade', () => {
 	assert.deepEqual(teleportAppearPlan(true, false, true, false),
@@ -923,10 +932,15 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 	const { takeSentryTurn } = require('./simulation/sentryTurn');
 	const { ratKingP1Summon, planRatKingWave } = require('./simulation/ratKingBoss');
 	const { chooseDM300Ability, dm300VentPath, planDM300Rockfall, planDM300Knockback } = require('./simulation/dm300Boss');
-	const { aimYogDeathGaze, buildYogMinionDeck } = require('./simulation/yogBoss');
+	const { aimYogDeathGaze, buildYogMinionDeck, yogBossChallengeQualified } = require('./simulation/yogBoss');
 	const { Scheduler } = require('./scheduler');
 	const talents = require('./talentEffects');
 	const buffDurations = require('./simulation/buffs');
+	check('Prismatic Light grants the Java short-view floor duration', () => {
+		const { prismaticWandLightDuration } = require('./items/wands');
+		assert.deepEqual([0, 1, 3].map((level) => prismaticWandLightDuration(level, true)), [2, 3, 5]);
+		assert.deepEqual([0, 1, 3].map((level) => prismaticWandLightDuration(level, false)), [10, 15, 25]);
+	});
 	const initial = (extra = {}) => ({ hunger: 0, partialDamage: 0, hp: 20, maxHp: 20, ...extra });
 	check('WellFed pauses hunger, heals every 18 turns, and expires after its Java clock', () => {
 		assert.deepEqual(advanceWellFed(450, 10, 20), { remaining: 449, heal: 0 });
@@ -1313,7 +1327,10 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 			trace: diagonal, random: { int: () => 0 } }).length;
 		assert.deepEqual([241, 240, 81, 80].map(beamCount), [1, 2, 2, 3]);
 	});
-	check('Yog minion deck follows the live spawner count and grants nothing', () => {
+	check('Yog minion deck and Badder Bosses challenge badge follow live spawner counts', () => {
+		assert.equal(yogBossChallengeQualified(false, 4), false);
+		assert.equal(yogBossChallengeQualified(true, 3), false);
+		assert.equal(yogBossChallengeQualified(true, 4), true);
 		//`YogDzewa.regularSummons` (tag `v3.3.8`): normal is four slots with rippers
 		//for the first `spawnersAlive` and larvae after; challenge is six slots with
 		//eye/scorpio under the count (eye first), larvae to index 4, rippers last.
@@ -1361,6 +1378,8 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 	});
 	check('scene blast, ability, and bomb damage converge on one Char.damage dispatcher', () => {
 		const scene = readSceneSource();
+		const deathSource = readFileSync(new URL('../src/scenes/dungeon/deathSaveRefresh.ts', import.meta.url), 'utf8');
+		assert.match(deathSource, /yogBossChallengeQualified\(isChallengeEnabled\('stronger_bosses'\), livingSpawners\)/);
 		const panels = readFileSync(new URL('../src/scenes/dungeon/panelsSingleUse.ts', import.meta.url), 'utf8');
 		const bombs = readFileSync(new URL('../src/items/bombEffects.ts', import.meta.url), 'utf8');
 		assert.ok(scene.includes('applyBlastDamage(this: DungeonScene, c: Creature, damage: number, pierceArmor: boolean'),

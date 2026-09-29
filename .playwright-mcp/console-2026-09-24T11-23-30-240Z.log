@@ -1,0 +1,6 @@
+[   40780ms] [WARNING]     at eval (eval at <anonymous> (eval at evaluate (:367:30)), <anonymous>:1:125)
+    at Array.map (<anonymous>)
+    at eval (eval at <anonymous> (eval at evaluate (:367:30)), <anonymous>:1:75)
+    at eval (eval at evaluate (:367:30), <anonymous>:4:50)
+    at UtilityScript.evaluate (<anonymous>:369:16)
+    at UtilityScript.<anonymous> (<anonymous>:1:44) @ http://localhost:8000/game.js:3

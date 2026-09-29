@@ -40,37 +40,12 @@
             kind: "potionShrouding",
             energy: 10,
           },
-          //R080 (2026-09-29): the port's former `food` row (6) is gone - `Food` has no `energyVal()`
-          //override in v3.3.8 (`items/food/Food.java` only defines `value()`), so it falls back to
-          //`Item.energyVal()` = 0 and Java cannot scrap food for energy. The exact-id rows below
-          //win over the kind rows above, one per class whose `energyVal()` differs from its base.
-          //Seeds: `Plant.Seed` 2*q, `Rotberry.Seed`/`Starflower.Seed` 3*q (`plants/Rotberry.java:80`,
-          //`Starflower.java:72`).
-          { tag: "row", kind: "seedRotberry", energy: 3 },
-          { tag: "row", kind: "seedStarflower", energy: 3 },
-          //`StoneOfAugmentation`/`StoneOfEnchantment.energyVal()` = 5*q (base `Runestone` is 3*q).
-          { tag: "row", kind: "stoneOfAugmentation", energy: 5 },
-          { tag: "row", kind: "stoneOfEnchantment", energy: 5 },
-          //`GooBlob`/`MetalShard.energyVal()` = 3*q (`items/quest/GooBlob.java:51`, `MetalShard.java:51`).
-          { tag: "row", kind: "gooBlob", energy: 3 },
-          { tag: "row", kind: "metalShard", energy: 3 },
-          //`Elixir.energyVal()` = 12*q (`items/potions/elixirs/Elixir.java:43`); `ElixirOfHoneyedHealing`
-          //overrides it with a flat 8 (`ElixirOfHoneyedHealing.java:78`). `featherFall` is an
-          //`ElixirOfFeatherFall` at v3.3.8 (see R083), hence the Elixir value.
-          { tag: "row", kind: "elixirArcaneArmor", energy: 12 },
-          { tag: "row", kind: "elixirAquaticRejuvenation", energy: 12 },
-          { tag: "row", kind: "elixirDragonsBlood", energy: 12 },
-          { tag: "row", kind: "elixirIcyTouch", energy: 12 },
-          { tag: "row", kind: "elixirMight", energy: 12 },
-          { tag: "row", kind: "elixirToxicEssence", energy: 12 },
-          { tag: "row", kind: "elixirHoneyedHealing", energy: 8 },
-          { tag: "row", kind: "featherFall", energy: 12 },
-          //`MagicalInfusion.energyVal()` = 12*q (`items/spells/MagicalInfusion.java:125`).
-          { tag: "row", kind: "magicalInfusion", energy: 12 },
-          //`UnstableBrew`/`UnstableSpell.energyVal()` = 8*q (`UnstableBrew.java:131`, `UnstableSpell.java:128`);
-          //neither item is ported yet, the rows wait for them.
-          { tag: "row", kind: "unstableBrew", energy: 8 },
-          { tag: "row", kind: "unstableSpell", energy: 8 },
+          {
+            tag: "row",
+            //`Item.energyVal()` defaults to 0; `Food` does not override it.
+            kind: "food",
+            energy: 0,
+          },
           {
             //`Brew.energyVal()`: every brew scraps for 12 (AquaBrew scales by
             //quantity over its 8-unit recipe, which has no port recipe yet).
@@ -93,6 +68,62 @@
             kind: "causticBrew",
             energy: 12,
           },
+          //`StoneOfAugmentation`/`StoneOfEnchantment.energyVal()`: 5 * quantity.
+          { tag: "row", kind: "stoneOfAugmentation", energy: 5 },
+          { tag: "row", kind: "stoneOfEnchantment", energy: 5 },
+          //`SeedOfRotberry` and `SeedOfStarflower.energyVal()`: 3 * quantity.
+          { tag: "row", kind: "seedRotberry", energy: 3 },
+          { tag: "row", kind: "seedStarflower", energy: 3 },
+          //Quest items override Item.energyVal() with 3 * quantity.
+          { tag: "row", kind: "gooBlob", energy: 3 },
+          { tag: "row", kind: "metalShard", energy: 3 },
+          //`Elixir.energyVal()`: 12 * quantity, including FeatherFall.
+          { tag: "row", kind: "elixirArcaneArmor", energy: 12 },
+          { tag: "row", kind: "elixirAquaticRejuvenation", energy: 12 },
+          { tag: "row", kind: "elixirDragonsBlood", energy: 12 },
+          { tag: "row", kind: "elixirIcyTouch", energy: 12 },
+          { tag: "row", kind: "elixirMight", energy: 12 },
+          { tag: "row", kind: "elixirHoneyedHealing", energy: 8 },
+          { tag: "row", kind: "elixirToxicEssence", energy: 12 },
+          { tag: "row", kind: "featherFall", energy: 12 },
+          //`MagicalInfusion.energyVal()`: 12 * quantity. The unstable classes retain
+          //their Java values even though their item families remain unported (R082).
+          { tag: "row", kind: "magicalInfusion", energy: 12 },
+          { tag: "row", kind: "unstableBrew", energy: 8 },
+          { tag: "row", kind: "unstableSpell", energy: 8 },
+        ],
+      },
+      {
+        tag: "table",
+        id: "alchemyScaledEnergy",
+        columns: "item:string|total:number|outputQuantity:number",
+        children: [
+          //Spell energyVal() integer-scales against each recipe's OUT_QUANTITY.
+          { tag: "row", item: "beaconOfReturning", total: 12, outputQuantity: 5 },
+          { tag: "row", item: "curseInfusion", total: 12, outputQuantity: 4 },
+          { tag: "row", item: "phaseShift", total: 12, outputQuantity: 6 },
+          { tag: "row", item: "reclaimTrap", total: 12, outputQuantity: 5 },
+          { tag: "row", item: "recycle", total: 12, outputQuantity: 12 },
+          { tag: "row", item: "wildEnergy", total: 12, outputQuantity: 5 },
+          { tag: "row", item: "telekineticGrab", total: 10, outputQuantity: 8 },
+          { tag: "row", item: "alchemize", total: 4, outputQuantity: 8 },
+        ],
+      },
+      {
+        tag: "table",
+        id: "alchemyScrapRatio",
+        columns: "item:string|base:number|outQuantity:number",
+        children: [
+          //Quantity-aware spell scrap: (int)(base * quantity / OUT_QUANTITY),
+          //mirroring alchemyScaledEnergy (no summonElemental row: no Java override).
+          { tag: "row", item: "beaconOfReturning", base: 12, outQuantity: 5 },
+          { tag: "row", item: "curseInfusion", base: 12, outQuantity: 4 },
+          { tag: "row", item: "phaseShift", base: 12, outQuantity: 6 },
+          { tag: "row", item: "reclaimTrap", base: 12, outQuantity: 5 },
+          { tag: "row", item: "recycle", base: 12, outQuantity: 12 },
+          { tag: "row", item: "wildEnergy", base: 12, outQuantity: 5 },
+          { tag: "row", item: "telekineticGrab", base: 10, outQuantity: 8 },
+          { tag: "row", item: "alchemize", base: 4, outQuantity: 8 },
         ],
       },
       {
@@ -107,26 +138,9 @@
         ],
       },
       {
-        //Spells whose `energyVal()` is `(int)(base * (quantity / (float) Recipe.OUT_QUANTITY))`
-        //(tag v3.3.8): the per-unit value is fractional, so the port evaluates it on the scrapped
-        //quantity like Java does (one unit: truncated). `SummonElemental` has no override (0).
-        tag: "table",
-        id: "alchemyScrapRatio",
-        columns: "item:string|base:number|outQuantity:number",
-        children: [
-          { tag: "row", item: "phaseShift", base: 12, outQuantity: 6 },
-          { tag: "row", item: "recycle", base: 12, outQuantity: 12 },
-          { tag: "row", item: "telekineticGrab", base: 10, outQuantity: 8 },
-          { tag: "row", item: "curseInfusion", base: 12, outQuantity: 4 },
-          { tag: "row", item: "reclaimTrap", base: 12, outQuantity: 5 },
-          { tag: "row", item: "wildEnergy", base: 12, outQuantity: 5 },
-          { tag: "row", item: "beaconOfReturning", base: 12, outQuantity: 5 },
-        ],
-      },
-      {
         tag: "table",
         id: "alchemyRecipes",
-        columns: "id:string|ingredients:list|result:string|resultQuantity:number|energyCost:number",
+        columns: "id:string|ingredients:list|result:string|resultQuantity:number|energyCost:number|requiresIdentified:boolean",
         list_delimiter: ",",
         children: [
           {
@@ -136,6 +150,7 @@
             result: "stewedMeat",
             resultQuantity: 1,
             energyCost: 1,
+            requiresIdentified: true,
           },
           {
             tag: "row",
@@ -144,6 +159,7 @@
             result: "stewedMeat",
             resultQuantity: 2,
             energyCost: 2,
+            requiresIdentified: true,
           },
           {
             tag: "row",
@@ -152,6 +168,7 @@
             result: "stewedMeat",
             resultQuantity: 3,
             energyCost: 2,
+            requiresIdentified: true,
           },
           {
             tag: "row",
@@ -160,81 +177,7 @@
             result: "meatPie",
             resultQuantity: 1,
             energyCost: 6,
-          },
-          //R081 (2026-09-29): the spell recipes, `Recipe.SimpleRecipe`s at tag v3.3.8 (inputs, quantities,
-          //cost and `OUT_QUANTITY` read from each class). BeaconOfReturning (ScrollOfPassage, an exotic
-          //scroll with no port item) is the one Java spell recipe still absent - see coverage.
-          {
-            //`MagicalInfusion.Recipe (MagicalInfusion.java:128)`
-            tag: "row",
-            id: "magicalInfusion",
-            ingredients: "scrollUpgrade:1",
-            result: "magicalInfusion",
-            resultQuantity: 1,
-            energyCost: 12,
-          },
-          {
-            //`PhaseShift.Recipe (PhaseShift.java:79)`
-            tag: "row",
-            id: "phaseShift",
-            ingredients: "scrollTeleportation:1",
-            result: "phaseShift",
-            resultQuantity: 6,
-            energyCost: 10,
-          },
-          {
-            //`Recycle.Recipe (Recycle.java:105)`
-            tag: "row",
-            id: "recycle",
-            ingredients: "scrollTransmutation:1",
-            result: "recycle",
-            resultQuantity: 12,
-            energyCost: 12,
-          },
-          {
-            //`TelekineticGrab.Recipe (TelekineticGrab.java:150)`
-            tag: "row",
-            id: "telekineticGrab",
-            ingredients: "liquidMetal:10",
-            result: "telekineticGrab",
-            resultQuantity: 8,
-            energyCost: 10,
-          },
-          {
-            //`SummonElemental.Recipe (SummonElemental.java:232)`
-            tag: "row",
-            id: "summonElemental",
-            ingredients: "embers:1",
-            result: "summonElemental",
-            resultQuantity: 6,
-            energyCost: 10,
-          },
-          {
-            //`CurseInfusion.Recipe (CurseInfusion.java:109)`
-            tag: "row",
-            id: "curseInfusion",
-            ingredients: "scrollCleanse:1,metalShard:1",
-            result: "curseInfusion",
-            resultQuantity: 4,
-            energyCost: 6,
-          },
-          {
-            //`ReclaimTrap.Recipe (ReclaimTrap.java:174)`
-            tag: "row",
-            id: "reclaimTrap",
-            ingredients: "scrollMapping:1,metalShard:1",
-            result: "reclaimTrap",
-            resultQuantity: 5,
-            energyCost: 8,
-          },
-          {
-            //`WildEnergy.Recipe (WildEnergy.java:84)`
-            tag: "row",
-            id: "wildEnergy",
-            ingredients: "scrollRecharging:1,metalShard:1",
-            result: "wildEnergy",
-            resultQuantity: 5,
-            energyCost: 4,
+            requiresIdentified: false,
           },
           {
             tag: "row",
@@ -243,6 +186,7 @@
             result: "potionHealing",
             resultQuantity: 1,
             energyCost: 0,
+            requiresIdentified: false,
           },
           {
             tag: "row",
@@ -251,6 +195,7 @@
             result: "stoneOfIntuition",
             resultQuantity: 2,
             energyCost: 0,
+            requiresIdentified: false,
           },
           {
             //`ExoticScroll.ScrollToExotic`: one regular scroll, cost 6. The authored
@@ -264,6 +209,7 @@
             result: "scrollPrismatic",
             resultQuantity: 1,
             energyCost: 6,
+            requiresIdentified: false,
           },
           {
             //`ExoticPotion.PotionToExotic`: one regular potion, cost 4. The authored
@@ -277,6 +223,7 @@
             result: "potionShrouding",
             resultQuantity: 1,
             energyCost: 4,
+            requiresIdentified: false,
           },
           {
             tag: "row",
@@ -285,6 +232,7 @@
             result: "alchemize",
             resultQuantity: 8,
             energyCost: 2,
+            requiresIdentified: false,
           },
           {
             tag: "row",
@@ -293,6 +241,7 @@
             result: "frostBomb",
             resultQuantity: 1,
             energyCost: 0,
+            requiresIdentified: true,
           },
           {
             tag: "row",
@@ -301,6 +250,7 @@
             result: "woollyBomb",
             resultQuantity: 1,
             energyCost: 0,
+            requiresIdentified: true,
           },
           {
             tag: "row",
@@ -309,6 +259,7 @@
             result: "fireBomb",
             resultQuantity: 1,
             energyCost: 1,
+            requiresIdentified: true,
           },
           {
             tag: "row",
@@ -317,6 +268,7 @@
             result: "noisemaker",
             resultQuantity: 1,
             energyCost: 1,
+            requiresIdentified: true,
           },
           {
             //`Bomb.EnhanceBomb` (tag `v3.3.8`): recharging brews a flashbang, cost 2.
@@ -327,6 +279,7 @@
             result: "flashbang",
             resultQuantity: 1,
             energyCost: 2,
+            requiresIdentified: true,
           },
           {
             //`Bomb.EnhanceBomb` (tag `v3.3.8`): invisibility brews a smoke bomb, cost 2.
@@ -337,6 +290,7 @@
             result: "smokeBomb",
             resultQuantity: 1,
             energyCost: 2,
+            requiresIdentified: true,
           },
           {
             tag: "row",
@@ -345,6 +299,7 @@
             result: "regrowthBomb",
             resultQuantity: 1,
             energyCost: 3,
+            requiresIdentified: true,
           },
           {
             tag: "row",
@@ -353,6 +308,7 @@
             result: "holyBomb",
             resultQuantity: 1,
             energyCost: 3,
+            requiresIdentified: true,
           },
           {
             tag: "row",
@@ -361,6 +317,7 @@
             result: "arcaneBomb",
             resultQuantity: 1,
             energyCost: 6,
+            requiresIdentified: true,
           },
           {
             tag: "row",
@@ -369,6 +326,7 @@
             result: "shrapnelBomb",
             resultQuantity: 1,
             energyCost: 6,
+            requiresIdentified: true,
           },
           {
             //`InfernalBrew.Recipe`: one liquid flame, cost 12, one brew.
@@ -378,6 +336,7 @@
             result: "infernalBrew",
             resultQuantity: 1,
             energyCost: 12,
+            requiresIdentified: true,
           },
           {
             //`BlizzardBrew.Recipe`: one frost, cost 8, one brew.
@@ -387,6 +346,7 @@
             result: "blizzardBrew",
             resultQuantity: 1,
             energyCost: 8,
+            requiresIdentified: true,
           },
           {
             //`ShockingBrew.Recipe`: one paralytic gas, cost 10, one brew.
@@ -396,6 +356,7 @@
             result: "shockingBrew",
             resultQuantity: 1,
             energyCost: 10,
+            requiresIdentified: true,
           },
           {
             //`CausticBrew.Recipe`: one toxic gas plus one goo blob, cost 1, one brew.
@@ -405,6 +366,110 @@
             result: "causticBrew",
             resultQuantity: 1,
             energyCost: 1,
+            requiresIdentified: true,
+          },
+          {
+            //`ElixirOfFeatherFall.Recipe` (`ElixirOfFeatherFall.java`): one identified Levitation potion, cost 10, one elixir.
+            tag: "row",
+            id: "featherFall",
+            ingredients: "potionLevitation:1",
+            result: "featherFall",
+            resultQuantity: 1,
+            energyCost: 10,
+            requiresIdentified: true,
+          },
+          {
+            //`MagicalInfusion.Recipe` (`MagicalInfusion.java:128`): one identified upgrade scroll, cost 12.
+            tag: "row",
+            id: "magicalInfusion",
+            ingredients: "scrollUpgrade:1",
+            result: "magicalInfusion",
+            resultQuantity: 1,
+            energyCost: 12,
+            requiresIdentified: true,
+          },
+          {
+            //`PhaseShift.Recipe` (`PhaseShift.java:79`): one identified teleport scroll, cost 10, six spells.
+            tag: "row",
+            id: "phaseShift",
+            ingredients: "scrollTeleportation:1",
+            result: "phaseShift",
+            resultQuantity: 6,
+            energyCost: 10,
+            requiresIdentified: true,
+          },
+          {
+            //`Recycle.Recipe` (`Recycle.java:105`): one identified transmutation scroll, cost 12, twelve spells.
+            tag: "row",
+            id: "recycle",
+            ingredients: "scrollTransmutation:1",
+            result: "recycle",
+            resultQuantity: 12,
+            energyCost: 12,
+            requiresIdentified: true,
+          },
+          {
+            //`TelekineticGrab.Recipe` (`TelekineticGrab.java:150`): ten identified LiquidMetal, cost 10, eight spells.
+            tag: "row",
+            id: "telekineticGrab",
+            ingredients: "liquidMetal:10",
+            result: "telekineticGrab",
+            resultQuantity: 8,
+            energyCost: 10,
+            requiresIdentified: true,
+          },
+          {
+            //`SummonElemental.Recipe` (`SummonElemental.java:232`): one Embers, cost 10, six spells.
+            tag: "row",
+            id: "summonElemental",
+            ingredients: "embers:1",
+            result: "summonElemental",
+            resultQuantity: 6,
+            energyCost: 10,
+            requiresIdentified: true,
+          },
+          {
+            //`CurseInfusion.Recipe` (`CurseInfusion.java:109`): identified remove-curse scroll + shard, cost 6, four spells.
+            tag: "row",
+            id: "curseInfusion",
+            ingredients: "scrollCleanse:1,metalShard:1",
+            result: "curseInfusion",
+            resultQuantity: 4,
+            energyCost: 6,
+            requiresIdentified: true,
+          },
+          {
+            //`ReclaimTrap.Recipe` (`ReclaimTrap.java:174`): identified mapping scroll + shard, cost 8, five spells.
+            tag: "row",
+            id: "reclaimTrap",
+            ingredients: "scrollMapping:1,metalShard:1",
+            result: "reclaimTrap",
+            resultQuantity: 5,
+            energyCost: 8,
+            requiresIdentified: true,
+          },
+          {
+            //`WildEnergy.Recipe` (`WildEnergy.java:84`): identified recharging scroll + shard, cost 4, five spells.
+            tag: "row",
+            id: "wildEnergy",
+            ingredients: "scrollRecharging:1,metalShard:1",
+            result: "wildEnergy",
+            resultQuantity: 5,
+            energyCost: 4,
+            requiresIdentified: true,
+          },
+          {
+            //`BeaconOfReturning.Recipe` (`items/spells/BeaconOfReturning.java`, tag `v3.3.8`):
+            //one identified exotic ScrollOfPassage produces five spells for 12 energy.
+            //`scrollPassage` is the dedicated token; the scroll's separate `doRead()` effect
+            //remains outside this recipe port.
+            tag: "row",
+            id: "beaconOfReturning",
+            ingredients: "scrollPassage:1",
+            result: "beaconOfReturning",
+            resultQuantity: 5,
+            energyCost: 12,
+            requiresIdentified: true,
           },
         ],
       },
@@ -417,7 +482,7 @@
             tag: "row",
             id: "manifest-liquidMetal",
             recipe: "liquidMetal",
-            group: "variable",
+            group: "one",
             javaRecipe: "LiquidMetal.Recipe",
           },
           {
@@ -443,20 +508,6 @@
           },
           {
             tag: "row",
-            id: "manifest-exoticPotion",
-            recipe: "exoticPotion",
-            group: "one",
-            javaRecipe: "ExoticPotion.PotionToExotic",
-          },
-          {
-            tag: "row",
-            id: "manifest-exoticScroll",
-            recipe: "exoticScroll",
-            group: "one",
-            javaRecipe: "ExoticScroll.ScrollToExotic",
-          },
-          {
-            tag: "row",
             id: "manifest-arcaneResin",
             recipe: "arcaneResin",
             group: "one",
@@ -466,7 +517,7 @@
             tag: "row",
             id: "manifest-alchemize",
             recipe: "alchemize",
-            group: "one",
+            group: "two",
             javaRecipe: "Alchemize.Recipe",
           },
           {
@@ -475,6 +526,20 @@
             recipe: "stewedMeat1",
             group: "one",
             javaRecipe: "StewedMeat.oneMeat",
+          },
+          {
+            tag: "row",
+            id: "manifest-trinketCatalyst",
+            recipe: "trinketCatalyst",
+            group: "one",
+            javaRecipe: "TrinketCatalyst.Recipe",
+          },
+          {
+            tag: "row",
+            id: "manifest-upgradeTrinket",
+            recipe: "upgradeTrinket",
+            group: "one",
+            javaRecipe: "Trinket.UpgradeTrinket",
           },
           {
             tag: "row",
@@ -508,21 +573,21 @@
             tag: "row",
             id: "manifest-elixirDragonsBlood",
             recipe: "elixirDragonsBlood",
-            group: "two",
+            group: "one",
             javaRecipe: "ElixirOfDragonsBlood.Recipe",
           },
           {
             tag: "row",
             id: "manifest-elixirIcyTouch",
             recipe: "elixirIcyTouch",
-            group: "two",
+            group: "one",
             javaRecipe: "ElixirOfIcyTouch.Recipe",
           },
           {
             tag: "row",
             id: "manifest-elixirMight",
             recipe: "elixirMight",
-            group: "two",
+            group: "one",
             javaRecipe: "ElixirOfMight.Recipe",
           },
           {
@@ -536,28 +601,28 @@
             tag: "row",
             id: "manifest-elixirToxicEssence",
             recipe: "elixirToxicEssence",
-            group: "two",
+            group: "one",
             javaRecipe: "ElixirOfToxicEssence.Recipe",
           },
           {
             tag: "row",
             id: "manifest-blizzardBrew",
             recipe: "blizzardBrew",
-            group: "two",
+            group: "one",
             javaRecipe: "BlizzardBrew.Recipe",
           },
           {
             tag: "row",
             id: "manifest-infernalBrew",
             recipe: "infernalBrew",
-            group: "two",
+            group: "one",
             javaRecipe: "InfernalBrew.Recipe",
           },
           {
             tag: "row",
             id: "manifest-shockingBrew",
             recipe: "shockingBrew",
-            group: "two",
+            group: "one",
             javaRecipe: "ShockingBrew.Recipe",
           },
           {
@@ -569,9 +634,30 @@
           },
           {
             tag: "row",
+            id: "manifest-aquaBrew",
+            recipe: "aquaBrew",
+            group: "one",
+            javaRecipe: "AquaBrew.Recipe",
+          },
+          {
+            tag: "row",
+            id: "manifest-unstableBrew",
+            recipe: "unstableBrew",
+            group: "two",
+            javaRecipe: "UnstableBrew.Recipe",
+          },
+          {
+            tag: "row",
+            id: "manifest-unstableSpell",
+            recipe: "unstableSpell",
+            group: "two",
+            javaRecipe: "UnstableSpell.Recipe",
+          },
+          {
+            tag: "row",
             id: "manifest-beaconOfReturning",
             recipe: "beaconOfReturning",
-            group: "two",
+            group: "one",
             javaRecipe: "BeaconOfReturning.Recipe",
           },
           {
@@ -585,21 +671,21 @@
             tag: "row",
             id: "manifest-featherFall",
             recipe: "featherFall",
-            group: "two",
-            javaRecipe: "FeatherFall.Recipe",
+            group: "one",
+            javaRecipe: "ElixirOfFeatherFall.Recipe",
           },
           {
             tag: "row",
             id: "manifest-magicalInfusion",
             recipe: "magicalInfusion",
-            group: "two",
+            group: "one",
             javaRecipe: "MagicalInfusion.Recipe",
           },
           {
             tag: "row",
             id: "manifest-phaseShift",
             recipe: "phaseShift",
-            group: "two",
+            group: "one",
             javaRecipe: "PhaseShift.Recipe",
           },
           {
@@ -613,7 +699,7 @@
             tag: "row",
             id: "manifest-recycle",
             recipe: "recycle",
-            group: "two",
+            group: "one",
             javaRecipe: "Recycle.Recipe",
           },
           {
@@ -627,14 +713,14 @@
             tag: "row",
             id: "manifest-telekineticGrab",
             recipe: "telekineticGrab",
-            group: "two",
+            group: "one",
             javaRecipe: "TelekineticGrab.Recipe",
           },
           {
             tag: "row",
             id: "manifest-summonElemental",
             recipe: "summonElemental",
-            group: "two",
+            group: "one",
             javaRecipe: "SummonElemental.Recipe",
           },
           {

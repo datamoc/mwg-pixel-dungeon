@@ -5,6 +5,7 @@ import { CURSED_PLANT_KINDS, CURSED_RANDOM_GAS, cursedForestFireSeeds, cursedInt
 import { activateGeyserTrap as activateGeyserTrapFlow } from '../../../simulation/geyserTrap';
 import { applyBlastDamage } from '../../../items/bombEffects';
 import { MWL_BOMB_RULES } from '../../../mwlContent';
+import { isPlantBlocked } from '../../../challenges';
 import { getArmorCurses, getWeaponCurses } from '../../../items/itemCurses';
 import { WAND_TYPES } from '../../../items/wands';
 import { WATER } from '../../../dungeonConstants';
@@ -78,9 +79,10 @@ export const cursedWandCastMethods = {
 			runState.audio.cue('teleport', 0.7);
 			this.say(t('items.wands.cursedwand.gravity'), 'warning');
 		} else if (effect === 'sinkHole') {
-			//`SinkHole.effect()`: a `DelayedPit` over every cell within distance 5 of the caster, so the hero
-			//(distance 0, not flying) always falls. Same stated simplification as the pitfall trap: only the hero
-			//falls, immediately rather than a turn later; mobs and heaps in the area stay put (Java drops them).
+			//`SinkHole.effect()` (v4.0.0): Java queues a radius-5 `DelayedPit`, then after one turn drops
+			//non-flying characters and ordinary heaps in the area. This wand path remains simplified: it
+			//drops only the hero immediately and leaves mobs/heaps in place because it does not queue the
+			//area-collapse phase now used by the PitfallTrap path.
 			const reach = this.pathfinder.distanceMap({ x: this.hero.x, y: this.hero.y });
 			for (let y = 0; y < this.level.height; y++) for (let x = 0; x < this.level.width; x++) {
 				const steps = reach[this.level.index(x, y)] ?? -1;
@@ -255,7 +257,7 @@ export const cursedWandCastMethods = {
 	/** `CursedWand.cursedZap()`'s Uncommon tier, all eight of Java's real ids
 	 * (`simulation/cursedWand.ts` has the scoping rationale for what each one dropped). */
 	castCursedWandUncommonEffect(this: DungeonScene, target: Creature | undefined, cell: Step): void {
-		const effect = pickCursedUncommonEffect((bound) => Random.int(bound));
+		const effect = pickCursedUncommonEffect((bound) => Random.int(bound), !isPlantBlocked());
 		if (effect === 'healthTransfer') {
 			//HealthTransfer.effect(): a coin flip picks which side heals and which takes
 			//`scalingDepth()*2` raw damage (half the roll heals, matching Java's `damage/2`);

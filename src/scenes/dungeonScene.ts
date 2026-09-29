@@ -312,6 +312,7 @@ import { APPEARANCE_TABLES, AUGMENT_OPTIONS, BLACKSMITH_QUEST, BLACKSMITH_SMITH_
 import { coreSpawnTilesMethods } from './dungeon/coreSpawnTiles';
 import { npcShopBlacksmithMethods } from './dungeon/npcShopBlacksmith';
 import { environmentFireTrapsMethods } from './dungeon/environmentFireTraps';
+import { pitfallCollapseMethods } from './dungeon/pitfallCollapse';
 import { turnLoopAimingMethods } from './dungeon/turnLoopAiming';
 import { actorTurnsHazardsMethods } from './dungeon/actorTurnsHazards';
 import { monsterAiMethods } from './dungeon/monsters/monsterAi';
@@ -748,7 +749,7 @@ export class DungeonScene extends Scene2D {
 	/** RingOfWealth.TriesToDropTracker/DropsToEquipTracker, persisted for the run. */
 	wealthTriesToDrop = -1;
 	wealthDropsToEquip = -1;
-	/** `Dungeon.LimitedDrops.UPGRADE_SCROLLS.count`: guaranteed upgrade scrolls allocated this run. */
+	/** Java `Dungeon.LimitedDrops.UPGRADE_SCROLLS` and `COOKING_HP` run counters. */
 	upgradeScrollDrops = 0;
 	/** Ghost Quest.type for this run (1 Fetid Rat, 2 Gnoll Trickster, 3 Great Crab) */
 	ghostType = 1;
@@ -1206,6 +1207,8 @@ export class DungeonScene extends Scene2D {
 	cavesBossEnergyCells = new Set<number>();
 	/** In-flight DM300 rockfall volleys on this floor (cells + turns to impact). */
 	fallingRocks: { cells: { x: number; y: number }[]; turns: number; gnoll?: boolean }[] = [];
+	/** `PitfallTrap.DelayedPit`: cells to collapse after the automatic actors take their turns. */
+	pendingPitfallCollapses: number[][] = [];
 	readonly cavesBossPylons = [
 		{ x: 4, y: 13 }, { x: 28, y: 13 }, { x: 4, y: 37 }, { x: 28, y: 37 },
 	] as const;
@@ -2592,5 +2595,5 @@ export class DungeonScene extends Scene2D {
 
 /** The method groups in `./dungeon/` are typed with `this: DungeonScene` and merged onto the prototype here. */
 type Mixed<T> = { [K in keyof T]: OmitThisParameter<T[K]> };
-export interface DungeonScene extends Mixed<typeof coreSpawnTilesMethods>, Mixed<typeof npcShopBlacksmithMethods>, Mixed<typeof environmentFireTrapsMethods>, Mixed<typeof turnLoopAimingMethods>, Mixed<typeof actorTurnsHazardsMethods>, Mixed<typeof monsterAiMethods>, Mixed<typeof bossLogicMethods>, Mixed<typeof gnollMineMethods>, Mixed<typeof crystalMineMethods>, Mixed<typeof combatResolutionMethods>, Mixed<typeof attackSeamMethods>, Mixed<typeof deathSaveRefreshMethods>, Mixed<typeof panelsSingleUseMethods>, Mixed<typeof inventoryQuickslotMethods>, Mixed<typeof clericSpellFlowsMethods>, Mixed<typeof armorAbilityUseMethods>, Mixed<typeof powerOfManyMethods>, Mixed<typeof skeletonKeyMethods>, Mixed<typeof dropThrowMethods>, Mixed<typeof cursedWandCastMethods>, Mixed<typeof tippedDartEffectsMethods>, Mixed<typeof weaponSpellsGearMethods>, Mixed<typeof comboMovesMethods>, Mixed<typeof monkAbilitiesMethods>, Mixed<typeof berserkRageMethods> {}
-Object.assign(DungeonScene.prototype, coreSpawnTilesMethods, npcShopBlacksmithMethods, environmentFireTrapsMethods, turnLoopAimingMethods, actorTurnsHazardsMethods, monsterAiMethods, bossLogicMethods, gnollMineMethods, crystalMineMethods, combatResolutionMethods, attackSeamMethods, deathSaveRefreshMethods, panelsSingleUseMethods, inventoryQuickslotMethods, clericSpellFlowsMethods, armorAbilityUseMethods, powerOfManyMethods, skeletonKeyMethods, dropThrowMethods, cursedWandCastMethods, tippedDartEffectsMethods, weaponSpellsGearMethods, comboMovesMethods, monkAbilitiesMethods, berserkRageMethods);
+export interface DungeonScene extends Mixed<typeof coreSpawnTilesMethods>, Mixed<typeof npcShopBlacksmithMethods>, Mixed<typeof environmentFireTrapsMethods>, Mixed<typeof pitfallCollapseMethods>, Mixed<typeof turnLoopAimingMethods>, Mixed<typeof actorTurnsHazardsMethods>, Mixed<typeof monsterAiMethods>, Mixed<typeof bossLogicMethods>, Mixed<typeof gnollMineMethods>, Mixed<typeof crystalMineMethods>, Mixed<typeof combatResolutionMethods>, Mixed<typeof attackSeamMethods>, Mixed<typeof deathSaveRefreshMethods>, Mixed<typeof panelsSingleUseMethods>, Mixed<typeof inventoryQuickslotMethods>, Mixed<typeof clericSpellFlowsMethods>, Mixed<typeof armorAbilityUseMethods>, Mixed<typeof powerOfManyMethods>, Mixed<typeof skeletonKeyMethods>, Mixed<typeof dropThrowMethods>, Mixed<typeof cursedWandCastMethods>, Mixed<typeof tippedDartEffectsMethods>, Mixed<typeof weaponSpellsGearMethods>, Mixed<typeof comboMovesMethods>, Mixed<typeof monkAbilitiesMethods>, Mixed<typeof berserkRageMethods> {}
+Object.assign(DungeonScene.prototype, coreSpawnTilesMethods, npcShopBlacksmithMethods, environmentFireTrapsMethods, pitfallCollapseMethods, turnLoopAimingMethods, actorTurnsHazardsMethods, monsterAiMethods, bossLogicMethods, gnollMineMethods, crystalMineMethods, combatResolutionMethods, attackSeamMethods, deathSaveRefreshMethods, panelsSingleUseMethods, inventoryQuickslotMethods, clericSpellFlowsMethods, armorAbilityUseMethods, powerOfManyMethods, skeletonKeyMethods, dropThrowMethods, cursedWandCastMethods, tippedDartEffectsMethods, weaponSpellsGearMethods, comboMovesMethods, berserkRageMethods);

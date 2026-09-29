@@ -217,9 +217,8 @@ type ToolkitItem = { level?: number; charge?: number; partialCharge?: number; cu
  * reproduce; Not ported for that reason, not simplified away). `AC_ENERGIZE` (spend the
  * carried alchemy energy pool, 6 per level, to permanently raise the toolkit's own level)
  * is exposed from `openAlchemyRecipes`'s picker instead of a second button here, since that
- * is the one place this port already surfaces the energy pool the action spends. The pot is
- * opened in a toolkit session (`AlchemyFlowContext.viaToolkit`, Java's
- * `AlchemyScene.assignToolkit`) by `artifactActionContext().openAlchemyPot`. */
+ * is the one place this port already surfaces the energy pool the action spends - see the
+ * `openAlchemyPot`/`consumeToolkitEnergy` call sites in `dungeonScene.ts`. */
 export function useToolkit(scene: ArtifactActionContext, instanceId?: string): void {
 	const toolkit = findArtifact(scene, 'toolkit', instanceId) as (typeof scene.bag.items[number] & ToolkitItem) | undefined;
 	if (!toolkit || scene.hero.magicImmune) return;
@@ -295,11 +294,8 @@ export function applyArmbandGainCharge(scene: Pick<ArtifactActionContext, 'bag'>
  * `consumeEnergy` has no `cursed`/`AntiMagic` guard of its own - a cursed toolkit still pays
  * out whatever charge it already banked before the curse, so this does not check either. */
 export function consumeToolkitEnergy(scene: Pick<ArtifactActionContext, 'bag'>, cost: number): number {
-	//NOTE (`AlchemistsToolkit.consumeEnergy`, tag `v3.3.8`): real Java calls
-	//`Talent.onArtifactUsed(Dungeon.hero)` on every energy spend - the EnhancedRings
-	//arming in `armEnhancedRingsFromArtifact`. The arming lives at the caller
-	//(`payAlchemyEnergy` in `alchemy.ts`, via `AlchemyFlowContext.onArtifactUsed`), which
-	//is this function's live call site since R076.
+	//The live alchemy flow arms EnhancedRings after this returns whenever the toolkit is
+	//carried, matching `Talent.onArtifactUsed(Dungeon.hero)` in Java's `consumeEnergy()`.
 	const toolkit = findArtifact(scene, 'toolkit') as (typeof scene.bag.items[number] & ToolkitItem) | undefined;
 	if (!toolkit) return cost;
 	const charge = toolkit.charge ?? 0;
@@ -317,22 +313,20 @@ export function toolkitAvailableEnergy(scene: Pick<ArtifactActionContext, 'bag'>
 /** `AlchemistsToolkit.execute(AC_ENERGIZE)` (tag `v3.3.8`): spends 6 carried alchemy energy
  * per level, up to `min(levelCap - level, energy/6)` levels, permanently raising the
  * toolkit's own level (capped at `levelCap = 10`). Real Java offers a `WndOptions` choice
- * between spending one level's worth and spending the maximum affordable at once; the
- * caller (`openToolkitEnergize` in `alchemy.ts`, the pot picker) offers both through
- * `wantedLevels`. Refuses while cursed or `AntiMagic`, matching Java's own action gate. */
-export function energizeToolkit(scene: Pick<ArtifactActionContext, 'bag'>, availableEnergy: number, magicImmune: boolean, wantedLevels?: number): number {
+ * between spending one level's worth and spending the maximum affordable at once; this port
+ * always spends the maximum affordable in one action (Simplified: the "just spend one
+ * level" alternative is not offered, since there is no equivalent options-window seam at
+ * this call site). Refuses while cursed or `AntiMagic`, matching Java's own action gate. */
+export function energizeToolkit(scene: Pick<ArtifactActionContext, 'bag'>, availableEnergy: number, magicImmune: boolean): number {
 	const toolkit = findArtifact(scene, 'toolkit') as (typeof scene.bag.items[number] & ToolkitItem) | undefined;
 	if (!toolkit || toolkit.cursed || magicImmune) return 0;
 	const levelCap = mwlItemEffectValue('toolkit', 'levelCap');
 	const energizeCost = mwlItemEffectValue('toolkit', 'energizeCost');
 	const level = toolkit.level ?? 0;
 	const maxLevels = Math.min(levelCap - level, Math.floor(availableEnergy / energizeCost));
-	//R076: the pot picker now offers Java's two `WndOptions` choices - `energize_1` (`wantedLevels` 1)
-	//and `energize_all` (omitted) - so the "always the maximum" simplification recorded above is gone.
-	const levels = wantedLevels === undefined ? maxLevels : Math.min(maxLevels, wantedLevels);
-	if (levels <= 0) return 0;
-	toolkit.level = level + levels;
-	return levels * energizeCost;
+	if (maxLevels <= 0) return 0;
+	toolkit.level = level + maxLevels;
+	return maxLevels * energizeCost;
 }
 
 type HornItem = { level?: number; charge?: number; partialCharge?: number; cursed?: boolean; storedFoodEnergy?: number };

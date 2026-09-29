@@ -29,7 +29,7 @@ import { Terrain } from '../../spdLevelGen/paintLevel';
 import { foregroundGrassFrame } from '../../spdLevelGen/visualWalls';
 import { Feeling } from '../../spdLevelGen/regularPainter';
 import { runState } from '../../runState';
-import { isChallengeEnabled } from '../../challenges';
+import { isChallengeEnabled, isItemBlocked } from '../../challenges';
 import { CLASSES } from '../../classes';
 import { showChoiceWindow, showConfirmWindow, showInfoWindow } from '../../ui/portWindows';
 import { confirmBlacksmithCashout, confirmBlacksmithSmith, openBlacksmithWindow, type BlacksmithWindowContext } from '../../ui/blacksmithWindow';
@@ -1483,6 +1483,7 @@ export const npcShopBlacksmithMethods = {
 			depth: this.depth,
 			isBossDepth: this.depth in BOSSES,
 			largeFeeling: this.portedPaint?.feeling === 4,
+			darknessChallenge: isChallengeEnabled('darkness'),
 			upgradeScrollDrops: this.upgradeScrollDrops,
 			noScrolls: isChallengeEnabled('no_scrolls'),
 			randomSpawnRoom: () => this.randomSpawnRoom(),
@@ -1492,6 +1493,23 @@ export const npcShopBlacksmithMethods = {
 				&& !this.creatureAt(x, y) && !(x === this.hero.x && y === this.hero.y)
 				&& !(this.hasStairs && x === this.stairs.x && y === this.stairs.y)
 				&& !this.groundItemAt(x, y),
+			canPlaceTorch: (x, y) => [FLOOR, GRASS, HIGH_GRASS].includes(this.level.get(x, y))
+				&& !this.creatureAt(x, y)
+				&& !(this.hasStairs && x === this.stairs.x && y === this.stairs.y)
+				&& !this.groundItemAt(x, y)
+				&& !['burning', 'chilling', 'frost', 'explosive', 'pitfall'].includes(this.trapKinds.get(this.level.index(x, y)) ?? ''),
+			placeTorch: (x, y) => {
+				const cell = this.level.index(x, y);
+				this.spawnGroundItem('torch', x, y, { id: 'torch', quantity: 1, identified: true, sourceClass: 'Torch' });
+				//`Level.drop()` converts tall/furrowed grass under a dropped heap to ordinary grass.
+				if (this.level.get(x, y) === HIGH_GRASS) {
+					this.level.set(x, y, GRASS);
+					if (this.portedPaint?.map[cell] === Terrain.HIGH_GRASS) this.portedPaint.map[cell] = Terrain.GRASS;
+				}
+				//Only the ported painter exposes the Java Feeling enum. The generic floor
+				//fallback has no LARGE state, so it receives the standard single Torch.
+				this.furrowedGrass.delete(cell);
+			},
 			canPlaceKey: (x, y) => this.level.passable(x, y) && !this.creatureAt(x, y)
 				&& !this.groundItemAt(x, y) && !(x === this.hero.x && y === this.hero.y),
 			spawnMimic: (x, y, item) => this.spawnMonster('mimic', { x, y }, false, `${item.id}|${item.sourceClass ?? ''}`),
@@ -1539,6 +1557,10 @@ export const npcShopBlacksmithMethods = {
 	},
 
 	spawnGroundItem(this: DungeonScene, kind: GroundItemKind, x: number, y: number, item?: GroundItem['item'], chest?: 'normal' | 'locked' | 'crystal', forSale?: boolean): GroundItem | null {
+		//`Challenges.isItemBlocked()` (`Challenges.java`) and `Level.drop()` (`levels/Level.java:976`,
+		//tag `v3.3.8`) discard Dewdrops under
+		//NO_HERBALISM. Apply it at the shared drop seam so grass, plants, mob loot and throws agree.
+		if (isItemBlocked(kind)) return null;
 		//`Level.drop()`: an item dropped on a chasm cell falls to the floor below instead of resting here
 		//(a mob killed over a chasm, a thrown item that lands in one) - see `fallenItems.ts`.
 		if (this.isChasmCell(x, y) && !this.miningBranchActive && this.depth < 26) {

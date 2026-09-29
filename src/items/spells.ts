@@ -151,11 +151,7 @@ export interface CastBase {
 	t(key: string, params?: Record<string, string | number>): string;
 }
 
-/**
- * The FeatherFall self-cast, moved out of the scene behind this context the same
- * way - behavior-identical, with the scene keeping one builder plus the
- * `useFeatherFall` adapter the item-use router calls.
- */
+/** `ElixirOfFeatherFall.apply()` (tag `v3.3.8`): consume the carried elixir and apply its buff. */
 export interface FeatherFallContext extends CastBase {
 	applyFeatherFall(duration: number): void;
 }
@@ -172,13 +168,13 @@ export interface WildEnergyContext extends CastBase {
 	extendRechargeTurns(turns: number): void;
 }
 
-/** `FeatherFall`: consume the spell, cushion the hero's falls for the buff table's own
- *  duration, log the light line, spend the turn. */
+/** `ElixirOfFeatherFall.apply()` (tag `v3.3.8`): consume one elixir, grant FeatherBuff for
+ *  its 50-turn duration, log the elixir's light line, and spend the turn. */
 export function useFeatherFallFlow(ctx: FeatherFallContext, instanceId?: string): void {
 	if (!ctx.hasSpell('featherFall', instanceId)) return;
 	ctx.consumeSpell('featherFall', instanceId);
 	ctx.applyFeatherFall(BUFF_DURATION.featherFall);
-	ctx.say(ctx.t('items.spells.featherfall.light'), 'positive');
+	ctx.say(ctx.t('items.potions.elixirs.elixiroffeatherfall.light'), 'positive');
 	ctx.spendTurn();
 }
 

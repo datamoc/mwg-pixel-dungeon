@@ -19,6 +19,7 @@ import { SPD_TERRAIN_TO_GAME_KIND, toGameTerrain } from '../../../spdLevelGen/ga
 import { CITY_IMP_SHOP, PRISON_ARENA, PRISON_TENGU_CELL, PRISON_TENGU_CELL_CENTER, PRISON_TENGU_CELL_DOOR, prisonBossArena, prisonBossEnd, prisonBossPause } from '../../../spdLevelGen/bossLevels';
 import { hallsCenterPieceLayer, hallsCenterWallLayer } from '../../../spdLevelGen/hallsBossVisuals';
 import { spdPatchGenerate } from '../../../spdLevelGen/spdPatch';
+import { tenguTrapFill } from '../../../simulation/tenguDart';
 import { Terrain, type PaintLevel } from '../../../spdLevelGen/paintLevel';
 import { runState } from '../../../runState';
 import { isChallengeEnabled } from '../../../challenges';
@@ -1808,7 +1809,10 @@ export const monsterAiMethods = {
 			break;
 		}
 		const half = tengu.maxHp / 2;
-		const fill = Math.min(0.9, Math.max(0.4, 0.9 - 0.5 * ((tengu.hp - half) / half)));
+		const baseFill = Math.min(0.9, Math.max(0.4, 0.9 - 0.5 * ((tengu.hp - half) / half)));
+		//Java's PrisonBossLevel.placeTrapsInTenguCell() changes density to .675 + fill/4
+		//under STRONGER_BOSSES, placing traps in roughly 78-90% of the candidate patch.
+		const fill = tenguTrapFill(baseFill, isChallengeEnabled('stronger_bosses'));
 		const width = room.right - room.left + 1;
 		const height = room.bottom - room.top + 1;
 		const patch = spdPatchGenerate(width, height, fill, 0, false);
@@ -1817,7 +1821,9 @@ export const monsterAiMethods = {
 			const x = room.left + (i % width), y = room.top + Math.floor(i / width);
 			if (this.creatureAt(x, y)) continue;
 			if (Math.max(Math.abs(x - this.hero.x), Math.abs(y - this.hero.y)) <= 1) continue;
-			this.seedBossTrap({ x, y }, 'poisonDart');
+			//Java's TenguDartTrap subclasses PoisonDartTrap with its own poisonAmount():
+			//8 normally, 15 under STRONGER_BOSSES. Preserve that identity through activation.
+			this.seedBossTrap({ x, y }, 'tenguDart');
 		}
 		this.say(t('port.log.tenguvanish'), 'warning');
 		this.say(t('port.log.tengutraps'), 'warning');

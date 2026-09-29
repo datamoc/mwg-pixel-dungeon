@@ -8,9 +8,7 @@
  * shared free-cell search, so the constraints live here once.
  *
  * Pure functions of their inputs so the suite can pin them without a scene; the scene
- * owns the level reads. Deliberately not here: LARGE chars needing `openSpace`
- * (LARGE kinds and `isOpenSpace` exist now, but this shared draw still doesn't gate),
- * the try-cap failure mode (the port collects the
+ * owns the level reads. Deliberately not here: the try-cap failure mode (the port collects the
  * accepted set instead of probing with a cap, so it never fails spuriously where Java
  * can return -1), and `teleportPreferringUnseen`'s unseen-room preference.
  */
@@ -28,12 +26,14 @@ export interface TeleportCell {
 	/** This port's pit cells read passable (the hero can fall in), so Java's own
 	 * `passable[]` refusal needs the explicit chasm flag alongside it. */
 	chasm: boolean;
+	/** `Level.openSpace[cell]`, required by Java for `Char.Property.LARGE`. */
+	openSpace: boolean;
 }
 
-/** `randomRespawnCell`'s acceptance test plus `teleportChar`'s secret re-roll. */
-export function teleportCandidates(cells: TeleportCell[]): { x: number; y: number }[] {
+/** `randomRespawnCell(ch)`'s acceptance test plus `teleportChar`'s secret re-roll. */
+export function teleportCandidates(cells: TeleportCell[], large = false): { x: number; y: number }[] {
 	return cells
-		.filter((cell) => cell.passable && !cell.occupied && !cell.visible && !cell.secret && !cell.chasm)
+		.filter((cell) => cell.passable && !cell.occupied && !cell.visible && !cell.secret && !cell.chasm && (!large || cell.openSpace))
 		.map(({ x, y }) => ({ x, y }));
 }
 

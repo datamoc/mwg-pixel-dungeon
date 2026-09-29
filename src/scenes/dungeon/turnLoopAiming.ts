@@ -7,7 +7,7 @@ import { MOVES } from '../../simulation/heroActions';
 import { dustSpawnerCap, dustSpawnerStep } from '../../simulation/wraith';
 import { runHeroTurn } from '../../adapters/gameSimulation';
 import { usePreparationBlink, type PreparationBlinkContext } from '../../simulation/preparation';
-import { confirmDisintegrationWand, livingEarthZapRange, useDisintegrationWand, wandChargesPerCast, wandDamageRange, wandTargetRange, type DisintegrationWandScene, type WandType } from '../../items/wands';
+import { confirmDisintegrationWand, livingEarthZapRange, prismaticWandLightDuration, useDisintegrationWand, wandChargesPerCast, wandDamageRange, wandTargetRange, type DisintegrationWandScene, type WandType } from '../../items/wands';
 import { ringElementsMultiplier, ringEnergyMultiplier, ringSharpshootingBonus } from '../../items/ringModifiers';
 import { has, t } from '../../i18n/index';
 import { onZoomChanged, screenShake, setZoomOffset, zoomForOffset, zoomOffset } from '../../settings';
@@ -85,7 +85,6 @@ export const turnLoopAimingMethods = {
 		};
 		return colors[wandType as Exclude<WandType, 'warding'>] ?? 0xffffff;
 	},
-
 	fireWandShot(this: DungeonScene, wandType: WandType, zapLevel: number, target: Creature | Step, chargesPerCast: number, conjuredLevel?: number): boolean {
 		//A `Step` is only `{x, y}`; a creature always carries numeric HP. Never
 		//discriminate with `in` here: flag fields are sparse (the hero carries
@@ -121,6 +120,7 @@ export const turnLoopAimingMethods = {
 			x2: (target.x + 0.5) * TILE, y2: (target.y + 0.5) * TILE,
 			timeLeft: 0.5, duration: 0.5, color: this.wandZapTrailColor(wandType),
 		});
+		if (wandType === 'prismaticLight' && (isChallengeEnabled('darkness') || this.depth === 25 || this.depth === 26)) addBuff(this.hero, 'light', prismaticWandLightDuration(zapLevel, isChallengeEnabled('darkness')));
 		//WandOfMagicMissile.onZap calls ch.damage() directly in Java - never a hit
 		//roll. Fireblast and Lightning use their real level-0/level-scaling rolls too.
 		//Fireblast is now Java's whole area routine (`useFireblastWand`: the cone, the fire

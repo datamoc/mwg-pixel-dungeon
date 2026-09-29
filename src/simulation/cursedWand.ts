@@ -186,9 +186,18 @@ export function pickCursedCommonEffect(pick: (bound: number) => number): CursedC
 	return CURSED_COMMON_EFFECT_IDS[pick(CURSED_COMMON_EFFECT_IDS.length)]!;
 }
 
-/** `Random.element(UNCOMMON_EFFECTS)`: all 8 real ids are modeled, uniform pick. */
-export function pickCursedUncommonEffect(pick: (bound: number) => number): CursedUncommonEffectId {
-	return CURSED_UNCOMMON_EFFECT_IDS[pick(CURSED_UNCOMMON_EFFECT_IDS.length)]!;
+/** `Random.element(UNCOMMON_EFFECTS)` with the same `valid()` filter as Java. When
+ * `NO_HERBALISM` is active, `RandomPlant.valid()` is false (`CursedWand.java`, tag `v3.3.8`).
+ * This port filters before its single pick instead of replaying Java's do/while retries, so
+ * the eligible distribution matches while the RNG call count remains simplified. */
+export function pickCursedUncommonEffect(
+	pick: (bound: number) => number,
+	randomPlantAllowed = true,
+): CursedUncommonEffectId {
+	const effects = randomPlantAllowed
+		? CURSED_UNCOMMON_EFFECT_IDS
+		: CURSED_UNCOMMON_EFFECT_IDS.filter((effect) => effect !== 'randomPlant');
+	return effects[pick(effects.length)]!;
 }
 
 /** `RandomGas.effect()`'s `Random.Int(3)` branch: id plus Java's exact seed volume. */

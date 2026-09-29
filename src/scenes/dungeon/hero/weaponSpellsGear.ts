@@ -739,14 +739,14 @@ export const weaponSpellsGearMethods = {
 		return this.armorId !== 'clothArmor' && this.armorId !== 'startingArmor';
 	},
 
-	/** `ElixirOfFeatherFall.apply()` (tag `v3.3.8`): consume one alchemical spell and append
+	/** `ElixirOfFeatherFall.apply()` (tag `v3.3.8`): consume one alchemical elixir and append
 	 * its 50-turn, one-chasm marker. This inventory action spends the hero turn directly. */
 	useFeatherFall(this: DungeonScene, instanceId?: string): void {
 		useFeatherFallFlow(this.featherFallContext(), instanceId);
 	},
 
 	/**
-	 * The FeatherFall self-cast lives in `items/spells.ts` behind `FeatherFallContext` -
+	 * The Feather Fall elixir-use flow lives in `items/spells.ts` behind `FeatherFallContext` -
 	 * the file-size refactor's twenty-first extraction (with WildEnergy below),
 	 * behavior-identical.
 	 */
@@ -754,6 +754,9 @@ export const weaponSpellsGearMethods = {
 		const scene = this;
 		return {
 			...scene.castBase(),
+			//Java's ElixirOfFeatherFall.apply()/FeatherBuff.processFall() append and process
+			//instances; this run-state map holds one scalar timer, so another use replaces it,
+			//and the chasm handler consumes that single marker.
 			applyFeatherFall: (duration) => { scene.hero.buffs['featherFall'] = duration; },
 		};
 	},

@@ -6,6 +6,7 @@ import { preparationCanKo } from '../../simulation/preparation';
 import { planHiddenMimicContact } from '../../simulation/hiddenMimicContact';
 import { planShockElementalArc } from '../../simulation/shockArc';
 import { applyDefenderDamageCurves } from '../../simulation/defenderDamageCurves';
+import { fieryDamageHalved } from '../../simulation/buffs';
 import { UNSTABLE_DELEGATES } from '../../items/itemAffixes';
 import { shadowCloneArmorProc, shadowCloneBladeProc } from '../../simulation/rogueAbilities';
 import { ringArcanaMultiplier, ringForceBonus, ringTenacityMultiplier } from '../../items/ringModifiers';
@@ -1472,7 +1473,10 @@ export const combatResolutionMethods = {
 				}
 				if (powerMulti > 0 && defender.hp > 0) {
 					const burnDamage = doomDamage(Math.round(Random.normalRange(1, 3 + Math.floor(this.depth / 4)) * 0.67 * powerMulti), defender);
-					if (burnDamage > 0) {
+					//`Blazing.proc()` passes itself as the damage source; Java's `Char.Property.FIERY`
+					//includes `Blazing.class` in its immunities (`Char.java`, tag `v3.3.8`), so this
+					//direct proc damage is rejected for FireElementals, Newborns and BurningFist.
+					if (burnDamage > 0 && !fieryDamageHalved(defender.kind, defender.elementalType, defender.yogFistType)) {
 						defender.hp -= burnDamage;
 						this.showDamage(defender, burnDamage);
 					}

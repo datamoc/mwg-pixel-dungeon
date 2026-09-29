@@ -130,6 +130,16 @@
         stackable: true,
       },
       {
+        // Dedicated recipe token for `ScrollOfPassage` (`items/scrolls/exotic/ScrollOfPassage.java`,
+        // `doRead()`, tag `v3.3.8`). Its return-travel read effect is not ported; this ID keeps
+        // the real ingredient identity for `ExoticScroll.regToExo` and BeaconOfReturning.Recipe.
+        tag: "item",
+        id: "scrollPassage",
+        name: "port.name.alchemy.exoticscroll",
+        slot: "consumable",
+        stackable: true,
+      },
+      {
         tag: "item",
         id: "scrollRecharging",
         name: "items.scrolls.scrollofrecharging.name",

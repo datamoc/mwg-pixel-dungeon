@@ -127,7 +127,7 @@ export const TERRAIN_FRAME = {
 };
 
 /** Levels.java trap kinds with Dungeon-referenced damage numbers (depth-scaled where Java scales) */
-export type TrapKind = 'toxic' | 'burning' | 'poisonDart' | 'wornDart' | 'grim' | 'explosive' | 'confusionGas' | 'corrosionGas' | 'shockingTrap' | 'stormTrap' | 'alarm' | 'teleportation' | 'summoning' | 'chilling' | 'ooze' | 'flock' | 'warping' | 'gripping' | 'rockfall' | 'pitfall' | 'frost' | 'geyser' | 'gateway' | 'guardian';
+export type TrapKind = 'toxic' | 'burning' | 'poisonDart' | 'tenguDart' | 'wornDart' | 'grim' | 'explosive' | 'confusionGas' | 'corrosionGas' | 'shockingTrap' | 'stormTrap' | 'alarm' | 'teleportation' | 'summoning' | 'chilling' | 'ooze' | 'flock' | 'warping' | 'gripping' | 'rockfall' | 'pitfall' | 'frost' | 'geyser' | 'gateway' | 'guardian';
 export const TRAP_KINDS: TrapKind[] = ['toxic', 'burning', 'poisonDart', 'wornDart', 'grim', 'explosive', 'confusionGas', 'corrosionGas', 'shockingTrap', 'stormTrap', 'alarm', 'teleportation', 'summoning', 'chilling', 'ooze', 'flock', 'warping', 'gripping', 'rockfall', 'pitfall', 'frost', 'geyser', 'gateway', 'guardian'];
 
 /**

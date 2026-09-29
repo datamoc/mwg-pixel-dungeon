@@ -79,14 +79,51 @@ exports.addBuff = (target, id, duration) => exports.addCalls.push({ target, id, 
 exports.reigniteBuff = () => {};
 exports.buffBlocked = () => false;
 `);
-	// alchemy.ts reads the no_healing challenge toggle for the AlchemicalCatalyst reroll rule via
-	// `isChallengeEnabled`; the real challenges.ts also pulls in the full i18n/message catalogue
-	// (for its display strings), which this narrow harness has no need to load - a tiny stub
-	// standing in for the one function this workflow path actually calls is simpler and more
-	// robust than compiling the real module transitively. This harness never exercises the
-	// challenge toggle itself (no_healing is covered live, not headlessly), so "always disabled"
-	// is a safe stand-in here.
+	// `consumables.ts` reads challenge gates at action time. The item workflow harness tests its
+	// default unchallenged path, so a tiny stub avoids loading the full message catalogue; the
+	// actual challenge predicate is compiled separately below and tested against explicit masks.
 	writeFileSync(join(out, 'challenges.js'), 'exports.isChallengeEnabled = () => false;\n');
+	mkdirSync(join(out, 'i18n'), { recursive: true });
+	writeFileSync(join(out, 'i18n', 'index.js'), 'exports.t = (key, params) => key + (params ? "[" + Object.values(params).join(",") + "]" : "");\n');
+	compile(join(root, 'src/challenges.ts'), 'challenges-real.js');
+	const realChallengeRequire = createRequire(join(out, 'challenge-test.cjs'));
+	const realChallenges = realChallengeRequire(join(out, 'challenges-real.js'));
+	assert.equal(realChallenges.isItemBlocked('dewdrop'), false, 'Dewdrop is allowed without No Herbalism');
+	const noHerbalism = new Set(['no_herbalism']);
+	assert.equal(realChallenges.isItemBlocked('dewdrop', noHerbalism), true, 'No Herbalism blocks Dewdrops');
+	assert.equal(realChallenges.isItemBlocked('seed', noHerbalism), false, 'Java blocks Dewdrops, not seeds, at Level.drop');
+	assert.equal(realChallenges.isItemBlocked('potion', noHerbalism), false, 'other item kinds remain allowed');
+	assert.equal(realChallenges.isPlantBlocked(), false, 'plants remain allowed without No Herbalism');
+	assert.equal(realChallenges.isPlantBlocked(noHerbalism), true, 'No Herbalism blocks plant registration');
+	const sharedDropSource = readFileSync(join(root, 'src/scenes/dungeon/npcShopBlacksmith.ts'), 'utf8');
+	assert.match(sharedDropSource, /if \(isItemBlocked\(kind\)\) return null;/, 'the shared Level.drop seam rejects blocked item kinds');
+	const monsterLootSource = readFileSync(join(root, 'src/scenes/dungeon/deathSaveRefresh.ts'), 'utf8');
+	assert.match(monsterLootSource, /if \(isItemBlocked\(kind\)\) break;[\s\S]*?this\.spawnGroundItem\(kind, creature\.x, creature\.y, payload\);[\s\S]*?port\.log\.drops/,
+		'blocked monster Dewdrops do not announce a drop that never reaches the floor');
+	const plantSource = readFileSync(join(root, 'src/scenes/dungeon/environmentFireTraps.ts'), 'utf8');
+	assert.match(plantSource, /placePlant: \(cell, kind\) => \{[\s\S]*?applyPlantChallengeTerrain\(this,[\s\S]*?this\.manualPlants\.set\(cell, kind\)/,
+		'Wand of Regrowth applies Java terrain changes and suppresses blocked plant registration');
+	assert.match(plantSource, /for \(const plant of floor\.paint\.plants\)[\s\S]*?else if \(!applyPlantChallengeTerrain\(this,[\s\S]*?this\.placePortedFeature\(plant\.pos, plant\.kind\)/,
+		'generated room plants obey No Herbalism while well water remains unaffected');
+	const plantChallengeSource = readFileSync(join(root, 'src/scenes/dungeon/plantChallenge.ts'), 'utf8');
+	assert.match(plantChallengeSource, /Level\.plant\(seed,pos\).*NO_HERBALISM/,
+		'the challenge terrain helper documents Java plant semantics');
+	const regrowthBombSource = readFileSync(join(root, 'src/scenes/dungeon/regrowthBomb.ts'), 'utf8');
+	assert.match(regrowthBombSource, /mwlItemEffectValue\('regrowthBomb', 'bloomRadius'\)/,
+		'RegrowthBomb uses its authored Java radius');
+	assert.match(regrowthBombSource, /scene\.regrowth\.seed\(cx, cy, 10\)/,
+		'RegrowthBomb seeds its persistent Regrowth blob over the flood');
+	assert.match(regrowthBombSource, /SpdRandom\.chances\(\[0, 0, 2, 1\]\)[\s\S]*?randomUsingDefaults\(Cat\.SEED\)/,
+		'RegrowthBomb keeps Java\'s two-or-three generated seed rolls');
+	assert.match(regrowthBombSource, /SpdRandom\.chances\(\[0, 6, 3, 1\]\)[\s\S]*?'Dewcatcher'[\s\S]*?'Seedpod'[\s\S]*?'Starflower'|SpdRandom\.chances\(\[0, 6, 3, 1\]\)[\s\S]*?'Seedpod'[\s\S]*?'Starflower'[\s\S]*?'Dewcatcher'/,
+		'RegrowthBomb keeps Java\'s final seed choice weights');
+	assert.match(regrowthBombSource, /sourceClass === 'Dewcatcher'[\s\S]*?sourceClass === 'Seedpod'[\s\S]*?sourceClass === 'Starflower'/,
+		'the final special plants do not fall through the carried-seed-only mapper');
+	assert.match(regrowthBombSource, /applyPlantChallengeTerrain\(scene, cx, cy, activeChallenges\)/,
+		'RegrowthBomb uses Level.plant terrain semantics under No Herbalism');
+	const bombSource = readFileSync(join(root, 'src/items/bombEffects.ts'), 'utf8');
+	assert.match(bombSource, /payload === 'regrowthBomb'[\s\S]*?growRegrowthBomb\(at\.x, at\.y\)/,
+		'RegrowthBomb routes into its plant and blob effect, rather than instant grass painting');
 	// shopActions.ts calls `t()` for the sell labels, which would pull the whole message catalogue
 	// (all 19 locales) into this narrow tree. The stub keeps the key and its substituted values
 	// visible, so the assertions below prove *which* SPD string each sell button uses and with what
@@ -521,7 +558,8 @@ assert.equal(missileAdjacentAccFactor(false, true, 3), 1.5, 'thrown weapons and 
 	// turns into a flat 1.5 rather than the melee-range penalty.
 	assert.equal(BOOMERANG_RETURN_TURNS, 5, 'CircleBack counts down from 5 hero turns');
 	assert.equal(BOOMERANG_RETURN_ACC_FACTOR, 1.5, 'the return throw is a flat 1.5, adjacency or not');
-	const { canCraftPotionSeed, craftPotionSeed, canCraftAlchemy, craftAlchemy, craftScrollToStone, craftAlchemize, craftScrollToExotic, canCraftScrollToExotic, scrollExoticResult, craftPotionToExotic, canCraftPotionToExotic, potionExoticResult, alchemyRecipe, alchemyEnergyFor } = require('./items/alchemy.js');
+	const { ALCHEMY_RECIPE_MANIFEST, canCraftPotionSeed, craftPotionSeed, canCraftAlchemy, craftAlchemy, canCraftMeatPie, craftMeatPie, craftScrollToStone, craftAlchemize, craftScrollToExotic, canCraftScrollToExotic, scrollExoticResult, craftPotionToExotic, canCraftPotionToExotic, potionExoticResult, alchemyRecipe, alchemyEnergyFor } = require('./items/alchemy.js');
+	const { SpdRandom } = require('./spdRng.js');
 	const identifiedGateBag = new Inventory();
 	identifiedGateBag.add({ id: 'scrollUpgrade', quantity: 1, stackable: true, identified: false });
 	assert.equal(canCraftAlchemy(identifiedGateBag, 'magicalInfusion'), false, 'an unidentified scroll cannot enable the spell recipe');
@@ -530,6 +568,19 @@ assert.equal(missileAdjacentAccFactor(false, true, 3), 1.5, 'thrown weapons and 
 	identifiedGateBag.items[0].identified = true;
 	assert.equal(canCraftAlchemy(identifiedGateBag, 'magicalInfusion'), true, 'identifying the scroll enables the recipe');
 	assert.equal(craftAlchemy(identifiedGateBag, 'magicalInfusion'), true, 'the identified spell recipe crafts');
+	const featherRecipe = alchemyRecipe('featherFall');
+	assert.deepEqual(ALCHEMY_RECIPE_MANIFEST.find((entry) => entry.id === 'featherFall'), {
+		id: 'featherFall', group: 'one', javaRecipe: 'ElixirOfFeatherFall.Recipe',
+	}, 'the manifest matches Java Recipe.findRecipes one-ingredient registration');
+	assert.deepEqual([featherRecipe.ingredients, featherRecipe.energyCost, featherRecipe.result], [
+		[{ id: 'potionLevitation', quantity: 1 }], 10, { id: 'featherFall', quantity: 1, stackable: true },
+	], 'v3.3.8 registers Feather Fall as the one-ingredient elixir recipe');
+	const featherBag = new Inventory();
+	featherBag.add({ id: 'potionLevitation', quantity: 1, stackable: true, identified: false });
+	assert.equal(canCraftAlchemy(featherBag, 'featherFall'), false, 'an unidentified Levitation potion cannot brew the elixir');
+	featherBag.items[0].identified = true;
+	assert.equal(craftAlchemy(featherBag, 'featherFall'), true, 'an identified Levitation potion brews Feather Fall');
+	assert.equal(featherBag.find('featherFall')?.quantity, 1);
 
 	// `Item.isUpgradable()` (tag `v3.3.8`) and the two infusion selectors that read it. Java's
 	// default is true with 42 classes overriding it false, so the assertions below are built from
@@ -1126,19 +1177,66 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 	assert.equal(seedBag.items.length, 1);
 	assert.equal(seedBag.items[0].quantity, 3);
 	assert.equal(canCraftPotionSeed(seedBag), true);
-	assert.deepEqual(craftPotionSeed(seedBag), { id: 'potionHealing', identified: true });
+	const cookingHp = { cookingHpCount: 0 };
+	assert.deepEqual(craftPotionSeed(seedBag, undefined, cookingHp), { id: 'potionHealing', identified: true });
+	assert.equal(cookingHp.cookingHpCount, 1, 'a brewed Healing potion increments the run counter');
 	assert.equal(seedBag.items.length, 0);
 	// Explicit ingredient selection for the category recipes: chosen units brew, and a bad
 	// selection (wrong count, a non-ingredient, an uncovered unit, the same unit twice)
 	// fails whole with nothing consumed.
 	const selectBag = new Inventory();
 	selectBag.add({ id: 'seedSungrass', quantity: 3, stackable: true, identified: true });
-	assert.deepEqual(craftPotionSeed(selectBag, [{ id: 'seedSungrass' }, { id: 'seedSungrass' }]), undefined, 'two units cannot brew');
+	const selectCookingHp = { cookingHpCount: 0 };
+	assert.deepEqual(craftPotionSeed(selectBag, [{ id: 'seedSungrass' }, { id: 'seedSungrass' }], selectCookingHp), undefined, 'two units cannot brew');
 	assert.equal(selectBag.items[0].quantity, 3, '...and nothing is consumed');
-	assert.deepEqual(craftPotionSeed(selectBag, [{ id: 'potionHealing' }, { id: 'seedSungrass' }, { id: 'seedSungrass' }]), undefined, 'a non-seed fails the selection');
+	assert.deepEqual(craftPotionSeed(selectBag, [{ id: 'potionHealing' }, { id: 'seedSungrass' }, { id: 'seedSungrass' }], selectCookingHp), undefined, 'a non-seed fails the selection');
 	assert.equal(selectBag.items[0].quantity, 3, '...still nothing consumed');
-	assert.deepEqual(craftPotionSeed(selectBag, [{ id: 'seedSungrass' }, { id: 'seedSungrass' }, { id: 'seedSungrass' }]), { id: 'potionHealing', identified: true }, 'three chosen sungrass brew healing');
+	assert.deepEqual(craftPotionSeed(selectBag, [{ id: 'seedSungrass' }, { id: 'seedSungrass' }, { id: 'seedSungrass' }], selectCookingHp), { id: 'potionHealing', identified: true }, 'three chosen sungrass brew healing');
+	assert.equal(selectCookingHp.cookingHpCount, 1, 'successful selected healing is counted');
 	assert.equal(selectBag.items.length, 0, 'the chosen units are consumed');
+	// Force the three-distinct-seed random branch, then prove its weighted generator cannot
+	// produce Strength and the COOKING_HP reroll suppresses Healing when its count is high.
+	const randomSeedBag = new Inventory();
+	for (const id of ['seedSungrass', 'seedFirebloom', 'seedIcecap']) randomSeedBag.add({ id, quantity: 1, stackable: true });
+	const highCookingHp = { cookingHpCount: 100 };
+	const originalSpdInt = SpdRandom.int;
+	const originalSpdFloat = SpdRandom.float;
+	const generatorModule = require('./items/generator.js');
+	const originalRandomUsingDefaults = generatorModule.randomUsingDefaults;
+	let defaultPotionGenerations = 0;
+	let potionGeneratorFloatDraws = 0;
+	let cookingRerollChecks = 0;
+	let forceRandomPotionBranch = true;
+	SpdRandom.pushGenerator(338n);
+	SpdRandom.int = function (bound) {
+		if (forceRandomPotionBranch) { forceRandomPotionBranch = false; return 0; }
+		if (bound === 10) cookingRerollChecks++;
+		return originalSpdInt.call(this, bound);
+	};
+	SpdRandom.float = function () { potionGeneratorFloatDraws++; return originalSpdFloat.call(this); };
+	generatorModule.randomUsingDefaults = function (...args) {
+		const result = originalRandomUsingDefaults.apply(this, args);
+		defaultPotionGenerations++;
+		return result;
+	};
+	let weightedSeedPotion;
+	try {
+		weightedSeedPotion = craftPotionSeed(randomSeedBag, undefined, highCookingHp);
+	} finally {
+		SpdRandom.int = originalSpdInt;
+		SpdRandom.float = originalSpdFloat;
+		generatorModule.randomUsingDefaults = originalRandomUsingDefaults;
+		SpdRandom.popGenerator();
+	}
+	assert.ok(weightedSeedPotion && weightedSeedPotion.id !== 'potionStrength', 'Generator.randomUsingDefaults(POTION) excludes Strength');
+	assert.notEqual(weightedSeedPotion.id, 'potionHealing', 'COOKING_HP rerolls a Healing result when Int(10) < count');
+	assert.equal(highCookingHp.cookingHpCount, 100, 'rerolled Healing does not increment the accepted-result counter');
+	assert.equal(defaultPotionGenerations, cookingRerollChecks + 1, 'every rejected Healing result triggers one new default-potion generation');
+	assert.equal(potionGeneratorFloatDraws, 2 * defaultPotionGenerations, 'each default-potion generation burns one weighted-choice float and Java\'s ExoticCrystals chance float at zero chance');
+	assert.match(readFileSync(join(root, 'src/scenes/dungeon/deathSaveRefresh.ts'), 'utf8'),
+		/cookingHpCount:\s*this\.cookingHpCount/, 'run saves serialize the COOKING_HP count');
+	assert.match(readFileSync(join(root, 'src/scenes/dungeon/panelsSingleUse.ts'), 'utf8'),
+		/this\.cookingHpCount\s*=\s*s\.cookingHpCount\s*\?\?\s*0/, 'run loads restore the count and default pre-counter saves to zero');
 	const selectScroll = new Inventory();
 	selectScroll.add({ id: 'scrollRage', quantity: 2, stackable: true, identified: false });
 	assert.equal(craftScrollToStone(selectScroll, { id: 'potionHealing' }), false, 'a non-scroll cannot transmute');
@@ -1148,8 +1246,9 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 	assert.equal(selectScroll.find('scrollRage')?.quantity, 1, 'one scroll is consumed');
 	assert.equal(selectScroll.find('scrollRage')?.identified, true, 'and the remaining scroll of that kind is identified');
 	// `ExoticScroll.ScrollToExotic` (tag `v3.3.8`): one regular scroll, cost 6, into its
-	// exotic - only the MirrorImage -> PrismaticImage pair exists here so far.
+	// exotic - MirrorImage -> PrismaticImage and Teleportation -> Passage are represented.
 	assert.equal(scrollExoticResult('scrollMirror'), 'scrollPrismatic');
+	assert.equal(scrollExoticResult('scrollTeleportation'), 'scrollPassage');
 	assert.equal(scrollExoticResult('scrollRage'), undefined, 'unported exotics map to nothing');
 	const exoticBag = new Inventory();
 	exoticBag.add({ id: 'scrollMirror', quantity: 1, stackable: true, identified: true });
@@ -1166,6 +1265,19 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 		'the brewed exotic inherits the consumed scroll\'s identified state (ExoticScroll.isKnown)',
 	);
 	assert.equal(exoticBag.find('scrollMirror'), undefined, 'and the mirror scroll is consumed');
+	const passageBag = new Inventory();
+	passageBag.add({ id: 'scrollTeleportation', quantity: 1, stackable: true, identified: true });
+	assert.equal(craftScrollToExotic(passageBag), true, 'a teleportation scroll brews the Passage stand-in');
+	assert.equal(passageBag.find('scrollPassage')?.identified, true, 'the Passage stand-in inherits identified state');
+	assert.deepEqual(alchemyRecipe('beaconOfReturning')?.ingredients, [{ id: 'scrollPassage', quantity: 1 }]);
+	assert.equal(alchemyRecipe('beaconOfReturning')?.energyCost, 12);
+	assert.equal(alchemyRecipe('beaconOfReturning')?.result.quantity, 5);
+	assert.equal(craftAlchemy(passageBag, 'beaconOfReturning'), true, 'an identified Passage crafts BeaconOfReturning');
+	assert.equal(passageBag.find('beaconOfReturning')?.quantity, 5, 'the recipe yields five BeaconOfReturning spells');
+	const unknownPassageBag = new Inventory();
+	unknownPassageBag.add({ id: 'scrollPassage', quantity: 1, stackable: true, identified: false });
+	assert.equal(craftAlchemy(unknownPassageBag, 'beaconOfReturning'), false, 'the Java SimpleRecipe identification gate applies');
+	assert.equal(unknownPassageBag.find('scrollPassage')?.quantity, 1, 'a rejected unidentified ingredient stays carried');
 	// `changeScroll`: an exotic flips to its own regular counterpart (`exoToReg`).
 	assert.equal(isTransmutableForScroll({ id: 'scrollPrismatic' }), true, 'exotics are transmutable like regulars');
 	const flipped = transmuteItem({ id: 'scrollPrismatic', quantity: 1, stackable: true, identified: false }, (kind) => `test-${kind}`);
@@ -3422,19 +3534,19 @@ function infusionDrive(kind, overrides = {}, pickIndex = 0) {
 	assert.ok(bare.log.some((l) => l.includes('nothing') && l.startsWith('say:negative')), 'just the nothing line');
 }
 // The moved self-buffs (`useFeatherFallFlow`/`useWildEnergyFlow`, the file-size refactor's
-// twenty-first extraction): missing spells do nothing; casts consume, buff, refund and
+// twenty-first extraction): a missing Feather Fall elixir does nothing; uses consume, buff, refund and
 // recharge, and spend exactly one turn.
 {
 	const missing = spellDrive({ bag: {} });
 	useFeatherFallFlow(missing.ctx);
 	useWildEnergyFlow(missing.ctx);
-	assert.equal(missing.flags.turns, 0, 'no spell, no cast');
+	assert.equal(missing.flags.turns, 0, 'no elixir, no use');
 	assert.deepEqual(missing.flags.consumed, [], 'and nothing consumed');
 	const feather = spellDrive({ bag: { featherFall: 1 } });
 	useFeatherFallFlow(feather.ctx);
 	assert.equal(feather.flags.buffs.featherFall, BUFF_DURATION.featherFall, 'the fall is cushioned for the table duration');
-	assert.ok(feather.log.some((l) => l.includes('featherfall.light')), 'with the light line');
-	assert.deepEqual(feather.flags.consumed, ['featherFall'], 'consuming the spell');
+	assert.ok(feather.log.includes('say:positive:items.potions.elixirs.elixiroffeatherfall.light'), 'logs Java elixir message key');
+	assert.deepEqual(feather.flags.consumed, ['featherFall'], 'consuming the elixir');
 	assert.equal(feather.flags.turns, 1, 'and spending the turn');
 	const wild = spellDrive({ bag: { wildEnergy: 1 } });
 	useWildEnergyFlow(wild.ctx);
@@ -4174,10 +4286,14 @@ function talismanDrive(overrides = {}) {
 	const flowBag = new Inventory();
 	flowBag.add({ id: 'seedFirebloom', quantity: 3, stackable: true });
 	const flowSaid = [];
+	let flowArmed = 0;
 	let flowRefreshes = 0;
 	const flowScene = {
 		bag: flowBag,
 		alchemyEnergy: 100,
+		cookingHpCount: 0,
+		viaToolkit: false,
+		onArtifactUsed: () => { flowArmed++; },
 		say: (line, level) => { flowSaid.push({ line, level }); },
 		openItemPicker: (title, entries, onPick) => {
 			const seedRow = entries.find((e) => e.instanceId === 'potionSeed') ?? entries[0];
@@ -4185,6 +4301,11 @@ function talismanDrive(overrides = {}) {
 		},
 		itemDisplayName: (id) => id,
 		refreshInventoryPanel: () => { flowRefreshes++; },
+		magicImmune: false,
+		armEnhancedRingsFromArtifact: () => { flowArmed = (flowArmed ?? 0) + 1; },
+		toolkitEnergy: () => flowBag.find('toolkit')?.charge ?? 0,
+		consumeToolkitEnergy: (cost) => { const kit = flowBag.find('toolkit'); if (!kit) return cost; const charge = kit.charge ?? 0; kit.charge = Math.max(0, charge - cost); return Math.max(0, cost - charge); },
+		energizeToolkit: (energy) => { const kit = flowBag.find('toolkit'); if (!kit || kit.cursed || flowScene.magicImmune) return 0; const cost = Math.min(10 - (kit.level ?? 0), Math.floor(energy / 6)) * 6; if (cost > 0) kit.level = (kit.level ?? 0) + cost / 6; return cost; },
 	};
 	openFlowRecipes(flowScene);
 	const seedCost = alchemyRecipe('potionSeed').energyCost;
@@ -4193,6 +4314,74 @@ function talismanDrive(overrides = {}) {
 	assert.equal(flowScene.alchemyEnergy, 100 - seedCost, 'the recipe cost leaves the energy pool');
 	assert.ok(flowSaid.some((s) => s.line.startsWith('port.log.alchemy.crafted')), 'the brew is announced');
 	assert.equal(flowRefreshes, 1, 'the panel refreshes once');
+	const toolkitBag = new Inventory();
+	for (const id of ['pasty', 'food', 'meat']) toolkitBag.add({ id, quantity: 1, stackable: true });
+	toolkitBag.add({ id: 'toolkit', quantity: 1, stackable: false, charge: 3, level: 0 });
+	let toolkitEnergy = 100;
+	let toolkitArmed = 0;
+	const toolkitScene = { ...flowScene, bag: toolkitBag, get alchemyEnergy() { return toolkitEnergy; }, set alchemyEnergy(v) { toolkitEnergy = v; }, toolkitEnergy: () => toolkitBag.find('toolkit')?.charge ?? 0, consumeToolkitEnergy: (cost) => { const charge = toolkitBag.find('toolkit').charge; toolkitBag.find('toolkit').charge = Math.max(0, charge - cost); return Math.max(0, cost - charge); }, viaToolkit: true, onArtifactUsed: () => { toolkitArmed++; } };
+	toolkitScene.openItemPicker = (_title, entries, onPick) => {
+		const recipe = entries.find((entry) => entry.instanceId === 'meatPie');
+		onPick({ id: (recipe ?? entries[0]).id, instanceId: (recipe ?? entries[0]).instanceId });
+	};
+	openFlowRecipes(toolkitScene);
+	const toolkitRecipeCost = alchemyRecipe('meatPie').energyCost;
+	assert.equal(toolkitBag.find('toolkit').charge, 0, 'the toolkit charge pays the recipe cost first');
+	assert.equal(toolkitEnergy, 100 - (toolkitRecipeCost - 3), 'only the remaining recipe cost leaves carried energy');
+	assert.equal(toolkitBag.find('meatPie')?.quantity, 1, 'the recipe also completes after taking toolkit energy');
+	assert.equal(toolkitArmed, 1, 'spending toolkit energy arms EnhancedRings');
+	const energizeBag = new Inventory();
+	energizeBag.add({ id: 'toolkit', quantity: 1, stackable: false, level: 0, charge: 0 });
+	let energizeEnergy = 12;
+	const energizeScene = { ...flowScene, bag: energizeBag, get alchemyEnergy() { return energizeEnergy; }, set alchemyEnergy(v) { energizeEnergy = v; }, toolkitEnergy: () => 0, energizeToolkit: (energy) => { const cost = Math.min(10 - (energizeBag.find('toolkit').level ?? 0), Math.floor(energy / 6)) * 6; energizeBag.find('toolkit').level += cost / 6; return cost; }, openItemPicker: (_title, entries, onPick) => {
+		const action = entries.find((entry) => entry.instanceId === 'toolkit-energize');
+		assert.ok(action, 'eligible toolkit exposes AC_ENERGIZE');
+		onPick({ id: action.id, instanceId: action.instanceId });
+	} };
+	openFlowRecipes(energizeScene);
+	assert.equal(energizeBag.find('toolkit').level, 2, 'energizing raises as many levels as the carried energy affords');
+	assert.equal(energizeEnergy, 0, 'energizing spends six carried energy per level');
+	// `MeatPie.Recipe.testIngredients()` (tag `v3.3.8`) accepts Pasty/PhantomMeat,
+	// exactly Food, and MysteryMeat/StewedMeat/ChargrilledMeat/FrozenCarpaccio.
+	for (const pastyId of ['pasty', 'phantomMeat']) for (const meatId of ['meat', 'stewedMeat', 'chargrilledMeat', 'frozenCarpaccio']) {
+		const bag = new Inventory();
+		bag.add({ id: pastyId, quantity: 1, stackable: true });
+		bag.add({ id: 'food', quantity: 1, stackable: true });
+		bag.add({ id: meatId, quantity: 1, stackable: true });
+		assert.equal(canCraftMeatPie(bag), true, `${pastyId} and ${meatId} satisfy the Java ingredient categories`);
+		assert.equal(craftMeatPie(bag), true, `${pastyId} and ${meatId} brew`);
+		assert.equal(bag.find('meatPie')?.quantity, 1);
+		assert.equal(bag.items.length, 1, 'one unit from each category is consumed');
+	}
+	const invalidMeatPie = new Inventory();
+	invalidMeatPie.add({ id: 'pasty', quantity: 1, stackable: true });
+	invalidMeatPie.add({ id: 'food', quantity: 1, stackable: true });
+	invalidMeatPie.add({ id: 'meat', quantity: 1, stackable: true });
+	assert.equal(craftMeatPie(invalidMeatPie, {
+		pasty: { id: 'meat' }, ration: { id: 'food' }, meat: { id: 'pasty' },
+	}), false, 'misclassified picks fail atomically');
+	assert.equal(invalidMeatPie.items.length, 3, 'invalid selected ingredients consume nothing');
+	const meatPieBag = new Inventory();
+	for (const id of ['pasty', 'food', 'frozenCarpaccio']) meatPieBag.add({ id, quantity: 1, stackable: true });
+	const meatPiePicks = ['meatPie', 'pasty', 'food', 'frozenCarpaccio'];
+	let meatPieEnergy = 6;
+	const meatPieScene = {
+		bag: meatPieBag,
+		get alchemyEnergy() { return meatPieEnergy; },
+		set alchemyEnergy(value) { meatPieEnergy = value; },
+		say: () => {}, itemDisplayName: (id) => id, refreshInventoryPanel: () => {},
+		magicImmune: false, armEnhancedRingsFromArtifact: () => {}, toolkitEnergy: () => 0,
+		consumeToolkitEnergy: (cost) => cost, energizeToolkit: () => 0,
+		openItemPicker: (_title, entries, onPick) => {
+			const id = meatPiePicks.shift();
+			const row = entries.find((entry) => entry.id === id && (id !== 'meatPie' || entry.instanceId === 'meatPie'));
+			assert.ok(row, `the picker offers the next MeatPie choice: ${id}`);
+			onPick({ id: row.id, instanceId: row.instanceId });
+		},
+	};
+	openFlowRecipes(meatPieScene);
+	assert.equal(meatPieBag.find('meatPie')?.quantity, 1, 'the alchemy-pot picker flow crafts the pie');
+	assert.equal(meatPieEnergy, 0, 'the recipe spends six energy');
 	const brokeScene = { ...flowScene, bag: new Inventory(), alchemyEnergy: 0 };
 	let brokePicks = 0;
 	brokeScene.openItemPicker = () => { brokePicks++; };

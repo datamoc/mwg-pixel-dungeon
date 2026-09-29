@@ -46,3 +46,15 @@ export function mobLootChance(inputs: MobLootChanceInputs): number {
 	const decayed = inputs.decay ? base * inputs.decay(inputs.decayCount ?? 0) : base;
 	return (decayed / (inputs.generationDivisor ?? 1)) * (inputs.dropBonus ?? 1);
 }
+
+/** `Eye.createLoot()`'s `Random.Int(4)` switch (`actors/mobs/Eye.java`, tag `v3.3.8`). */
+export function eyeLootOutcome(roll: number): 'dewdrop' | 'seed' | 'stone' {
+	if (!Number.isInteger(roll) || roll < 0 || roll > 3) throw new RangeError(`Invalid Eye loot roll: ${roll}`);
+	return roll < 2 ? 'dewdrop' : roll === 2 ? 'seed' : 'stone';
+}
+
+/** `GnollTrickster.createLoot()`'s integer `(quantity + 1) / 2` rounding. */
+export function gnollTricksterMissileQuantity(defaultQuantity: number): number {
+	if (!Number.isInteger(defaultQuantity) || defaultQuantity < 1) throw new RangeError(`Invalid missile quantity: ${defaultQuantity}`);
+	return Math.ceil(defaultQuantity / 2);
+}

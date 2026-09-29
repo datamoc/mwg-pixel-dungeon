@@ -1,11 +1,12 @@
-import { Random } from 'mwg';
+import { Actors } from 'mwg';
 import { craft, type Recipe } from 'mwg/actors';
 import type { Inventory } from 'mwg/actors';
 import { t } from '../i18n';
-import { MWL_ITEM_NODES, MWL_TABLE_ROWS, mwlItemEffectValue } from '../mwlContent';
-import { isChallengeEnabled } from '../challenges';
-import { canResolveRecipe, resolvableRecipe, rollSeedToPotion, scrapRatioEnergy, type CookingHpCounter } from './alchemyRules';
+import { MWL_CONSUMABLE_CLASS_TO_ID, MWL_ITEM_NODES, MWL_SPECIAL_ITEM_INVENTORY_RULES, MWL_TABLE_ROWS, mwlItemEffectValue } from '../mwlContent';
+import { SpdRandom } from '../spdRng';
 import { consumeToolkitEnergy, energizeToolkit, toolkitAvailableEnergy } from './artifactActions';
+import { Cat, randomUsingDefaults } from './generator';
+import { scrapRatioEnergy } from './alchemyRules';
 
 /** This port's authored recipes always name one exact item id, never MWG 0.7.7's category or
  * predicate forms, so the ingredient id is narrowed back to a plain `string` from `Ingredient`'s
@@ -18,6 +19,7 @@ export interface AlchemyIngredient {
 export interface AlchemyRecipe extends Recipe {
 	readonly id: string;
 	readonly energyCost: number;
+	readonly requiresIdentified?: boolean;
 	/** narrower than `Recipe`'s `Ingredient[]` so callers keep a plain `string` id */
 	readonly ingredients: AlchemyIngredient[];
 }
@@ -28,11 +30,44 @@ export interface AlchemyRecipeManifestEntry {
 	readonly javaRecipe: string;
 }
 
+/** Recipe.java's v3.3.8 registration arrays. Bomb subtype rows intentionally alias Java's
+ * single `Bomb.EnhanceBomb` class; every other registered Java recipe appears once. */
+const JAVA_ALCHEMY_RECIPE_GROUPS: Readonly<Record<string, AlchemyRecipeManifestEntry['group']>> = {
+	'Scroll.ScrollToStone': 'one', 'ExoticPotion.PotionToExotic': 'one', 'ExoticScroll.ScrollToExotic': 'one',
+	'ArcaneResin.Recipe': 'one', 'LiquidMetal.Recipe': 'one', 'BlizzardBrew.Recipe': 'one',
+	'InfernalBrew.Recipe': 'one', 'AquaBrew.Recipe': 'one', 'ShockingBrew.Recipe': 'one',
+	'ElixirOfDragonsBlood.Recipe': 'one', 'ElixirOfIcyTouch.Recipe': 'one', 'ElixirOfToxicEssence.Recipe': 'one',
+	'ElixirOfMight.Recipe': 'one', 'ElixirOfFeatherFall.Recipe': 'one', 'MagicalInfusion.Recipe': 'one',
+	'BeaconOfReturning.Recipe': 'one', 'PhaseShift.Recipe': 'one', 'Recycle.Recipe': 'one',
+	'TelekineticGrab.Recipe': 'one', 'SummonElemental.Recipe': 'one', 'StewedMeat.oneMeat': 'one',
+	'TrinketCatalyst.Recipe': 'one', 'Trinket.UpgradeTrinket': 'one',
+	'Blandfruit.CookFruit': 'two', 'Bomb.EnhanceBomb': 'two', 'UnstableBrew.Recipe': 'two',
+	'CausticBrew.Recipe': 'two', 'ElixirOfArcaneArmor.Recipe': 'two', 'ElixirOfAquaticRejuvenation.Recipe': 'two',
+	'ElixirOfHoneyedHealing.Recipe': 'two', 'UnstableSpell.Recipe': 'two', 'Alchemize.Recipe': 'two',
+	'CurseInfusion.Recipe': 'two', 'ReclaimTrap.Recipe': 'two', 'WildEnergy.Recipe': 'two',
+	'StewedMeat.twoMeat': 'two', 'Potion.SeedToPotion': 'three', 'StewedMeat.threeMeat': 'three',
+	'MeatPie.Recipe': 'three',
+};
+
 export const ALCHEMY_RECIPE_MANIFEST: readonly AlchemyRecipeManifestEntry[] = MWL_TABLE_ROWS('alchemyRecipeManifest', 'id').map((row) => {
 	const group = String(row.group);
 	if (!['variable', 'one', 'two', 'three'].includes(group)) throw new Error(`Invalid MWL alchemy manifest group: ${group}`);
 	return { id: String(row.recipe), group: group as AlchemyRecipeManifestEntry['group'], javaRecipe: String(row.javaRecipe) };
 });
+
+const manifestCounts = new Map<string, number>();
+for (const manifest of ALCHEMY_RECIPE_MANIFEST) {
+	const javaRecipe = manifest.javaRecipe.replace(/\(.+\)$/, '');
+	const expectedGroup = JAVA_ALCHEMY_RECIPE_GROUPS[javaRecipe];
+	if (!expectedGroup) throw new Error(`Unexpected Java alchemy recipe manifest entry: ${manifest.javaRecipe}`);
+	if (manifest.group !== expectedGroup) throw new Error(`Wrong alchemy recipe group for ${manifest.id}: expected ${expectedGroup}, got ${manifest.group}`);
+	manifestCounts.set(javaRecipe, (manifestCounts.get(javaRecipe) ?? 0) + 1);
+}
+for (const javaRecipe of Object.keys(JAVA_ALCHEMY_RECIPE_GROUPS)) {
+	const count = manifestCounts.get(javaRecipe) ?? 0;
+	if (count === 0) throw new Error(`Java alchemy recipe is missing from the manifest: ${javaRecipe}`);
+	if (javaRecipe !== 'Bomb.EnhanceBomb' && count !== 1) throw new Error(`Java alchemy recipe must appear once in the manifest: ${javaRecipe}`);
+}
 
 export const ALCHEMY_ENERGY: Readonly<Record<string, number>> = Object.fromEntries(
 	MWL_TABLE_ROWS('alchemyEnergy', 'kind').map((row) => [String(row.kind), Number(row.energy)]),
@@ -47,13 +82,17 @@ export const ALCHEMY_RECIPES: readonly AlchemyRecipe[] = MWL_TABLE_ROWS('alchemy
 		id: String(row.id),
 		ingredients,
 		energyCost: Number(row.energyCost),
+		requiresIdentified: row.requiresIdentified === true,
 		result: { id: String(row.result), quantity: Number(row.resultQuantity), stackable: true },
 	};
 });
-//`embers` is a real bag item (the Elemental quest's `Embers`, `itemKinds.ts`) that has no `item` node in
-//the MWL catalogue, only a ground-kind row in `item-rules.mwl`; `SummonElemental.Recipe` (R081) needs it as
-//an ingredient, so it is accepted here explicitly rather than by relaxing the check.
-const MWL_ITEM_IDS = new Set([...MWL_ITEM_NODES.map((node) => node.attributes.id), 'embers']);
+const MWL_ITEM_IDS = new Set([
+	...MWL_ITEM_NODES.map((node) => node.attributes.id),
+	//Generated quest props such as Java's `Embers` are mapped to bag ids in item-rules.mwl,
+	//not declared as ordinary item nodes; recipes may still consume those real port items.
+	...MWL_CONSUMABLE_CLASS_TO_ID.values(),
+	...MWL_SPECIAL_ITEM_INVENTORY_RULES.map((rule) => rule.itemId),
+]);
 for (const recipe of ALCHEMY_RECIPES) {
 	for (const ingredient of recipe.ingredients) {
 		if (!MWL_ITEM_IDS.has(ingredient.id)) {
@@ -125,7 +164,7 @@ function energyKindOf(itemId: string): string | undefined {
 	if (id === 'stone' || id.startsWith('stoneof')) return 'stone';
 	if (id.startsWith('scroll')) return 'scroll';
 	if (id.startsWith('potion')) return 'potion';
-	//R080: no `food` kind - `Food` has no `energyVal()` in v3.3.8, so meals scrap for 0 (see the MWL note).
+	if (id === 'food' || id === 'meat' || id === 'chargrilledmeat') return 'food';
 	return undefined;
 }
 
@@ -138,15 +177,26 @@ function energyKindOf(itemId: string): string | undefined {
 const KNOWN_ENERGY = new Map(
 	MWL_TABLE_ROWS('alchemyKnownEnergy', 'item').map((row) => [String(row.item).toLowerCase(), Number(row.energy)]),
 );
+const SCALED_ENERGY = new Map(
+	MWL_TABLE_ROWS('alchemyScaledEnergy', 'item').map((row) => [String(row.item).toLowerCase(), {
+		total: Number(row.total), outputQuantity: Number(row.outputQuantity),
+	}]),
+);
 
 /** `Item.energyVal()` for one carried item: an exact authored row wins, then the item's own
  * consumable kind, else zero (Java's `Item.energyVal()` default). */
 export function alchemyEnergyFor(itemId: string, identified: boolean, quantity = 1): number {
-	//Spells whose `energyVal()` is `(int)(base * quantity / OUT_QUANTITY)`: truncated on the quantity.
-	const ratio = scrapRatioEnergy(itemId, quantity);
-	if (ratio !== undefined) return ratio;
 	const exact = ALCHEMY_ENERGY[itemId];
 	if (exact !== undefined) return exact;
+	if (quantity !== 1) {
+		// Java evaluates (int)(base * quantity / OUT_QUANTITY) on the scrapped stack.
+		const ratio = scrapRatioEnergy(itemId, quantity);
+		if (ratio !== undefined) return ratio;
+	}
+	const scaled = SCALED_ENERGY.get(itemId.toLowerCase());
+	// Java's spell energyVal() methods scale total energy by Recipe.OUT_QUANTITY and
+	// truncate (`PhaseShift.java:75`, `TelekineticGrab.java:146`, etc.); a picker consumes one.
+	if (scaled) return Math.trunc(scaled.total / scaled.outputQuantity);
 	const kind = energyKindOf(itemId);
 	const base = kind === undefined ? 0 : ALCHEMY_ENERGY[kind] ?? 0;
 	const knownEnergy = KNOWN_ENERGY.get(itemId.toLowerCase());
@@ -154,20 +204,52 @@ export function alchemyEnergyFor(itemId: string, identified: boolean, quantity =
 	return base;
 }
 
-/** Resolves an authored recipe through MWG's all-or-nothing inventory transaction, with every
- * ingredient turned into a predicate: unidentified potions/scrolls are refused like
- * `Recipe.SimpleRecipe.testIngredients` does (R077) and `MeatPie`'s slots take their whole Java
- * class families (R079) - see `alchemyRules.ts`. */
-export function craftAlchemy(inventory: Inventory, id: string): boolean {
-	const recipe = alchemyRecipe(id);
-	return recipe ? craft(inventory, resolvableRecipe(recipe)) : false;
-}
-
-/** Whether `craftAlchemy(inventory, id)` would resolve right now (identified gate and `MeatPie`
- * families included), without touching the bag. */
+/** `Recipe.SimpleRecipe.testIngredients()` rejects unidentified ingredients (Recipe.java:99-104). */
 export function canCraftAlchemy(inventory: Inventory, id: string): boolean {
 	const recipe = alchemyRecipe(id);
-	return recipe ? canResolveRecipe(inventory, recipe) : false;
+	return recipe !== undefined && recipe.ingredients.every((ingredient) => {
+		const item = inventory.find(ingredient.id);
+		return (item?.quantity ?? 0) >= ingredient.quantity
+			&& (!recipe.requiresIdentified || item?.identified !== false);
+	});
+}
+
+/** Resolves an authored recipe through MWG's all-or-nothing inventory transaction. */
+export function craftAlchemy(inventory: Inventory, id: string): boolean {
+	const recipe = alchemyRecipe(id);
+	if (id === 'meatPie') return craftMeatPie(inventory); // Category slots (R079).
+	return recipe && canCraftAlchemy(inventory, id) ? craft(inventory, recipe) : false;
+}
+
+const MEAT_PIE_PASTY_IDS = new Set(['pasty', 'phantomMeat']);
+const MEAT_PIE_MEAT_IDS = new Set(['meat', 'stewedMeat', 'chargrilledMeat', 'frozenCarpaccio']);
+export interface MeatPieIngredientSelection {
+	readonly pasty: AlchemyUnitRef;
+	readonly ration: AlchemyUnitRef;
+	readonly meat: AlchemyUnitRef;
+}
+
+/** `MeatPie.Recipe.testIngredients()` accepts three item categories, not exact ids
+ * (`MeatPie.java:55-78`). Resolve one chosen carried unit from each category atomically. */
+export function canCraftMeatPie(inventory: Inventory): boolean {
+	return inventory.items.some((item) => item.quantity > 0 && MEAT_PIE_PASTY_IDS.has(item.id))
+		&& inventory.items.some((item) => item.quantity > 0 && item.id === 'food')
+		&& inventory.items.some((item) => item.quantity > 0 && MEAT_PIE_MEAT_IDS.has(item.id));
+}
+
+export function craftMeatPie(inventory: Inventory, selected?: MeatPieIngredientSelection): boolean {
+	const choose = (eligible: (item: { id: string }) => boolean, selection?: AlchemyUnitRef): AlchemyUnitRef | undefined => {
+		if (selection) return takeChosenUnits(inventory, [selection], eligible)?.[0];
+		const item = inventory.items.find((candidate) => candidate.quantity > 0 && eligible(candidate));
+		return item ? { id: item.id, instanceId: item.instanceId } : undefined;
+	};
+	const pasty = choose((item) => MEAT_PIE_PASTY_IDS.has(item.id), selected?.pasty);
+	const ration = choose((item) => item.id === 'food', selected?.ration);
+	const meat = choose((item) => MEAT_PIE_MEAT_IDS.has(item.id), selected?.meat);
+	if (!pasty || !ration || !meat) return false;
+	for (const unit of [pasty, ration, meat]) inventory.remove(unit.id, 1, unit.instanceId);
+	inventory.add({ id: 'meatPie', quantity: 1, stackable: true });
+	return true;
 }
 
 /** `Alchemize.Recipe` accepts category instances rather than one concrete seed/runestone.
@@ -204,13 +286,11 @@ export function craftScrollToStone(inventory: Inventory, selected?: AlchemyUnitR
 		? takeChosenUnits(inventory, [selected], (item) => SCROLL_TO_STONE[item.id] !== undefined)?.[0]
 		: inventory.items.find((item) => item.quantity > 0 && SCROLL_TO_STONE[item.id]);
 	if (!scroll) return false;
+	// Java's `Scroll.ScrollToStone.brew()` calls `showIdentify(s)` after consuming an unknown
+	// scroll (`Scroll.java:336-342`). Identification is class-level in this port, so update
+	// every remaining carried instance of that scroll kind before the selected unit is removed.
+	for (const item of inventory.items) if (item.id === scroll.id) Actors.identify(item);
 	inventory.remove(scroll.id, 1, scroll.instanceId);
-	//R084: `Scroll.ScrollToStone.brew()` identifies the consumed scroll (`showIdentify(s)` in the alchemy
-	//scene, else `s.identify()`), which makes the whole class known. The port's known-ness is the
-	//per-stack `identified` flag, so every carried stack of that scroll id is marked; when the last unit
-	//was the one consumed there is nothing left to mark (the same per-instance-model limit the exotic
-	//brews document).
-	for (const stack of inventory.items) if (stack.id === scroll.id) stack.identified = true;
 	inventory.add({ id: SCROLL_TO_STONE[scroll.id]!, quantity: 2, stackable: true });
 	return true;
 }
@@ -222,8 +302,8 @@ export function canCraftScrollToStone(inventory: Inventory): boolean {
 /**
  * `ExoticScroll.regToExo` (tag `v3.3.8`): all twelve regular scroll classes map
  * to an exotic, brewed one scroll at a time for 6 energy (`ScrollToExotic`).
- * Only the MirrorImage -> PrismaticImage pair exists as a port item; the other
- * eleven values name Java classes with no port id, so they stay out of this
+ * MirrorImage -> PrismaticImage and Teleportation -> Passage are port items;
+ * the other ten values name Java classes with no port id, so they stay out of this
  * table until their exotics are ported (each addition lights up automatically
  * below, since eligibility is "mapped value is a real MWL item"). The full
  * Java table for the record: Upgrade->Enchantment, Identify->Divination,
@@ -234,6 +314,7 @@ export function canCraftScrollToStone(inventory: Inventory): boolean {
  */
 export const SCROLL_TO_EXOTIC: Readonly<Record<string, string>> = {
 	scrollMirror: 'scrollPrismatic',
+	scrollTeleportation: 'scrollPassage',
 };
 
 export function scrollExoticResult(scrollId: string): string | undefined {
@@ -369,11 +450,10 @@ export function canCraftPotionSeed(inventory: Inventory): boolean {
 }
 
 /** `Potion.SeedToPotion.brew()` consumes three seed units. Two distinct seeds have a 1/4
- * chance and three distinct seeds a 1/2 chance to produce a random regular potion (weighted like
- * `Generator.randomUsingDefaults(POTION)`); otherwise the result follows one of the selected
- * seeds. The Healing result runs through `Dungeon.LimitedDrops.COOKING_HP` (`cooking`, a run-long
- * counter the scene persists). Java's placeholder preview is not part of this inventory
- * transaction. */
+ * chance and three distinct seeds a 1/2 chance to produce a weighted default-deck potion;
+ * otherwise the result follows one selected seed. The run's `COOKING_HP` tracker applies
+ * Java's Healing reroll and accepted-result count here. Java's placeholder preview remains
+ * simplified. */
 export interface CraftedPotionSeed {
 	readonly id: string;
 	readonly identified: boolean;
@@ -382,15 +462,40 @@ export interface CraftedPotionSeed {
 /** Exactly three seed units, explicitly chosen: Java's window adds any three units, so the
  * selection is validated whole (wrong count, a non-seed, or an uncovered unit all fail with
  * nothing consumed) and anything else falls back to the first three eligible units. */
-export function craftPotionSeed(inventory: Inventory, selection?: readonly AlchemyUnitRef[], cooking: CookingHpCounter = { count: 0 }): CraftedPotionSeed | undefined {
+export function craftPotionSeed(
+	inventory: Inventory,
+	selection: readonly AlchemyUnitRef[] | undefined,
+	counter: { cookingHpCount: number },
+): CraftedPotionSeed | undefined {
 	const units = selection ? selectedSeedUnits(inventory, selection) : seedUnits(inventory);
 	if (units.length < 3) return undefined;
 	for (const unit of units) inventory.remove(unit.id, 1, unit.instanceId);
 	const distinct = new Set(units.map((unit) => unit.potionId)).size;
-	//R078: the random branch is `Generator.randomUsingDefaults(POTION)` (weighted, never Strength)
-	//and Healing runs through the `COOKING_HP` limiter - both in `rollSeedToPotion`.
-	const result = rollSeedToPotion(units.map((unit) => unit.potionId), cooking);
-	return { id: result, identified: distinct === 1 };
+	const random = (distinct === 2 && SpdRandom.int(4) === 0) || (distinct === 3 && SpdRandom.int(2) === 0);
+	let result: string;
+	if (random) {
+		// Java calls Generator.randomUsingDefaults(POTION): its weighted defaultProbs exclude
+		// Strength and give Healing weight 3/15 (`Generator.java:342`). The concrete generated
+		// class is resolved through the authored Java-class-to-item table.
+		const generated = randomUsingDefaults(Cat.POTION);
+		result = MWL_CONSUMABLE_CLASS_TO_ID.get(generated.cls) ?? (() => {
+			throw new Error(`No consumable item id for generated potion class ${generated.cls}`);
+		})();
+	} else {
+		const selected = units[SpdRandom.int(units.length)];
+		if (!selected) return undefined;
+		result = selected.potionId;
+	}
+	//`Potion.SeedToPotion.brew()` re-rolls generated Healing while Random.Int(10) is less
+	//than Dungeon.LimitedDrops.COOKING_HP.count, then counts the accepted Healing result.
+	while (result === 'potionHealing' && SpdRandom.int(10) < counter.cookingHpCount) {
+		const generated = randomUsingDefaults(Cat.POTION);
+		result = MWL_CONSUMABLE_CLASS_TO_ID.get(generated.cls) ?? (() => {
+			throw new Error(`No consumable item id for generated potion class ${generated.cls}`);
+		})();
+	}
+	if (result === 'potionHealing') counter.cookingHpCount++;
+	return result ? { id: result, identified: distinct === 1 } : undefined;
 }
 
 /**
@@ -402,6 +507,16 @@ export function craftPotionSeed(inventory: Inventory, selection?: readonly Alche
 export interface AlchemyFlowContext {
 	readonly bag: Inventory;
 	alchemyEnergy: number;
+	/** Run-scoped `Dungeon.LimitedDrops.COOKING_HP.count`, persisted with the run. */
+	cookingHpCount: number;
+	/** Toolkit-brew session: `AlchemistsToolkit.execute(AC_BREW)` assigns the toolkit
+	 * (`AlchemyScene.assignToolkit`, tag `v3.3.8`) before opening the scene, while a
+	 * physical `AlchemyPot` never does - so only then do the carried toolkit's banked
+	 * charge count toward costs and pay. Set post-construction by the `AC_BREW` adapter. */
+	viaToolkit: boolean;
+	/** `Talent.onArtifactUsed(hero)` (tag `v3.3.8`): fired when a toolkit session spends
+	 * banked charge (this port arms its EnhancedRings leg there). */
+	readonly onArtifactUsed: () => void;
 	readonly say: (line: string, level?: 'info' | 'positive' | 'negative' | 'warning') => void;
 	readonly openItemPicker: (
 		title: string,
@@ -410,81 +525,20 @@ export interface AlchemyFlowContext {
 	) => void;
 	readonly itemDisplayName: (id: string, identified: boolean) => string;
 	readonly refreshInventoryPanel: () => void;
-	/** `Dungeon.LimitedDrops.COOKING_HP.count` (R078): Healing potions `SeedToPotion` has produced
-	 * this run. Optional so a bare test context brews with a fresh counter. */
-	cookingHpCount?: number;
-	/** `AlchemyScene.assignToolkit(...)` (R076): true only when the pot was opened through the
-	 * Alchemist's Toolkit's own `AC_BREW`. A physical pot leaves it unset - `Hero.java:1059` calls
-	 * `AlchemyScene.clearToolkit()` before opening it - so only a toolkit session counts and pays
-	 * the toolkit's banked charge. */
-	viaToolkit?: boolean;
-	/** `Talent.onArtifactUsed(Dungeon.hero)`, which `AlchemistsToolkit.consumeEnergy` calls on every
-	 * spend (the scene's `armEnhancedRingsFromArtifact`). */
-	readonly onArtifactUsed?: () => void;
-	/** `hero.buff(MagicImmune.class) != null` - the toolkit's own action gate. */
-	readonly isMagicImmune?: () => boolean;
+	readonly magicImmune?: boolean;
 }
 
-/** `Dungeon.energy + toolkit.availableEnergy()` (`AlchemyScene.java:654-657`): the toolkit's banked
- * charge only counts in a toolkit session. */
-export function alchemyAvailableEnergy(scene: AlchemyFlowContext): number {
-	return scene.alchemyEnergy + (scene.viaToolkit ? toolkitAvailableEnergy(scene) : 0);
+function alchemyEnergyAvailable(scene: AlchemyFlowContext): number {
+	return scene.alchemyEnergy + (scene.viaToolkit ? toolkitAvailableEnergy({ bag: scene.bag }) : 0);
 }
 
-/** `AlchemyScene.combine` payment (`AlchemyScene.java:695-700`): `cost = toolkit.consumeEnergy(cost)`
- * when a toolkit is assigned - the banked charge is spent first and `Talent.onArtifactUsed` fires -
- * then the remainder leaves `Dungeon.energy`. */
-function payAlchemyEnergy(scene: AlchemyFlowContext, cost: number): void {
-	let owed = cost;
-	if (scene.viaToolkit && scene.bag.find('toolkit')) {
-		owed = consumeToolkitEnergy(scene, cost);
-		scene.onArtifactUsed?.();
-	}
-	scene.alchemyEnergy -= owed;
+function spendAlchemyEnergy(scene: AlchemyFlowContext, cost: number): boolean {
+	if (cost > alchemyEnergyAvailable(scene)) return false;
+	const remainder = scene.viaToolkit ? consumeToolkitEnergy({ bag: scene.bag }, cost) : cost;
+	if (scene.viaToolkit && scene.bag.find('toolkit')) scene.onArtifactUsed();
+	scene.alchemyEnergy -= remainder;
+	return true;
 }
-
-function cookingCounter(scene: AlchemyFlowContext): CookingHpCounter {
-	return {
-		get count() { return scene.cookingHpCount ?? 0; },
-		set count(value: number) { scene.cookingHpCount = value; },
-	};
-}
-
-/** Synthetic picker rows of the toolkit's `AC_ENERGIZE` (see `displayName.ts`). */
-export const TOOLKIT_ENERGIZE_ROW = 'toolkit-energize';
-export const TOOLKIT_ENERGIZE_ONE = 'toolkit-energize-1';
-export const TOOLKIT_ENERGIZE_ALL = 'toolkit-energize-all';
-
-/**
- * `AlchemistsToolkit.execute(AC_ENERGIZE)` (tag `v3.3.8`), reached from the pot picker (the port has
- * one action per item, so the toolkit's second action lives here): refused while cursed or
- * MagicImmune, needs 6 energy (`need_energy` log), then offers `energize_1` and - when more than one
- * level is affordable - `energize_all`. Spending goes through `energizeToolkit`. Java's `WndOptions`
- * is the picker seam; the drink/puff sounds and `Catalog.countUse` are not ported.
- */
-export function openToolkitEnergize(scene: AlchemyFlowContext): void {
-	const toolkit = scene.bag.find('toolkit') as (InventoryItemWithLevel | undefined);
-	if (!toolkit || toolkit.cursed || scene.isMagicImmune?.()) return;
-	if (scene.alchemyEnergy < 6) {
-		scene.say(t('items.artifacts.alchemiststoolkit.need_energy'), 'warning');
-		return;
-	}
-	const levelCap = mwlItemEffectValue('toolkit', 'levelCap');
-	const cost = mwlItemEffectValue('toolkit', 'energizeCost');
-	const maxLevels = Math.min(levelCap - (toolkit.level ?? 0), Math.floor(scene.alchemyEnergy / cost));
-	if (maxLevels <= 0) return;
-	const rows = [{ id: 'toolkit', instanceId: TOOLKIT_ENERGIZE_ONE, identified: true, quantity: 1 }];
-	if (maxLevels > 1) rows.push({ id: 'toolkit', instanceId: `${TOOLKIT_ENERGIZE_ALL}:${maxLevels}`, identified: true, quantity: 1 });
-	scene.openItemPicker(t('items.artifacts.alchemiststoolkit.ac_energize'), rows, (pick) => {
-		const all = pick.instanceId?.startsWith(TOOLKIT_ENERGIZE_ALL) ?? false;
-		const spent = energizeToolkit(scene, scene.alchemyEnergy, scene.isMagicImmune?.() ?? false, all ? maxLevels : 1);
-		if (spent <= 0) return;
-		scene.alchemyEnergy -= spent;
-		scene.refreshInventoryPanel();
-	});
-}
-
-type InventoryItemWithLevel = NonNullable<ReturnType<Inventory['find']>> & { level?: number; cursed?: boolean };
 
 /** One explicitly picked carried unit (potionSeed: three seeds; scroll/stone/exotic: one
  *  unit; alchemize: a seed/stone pair) - Java's alchemy window adds specific items, while
@@ -493,6 +547,7 @@ type InventoryItemWithLevel = NonNullable<ReturnType<Inventory['find']>> & { lev
 export type AlchemyIngredientSelection =
 	| { kind: 'seeds'; units: AlchemyUnitRef[] }
 	| { kind: 'scroll'; unit: AlchemyUnitRef }
+	| { kind: 'meatPie'; ingredients: MeatPieIngredientSelection }
 	| { kind: 'alchemize'; seed: AlchemyUnitRef; stone: AlchemyUnitRef };
 
 // Java's alchemy window adds specific carried units; the recipe row only names the
@@ -508,6 +563,16 @@ export function startAlchemyIngredientPick(scene: AlchemyFlowContext, recipe: Al
 	}
 	if (recipe.id === 'scrollToStone') {
 		pickAlchemyUnits(scene, chooseTitle, (item) => SCROLL_TO_STONE[item.id] !== undefined, 1, [], (selected) => completeAlchemyRecipe(scene, recipe, { kind: 'scroll', unit: selected[0]! }));
+		return true;
+	}
+	if (recipe.id === 'meatPie') {
+		pickAlchemyUnits(scene, chooseTitle, (item) => MEAT_PIE_PASTY_IDS.has(item.id), 1, [], (pasty) => {
+			pickAlchemyUnits(scene, chooseTitle, (item) => item.id === 'food', 1, [], (ration) => {
+				pickAlchemyUnits(scene, chooseTitle, (item) => MEAT_PIE_MEAT_IDS.has(item.id), 1, [], (meat) => completeAlchemyRecipe(scene, recipe, {
+					kind: 'meatPie', ingredients: { pasty: pasty[0]!, ration: ration[0]!, meat: meat[0]! },
+				}));
+			});
+		});
 		return true;
 	}
 	if (recipe.id === 'scrollToExotic') {
@@ -559,28 +624,29 @@ export function pickAlchemyUnits(
 // plain picker path above, only those - exact-id recipes never reach here). Energy is
 // re-checked against the picked units, the selection-aware transaction brews, and the
 // result is announced exactly like the plain path.
-export function completeAlchemyRecipe(scene: AlchemyFlowContext, recipe: AlchemyRecipe, selected?: AlchemyIngredientSelection): void {
+export function completeAlchemyRecipe(scene: AlchemyFlowContext, recipe: AlchemyRecipe, selected: AlchemyIngredientSelection): void {
 	const recipeCost = recipe.energyCost;
-	if (recipeCost > alchemyAvailableEnergy(scene)) {
+	if (recipeCost > alchemyEnergyAvailable(scene)) {
 		scene.say(t('port.log.alchemy.unavailable'), 'negative');
 		return;
 	}
 	let craftedResult: ReturnType<typeof craftPotionSeed>;
 	let crafted: boolean;
 	if (recipe.id === 'potionSeed') {
-		craftedResult = craftPotionSeed(scene.bag, selected?.kind === 'seeds' ? selected.units : undefined, cookingCounter(scene));
+		craftedResult = craftPotionSeed(scene.bag, selected.kind === 'seeds' ? selected.units : undefined, scene);
 		crafted = craftedResult !== undefined;
 		if (craftedResult) scene.bag.add({ id: craftedResult.id, quantity: 1, stackable: true, identified: craftedResult.identified });
-	} else if (recipe.id === 'scrollToStone') crafted = craftScrollToStone(scene.bag, selected?.kind === 'scroll' ? selected.unit : undefined);
-	else if (recipe.id === 'scrollToExotic') crafted = craftScrollToExotic(scene.bag, selected?.kind === 'scroll' ? selected.unit : undefined);
-	else if (recipe.id === 'potionToExotic') crafted = craftPotionToExotic(scene.bag, selected?.kind === 'scroll' ? selected.unit : undefined);
-	else if (recipe.id === 'alchemize') crafted = craftAlchemize(scene.bag, selected?.kind === 'alchemize' ? { seed: selected.seed, stone: selected.stone } : undefined);
+	} else if (recipe.id === 'scrollToStone') crafted = craftScrollToStone(scene.bag, selected.kind === 'scroll' ? selected.unit : undefined);
+	else if (recipe.id === 'meatPie') crafted = craftMeatPie(scene.bag, selected.kind === 'meatPie' ? selected.ingredients : undefined);
+	else if (recipe.id === 'scrollToExotic') crafted = craftScrollToExotic(scene.bag, selected.kind === 'scroll' ? selected.unit : undefined);
+	else if (recipe.id === 'potionToExotic') crafted = craftPotionToExotic(scene.bag, selected.kind === 'scroll' ? selected.unit : undefined);
+	else if (recipe.id === 'alchemize') crafted = craftAlchemize(scene.bag, selected.kind === 'alchemize' ? { seed: selected.seed, stone: selected.stone } : undefined);
 	else crafted = craftAlchemy(scene.bag, recipe.id);
 	if (!crafted) {
 		scene.say(t('port.log.alchemy.unavailable'), 'negative');
 		return;
 	}
-	payAlchemyEnergy(scene, recipeCost);
+	if (!spendAlchemyEnergy(scene, recipeCost)) return;
 	const resultId = craftedResult?.id ?? recipe.result.id;
 	const resultIdentified = craftedResult?.identified ?? true;
 	scene.say(t('port.log.alchemy.crafted', { item: scene.itemDisplayName(resultId, resultIdentified) }), 'positive');
@@ -588,44 +654,59 @@ export function completeAlchemyRecipe(scene: AlchemyFlowContext, recipe: Alchemy
 }
 
 export function openAlchemyRecipes(scene: AlchemyFlowContext): void {
-	const available = alchemyAvailableEnergy(scene);
-	const recipes = ALCHEMY_RECIPES.filter((recipe) => recipe.energyCost <= available && (
-		recipe.id === 'potionSeed' ? canCraftPotionSeed(scene.bag) : recipe.id === 'scrollToStone' ? canCraftScrollToStone(scene.bag) : recipe.id === 'scrollToExotic' ? canCraftScrollToExotic(scene.bag) : recipe.id === 'potionToExotic' ? canCraftPotionToExotic(scene.bag) : recipe.id === 'alchemize'
+	const availableEnergy = alchemyEnergyAvailable(scene);
+	const recipes = ALCHEMY_RECIPES.filter((recipe) => recipe.energyCost <= availableEnergy && (
+		recipe.id === 'potionSeed' ? canCraftPotionSeed(scene.bag) : recipe.id === 'meatPie' ? canCraftMeatPie(scene.bag) : recipe.id === 'scrollToStone' ? canCraftScrollToStone(scene.bag) : recipe.id === 'scrollToExotic' ? canCraftScrollToExotic(scene.bag) : recipe.id === 'potionToExotic' ? canCraftPotionToExotic(scene.bag) : recipe.id === 'alchemize'
 			? scene.bag.items.some((item) => item.quantity > 0 && item.id.startsWith('seed'))
 				&& scene.bag.items.some((item) => item.quantity > 0 && item.id.startsWith('stoneOf'))
-			//R077/R079: exact-id recipes go through the same predicates `craftAlchemy` brews with
-			//(identified gate, `MeatPie` families), so the list never offers a brew that would refuse.
-			: canResolveRecipe(scene.bag, recipe)
+			: canCraftAlchemy(scene.bag, recipe.id)
 	));
-	//`AlchemistsToolkit.actions()`: AC_ENERGIZE is offered while the toolkit is usable (not cursed, not
-	//MagicImmune) and below its level cap; `execute` then needs 6 energy (`need_energy`).
-	const toolkit = scene.bag.find('toolkit') as InventoryItemWithLevel | undefined;
-	const canEnergize = toolkit !== undefined && !toolkit.cursed && !scene.isMagicImmune?.()
-		&& (toolkit.level ?? 0) < mwlItemEffectValue('toolkit', 'levelCap');
+	const toolkit = scene.bag.find('toolkit');
+	const canEnergize = toolkit !== undefined && !toolkit.cursed && scene.magicImmune !== true
+		&& (toolkit.level ?? 0) < mwlItemEffectValue('toolkit', 'levelCap')
+		&& scene.alchemyEnergy >= mwlItemEffectValue('toolkit', 'energizeCost');
 	if (recipes.length === 0 && !canEnergize) {
 		scene.say(t('port.log.alchemy.noingredients'), 'negative');
 		return;
 	}
-	const rows = recipes.map((recipe) => ({ id: recipe.result.id, instanceId: recipe.id, identified: true, quantity: recipe.result.quantity }));
-	if (canEnergize) rows.push({ id: 'toolkit', instanceId: TOOLKIT_ENERGIZE_ROW, identified: true, quantity: 1 });
-	//`AlchemyScene`'s energy line: `Dungeon.energy` plus `+toolkit charge` in a toolkit session.
-	const toolkitCharge = scene.viaToolkit ? `+${toolkitAvailableEnergy(scene)}` : '';
+	// Java's `SeedToPotion.sampleOutput()` shows a nonfunctional potion placeholder
+	// (`Potion.java:549+`); this port displays the authored result row in its recipe picker.
 	scene.openItemPicker(
-		`${t('port.ui.alchemy.title')} [${scene.alchemyEnergy}${toolkitCharge}]`,
-		rows,
+		`${t('port.ui.alchemy.title')} [${availableEnergy}]`,
+		[...recipes.map((recipe) => ({ id: recipe.result.id, instanceId: recipe.id, identified: true, quantity: recipe.result.quantity })),
+			...(canEnergize ? [{ id: 'toolkit', instanceId: 'toolkit-energize', identified: true, quantity: 1 }] : [])],
 		(entry) => {
-			if (entry.instanceId === TOOLKIT_ENERGIZE_ROW) {
-				openToolkitEnergize(scene);
+			if (entry.instanceId === 'toolkit-energize') {
+				const cost = energizeToolkit({ bag: scene.bag }, scene.alchemyEnergy, scene.magicImmune === true);
+				if (cost <= 0) { scene.say(t('port.log.alchemy.unavailable'), 'negative'); return; }
+				scene.alchemyEnergy -= cost;
+				scene.say(t('items.artifacts.alchemiststoolkit.ac_energize'), 'positive');
+				scene.refreshInventoryPanel();
 				return;
 			}
 			const recipe = ALCHEMY_RECIPES.find((candidate) => candidate.id === entry.instanceId);
-			if (recipe && startAlchemyIngredientPick(scene, recipe)) return;
-			if (!recipe) {
+		if (recipe && startAlchemyIngredientPick(scene, recipe)) return;
+			const recipeCost = recipe?.energyCost ?? Infinity;
+			if (!recipe || recipeCost > alchemyEnergyAvailable(scene)) {
 				scene.say(t('port.log.alchemy.unavailable'), 'negative');
 				return;
 			}
-			//exact-id recipe: the shared craft tail re-checks the (toolkit-inclusive) energy, brews and pays.
-			completeAlchemyRecipe(scene, recipe);
+			const potionSeed = recipe?.id === 'potionSeed' ? craftPotionSeed(scene.bag, undefined, scene) : undefined;
+			const craftedResult = recipe?.id === 'potionSeed' ? potionSeed : undefined;
+			if (craftedResult) scene.bag.add({ id: craftedResult.id, quantity: 1, stackable: true, identified: craftedResult.identified });
+			const crafted = recipe?.id === 'potionSeed' ? craftedResult !== undefined : recipe?.id === 'scrollToStone' ? craftScrollToStone(scene.bag)
+				: recipe?.id === 'scrollToExotic' ? craftScrollToExotic(scene.bag)
+				: recipe?.id === 'potionToExotic' ? craftPotionToExotic(scene.bag)
+				: recipe?.id === 'alchemize' ? craftAlchemize(scene.bag) : recipe ? craftAlchemy(scene.bag, recipe.id) : false;
+			if (!crafted) {
+				scene.say(t('port.log.alchemy.unavailable'), 'negative');
+				return;
+			}
+			if (!spendAlchemyEnergy(scene, recipeCost)) return;
+			const resultId = craftedResult?.id ?? recipe.result.id;
+			const resultIdentified = craftedResult?.identified ?? true;
+			scene.say(t('port.log.alchemy.crafted', { item: scene.itemDisplayName(resultId, resultIdentified) }), 'positive');
+			scene.refreshInventoryPanel();
 		},
 	);
 }

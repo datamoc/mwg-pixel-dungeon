@@ -531,6 +531,8 @@ export interface SaveShape {
 	suckerPunchTargets?: string[];
 	/** Java Dungeon.LimitedDrops.UPGRADE_SCROLLS count, including suppressed NO_SCROLLS drops. */
 	upgradeScrollDrops?: number;
+	/** Java Dungeon.LimitedDrops.COOKING_HP count, persisted for SeedToPotion's healing reroll. */
+	cookingHpCount?: number;
 	bag: { id: string; quantity: number; instanceId?: string; identified?: boolean; level?: number; sandBags?: number; affix?: string; cursed?: boolean; cursedKnown?: boolean; returnDepth?: number; returnBranch?: number; returnPos?: number; returnX?: number; returnY?: number;
 		usesLeftToIdentify?: number; availableUsesToIdentify?: number; durability?: number; maxDurability?: number; seal?: boolean; hardened?: boolean; wandCur?: number; wandPartial?: number; wandMax?: number }[];
 	/** MWG actor inventory save; `bag` remains for loading pre-migration slots. */
@@ -630,8 +632,6 @@ export interface SaveShape {
 	hourglassFreeze?: boolean;
 	hourglassTurnsToCost?: number;
 	alchemyEnergy?: number;
-	/** `Dungeon.LimitedDrops.COOKING_HP.count` (R078). */
-	cookingHpCount?: number;
 	heroShield?: number;
 	heroBarrierState?: { layers: { amount: number; decayPerTick?: number }[] };
 	livingEarthArmor?: number;

@@ -132,6 +132,7 @@ export const coreSpawnTilesMethods = {
 				monster.kind === 'dm300' && monster.dmSupercharged ? 0.5 : (this.pendingMonsterTurnCost ?? 1) * monsterSpeedFactor(monster)),
 		awaitHeroInput: () => {
 			if (this.resurrectPending) return;
+			if (this.resolvePendingPitfallCollapses()) return;
 			this.awaitingInput = true;
 			this.refresh();
 			if (this.travelTarget) this.stepTravel();
@@ -1838,7 +1839,7 @@ export const coreSpawnTilesMethods = {
 			if (trap || this.trapKinds.has(cell)) {
 				if (this.secrets.isSecret(x, y)) return -1;
 				const spent = this.spentTrapCells.has(cell);
-				const fallback = ({ toxic: 35, burning: 1, poisonDart: 83, wornDart: 87, grim: 103, explosive: 65, confusionGas: 36, corrosionGas: 39, shockingTrap: 2, stormTrap: 50, alarm: 0, teleportation: 4, summoning: 20, chilling: 6, ooze: 3, flock: 22, warping: 52, gripping: 7, rockfall: 71, pitfall: 64, frost: 54, geyser: 68, gateway: 84, guardian: 48 } as const)[this.trapKinds.get(cell) ?? 'poisonDart'];
+				const fallback = ({ toxic: 35, burning: 1, poisonDart: 83, tenguDart: 83, wornDart: 87, grim: 103, explosive: 65, confusionGas: 36, corrosionGas: 39, shockingTrap: 2, stormTrap: 50, alarm: 0, teleportation: 4, summoning: 20, chilling: 6, ooze: 3, flock: 22, warping: 52, gripping: 7, rockfall: 71, pitfall: 64, frost: 54, geyser: 68, gateway: 84, guardian: 48 } as const)[this.trapKinds.get(cell) ?? 'poisonDart'];
 				const frame = trap ? TRAP_VISUALS[trap.kind[0].toUpperCase() + trap.kind.slice(1)] ?? fallback : fallback;
 				return spent || trap?.active === false ? Math.floor(frame / 16) * 16 + 8 : frame;
 			}

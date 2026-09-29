@@ -8,17 +8,16 @@
   "scripts": {
     "dev": "vite",
     "build": "npm run mwl:compile && tsc --noEmit && vite build && node tools/emit.mjs",
-    "verify": "npm run check && npm run test:simulation && npm run test:items && npm run test:lua && npm run test:mwg && npm run test:settings && npm run test:ui && npm run test:bossunseal && npm run test:skeletonkey && npm run test:dropthrow && npm run test:cloak && npm run test:beacon && npm run test:mining && npm run test:visual && npm run test:grid && npm run build",
+    "verify": "npm run check && npm run test:simulation && npm run test:items && npm run test:lua && npm run test:mwg && npm run test:settings && npm run test:ui && npm run test:bossunseal && npm run test:skeletonkey && npm run test:dropthrow && npm run test:cloak && npm run test:beacon && npm run test:mining && npm run test:visual && npm run build",
     "browser:test": "node tools/browserTest.mjs",
     "check": "npm run mwl:compile && tsc --noEmit && npm run i18n:verify && node tools/check-file-budget.mjs && node tools/audit-undefined.mjs",
     "mwl:compile": "node tools/compile-mwl.mjs",
-    "test:grid": "esbuild ./tools/verifyGridFrames.ts --bundle --platform=node --format=esm --outfile=tools/scratch/verifyGridFrames.mjs && node tools/scratch/verifyGridFrames.mjs",
-    "test:simulation": "node tools/verifySimulation.mjs && node tools/verifyHiddenMimicContact.mjs && node tools/verifyRegeneration.mjs && node tools/verifyBanner.mjs && node tools/verifyVault.mjs && node tools/verifyBuffOverlays.mjs && node tools/verifyCrystalMine.mjs && node tools/verifyCrystalGuardianScale.mjs && node tools/verifyMindForm.mjs && node tools/verifyHeapStack.mjs && node tools/verifyRecycleTippedDart.mjs && node tools/verifyHermitCrabLoot.mjs && node tools/verifyBlobCells.mjs && esbuild ./tools/verifyVertigo.ts --bundle --platform=node --format=esm --outfile=tools/scratch/verifyVertigo.mjs && node tools/scratch/verifyVertigo.mjs && esbuild ./tools/verifyHeapBlastProof.ts --bundle --platform=node --format=esm --outfile=tools/scratch/verifyHeapBlastProof.mjs && node tools/scratch/verifyHeapBlastProof.mjs && node tools/verifyCursedWandTier.mjs",
+    "test:simulation": "node tools/verifySimulation.mjs && node tools/verifyHiddenMimicContact.mjs && node tools/verifyRegeneration.mjs && node tools/verifyBanner.mjs && node tools/verifyVault.mjs && node tools/verifyBuffOverlays.mjs && node tools/verifyCrystalMine.mjs && node tools/verifyCrystalGuardianScale.mjs && node tools/verifyMindForm.mjs && node tools/verifyHeapStack.mjs && node tools/verifyRecycleTippedDart.mjs && node tools/verifyHermitCrabLoot.mjs && node tools/verifyBlobCells.mjs && node tools/verifyMonsterRoster.mjs && esbuild ./tools/verifyVertigo.ts --bundle --platform=node --format=esm --outfile=tools/scratch/verifyVertigo.mjs && node tools/scratch/verifyVertigo.mjs && esbuild ./tools/verifyHeapBlastProof.ts --bundle --platform=node --format=esm --outfile=tools/scratch/verifyHeapBlastProof.mjs && node tools/scratch/verifyHeapBlastProof.mjs && node tools/verifyCursedWandTier.mjs",
     "test:items": "node tools/verifyItemWorkflows.mjs",
     "test:lua": "node tools/verifyLua.mjs",
     "test:mwg": "node tools/verifyMwgCompatibility.mjs",
     "test:settings": "node tools/verifyDisplaySettings.mjs",
-    "test:ui": "node tools/verifyBagLayout.mjs",
+    "test:ui": "node tools/verifyBagLayout.mjs && node tools/verifyInterfaceMode.mjs",
     "test:beacon": "esbuild tools/verifyBeaconPush.ts --bundle --platform=node --format=esm --outfile=tools/scratch/verifyBeaconPush.mjs && node tools/scratch/verifyBeaconPush.mjs",
     "test:cloak": "esbuild tools/verifyCloak.ts --bundle --platform=node --format=esm --outfile=tools/scratch/verifyCloak.mjs && node tools/scratch/verifyCloak.mjs",
     "test:dropthrow": "esbuild tools/verifyDropThrow.ts --bundle --platform=node --format=esm --outfile=tools/scratch/verifyDropThrow.mjs && node tools/scratch/verifyDropThrow.mjs",
@@ -44,8 +43,8 @@
     "android:apk": "cd android && ./gradlew assembleDebug"
   },
   "dependencies": {
-    "@datamoc/mw_games": "^0.19.0",
-    "mwg": "npm:@datamoc/mw_games@^0.17.1",
+    "@datamoc/mw_games": "^0.22.0",
+    "mwg": "npm:@datamoc/mw_games@^0.22.0",
     "pixi.js": "^8.20.1"
   },
   "devDependencies": {

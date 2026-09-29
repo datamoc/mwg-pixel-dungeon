@@ -25,6 +25,17 @@ function persist(): void {
 
 export function challenges(): Set<string> { return new Set(selected); }
 export function isChallengeEnabled(id: string): boolean { return selected.has(id); }
+/** `Challenges.isItemBlocked()` (`core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/Challenges.java`,
+ * tag `v3.3.8`): NO_HERBALISM
+ * prevents Dewdrops from entering `Level` heaps; it does not block seeds themselves. */
+export function isItemBlocked(itemId: string, activeChallenges: ReadonlySet<string> = selected): boolean {
+	return activeChallenges.has('no_herbalism') && itemId === 'dewdrop';
+}
+/** `Level.plant()` (`levels/Level.java`, tag `v3.3.8`) returns before registering any
+ * plant when NO_HERBALISM is active (after its terrain-side effects). */
+export function isPlantBlocked(activeChallenges: ReadonlySet<string> = selected): boolean {
+	return activeChallenges.has('no_herbalism');
+}
 export function toggleChallenge(id: string): boolean {
 	if (selected.has(id)) selected.delete(id); else selected.add(id);
 	persist();

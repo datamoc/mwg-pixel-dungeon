@@ -70,6 +70,12 @@ export function aimYogDeathGaze(context: YogDeathGazeAimContext): number[] {
  * `MonsterId` the scene widens on store. */
 export type YogMinionKind = 'ripperDemon' | 'larva' | 'eye' | 'scorpio';
 
+/** `YogDzewa.die()` (`actors/mobs/YogDzewa.java`, tag `v3.3.8`): the Badder Bosses
+ * challenge badge requires all four DemonSpawners to remain alive at Yog's death. */
+export function yogBossChallengeQualified(strongerBosses: boolean, livingSpawners: number): boolean {
+	return strongerBosses && livingSpawners === 4;
+}
+
 /** `YogDzewa`'s `regularSummons` deck (`actors/mobs/YogDzewa.java`, tag `v3.3.8`),
  * in build order (Java `Random.shuffle`s it after). Normal: four slots, the first
  * `spawnersAlive` of them rippers, the rest larvae. Stronger Bosses: six slots,
