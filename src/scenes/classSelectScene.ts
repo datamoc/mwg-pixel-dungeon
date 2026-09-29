@@ -39,6 +39,11 @@ export class ClassSelectScene extends Scene2D {
 		// HeroSelectScene.java: compact hero buttons, splash art, then explicit Start.
 		const root = new Container();
 		this.stage.addChild(root);
+		//The splash JPGs are 800x450 painted art, not pixel art: the framework's global
+		//`TextureSource.defaultOptions.scaleMode = 'nearest'` (`mwg/dist/two-d/Game.js`)
+		//turns their downscale into stripe noise, so these six textures opt back into
+		//LINEAR filtering. They are used nowhere else (see the CLASS_SPLASH users above).
+		for (const key of Object.values(CLASS_SPLASH)) runState.sprites[key].source.scaleMode = 'linear';
 		const background = new Sprite(runState.sprites[CLASS_SPLASH.warrior]);
 		background.tint = 0x2d2f31;
 		const shade = new Graphics();
