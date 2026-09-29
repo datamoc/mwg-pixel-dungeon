@@ -1,7 +1,7 @@
 import type { DungeonScene } from '../dungeonScene';
 import { Camera, Input, Projectile, Random, Roguelike, TintedSprite, Window, WindowStack } from 'mwg';
 import { dispatchHeroAction } from '../../adapters/heroActions';
-import { MISSILE_MAX_DURABILITY, missileAdjacentAccFactor, missileDamageRange, missileFlightArt, type MissileFlightArt } from '../../items/missiles';
+import { MISSILE_MAX_DURABILITY, NON_STICKY_MISSILES, missileAdjacentAccFactor, missileDamageRange, missileFlightArt, type MissileFlightArt } from '../../items/missiles';
 import { ALL_BAGS_BADGE, BAG_BADGE, BAG_IDS, HOLSTER_RECHARGE_BASE, NORMAL_RECHARGE_BASE, isBagId, ownsBag } from '../../items/bags';
 import { MOVES } from '../../simulation/heroActions';
 import { dustSpawnerCap, dustSpawnerStep } from '../../simulation/wraith';
@@ -610,7 +610,9 @@ export const turnLoopAimingMethods = {
 				//stick/drop split below must not run for it.
 				if (this.ammoSourceClass === 'HeavyBoomerang') {
 					this.scheduleBoomerangReturn(target.x, target.y, carried);
-				} else if (hit && target.hp > 0 && this.heroClass !== 'warrior') {
+				} else if (hit && target.hp > 0 && !NON_STICKY_MISSILES.has(this.ammoSourceClass) && !target.isAlly && !target.allyKind) {
+					//`MissileWeapon.rangedHit()`: stick to a living, non-allied target unless the class is `sticky = false`
+					//(`NON_STICKY_MISSILES`). Java has no Warrior exception - the port's old `heroClass !== 'warrior'` gate was invented (R100).
 					target.stuckAmmo = (target.stuckAmmo ?? 0) + 1;
 				} else {
 					const dropAt = target; //`Level.drop()` stacks onto an existing heap; a chest/shelf sends it to a neighbour (`spawnGroundItem`)

@@ -75,10 +75,13 @@ function isNonSolidTrapCell(scene: DungeonScene, x: number, y: number): boolean 
 type UtilityTrap = 'alarm' | 'teleportation' | 'summoning' | 'chilling' | 'ooze' | 'flock' | 'warping' | 'gripping' | 'rockfall' | 'pitfall' | 'frost' | 'geyser' | 'gateway' | 'guardian';
 const UTILITY_TRAPS: ReadonlySet<TrapKind> = new Set<TrapKind>(['alarm', 'teleportation', 'summoning', 'chilling', 'ooze', 'flock', 'warping', 'gripping', 'rockfall', 'pitfall', 'frost', 'geyser', 'gateway', 'guardian']);
 function isUtilityTrap(kind: TrapKind): kind is UtilityTrap { return UTILITY_TRAPS.has(kind); }
-/** The utility traps that aim at no one, so mark no mob for the hazard-assist tracker (Freezing
- * and Ooze are gas/buff producers like the shock and gas traps, and stay marked; Gateway marks
- * only the hunting mob it relocates on the linking trigger, Guardian only beckons). */
-const UNMARKED_TRAPS: ReadonlySet<TrapKind> = new Set<TrapKind>(['alarm', 'teleportation', 'summoning', 'flock', 'warping', 'gripping', 'pitfall', 'gateway', 'guardian']);
+/** Utility traps that get no blanket 3x3 hazard-assist mark: the ones that aim at no one, plus those
+ * that mark inside their own `activate()` at Java's scope - Frost marks each mob in its distance-2
+ * flood, Ooze each mob it buffs, Rockfall each mob before its hit (`PRE_DAMAGE_HAZARD_TRAPS`), Gripping
+ * its stepper, Flock/Teleportation their occupants. Gateway marks only the hunting mob it relocates on
+ * the linking trigger, Guardian only beckons. (Restored 2026-09-29: an adoption merge had dropped
+ * the in-activation marks while keeping these kinds blanket-exempt; `verifySimulation` pins them.) */
+const UNMARKED_TRAPS: ReadonlySet<TrapKind> = new Set<TrapKind>(['alarm', 'teleportation', 'summoning', 'flock', 'warping', 'gripping', 'pitfall', 'gateway', 'guardian', 'frost', 'ooze', 'rockfall']);
 const PRE_DAMAGE_HAZARD_TRAPS: ReadonlySet<TrapKind> = new Set<TrapKind>(['grim', 'poisonDart', 'tenguDart', 'wornDart', 'explosive', 'rockfall']);
 function isUnmarkedTrap(kind: TrapKind): boolean { return UNMARKED_TRAPS.has(kind); }
 
@@ -1581,6 +1584,8 @@ export const environmentFireTrapsMethods = {
 				const dr = Math.floor(Random.normalRange(c.armor[0], c.armor[1]) / 2);
 				setBleeding(c, Math.max(0, 2 + Math.floor(this.depth / 2) - dr));
 				reigniteBuff(c, 'cripple');
+				//Java marks a mob stepper (`c instanceof Mob`, non-flying branch only).
+				this.markHazardMob(c);
 			}
 			if (this.fov.isVisible(x, y)) spawnTrapSpecks(this.effectLayer, this.effectBursts, x, y, 'wound');
 		} else if (kind === 'rockfall') {
@@ -1669,7 +1674,11 @@ export const environmentFireTrapsMethods = {
 			const reach = trapAreaDistances(this, x, y, 2);
 			for (let fy = 0; fy < this.level.height; fy++) for (let fx = 0; fx < this.level.width; fx++) {
 				const steps = reach[this.level.index(fx, fy)] ?? -1;
-				if (steps >= 0 && steps <= 2) this.plantFreeze.seed(fx, fy, 20);
+				if (steps < 0 || steps > 2) continue;
+				this.plantFreeze.seed(fx, fy, 20);
+				//Every mob standing in the flood is marked (Java: `Actor.findChar(i) instanceof Mob`).
+				const floodMob = this.creatureAt(fx, fy);
+				if (floodMob) this.markHazardMob(floodMob);
 			}
 		} else if (kind === 'chilling') {
 			//`ChillingTrap.activate()`: `Freezing` volume 10 on every non-solid NEIGHBOURS9 cell (the
@@ -1689,7 +1698,10 @@ export const environmentFireTrapsMethods = {
 				if (this.level.inside(x + dx, y + dy) && this.level.passable(x + dx, y + dy)
 					&& this.fov.isVisible(x + dx, y + dy)) spawnTrapSpecks(this.effectLayer, this.effectBursts, x + dx, y + dy, 'ooze');
 				const ch = this.level.passable(x + dx, y + dy) ? this.creatureAt(x + dx, y + dy) : null;
-				if (ch && ch.hp > 0 && !ch.flying) addBuff(ch, 'ooze');
+				if (ch && ch.hp > 0 && !ch.flying) {
+					addBuff(ch, 'ooze');
+					this.markHazardMob(ch);
+				}
 			}
 		} else if (kind === 'flock') {
 			//`FlockTrap.activate()`: a `Sheep` (lifespan 6) on every free non-pit cell within distance 2
@@ -1702,7 +1714,10 @@ export const environmentFireTrapsMethods = {
 				for (let cx = 0; cx < this.level.width; cx++) {
 					const steps = distances[this.level.index(cx, cy)] ?? -1;
 					if (steps < 0 || steps > 2 || !this.level.passable(cx, cy)) continue;
-					if (this.creatureAt(cx, cy) || this.isChasmCell(cx, cy)) continue;
+					//Java's else-branch: a Mob already on the cell (or on a pit cell) is marked instead of getting a sheep.
+					const occupant = this.creatureAt(cx, cy);
+					if (occupant) { this.markHazardMob(occupant); continue; }
+					if (this.isChasmCell(cx, cy)) continue;
 					const sheep = this.spawnSheep({ x: cx, y: cy }, 6);
 					if (this.fov.isVisible(cx, cy)) spawnTrapSpecks(this.effectLayer, this.effectBursts, cx, cy, 'wool');
 					this.triggerMobTrapAt(sheep);

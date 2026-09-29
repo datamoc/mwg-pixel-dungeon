@@ -267,6 +267,14 @@ export function recordMissileUpgrade(
 export const MISSILE_MAX_DURABILITY = 100;
 
 /**
+ * `MissileWeapon.sticky` (`items/weapon/missiles/MissileWeapon.java` 81, tag `v3.3.8`) defaults to `true`;
+ * these five classes set it `false` (`ThrowingStone` 38, `ThrowingClub` 36, `ThrowingHammer` 36,
+ * `ForceCube` 54, `HeavyBoomerang` 44), so a hit drops them at the target's cell instead of pinning
+ * them to it as a `PinCushion` stack.
+ */
+export const NON_STICKY_MISSILES: ReadonlySet<string> = new Set(['ThrowingStone', 'ThrowingClub', 'ThrowingHammer', 'ForceCube', 'HeavyBoomerang']);
+
+/**
  * `MissileWeapon.defaultQuantity()` (tag `v3.3.8`): the stack size `upgrade()` refills the stack
  * to - **3**, for every authored missile. The only other overrides in the tree are the spirit bow's
  * arrows and the `Dart` family; darts now exist here (`TippedDart`) and share the default 3,

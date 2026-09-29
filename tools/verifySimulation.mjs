@@ -190,10 +190,10 @@ const { selectRangedTarget, findEnemyAlly, pursueTarget } = require('./simulatio
 			assert.ok(unmarked.includes(`'${kind}'`), `${kind} is not blanket-marked`);
 		}
 		assert.ok(!unmarked.includes("'chilling'"), 'chilling keeps the 3x3 mark (Java loops NEIGHBOURS9)');
-		for (const marker of ['if (floodMob) this.markHazardMob(floodMob)', 'if (wasHunting) this.markHazardMob(ch)', 'if (occupant) { this.markHazardMob(occupant); continue; }']) {
+		for (const marker of ['if (floodMob) this.markHazardMob(floodMob)', 'if (hunting) this.markHazardMob(ch)', 'if (occupant) { this.markHazardMob(occupant); continue; }']) {
 			assert.ok(traps.includes(marker), `in-activation mark present: ${marker}`);
 		}
-		assert.ok(/heap\.chest \|\| heap\.forSale\) continue;[\s\S]{0,700}spawnTrapSpecks\(this\.effectLayer, this\.effectBursts, x, y, 'light'\)/.test(traps), 'teleportation relocates plain heaps and bursts LIGHT at the trap cell');
+		assert.ok(/!heap\.forSale && heap\.chest === undefined[\s\S]{0,700}spawnTrapSpecks\(this\.effectLayer, this\.effectBursts, x, y, 'light'\)/.test(traps), 'teleportation relocates plain heaps and bursts LIGHT at the trap cell');
 		assert.ok(/addBuff\(ch, 'ooze'\);\s*\n\s*this\.markHazardMob\(ch\);/.test(traps), 'ooze marks non-flying mobs');
 		assert.ok(/this\.markHazardMob\(ch\);\s*\n\s*let damage = Math\.max\(0, Random\.normalRange\(5 \+ this\.depth/.test(traps), 'rockfall marks before the hit');
 		assert.ok(/reigniteBuff\(c, 'cripple'\);\s*\n\s*\/\/[^\n]*\n\s*this\.markHazardMob\(c\);/.test(traps), 'gripping marks the non-flying mob stepper');
