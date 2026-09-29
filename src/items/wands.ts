@@ -4,7 +4,7 @@ import { planDisintegration } from '../simulation/disintegration';
 import { preservationChance } from '../talentEffects';
 import { SOLID } from '../dungeonConstants';
 import type { Creature, Step } from '../combat';
-import { doomDamage } from '../combat';
+import type { CharacterDamageOptions } from './bombEffects';
 
 /** Wand identity and pure shared rules.
  *
@@ -149,9 +149,10 @@ export interface DisintegrationWandScene {
 	talentRank(id: string): number;
 	grantHeroShield(amount: number, cap: number): number;
 	fadeMirrorOnDamage(target: Creature, damage: number): boolean;
-	showDamage(target: Creature, damage: number): void;
+	/** The shared scene-backed `Char.damage()` dispatch (`panelsSingleUse`), reached through
+	 * the scene binding below - Doom, shields, floater and death all live inside it now. */
+	applyCharacterDamage(target: Creature, damage: number, options: CharacterDamageOptions): boolean;
 	say(line: string, level?: 'info' | 'positive' | 'negative' | 'warning'): void;
-	kill(target: Creature): void;
 	spendHeroTurn(turnCost: number): void;
 	getAttackTurnCostMod(): number;
 	message(target: Creature, damage: number): string;
@@ -192,12 +193,19 @@ export function useDisintegrationWand(scene: DisintegrationWandScene, target: St
 	for (const index of plan.victimCells) {
 		const victim = creatures[index];
 		if (!victim || victim.hp <= 0) continue;
-		const damage = doomDamage(Random.normalRange(2 + plan.effectiveLevel, 8 + 4 * plan.effectiveLevel), victim);
-		victim.hp -= damage;
+		//`MirrorImage.damage()` fades on the first positive damage event regardless of
+		//lethality - event-based, so the prelude stays ahead of the dispatch like every
+		//other wand seam's own.
+		const damage = Random.normalRange(2 + plan.effectiveLevel, 8 + 4 * plan.effectiveLevel);
 		if (scene.fadeMirrorOnDamage(victim, damage)) continue;
-		scene.showDamage(victim, damage);
-		victim.sleeping = false;
+		//No wand roll subtracts DR here, so the shared `Char.damage()` dispatch takes the
+		//hit with `pierceArmor`; it also applies Aura (Java's zap src is the wand itself -
+		//a non-`Char` - so `damage()`'s aura clause runs), Doom (this seam used to roll it
+		//itself), defender curves, shields, the floater, the wake and death - including
+		//`kill()`'s prismatic-image fade backstop, which replaces this loop's old
+		//`!victim.isAlly` kill guard that left a lethally zapped ally lingering at 0 HP
+		//(Java lets any lethal `Char.damage()` kill).
+		scene.applyCharacterDamage(victim, damage, { pierceArmor: true, cause: 'foe' });
 		scene.say(scene.message(victim, damage), 'positive');
-		if (victim.hp <= 0 && !victim.isAlly) scene.kill(victim);
 	}
 }

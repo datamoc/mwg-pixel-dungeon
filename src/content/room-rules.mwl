@@ -211,6 +211,31 @@
             depth: 10,
             chances: "0,0,22,3,0,0",
           },
+          //`ConnectionRoom.chances[]` at tag v3.3.8: chances[11] (depths 11-15),
+          //chances[16] (16-20), chances[21] (= chances[5], depth 21 only) and
+          //chances[22] (22-26). Depths 11+ previously fell back to the depth-1
+          //Sewers row; the lookup below now takes the nearest row at or below
+          //the depth, the same pattern as `standardRoomChances()`.
+          {
+            tag: "row",
+            depth: 11,
+            chances: "12,0,0,5,5,3",
+          },
+          {
+            tag: "row",
+            depth: 16,
+            chances: "0,0,18,3,3,1",
+          },
+          {
+            tag: "row",
+            depth: 21,
+            chances: "20,0,0,0,0,0",
+          },
+          {
+            tag: "row",
+            depth: 22,
+            chances: "15,4,0,2,3,2",
+          },
         ],
       },
     ],

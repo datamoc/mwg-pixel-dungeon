@@ -74,8 +74,8 @@ export function armorAbilityDef(id: string): ArmorAbilityDef | undefined {
  * `armorAbility == null`) rather than handing the player a choice that cannot be spent.
  *
  * Ported so far: the Warrior's three, the Rogue's Death Mark, Smoke Bomb and Shadow
- * Clone, the Huntress's Spectral Blades, Nature's Power and Spirit Hawk, the Mage's Warp
- * Beacon, Wild Magic and Elemental Blast, and the Duelist's Feint, Challenge and
+ * Clone, the Huntress's Spectral Blades, Nature's Power and Spirit Hawk, the Mage's
+ * Elemental Blast, Wild Magic and Warp Beacon, and the Duelist's Feint, Challenge and
 	 * ElementalStrike, plus the Cleric's Trinity form selector and PowerOfMany's ally buff,
 	 * summon, Barrier and direct-order paths. Every class offers its full set now. See `PORT_COVERAGE.md`'s
  * armor-ability rows.

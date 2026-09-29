@@ -2,6 +2,7 @@ import type { DungeonScene } from '../../dungeonScene';
 import { Roguelike } from 'mwg';
 import { t } from '../../../i18n/index';
 import type { GroundItem } from '../../../combat';
+import { survivesHeapExplosion } from '../../../items/heapBlastProof';
 import { Terrain } from '../../../spdLevelGen/paintLevel';
 import { groundKindForItem } from '../../../items/itemKinds';
 import { showChoiceWindow } from '../../../ui/portWindows';
@@ -120,14 +121,16 @@ export const dropThrowMethods = {
 			return false;
 		}
 		if (ground.chest !== undefined || ground.forSale) return false;
+		//`unique || isUpgradable() || EquipableItem` entries are skipped before any shatter/detonate
+		//branch (Heap.explode()); see `survivesHeapExplosion` for the Java-to-port kind mapping.
+		if (survivesHeapExplosion(ground.kind, ground.item?.id)) return false;
 		if (ground.kind === 'bomb' && ground.item) return this.detonateGroundBomb(ground, chained);
 		if (ground.kind === 'potion' && ground.item?.id.startsWith('potion')) {
 			this.removeGroundItem(ground);
 			shatterPotionAt(this.potionEffectsContext(), ground.item.id, ground.x, ground.y);
 			return false;
 		}
-		const protectedItem = ['armor', 'wand', 'ring', 'amulet', 'ankh', 'stylus'].includes(ground.kind);
-		if (!protectedItem) this.removeGroundItem(ground);
+		this.removeGroundItem(ground);
 		return false;
 	},
 
