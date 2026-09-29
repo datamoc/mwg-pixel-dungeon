@@ -35,8 +35,8 @@ import { beaconPassiveRecharge, chainsPassiveRecharge, hourglassPassiveRecharge 
 import { beaconChargeCap } from '../../items/beacon';
 import type { ChainsItem } from '../../items/chains';
 import { TILE, WATER } from '../../dungeonConstants';
-import { BUFF_DURATION, addBuff, buffBlocked, doomDamage, rollHit, tickBuffs, type Creature, type Step } from '../../combat';
-import { NEGATIVE_BUFFS, corruptionImmune, sourceElementResisted, tickMonsterTurnEnd, type BuffId } from '../../simulation/buffs';
+import { BUFF_DURATION, addBuff, buffBlocked, electricDamageHalved, icyDamageHalved, rollHit, tickBuffs, type Creature, type Step } from '../../combat';
+import { NEGATIVE_BUFFS, corruptionImmune, tickMonsterTurnEnd, type BuffId } from '../../simulation/buffs';
 import { corruptingPower, corruptionResistance, resolveCorruptionZap } from '../../simulation/wandCorruption';
 import { MONSTERS, BOSSES, isUndeadOrDemonic, type AnyMonsterId } from '../../monsters';
 
@@ -185,18 +185,23 @@ export const turnLoopAimingMethods = {
 						? Random.normalRange(...wandDamageRange('frost', zapLevel))
 						: Random.normalRange(...wandDamageRange('magicMissile', zapLevel));
 			const frostBlocked = wandType === 'frost' && victim.buffs['frost'] !== undefined;
-			let damage = Math.round(raw * lightningMultiplier)
-				+ (victim === targetCreature ? enragedCatalystBonus(this.subclass(), this.talentRank('enraged_catalyst'), this.hero.hp, this.hero.maxHp) + this.wandBonusDamage : 0);
+			let damage = Math.round(raw * lightningMultiplier);
+			//`WandOfCorruption.onZap()`/`WandOfCorrosion.onZap()` (tag `v3.3.8`) are `void`:
+			//no direct damage at all, so their zero `raw` stays zero - the flat zap bonuses
+			//must not manufacture damage Java never rolls (they could kill a convert early).
+			if (wandType !== 'corruption' && wandType !== 'corrosion' && victim === targetCreature) {
+				damage += enragedCatalystBonus(this.subclass(), this.talentRank('enraged_catalyst'), this.hero.hp, this.hero.maxHp) + this.wandBonusDamage;
+			}
 			if (wandType === 'lightning' && victim === this.hero) damage = Math.round(damage * 0.5);
-		//`Char.Property.ELECTRIC` (`Char.java`, tag `v3.3.8`) resists the `WandOfLightning` class
-		//(and `ICY` the `WandOfFrost` class below): `Char.damage()` halves with `Math.round` on every
-		//holder. That `resist(srcClass)` step now lives in the shared dispatch (`sourceElement` option on
-		//`applyCharacterDamage`, `simulation/buffs.ts`'s `sourceElementResisted`), so this loop no longer
-		//pre-halves; `wandElement`/`shownDamage` below only keep the log's dealt number. The blob seam
-		//carries the `Electricity` class, `shockingArc` and the shock arc carry `Shocking`; darts and the
-		//Potential talent have no mob-damage seam of their own (stated, not silent).
-		const wandElement = wandType === 'lightning' ? 'electric' as const : wandType === 'frost' ? 'ice' as const : undefined;
-if (wandType === 'frost') {
+		//`Char.Property.ELECTRIC` (`Char.java`, tag `v3.3.8`) resists the
+		//`WandOfLightning` class: `Char.damage()` halves with `Math.round` on
+		//every holder (shock elemental, DM100, Pylon, BrightFist). The blob seam
+		//carries the `Electricity` class, `shockingArc` and the shock arc carry
+		//`Shocking`; darts and the Potential talent have no mob-damage seam of
+		//their own (stated, not silent).
+		if (wandType === 'lightning' && !victim.isHero
+			&& electricDamageHalved(victim.kind, victim.elementalType, victim.yogFistType)) damage = Math.round(damage * 0.5);
+			if (wandType === 'frost') {
 				//WandOfFrost.onZap() clears Fire at the collision cell. A frozen target
 				//cannot be affected again; otherwise existing Chill reduces this bolt's
 				//damage by 6.67% per remaining turn, capped at 10 (tag v3.3.8).
@@ -215,9 +220,12 @@ if (wandType === 'frost') {
 				else if (victim.buffs['chill'] !== undefined) {
 					damage = Math.round(damage * Math.pow(0.9333, Math.min(10, victim.buffs['chill'])));
 				}
-				//`Char.Property.ICY` halving of the `WandOfFrost` class happens after the chill cut above (Java
-				//computes that cut in `onZap`, then halves in `damage()`): see the shared dispatch's `sourceElement`.
-}
+				//`Char.Property.ICY` (`Char.java`, tag `v3.3.8`) resists the `WandOfFrost`
+				//class: `Char.damage()` halves with `Math.round` after the chill cut
+				//above (Java computes that cut in `onZap`, then halves in `damage()`).
+				//The only ICY holder is the frost elemental.
+				if (icyDamageHalved(victim.kind, victim.elementalType)) damage = Math.round(damage * 0.5);
+			}
 			if (wandType === 'prismaticLight' && isUndeadOrDemonic(victim.kind)) {
 				//`WandOfPrismaticLight.affectTarget()`: against a `Property.DEMONIC` or
 				//`Property.UNDEAD` target the bolt deals `round(dmg * 1.333)` and plays the
@@ -243,24 +251,25 @@ if (wandType === 'frost') {
 				this.showHeal(victim, Math.max(0, raw));
 			} else {
 				//`DwarfKing.damage()` 459-467: any `Wand` except `WandOfLightning` clears the
-				//boss-challenge flag. Lightning keeps it (Java's explicit exception).
+				//boss-challenge flag. Lightning keeps it (Java's explicit exception). Stays
+				//caller-side: the dispatch has no source-class input to fire
+				//`onNonWeaponBossDamage`, which would wrongly clear the flag for lightning too.
 				if (wandType !== 'lightning' && damage > 0) this.disqualifyBossChallenge(victim);
-				//`Wand.onZap` -> `Char.damage(dmg, this)`: one shared dispatch (`applyCharacterDamage`,
-				//the port's `Char.damage()`), which now carries Doom, the hero's magical absorb, the
-				//defender curves/shields and the `MirrorImage`/`PrismaticImage` fade hooks this loop used
-				//to run by hand. `deferKill`: the loop's own tail `kill` below still runs after the
-				//post-hit effects (push, chill, log), exactly as before. `skipAura` keeps this seam's
-				//existing no-Aura behaviour (unchanged by the migration).
-				let faded = false;
+				//`MirrorImage.damage()` fades on the first positive damage event regardless of
+				//lethality - event-based, so ahead of the dispatch like the fireblast prelude.
+				if (this.fadeMirrorOnDamage(victim, damage)) continue;
+				//Every hit finishes in the shared `Char.damage()` dispatch: hero half via
+				//`absorbHeroDamage(_, magical)`, else Aura, Doom, curves, shields, HP, hooks,
+				//wake and death - no `skipAura`: Java's zap src is the wand itself, a non-`Char`,
+				//so `damage()`'s aura clause runs (a no-op on foes, a real ally reduction).
+				//`pierceArmor` because no wand roll subtracts DR - the rolls above are
+				//`damage()`'s source-class resistances; the prismatic fade is `kill()`'s backstop.
 				this.applyCharacterDamage(victim, damage, {
-					pierceArmor: true, cause: 'foe', skipAura: true, magical: true, deferKill: true,
-					onFade: () => { faded = true; },
-										sourceElement: wandElement,
-									});
-									//`WandOfLightning.onZap()` (tag `v3.3.8`): the burst shakes
+					pierceArmor: true, cause: 'foe', magical: true,
+				});
+				//`WandOfLightning.onZap()` (tag `v3.3.8`): the burst shakes
 				//(`2, 0.3f`) for every affected char that is the hero.
 				if (victim.isHero && wandType === 'lightning') this.shakeScreen(2, 0.3);
-				if (faded) continue;
 			}
 			if (wandType === 'livingEarth' && !livingEarthGuardian) {
 				//WandOfLivingEarth.onZap() adds the successful damage roll to
@@ -340,11 +349,17 @@ if (wandType === 'frost') {
 				addBuff(victim, 'chill');
 				victim.buffs.chill = Math.max(victim.buffs.chill ?? 0, (this.level.get(victim.x, victim.y) === WATER ? 4 : 2) + zapLevel);
 			}
-			if (wandType === 'prismaticLight' && Random.int(0, 5 + zapLevel) >= 3) addBuff(victim, 'daze');
-			this.sprite(victim).setColorAdd(0.6, 0.7, 1);
+			//The dispatch wrote HP and finished death - or `kill()`'s fade backstop - before
+			//these FX ran, so they need a living victim (a destroyed one has no sprite
+			//mapping). Observable result unchanged: `kill()` zeroes colorAdd on the corpse
+			//and a daze died with its victim. The `say` lines stay ungated: Java logs hits.
+			if (wandType === 'prismaticLight' && victim.hp > 0 && Random.int(0, 5 + zapLevel) >= 3) addBuff(victim, 'daze');
+			if (victim.hp > 0) this.sprite(victim).setColorAdd(0.6, 0.7, 1);
 			if (wandType === 'corrosion') this.say(t('port.log.wandcorrosion', { target: victim.name }), 'positive');
-			else if (wandType !== 'corruption') this.say(t('port.log.wandhits', { target: victim.name, damage: wandElement ? sourceElementResisted(damage, wandElement, victim.kind, victim.elementalType, victim.yogFistType) : damage }), 'positive');
-			if (victim.hp <= 0 && !victim.isAlly) this.kill(victim);
+			else if (wandType !== 'corruption') this.say(t('port.log.wandhits', { target: victim.name, damage }), 'positive');
+			//The old `hp <= 0 && !isAlly` kill backstop is gone: the dispatch kills at 0 HP
+			//with its own cause, `kill()`'s prismatic backstop covers a fading image, and
+			//Java kills any lethal hit - a non-prismatic ally no longer lingers at 0 HP.
 		}
 		}
 		return true;
@@ -650,18 +665,15 @@ if (wandType === 'frost') {
 				this.empoweredZapBonus = 0;
 			}
 		} else {
-			//SpiritBow.damageRoll: a normal hit roll, but the base damage is scaled by
-			//distance (min(3, 1.2 * 1.125^(distance-1))) before armor is subtracted.
-			//`MissileWeapon.accuracyFactor()` covers the bow too - `SpiritBow` inherits it,
-			//so the adjacent `0.5 + 0.25*POINT_BLANK` / distance `1.5` factor applies here
-			//(the sniperSpecial + DAMAGE-augment infinite clause has no bow-augment system
-			//to read, so the plain factor always applies). Point Blank is accuracy-only in
-			//Java: the `1 + 0.2*rank` damage bonus this branch used to add at close range
-			//never existed (it appears exactly once in Java, in `adjacentAccFactor`).
+			//SpiritBow.damageRoll scales the base by distance (min(3, 1.2 * 1.125^(distance-1)))
+			//before armor; `MissileWeapon.accuracyFactor()` covers the bow too (`SpiritBow`
+			//inherits it: adjacent `0.5 + 0.25*POINT_BLANK`, distance `1.5`, and the sniperSpecial
+			//+ DAMAGE-augment infinite clause has no bow-augment system here so the plain factor
+			//always applies). Point Blank is accuracy-only in Java: the `1 + 0.2*rank` damage
+			//bonus this branch used to add at close range never existed (one Java site: `adjacentAccFactor`).
 			//`SpiritBow.speedMultiplier()` while Nature's Power is up (tag `v3.3.8`): the bow
-			//gains `(8 + GROWING_POWER)/24` speed additively. Turn costs spend through the
-			//shared `spendTurn` port below, so the shot stashes its divisor for that port to
-			//consume - sniper specials are exempt in Java, but none exist here, so no gate.
+			//gains `(8 + GROWING_POWER)/24` speed additively, stashed as this shot's turn-cost
+			//divisor for the shared `spendTurn` port below (no sniper-special gate: none exist).
 			if (this.naturesPowerTurns > 0) {
 				this.pendingBowNpDivisor = 1 + (8 + this.talentRank('growing_power')) / 24;
 			}
@@ -676,30 +688,30 @@ if (wandType === 'frost') {
 				const distance = Roguelike.chebyshevDistance(this.hero, target);
 				const multiplier = Math.min(3, 1.2 * Math.pow(1.125, distance - 1));
 				//SpiritBow.min()/max(): RingOfSharpshooting's bonus is asymmetric here - +bonus on
-				//the low end, +2*bonus on the high end (unlike MissileWeapon's identical +bonus
-				//on both bounds above).
+				//the low end, +2*bonus on the high end (MissileWeapon adds the same to both above).
 				const sharpshooting = ringSharpshootingBonus(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
 				const base = Random.normalRange(special.damage[0] + sharpshooting, special.damage[1] + 2 * sharpshooting);
 				const dr = Random.normalRange(target.armor[0], target.armor[1]);
 				const momentum = projectileMomentumBonus(this.subclass(), this.talentRank('projectile_momentum'), this.projectileMomentumReady);
-				const damage = doomDamage(Math.max(0, Math.round(base * multiplier * (this.subclass() === 'sniper' ? 1.15 : 1)) - dr) + momentum, target);
+				const damage = Math.max(0, Math.round(base * multiplier * (this.subclass() === 'sniper' ? 1.15 : 1)) - dr) + momentum;
 				this.projectileMomentumReady = false;
-				//`SpiritBow.SpiritArrow` hits reach `Char.damage()` through `attack()`; here the roll
-				//is already armor-reduced and Doom-scaled (`skipDoom`, so the logged number stays the
-				//dealt one), and the shared dispatch adds the defender curves/shields/boss hooks the
-				//old bare `hp -=` skipped. `deferKill`: the tail below keeps Lethal Haste ordering.
-				this.applyCharacterDamage(target, damage, { pierceArmor: true, cause: 'foe', skipAura: true, skipDoom: true, deferKill: true });
-				this.sprite(target).setColorAdd(1, 1, 1);
+				//Every hit lands in the shared `Char.damage()` dispatch: Java's `Hero.shoot` runs
+				//`attack()`, which rolls DR itself (`Char.java` 386, subtracted at 493) and applies
+				//the aura there (465-469; `damage()`'s own clause skips a `Char` source - "we already
+				//reduced it in Char.attack"), so `pierceArmor` keeps the caller's DR roll and no
+				//`skipAura` runs each step once. Gained over the old `doomDamage`/`hp -=`/`showDamage`
+				//tail: gates, Doom, curves, Viscosity, barriers, shields, floater, wake and death;
+				//`attack()`-side steps (`defenseProc`, mirror fade) still run nowhere on this path.
+				this.applyCharacterDamage(target, damage, { pierceArmor: true, cause: 'foe', magical: false });
+				if (target.hp > 0) this.sprite(target).setColorAdd(1, 1, 1);
 				this.say(t('port.log.shoot', { target: target.name, damage }), 'positive');
 				if (this.talentRank('followup_strike') > 0) { this.followupTarget = target; this.followupDamage = this.talentRank('followup_strike') === 1 ? 2 : 3; }
 				//`Talent.SEER_SHOT` procs from bow shots the same way (`procSeerShot`).
 				this.procSeerShot(target.x, target.y);
 				if (target.hp <= 0) {
-					//SpiritBow kills are missile-weapon kills (`cause instanceof Weapon`), so
-					//Lethal Haste triggers here just like at the melee/throw kill site above;
-					//wand-zap kills never do (the Wand is not a Weapon - see `lethalHasteOnKill`).
+					//SpiritBow kills are missile-weapon kills (`cause instanceof Weapon`): Lethal Haste
+					//fires after the dispatch's kill, like the melee/throw site (wands: not a Weapon).
 					this.lethalHasteOnKill();
-					this.kill(target);
 				}
 			}
 		}
@@ -1021,16 +1033,9 @@ if (wandType === 'frost') {
 			burnFireTerrain: this.burnFireTerrain.bind(this),
 			talentRank: this.talentRank.bind(this),
 			grantHeroShield: this.grantHeroShield.bind(this),
-			applyWandDamage: (victim, damage) => {
-				let faded = false;
-				this.applyCharacterDamage(victim, damage, {
-					pierceArmor: true, cause: 'foe', skipAura: true, skipDoom: true, magical: true, deferKill: true,
-					onFade: () => { faded = true; },
-				});
-				return faded;
-			},
+			fadeMirrorOnDamage: this.fadeMirrorOnDamage.bind(this),
+			applyCharacterDamage: this.applyCharacterDamage.bind(this),
 			say: this.say.bind(this),
-			kill: this.kill.bind(this),
 			spendHeroTurn: this.spendHeroTurn.bind(this),
 			getAttackTurnCostMod: this.getAttackTurnCostMod.bind(this),
 			message: (victim, damage) => t('port.log.wandhits', { target: victim.name, damage }),
@@ -1187,10 +1192,11 @@ if (wandType === 'frost') {
 			//Neutrals (NPCs) are still zapped, exactly as Java's `!=` does to them.
 			if ((hit.isHero || hit.isAlly) && (attacker.isHero || attacker.isAlly)) continue;
 			//`Char.Property.ELECTRIC` (`Char.java`, tag `v3.3.8`): the arc's source class
-			//is `Shocking`, so every holder takes the `Math.round` half of the chain hit - now the shared
-			//dispatch's `sourceElement: 'electric'` resistance (`resist(srcClass)`, after Doom).
+			//is `Shocking`, so every holder takes the `Math.round` half of the chain hit.
+			//(the shared dispatch's `sourceElement: 'electric'` now carries the `resist(srcClass)` halving)
+			const rawDealt = arcDamage;
 			//`Char.damage()` seam: hero magical absorb, or Doom, defender overrides, shields, hooks, wake and death.
-			this.applyCharacterDamage(hit, arcDamage, { pierceArmor: true, cause: 'foe', skipAura: true, magical: true, sourceElement: 'electric' });
+			this.applyCharacterDamage(hit, rawDealt, { pierceArmor: true, cause: 'foe', skipAura: true, magical: true, sourceElement: 'electric' });
 		}
 	},
 
@@ -1655,9 +1661,9 @@ if (wandType === 'frost') {
 						const tick = Math.max(1, Math.floor(this.hero.deferredDamage * 0.1));
 						this.applyingDeferredDamage = true;
 						this.hero.deferredDamage = Math.max(0, this.hero.deferredDamage - tick);
-						//`Viscosity.DeferedDamage.act()` -> `target.damage(dmg, this)`: the shared dispatch's
-						//hero branch (absorb, HP write, floater, fatal `kill`). The pool is spent first, as
-						//the scheduled tick is independent of what the absorb pools eat.
+						//`Viscosity.DeferedDamage.act()` -> `target.damage(dmg, this)`: the shared dispatch's hero branch
+						//(absorb, HP write, floater, fatal `kill`). The pool is spent first, as the scheduled tick is
+						//independent of what the absorb pools eat.
 						const deferredDied = this.applyCharacterDamage(this.hero, tick, { pierceArmor: true, cause: 'poison' });
 						this.applyingDeferredDamage = false;
 						if (deferredDied) return true;
@@ -1772,12 +1778,11 @@ if (wandType === 'frost') {
 					//`Badges.validateDeathFromFalling()` rather than the generic DoT bucket this
 					//merged tick otherwise defaults every non-burning death to.
 					const bleedingFatal = !burning && this.hero.buffs['bleeding'] !== undefined && this.hero.bleedSource === 'chasm';
-					//Burning/Poison/Bleeding `act()` -> `target.damage(dmg, this)`: the shared dispatch's
-					//hero branch (absorb, HP write, fatal `kill` with the cause bucket). The floater now
-					//shows the HP actually lost instead of the pre-absorb roll (the log line keeps the roll).
+					//Burning/Poison/Bleeding `act()` -> `target.damage(dmg, this)`: the shared dispatch's hero branch
+					//(absorb, HP write, fatal `kill` with the cause bucket). The floater shows HP actually lost
+					//instead of the pre-absorb roll (the log line keeps the roll).
 					this.say(t('port.log.affliction', { damage: dot }), 'negative');
-					const dotDied = this.applyCharacterDamage(this.hero, dot, { pierceArmor: true, cause: burning ? 'fire' : bleedingFatal ? 'falling' : 'poison' });
-					if (dotDied) return true;
+					if (this.applyCharacterDamage(this.hero, dot, { pierceArmor: true, cause: burning ? 'fire' : bleedingFatal ? 'falling' : 'poison' })) return true;
 				}
 				if (!this.tickCorrosion(this.hero)) return true;
 				// Burning.act() does not advance its inventory counter while TimekeepersHourglass
@@ -1818,14 +1823,13 @@ if (wandType === 'frost') {
 						: this.depth === 5 ? 1 : Random.chance(0.5) ? 1 : 0;
 					const oozeDot = Math.floor(rawOoze * ringElementsMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()));
 					if (oozeDot > 0) {
-						//`Ooze.act()` -> `target.damage(dmg, this)`: shared dispatch hero branch; its
-						//`onHeroDeath` hook prints the real `ondeath` line just before the fatal `kill`.
+						//`Ooze.act()` -> `target.damage(dmg, this)`: shared dispatch hero branch; `onHeroDeath`
+						//prints the real `ondeath` line just before the fatal `kill`.
 						this.say(t('port.log.affliction', { damage: oozeDot }), 'negative');
-						const oozeDied = this.applyCharacterDamage(this.hero, oozeDot, {
+						if (this.applyCharacterDamage(this.hero, oozeDot, {
 							pierceArmor: true, cause: 'poison',
 							onHeroDeath: () => this.say(t('actors.buffs.ooze.ondeath'), 'negative'),
-						});
-						if (oozeDied) return true;
+						})) return true;
 					}
 				}
 				//Level.java's per-turn WATER hook: a non-flying char standing in water forces
@@ -1857,13 +1861,12 @@ if (wandType === 'frost') {
 						if (this.ascensionDamageInc >= 1) {
 							const wholePoints = Math.floor(this.ascensionDamageInc);
 							this.ascensionDamageInc -= wholePoints;
-							//`AscensionChallenge.act()` -> `Dungeon.hero.damage(..)`: shared dispatch hero
-							//branch, `onHeroDeath` printing the real `on_kill` line before the fatal `kill`.
-							const ascensionDied = this.applyCharacterDamage(this.hero, wholePoints, {
+							//`AscensionChallenge.act()` -> hero `damage()`: shared dispatch hero branch, `onHeroDeath`
+							//printing the real `on_kill` line before the fatal `kill`.
+							if (this.applyCharacterDamage(this.hero, wholePoints, {
 								pierceArmor: true, cause: 'poison',
 								onHeroDeath: () => this.say(t('actors.buffs.ascensionchallenge.on_kill'), 'negative'),
-							});
-							if (ascensionDied) return true;
+							})) return true;
 						}
 					} else this.ascensionDamageInc = 0;
 				}

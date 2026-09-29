@@ -52,6 +52,9 @@ import { useAnkhFlow, type AnkhContext } from '../../items/selfUse';
 import { Banner } from '../../ui/banner';
 import { showDefeatPanel as showDefeatPanelUi, showVictoryPanel as showVictoryPanelUi } from '../../ui/endPanels';
 import { createItemPickerWindow } from '../../ui/itemPicker';
+import { itemFrameFor } from '../../ui/itemFrame';
+import { createTalentInfoWindow, talentTierPane } from '../../ui/talentPane';
+import { appearanceItemFrame } from '../../items/appearanceFrames';
 import { CLASS_ARMOR_ID_BY_CLASS, isClassArmorId, weaponCombat } from '../../items/catalog';
 import { MWL_HERO_BASE_STATS, mwlItemEffectValue } from '../../mwlContent';
 import { useAlchemizeFlow, useStylusFlow, type AlchemizeContext, type StylusContext } from '../../items/spells';
@@ -771,12 +774,9 @@ export const panelsSingleUseMethods = {
 			: this.talentTier === 4
 				? armorTalentDefinitions(this.armorAbility ?? '', this.heroClass)
 				: (CLASS_TALENTS[this.heroClass]?.[this.talentTier - 1] ?? []);
-		const panelHeight = 138;
+		const panelHeight = 92;
 		this.talentPanel.addChild(new Graphics().roundRect(0, 0, width, panelHeight, 6)
 			.fill({ color: 0x101116, alpha: 0.96 }).stroke({ width: 2, color: 0x8b7651 }));
-		const title = new Label({ text: `${t('port.action.talents')} Â· ${t('port.talent.tier', { tier: this.talentTier })} (${points})`, size: 11, bold: true, color: theme().color.textHighlight });
-		title.position.set(8, 6);
-		this.talentPanel.addChild(title);
 		[1, 2, 3, 4].forEach(tier => {
 			const tab = new Button({ width: 38, height: 17, text: `T${tier}`, onClick: () => {
 				//T4 is Java's armor-ability tier: it opens at level 20 (	ierLevelThresholds[4] - 1`)
@@ -801,35 +801,47 @@ export const panelsSingleUseMethods = {
 			tab.position.set(width - 162 + (tier - 1) * 40, 4);
 			this.talentPanel.addChild(tab);
 		});
-		const description = new Label({ text: t('port.talent.select'), size: 6, wrapWidth: width - 16, color: theme().color.textDim });
-		description.position.set(8, 108);
-		this.talentPanel.addChild(description);
-		defs.forEach((def: TalentDefinition, index: number) => {
+		//`TalentsPane.TalentTierPane` (`ui/TalentsPane.java`, tag `v3.3.8`): the tier title with its stars and a row of
+		//icon tiles; a tile opens `WndInfoTalent`, and the point is spent from that window's Upgrade button (Java's two-step flow).
+		const spendPoint = (def: TalentDefinition): void => {
 			const rank = this.talentRank(def.id);
-			const button = new Button({ width: width - 16, height: 17, text: `${t(talentTitleKey(def.id))}  ${rank}/${def.maxRank}`, onClick: () => {
-				description.setText(t(talentDescKey(def.id)));
-				const tierIndex = this.talentTier - 1;
-				if (rank < def.maxRank && this.talentPoints[tierIndex] > 0) {
-					this.talentPoints[tierIndex]--;
-					this.talentRanks[def.id] = rank + 1;
-					//`Talent.onTalentUpgraded()`'s rank-2 intuition identify (tag `v3.3.8`):
-					//reaching rank 2 identifies whatever's *already* equipped, not just future
-					//equips - real Java fires this the instant the point is spent. Equipped
-					//gear now carries a real identified flag (`weaponIdentified`/
-					//`armorIdentified`/`EquippedRing.identified`, see `items/equipment.ts`),
-					//so this has an observable target where it used to have none. Rank 1's
-					//Thief's Intuition `setKnown()` (type known, level/curse still hidden)
-					//stays unported - this port's binary `identified` ring model has no
-					//separate type-known state to set.
-					this.identifyOnTalentUpgraded(def.id, rank + 1);
-					this.syncHeroFromStats();
-					this.say(t('port.log.talentspent', { stat: t(talentTitleKey(def.id)) }), 'positive');
-					this.refresh();
-				}
-			} });
-			button.position.set(8, 27 + index * 16);
-			this.talentPanel.addChild(button);
-		});
+			const tierIndex = this.talentTier - 1;
+			if (rank < def.maxRank && this.talentPoints[tierIndex] > 0) {
+				this.talentPoints[tierIndex]--;
+				this.talentRanks[def.id] = rank + 1;
+				//`Talent.onTalentUpgraded()`'s rank-2 intuition identify (tag `v3.3.8`):
+				//reaching rank 2 identifies whatever's *already* equipped, not just future
+				//equips - real Java fires this the instant the point is spent. Equipped
+				//gear now carries a real identified flag (`weaponIdentified`/
+				//`armorIdentified`/`EquippedRing.identified`, see `items/equipment.ts`),
+				//so this has an observable target where it used to have none. Rank 1's
+				//Thief's Intuition `setKnown()` (type known, level/curse still hidden)
+				//stays unported - this port's binary `identified` ring model has no
+				//separate type-known state to set.
+				this.identifyOnTalentUpgraded(def.id, rank + 1);
+				this.syncHeroFromStats();
+				this.say(t('port.log.talentspent', { stat: t(talentTitleKey(def.id)) }), 'positive');
+				this.refresh();
+			}
+		};
+		const tierIndex = this.talentTier - 1;
+		const tierPane = talentTierPane({
+			tier: this.talentTier,
+			tiles: defs.map((def) => ({ id: def.id, title: t(talentTitleKey(def.id)), rank: this.talentRank(def.id), max: def.maxRank })),
+			width: width - 16,
+			open: points,
+			spent: defs.reduce((sum, def) => sum + this.talentRank(def.id), 0),
+			onSelect: (id) => {
+				const def = defs.find((candidate) => candidate.id === id);
+				if (!def) return;
+				const rank = this.talentRank(id);
+				const canUpgrade = rank < def.maxRank && (this.talentPoints[tierIndex] ?? 0) > 0;
+				const info = createTalentInfoWindow({ id, title: t(talentTitleKey(id)), rank, description: t(talentDescKey(id)), onUpgrade: canUpgrade ? () => spendPoint(def) : undefined });
+				this.gameWindows.push(info);
+			},
+		}).pane;
+		tierPane.position.set(8, 30);
+		this.talentPanel.addChild(tierPane);
 		this.talentWindow.resize(width, panelHeight + 34);
 		this.talentWindow.place(this.windowViewport().width, this.windowViewport().height);
 		if (this.gameWindows.top !== this.talentWindow) this.gameWindows.push(this.talentWindow);
@@ -1090,6 +1102,13 @@ export const panelsSingleUseMethods = {
 			body,
 			entries,
 			displayName: (id, identified, instanceId) => this.itemDisplayName(id, identified, instanceId),
+			iconFrame: (id) => {
+				//The bag's own frame resolution, including a dealt potion/scroll appearance (`Potion.reset()`).
+				const category = id.startsWith('potion') ? 'potion' as const : id.startsWith('scroll') ? 'scroll' as const : null;
+				let appearance: number | undefined;
+				if (category) { try { appearance = appearanceItemFrame(category, this.appearances.appearanceOf(category, id)); } catch { appearance = undefined; } }
+				return itemFrameFor(id, appearance);
+			},
 			onPick: (index) => this.chooseItemPicker(index),
 			onCancel: () => this.clearItemPicker(),
 		});

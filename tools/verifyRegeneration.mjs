@@ -86,8 +86,8 @@ for (const [file, hook] of [
 //the lock at panelsSingleUse.ts, pinned above), so the traps file hand-rolls no
 //non-hero HP write at all: what remains is only the hero halves.
 const remainingTrapWrites = read('../src/scenes/dungeon/environmentFireTraps.ts').match(/.*\.hp -= .*/g) ?? [];
-assert.ok(remainingTrapWrites.length > 0 && remainingTrapWrites.every((line) => line.includes('this.hero.hp')),
-	`every remaining direct HP write in the traps file is a hero half, not a mob tail: ${remainingTrapWrites.join(' | ')}`);
+assert.ok(remainingTrapWrites.every((line) => line.includes('this.hero.hp')),
+	`T63 batch 5 moved the hero halves onto the dispatch too; any direct HP write left in the traps file is a hero half, never a mob tail: ${remainingTrapWrites.join(' | ')}`);
 
 //`items/artifactPassiveRecharge.ts` against chainsRecharge/beaconRecharge/hourglassRecharge.act(),
 //with `mwlItemEffectValue` answered from the authored `item-rules.mwl` rows themselves.

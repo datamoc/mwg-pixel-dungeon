@@ -99,7 +99,12 @@ export function verifyPrismatic(require, check) {
 			"this.triggerMobTrapAt(sheep)",
 			'spawnPrismaticImage(at, Math.floor(pool))',
 			'this.tickPrismaticGuard(turnCost)',
-			'this.fadeMirrorOnDamage(c, damage) || this.enterPrismaticFade(c, damage)',
+			//The wand-zap loop stopped intercepting the fade itself (T63 wand zaps):
+			//it now finishes kills through the shared dispatch, and kill()'s
+			//non-chasm backstop below is what turns a lethal wand hit on a prismatic
+			//image into its 5-turn fade instead of a real death.
+			'this.applyCharacterDamage(victim, damage, {',
+			'creature.prismaticFade = PRISMATIC_FADE_TURNS;',
 			'this.enterPrismaticFade(defender, damage)',
 			'prismaticFade: creature.prismaticFade',
 			'prismaticFade: saved.prismaticFade',

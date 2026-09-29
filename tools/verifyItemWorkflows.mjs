@@ -62,10 +62,10 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	compile(join(root, 'src/simulation/mwlMonsterImmunities.ts'), 'simulation/mwlMonsterImmunities.js');
 	compile(join(root, 'src/simulation/mwlBuffDurations.ts'), 'simulation/mwlBuffDurations.js');
 	compile(join(root, 'src/simulation/buffs.ts'), 'simulation/buffs.js');
-	// Several item modules import `doomDamage` (and friends) as a *value* from `../combat`
-	// since the Doom work landed; `wands.js` is the first of them required below. Node
-	// caches the module on first load, so this stub must exist before any of those
-	// requires — writing it only at the meal-test site below is too late. Re-export the
+	// The meal chain value-imports `addBuff`/`reigniteBuff` from `../combat`, and the scroll drive
+	// below needs `doomDamage` from it (`wands.js`'s combat import is type-only now, so
+	// `consumables.js` is the first loader - it reads the meal-site write below, and this
+	// early write stays as the backstop. Re-export the
 	// pure helpers from the already-compiled real buffs module; keep `addCalls` for the
 	// meal assertions, and leave `addBuff`/`reigniteBuff`/`buffBlocked` as observation
 	// stubs (this drive still never observes real buff application).
@@ -518,7 +518,15 @@ assert.equal(missileAdjacentAccFactor(false, true, 3), 1.5, 'thrown weapons and 
 	// turns into a flat 1.5 rather than the melee-range penalty.
 	assert.equal(BOOMERANG_RETURN_TURNS, 5, 'CircleBack counts down from 5 hero turns');
 	assert.equal(BOOMERANG_RETURN_ACC_FACTOR, 1.5, 'the return throw is a flat 1.5, adjacency or not');
-	const { canCraftPotionSeed, craftPotionSeed, craftAlchemy, craftScrollToStone, craftAlchemize, craftScrollToExotic, canCraftScrollToExotic, scrollExoticResult, craftPotionToExotic, canCraftPotionToExotic, potionExoticResult, alchemyRecipe, alchemyEnergyFor } = require('./items/alchemy.js');
+	const { canCraftPotionSeed, craftPotionSeed, canCraftAlchemy, craftAlchemy, craftScrollToStone, craftAlchemize, craftScrollToExotic, canCraftScrollToExotic, scrollExoticResult, craftPotionToExotic, canCraftPotionToExotic, potionExoticResult, alchemyRecipe, alchemyEnergyFor } = require('./items/alchemy.js');
+	const identifiedGateBag = new Inventory();
+	identifiedGateBag.add({ id: 'scrollUpgrade', quantity: 1, stackable: true, identified: false });
+	assert.equal(canCraftAlchemy(identifiedGateBag, 'magicalInfusion'), false, 'an unidentified scroll cannot enable the spell recipe');
+	assert.equal(craftAlchemy(identifiedGateBag, 'magicalInfusion'), false, 'the craft path independently rejects unidentified ingredients');
+	assert.equal(identifiedGateBag.find('scrollUpgrade')?.quantity, 1, 'a rejected unidentified craft consumes nothing');
+	identifiedGateBag.items[0].identified = true;
+	assert.equal(canCraftAlchemy(identifiedGateBag, 'magicalInfusion'), true, 'identifying the scroll enables the recipe');
+	assert.equal(craftAlchemy(identifiedGateBag, 'magicalInfusion'), true, 'the identified spell recipe crafts');
 
 	// `Item.isUpgradable()` (tag `v3.3.8`) and the two infusion selectors that read it. Java's
 	// default is true with 42 classes overriding it false, so the assertions below are built from
@@ -1129,12 +1137,13 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 	assert.deepEqual(craftPotionSeed(selectBag, [{ id: 'seedSungrass' }, { id: 'seedSungrass' }, { id: 'seedSungrass' }]), { id: 'potionHealing', identified: true }, 'three chosen sungrass brew healing');
 	assert.equal(selectBag.items.length, 0, 'the chosen units are consumed');
 	const selectScroll = new Inventory();
-	selectScroll.add({ id: 'scrollRage', quantity: 1, stackable: true });
+	selectScroll.add({ id: 'scrollRage', quantity: 2, stackable: true, identified: false });
 	assert.equal(craftScrollToStone(selectScroll, { id: 'potionHealing' }), false, 'a non-scroll cannot transmute');
-	assert.equal(selectScroll.items[0].quantity, 1, '...unconsumed');
+	assert.equal(selectScroll.items[0].quantity, 2, '...unconsumed');
 	assert.equal(craftScrollToStone(selectScroll, { id: 'scrollRage' }), true, 'the chosen rage scroll transmutes');
 	assert.equal(selectScroll.find('stoneOfAggression')?.quantity, 2, 'into two aggression stones');
-	assert.equal(selectScroll.find('scrollRage'), undefined, 'and the chosen scroll is consumed');
+	assert.equal(selectScroll.find('scrollRage')?.quantity, 1, 'one scroll is consumed');
+	assert.equal(selectScroll.find('scrollRage')?.identified, true, 'and the remaining scroll of that kind is identified');
 	// `ExoticScroll.ScrollToExotic` (tag `v3.3.8`): one regular scroll, cost 6, into its
 	// exotic - only the MirrorImage -> PrismaticImage pair exists here so far.
 	assert.equal(scrollExoticResult('scrollMirror'), 'scrollPrismatic');
@@ -1301,6 +1310,26 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 	// `Brew.energyVal()` is 12 a unit, like the brewed exotic scroll.
 	assert.equal(alchemyEnergyFor('shockingBrew', true), 12, 'a scrapped shocking brew yields 12 energy');
 	assert.equal(alchemyEnergyFor('causticBrew', true), 12, 'a scrapped caustic brew yields 12 energy');
+	assert.equal(alchemyEnergyFor('food', true), 0, 'base Food has no energy value');
+	assert.equal(alchemyEnergyFor('chargrilledMeat', true), 0, 'Food subclasses without an override retain the zero default');
+	assert.equal(alchemyEnergyFor('stoneOfAugmentation', true), 5, 'augmentation stones override the runestone base');
+	assert.equal(alchemyEnergyFor('stoneOfEnchantment', true), 5, 'enchantment stones override the runestone base');
+	assert.equal(alchemyEnergyFor('seedRotberry', true), 3, 'Rotberry seeds override the seed base');
+	assert.equal(alchemyEnergyFor('seedStarflower', true), 3, 'Starflower seeds override the seed base');
+	assert.equal(alchemyEnergyFor('gooBlob', true), 3, 'Goo blobs have their own energy value');
+	assert.equal(alchemyEnergyFor('metalShard', true), 3, 'metal shards have their own energy value');
+	assert.equal(alchemyEnergyFor('elixirMight', true), 12, 'elixirs use Elixir.energyVal');
+	assert.equal(alchemyEnergyFor('featherFall', true), 12, 'the Java ElixirOfFeatherFall class has Elixir.energyVal');
+	assert.equal(alchemyEnergyFor('magicalInfusion', true), 12, 'MagicalInfusion returns 12 per spell');
+	assert.equal(alchemyEnergyFor('phaseShift', true), 2, 'PhaseShift scales 12 energy across six recipe outputs');
+	assert.equal(alchemyEnergyFor('reclaimTrap', true), 2, 'ReclaimTrap scales 12 energy across five recipe outputs');
+	assert.equal(alchemyEnergyFor('recycle', true), 1, 'Recycle scales 12 energy across twelve recipe outputs');
+	assert.equal(alchemyEnergyFor('wildEnergy', true), 2, 'WildEnergy scales 12 energy across five recipe outputs');
+	assert.equal(alchemyEnergyFor('telekineticGrab', true), 1, 'TelekineticGrab scales 10 energy across eight recipe outputs');
+	assert.equal(alchemyEnergyFor('curseInfusion', true), 3, 'CurseInfusion scales 12 energy across four recipe outputs');
+	assert.equal(alchemyEnergyFor('beaconOfReturning', true), 2, 'BeaconOfReturning scales 12 energy across five recipe outputs');
+	assert.equal(alchemyEnergyFor('unstableBrew', true), 8, 'UnstableBrew retains its Java value for when the item is ported');
+	assert.equal(alchemyEnergyFor('unstableSpell', true), 8, 'UnstableSpell retains its Java value for when the item is ported');
 	// `Bomb.EnhanceBomb` (tag `v3.3.8`): invisibility brews a smoke bomb and recharging
 	// a flashbang, 2 energy each - the port's old invisibility-flashbang /
 	// recharging-shockbomb pairing matched a pre-v3.3.8 tree whose ShockBomb Java dropped.
@@ -3978,9 +4007,9 @@ function talismanDrive(overrides = {}) {
 	// shared by ordinary food and `HornOfPlenty.doEatEffect()` (horn callers pass base 0 -
 	// the horn grants satiety, never HP). combat.ts is stubbed: the helper under test never
 	// touches addBuff/reigniteBuff (only the mystery-meat branch does, untested here), and
-	// nothing under test reads buffBlocked (the retribution branch does - stubbed open);
+	// nothing under test reads buffBlocked (the retribution branch does - stubbed open); doomDamage rides along for the later scroll drive's applyDamage
 	// the challenges/i18n stubs above already cover this module's other two imports.
-	writeFileSync(join(out, 'combat.js'), 'exports.BUFF_DURATION = { aggression: 20 };\nexports.addCalls = [];\nexports.addBuff = (target, id, duration) => exports.addCalls.push({ target, id, duration });\nexports.reigniteBuff = () => {};\nexports.buffBlocked = () => false;\n');
+	writeFileSync(join(out, 'combat.js'), 'exports.BUFF_DURATION = { aggression: 20 };\nexports.addCalls = [];\nexports.addBuff = (target, id, duration) => exports.addCalls.push({ target, id, duration });\nexports.reigniteBuff = () => {};\nexports.buffBlocked = () => false;\nexports.doomDamage = require("./simulation/buffs.js").doomDamage;\n');
 	compile(join(root, 'src/talentEffects.ts'), 'talentEffects.js');
 	compile(join(root, 'src/items/consumables.ts'), 'items/consumables.js');
 	const { applyMealEatenEffects, eatFood } = require('./items/consumables.js');
@@ -4230,6 +4259,201 @@ function scrollReadDrive(overrides = {}) {
 	assert.match(readFileSync(join(root, 'src/items/scrollEffects.ts'), 'utf8'), /addBuff\(hero, 'weakness'\)/);
 	assert.match(readFileSync(join(root, 'src/items/scrollEffects.ts'), 'utf8'), /context\.applyDamage\(creature, rawDamage\)/,
 		'Retribution delegates its rolled hit to the scene Char.damage dispatcher');
+	//`ScrollOfTerror.doRead()` (tag `v3.3.8`) skips ALLY alignment: every visible
+	//non-ally takes terror, the hero/NPCs/allies are left alone, and the line
+	//counts the scattered. `addBuff` rides the stub here, so the scatter is
+	//pinned through its observation calls, not buff maps.
+	const { addCalls: terrorCalls } = require('./combat.js');
+	const foeA = { isHero: false, isNPC: false, isAlly: false, buffs: {}, x: 1, y: 1, name: 'rat' };
+	const foeB = { isHero: false, isNPC: false, isAlly: false, buffs: {}, x: 2, y: 2, name: 'crab' };
+	const friend = { isHero: false, isNPC: false, isAlly: true, buffs: {}, x: 3, y: 3, name: 'mirror' };
+	const bystander = { isHero: false, isNPC: true, isAlly: false, buffs: {}, x: 4, y: 4, name: 'ghost' };
+	const self = { isHero: true, isNPC: false, isAlly: false, buffs: {}, x: 0, y: 0, name: 'hero' };
+	const before = terrorCalls.length;
+	const terror = scrollReadDrive({
+		items: [{ id: 'scrollTerror', quantity: 1, identified: true }],
+		creatures: [foeA, foeB, friend, bystander, self],
+	});
+	assert.equal(terror.result, true, 'terror reads');
+	assert.deepEqual(terrorCalls.slice(before).map((c) => c.target), [foeA, foeB], 'only visible enemies take terror');
+	assert.ok(terrorCalls.slice(before).every((c) => c.id === 'terror'), 'taking terror itself');
+	assert.ok(terror.said.some((l) => l.includes('items.scrolls.scrollofterror.many')), 'counting the scattered');
+	assert.deepEqual(terror.flags.recalled, ['ScrollOfTerror'], 'arming its Java class');
+	const solo = scrollReadDrive({
+		items: [{ id: 'scrollTerror', quantity: 1, identified: true }],
+		creatures: [{ isHero: false, isNPC: false, isAlly: false, buffs: {}, x: 1, y: 1, name: 'gnoll' }],
+	});
+	assert.ok(solo.said.some((l) => l.includes('items.scrolls.scrollofterror.one[gnoll]')), 'naming the lone scattered');
+	const calm = scrollReadDrive({
+		items: [{ id: 'scrollTerror', quantity: 1, identified: true }],
+		creatures: [{ isHero: false, isNPC: false, isAlly: true, buffs: {}, x: 1, y: 1, name: 'mirror' }],
+	});
+	assert.ok(calm.said.some((l) => l.startsWith('negative:items.scrolls.scrollofterror.none')), 'allies alone mean nothing to scatter');
+//`ScrollOfLullaby.doRead()` (tag `v3.3.8`): drowsy has no ally exception, unlike
+//terror - every visible non-hero non-NPC creature takes it (allies included),
+//plus the reader, with the shared lullaby line. Pinned through the stub's
+//observation calls, like terror.
+const { addCalls: lullabyCalls } = require('./combat.js');
+const awakeA = { isHero: false, isNPC: false, isAlly: false, buffs: {}, x: 1, y: 1 };
+const awakeB = { isHero: false, isNPC: false, isAlly: true, buffs: {}, x: 2, y: 2 };
+const watcher = { isHero: false, isNPC: true, isAlly: false, buffs: {}, x: 3, y: 3 };
+const napStart = lullabyCalls.length;
+const lullaby = scrollReadDrive({
+	items: [{ id: 'scrollLullaby', quantity: 1, identified: true }],
+	creatures: [awakeA, awakeB, watcher],
+});
+assert.equal(lullaby.result, true, 'lullaby reads');
+assert.deepEqual(lullabyCalls.slice(napStart).map((c) => c.target), [awakeA, awakeB, lullaby.hero], 'drowsy reaches foes, allies, and the reader');
+assert.ok(lullabyCalls.slice(napStart).every((c) => c.id === 'drowsy'), 'taking drowsy itself');
+assert.ok(lullaby.said.some((l) => l.includes('port.log.lullaby')), 'singing the shared line');
+assert.deepEqual(lullaby.flags.recalled, ['ScrollOfLullaby'], 'arming its Java class');
+//`ScrollOfRage.doRead()` (tag `v3.3.8`): the beckon stand-in wakes every non-hero
+//non-NPC creature (sleeping false, seesHero true) while amok itself goes only to
+//visible non-allies. A sleeping Crystal Guardian ignores the beckon but still
+//takes amok. The beckon is pinned through object flags, amok through the stub's
+//observation calls.
+const { addCalls: rageCalls } = require('./combat.js');
+const raging = { isHero: false, isNPC: false, isAlly: false, buffs: {}, sleeping: true, seesHero: false, x: 1, y: 1 };
+const ragingAlly = { isHero: false, isNPC: false, isAlly: true, buffs: {}, sleeping: true, seesHero: false, x: 2, y: 2 };
+const ragingWatcher = { isHero: false, isNPC: true, isAlly: false, buffs: {}, sleeping: true, seesHero: false, x: 3, y: 3 };
+const ragingGuardian = { isHero: false, isNPC: false, isAlly: false, buffs: {}, sleeping: true, seesHero: false, kind: 'crystalGuardian', x: 4, y: 4 };
+const rageStart = rageCalls.length;
+const rageMob = scrollReadDrive({
+	items: [{ id: 'scrollRage', quantity: 1, identified: true }],
+	creatures: [raging, ragingAlly, ragingWatcher, ragingGuardian],
+});
+assert.equal(rageMob.result, true, 'rage reads enemies and allies alike');
+assert.equal(raging.sleeping, false, 'the beckon wakes the foe');
+assert.equal(raging.seesHero, true, 'and turns it toward the hero');
+assert.equal(ragingAlly.sleeping, false, 'allies hear the beckon too');
+assert.equal(ragingAlly.seesHero, true, 'and turn as well');
+assert.equal(ragingWatcher.sleeping, true, 'NPCs sleep through it');
+assert.equal(ragingGuardian.sleeping, true, 'a sleeping guardian ignores the beckon');
+assert.deepEqual(rageCalls.slice(rageStart).map((c) => c.target), [raging, ragingGuardian], 'amok itself is enemies-only, guardian included');
+assert.ok(rageCalls.slice(rageStart).every((c) => c.id === 'amok'), 'taking amok itself');
+//(read, line, and recall already pinned on the registry drive above; this drive adds targeting.)
+//`ScrollOfRecharging.doRead()` (tag `v3.3.8`): the `Recharging` buff lands on the
+//reader with the shared recharging line. Only the buff call itself is pinned
+//through the stub's observation calls; the 30-turn duration lives in the
+//scene-side `BUFF_DURATION` table, out of this drive's reach.
+const { addCalls: rechargeCalls } = require('./combat.js');
+const rechargeStart = rechargeCalls.length;
+const recharging = scrollReadDrive({
+	items: [{ id: 'scrollRecharging', quantity: 1, identified: true }],
+});
+assert.equal(recharging.result, true, 'recharging reads');
+assert.deepEqual(rechargeCalls.slice(rechargeStart).map((c) => c.target), [recharging.hero], 'recharging lands on the reader');
+assert.ok(rechargeCalls.slice(rechargeStart).every((c) => c.id === 'recharging'), 'taking recharging itself');
+assert.ok(recharging.said.some((l) => l.includes('port.log.recharging')), 'sounding the shared line');
+assert.deepEqual(recharging.flags.recalled, ['ScrollOfRecharging'], 'arming its Java class');
+//`ScrollOfTeleportation.doRead()` (tag `v3.3.8`): roots clear first, then a free
+//cell relocates the reader with the tele line; with nowhere to go the no-tele
+//line sounds instead (roots still cleared). Both paths pinned through scripted
+//scene seams.
+const teleMoves = [];
+const teleported = scrollReadDrive({
+	items: [{ id: 'scrollTeleportation', quantity: 1, identified: true }],
+	heroBuffs: { roots: 5 },
+	ctx: {
+		randomFreeCell: () => ({ x: 3, y: 3 }),
+		moveTo: (target, dest) => { teleMoves.push([target, dest]); },
+	},
+});
+assert.equal(teleported.result, true, 'teleportation reads');
+assert.equal(teleported.hero.buffs.roots, undefined, 'roots clear first');
+assert.deepEqual(teleMoves.map((m) => m[1]), [{ x: 3, y: 3 }], 'the reader relocates to the free cell');
+assert.equal(teleMoves[0][0], teleported.hero, 'moving the hero itself');
+assert.ok(teleported.said.some((l) => l.includes('items.scrolls.scrollofteleportation.tele')), 'sounding the tele line');
+assert.deepEqual(teleported.flags.recalled, ['ScrollOfTeleportation'], 'arming its Java class');
+const stranded = scrollReadDrive({
+	items: [{ id: 'scrollTeleportation', quantity: 1, identified: true }],
+	heroBuffs: { roots: 5 },
+});
+assert.equal(stranded.result, true, 'no free cell still reads');
+assert.equal(stranded.hero.buffs.roots, undefined, 'roots clear even then');
+assert.ok(stranded.said.some((l) => l.includes('items.scrolls.scrollofteleportation.no_tele')), 'sounding the no-tele line');
+//`ScrollOfMirrorImage.doRead()` (tag `v3.3.8`): the authored `imageCount` (2)
+//nearest free neighbours become mirror images; occupied cells are skipped. Both
+//pinned through a scripted spawn seam.
+const mirrorSpawns = [];
+const mirrorRead = scrollReadDrive({
+	items: [{ id: 'scrollMirror', quantity: 1, identified: true }],
+	ctx: { spawnMirrorImage: (at) => { mirrorSpawns.push(at); } },
+});
+assert.equal(mirrorRead.result, true, 'mirror reads');
+assert.equal(mirrorSpawns.length, 2, 'two free neighbours become images');
+assert.ok(mirrorRead.said.some((l) => l.includes('port.log.mirror')), 'sounding the mirror line');
+assert.deepEqual(mirrorRead.flags.recalled, ['ScrollOfMirrorImage'], 'arming its Java class');
+const crowdedSpawns = [];
+const crowded = scrollReadDrive({
+	items: [{ id: 'scrollMirror', quantity: 1, identified: true }],
+	ctx: {
+		creatureAt: () => ({ id: 'rat' }),
+		spawnMirrorImage: (at) => { crowdedSpawns.push(at); },
+	},
+});
+assert.equal(crowded.result, true, 'a ring of occupants still reads');
+assert.equal(crowdedSpawns.length, 0, 'with nowhere to stand, no image spawns');
+//`ScrollOfMagicMapping.doRead()` (tag `v3.3.8`): the whole floor reveals, every
+//secret cell is discovered, tiles restitch, and the mapping line sounds. Pinned
+//through scripted fov/secret seams on the 5x5 drive floor.
+const revealed = [];
+const discovered = [];
+let restitched = 0;
+const mappingRead = scrollReadDrive({
+	items: [{ id: 'scrollMapping', quantity: 1, identified: true }],
+	ctx: {
+		fov: { isVisible: () => true, revealAll: () => { revealed.push(true); } },
+		secrets: { isSecret: () => true, discover: (x, y) => { discovered.push([x, y]); } },
+		restitchAllTiles: () => { restitched++; },
+	},
+});
+assert.equal(mappingRead.result, true, 'mapping reads');
+assert.equal(revealed.length, 1, 'the whole floor reveals at once');
+assert.equal(discovered.length, 25, 'every cell of the 5x5 floor is discovered');
+assert.equal(restitched, 1, 'tiles restitch once');
+assert.ok(mappingRead.said.some((l) => l.includes('port.log.mapping')), 'sounding the mapping line');
+assert.deepEqual(mappingRead.flags.recalled, ['ScrollOfMagicMapping'], 'arming its Java class');
+//`ScrollOfPrismaticImage.doRead()` (tag `v3.3.8`): a hurt image heals to HT with
+//the heal readout and loses its fade counter; with no live image the latent
+//guard is granted at full charge instead (a fading image at 0 HP still counts
+//as live, an unfaded one does not). No log line on any path. Pinned through
+//scripted heal/guard seams.
+const healedShown = [];
+const guardsGranted = [];
+const hurtImage = { isHero: false, isNPC: false, isAlly: true, allyKind: 'prismatic', hp: 3, maxHp: 10, prismaticFade: 2, buffs: {}, x: 1, y: 1 };
+const prismaticRead = scrollReadDrive({
+	items: [{ id: 'scrollPrismatic', quantity: 1, identified: true }],
+	creatures: [hurtImage],
+	ctx: {
+		showHeal: (target, amount) => { healedShown.push([target, amount]); },
+		grantPrismaticGuard: (maxHp) => { guardsGranted.push(maxHp); },
+	},
+});
+assert.equal(prismaticRead.result, true, 'prismatic reads');
+assert.equal(hurtImage.hp, 10, 'the hurt image heals to HT');
+assert.equal(hurtImage.prismaticFade, undefined, 'losing its fade counter');
+assert.deepEqual(healedShown.map((h) => h[1]), [7], 'reading out the restored amount');
+assert.equal(guardsGranted.length, 0, 'a live image means no guard');
+assert.deepEqual(prismaticRead.flags.recalled, ['ScrollOfPrismaticImage'], 'arming its Java class');
+const fadingImage = { isHero: false, isNPC: false, isAlly: true, allyKind: 'prismatic', hp: 0, maxHp: 10, prismaticFade: 1, buffs: {}, x: 1, y: 1 };
+const goneImage = { isHero: false, isNPC: false, isAlly: true, allyKind: 'prismatic', hp: 0, maxHp: 10, buffs: {}, x: 2, y: 2 };
+const fadingGuards = [];
+const fadingRead = scrollReadDrive({
+	items: [{ id: 'scrollPrismatic', quantity: 1, identified: true }],
+	creatures: [fadingImage, goneImage],
+	ctx: { grantPrismaticGuard: (maxHp) => { fadingGuards.push(maxHp); } },
+});
+assert.equal(fadingImage.hp, 10, 'a fading image at 0 HP is rescued to full');
+assert.equal(fadingGuards.length, 0, 'it still counts as live, so no guard');
+const lonelyGuards = [];
+const lonelyRead = scrollReadDrive({
+	items: [{ id: 'scrollPrismatic', quantity: 1, identified: true }],
+	ctx: { grantPrismaticGuard: (maxHp) => { lonelyGuards.push(maxHp); } },
+});
+assert.equal(lonelyRead.result, true, 'with no image the read still succeeds');
+assert.equal(lonelyGuards.length, 1, 'granting the latent guard once');
+assert.ok(Number.isFinite(lonelyGuards[0]) && lonelyGuards[0] > 0, 'at a positive full charge');
 }
 {
 	// A free re-read (RecallInscription's talentChance = 0): the effect runs, but

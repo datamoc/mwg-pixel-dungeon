@@ -906,7 +906,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 12,
                 "column": 13
               },
@@ -920,7 +920,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 21,
                 "column": 13
               },
@@ -934,7 +934,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 26,
                 "column": 13
               },
@@ -948,7 +948,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 31,
                 "column": 13
               },
@@ -962,7 +962,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 43,
                 "column": 13
               },
@@ -976,7 +976,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 55,
                 "column": 13
               },
@@ -990,7 +990,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 60,
                 "column": 13
               },
@@ -1004,7 +1004,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 68,
                 "column": 13
               },
@@ -1018,7 +1018,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 78,
                 "column": 13
               },
@@ -1032,7 +1032,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 93,
                 "column": 13
               },
@@ -1046,7 +1046,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 98,
                 "column": 13
               },
@@ -1054,7 +1054,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
             "line": 7,
             "column": 9
           },
@@ -1075,7 +1075,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 110,
                 "column": 13
               },
@@ -1089,7 +1089,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 115,
                 "column": 13
               },
@@ -1103,7 +1103,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 120,
                 "column": 13
               },
@@ -1117,7 +1117,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 125,
                 "column": 13
               },
@@ -1131,7 +1131,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 130,
                 "column": 13
               },
@@ -1145,7 +1145,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 135,
                 "column": 13
               },
@@ -1159,7 +1159,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 140,
                 "column": 13
               },
@@ -1173,7 +1173,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 145,
                 "column": 13
               },
@@ -1187,7 +1187,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 150,
                 "column": 13
               },
@@ -1201,7 +1201,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 155,
                 "column": 13
               },
@@ -1215,7 +1215,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 160,
                 "column": 13
               },
@@ -1229,7 +1229,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 165,
                 "column": 13
               },
@@ -1243,7 +1243,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 170,
                 "column": 13
               },
@@ -1257,7 +1257,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 175,
                 "column": 13
               },
@@ -1271,7 +1271,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 180,
                 "column": 13
               },
@@ -1279,7 +1279,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
             "line": 105,
             "column": 9
           },
@@ -1306,7 +1306,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 191,
                 "column": 13
               },
@@ -1314,7 +1314,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
             "line": 187,
             "column": 9
           },
@@ -1337,7 +1337,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 199,
                 "column": 13
               },
@@ -1345,7 +1345,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
             "line": 195,
             "column": 9
           },
@@ -1386,7 +1386,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 207,
                 "column": 13
               },
@@ -1420,7 +1420,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 208,
                 "column": 13
               },
@@ -1454,7 +1454,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 209,
                 "column": 13
               },
@@ -1488,7 +1488,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 210,
                 "column": 13
               },
@@ -1522,7 +1522,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 211,
                 "column": 13
               },
@@ -1556,7 +1556,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 212,
                 "column": 13
               },
@@ -1590,7 +1590,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 213,
                 "column": 13
               },
@@ -1624,7 +1624,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 218,
                 "column": 13
               },
@@ -1632,7 +1632,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
             "line": 203,
             "column": 9
           },
@@ -1657,7 +1657,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 230,
                 "column": 13
               },
@@ -1675,7 +1675,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 231,
                 "column": 13
               },
@@ -1683,7 +1683,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
             "line": 226,
             "column": 9
           },
@@ -1705,7 +1705,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 242,
                 "column": 13
               },
@@ -1720,7 +1720,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 243,
                 "column": 13
               },
@@ -1728,7 +1728,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
             "line": 238,
             "column": 9
           },
@@ -1755,7 +1755,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 255,
                 "column": 13
               },
@@ -1775,7 +1775,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 256,
                 "column": 13
               },
@@ -1783,7 +1783,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
             "line": 251,
             "column": 9
           },
@@ -1804,7 +1804,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 265,
                 "column": 13
               },
@@ -1818,7 +1818,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 270,
                 "column": 13
               },
@@ -1832,7 +1832,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 275,
                 "column": 13
               },
@@ -1846,7 +1846,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 280,
                 "column": 13
               },
@@ -1860,7 +1860,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 285,
                 "column": 13
               },
@@ -1874,7 +1874,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 290,
                 "column": 13
               },
@@ -1888,7 +1888,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 295,
                 "column": 13
               },
@@ -1902,7 +1902,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 300,
                 "column": 13
               },
@@ -1916,7 +1916,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 305,
                 "column": 13
               },
@@ -1930,7 +1930,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 310,
                 "column": 13
               },
@@ -1944,7 +1944,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 315,
                 "column": 13
               },
@@ -1958,7 +1958,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 320,
                 "column": 13
               },
@@ -1972,7 +1972,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 325,
                 "column": 13
               },
@@ -1986,7 +1986,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 330,
                 "column": 13
               },
@@ -2000,7 +2000,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 335,
                 "column": 13
               },
@@ -2014,7 +2014,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 340,
                 "column": 13
               },
@@ -2028,7 +2028,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 345,
                 "column": 13
               },
@@ -2042,7 +2042,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 350,
                 "column": 13
               },
@@ -2056,7 +2056,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 355,
                 "column": 13
               },
@@ -2070,7 +2070,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 360,
                 "column": 13
               },
@@ -2084,7 +2084,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 365,
                 "column": 13
               },
@@ -2098,7 +2098,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 370,
                 "column": 13
               },
@@ -2106,7 +2106,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
             "line": 260,
             "column": 9
           },
@@ -2127,7 +2127,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
                 "line": 382,
                 "column": 13
               },
@@ -2135,7 +2135,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
             "line": 377,
             "column": 9
           },
@@ -2143,7 +2143,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\actor-rules.mwl",
         "line": 3,
         "column": 5
       },
@@ -2173,7 +2173,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 12,
                 "column": 13
               },
@@ -2190,7 +2190,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 20,
                 "column": 13
               },
@@ -2207,7 +2207,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 28,
                 "column": 13
               },
@@ -2224,7 +2224,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 36,
                 "column": 13
               },
@@ -2241,7 +2241,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 44,
                 "column": 13
               },
@@ -2258,7 +2258,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 52,
                 "column": 13
               },
@@ -2275,7 +2275,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 60,
                 "column": 13
               },
@@ -2292,7 +2292,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 68,
                 "column": 13
               },
@@ -2309,7 +2309,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 76,
                 "column": 13
               },
@@ -2326,7 +2326,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 84,
                 "column": 13
               },
@@ -2343,7 +2343,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 92,
                 "column": 13
               },
@@ -2360,7 +2360,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 100,
                 "column": 13
               },
@@ -2377,7 +2377,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 108,
                 "column": 13
               },
@@ -2394,7 +2394,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 116,
                 "column": 13
               },
@@ -2411,7 +2411,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 124,
                 "column": 13
               },
@@ -2428,7 +2428,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 132,
                 "column": 13
               },
@@ -2445,7 +2445,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 140,
                 "column": 13
               },
@@ -2462,7 +2462,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 148,
                 "column": 13
               },
@@ -2479,7 +2479,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 156,
                 "column": 13
               },
@@ -2496,7 +2496,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 164,
                 "column": 13
               },
@@ -2504,7 +2504,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
             "line": 7,
             "column": 9
           },
@@ -2528,7 +2528,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 179,
                 "column": 13
               },
@@ -2545,7 +2545,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 187,
                 "column": 13
               },
@@ -2562,7 +2562,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 195,
                 "column": 13
               },
@@ -2579,7 +2579,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 203,
                 "column": 13
               },
@@ -2596,7 +2596,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 211,
                 "column": 13
               },
@@ -2613,7 +2613,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 219,
                 "column": 13
               },
@@ -2630,7 +2630,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 227,
                 "column": 13
               },
@@ -2647,7 +2647,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 235,
                 "column": 13
               },
@@ -2664,7 +2664,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 243,
                 "column": 13
               },
@@ -2681,7 +2681,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 251,
                 "column": 13
               },
@@ -2698,7 +2698,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 259,
                 "column": 13
               },
@@ -2715,7 +2715,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 267,
                 "column": 13
               },
@@ -2732,7 +2732,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 275,
                 "column": 13
               },
@@ -2749,7 +2749,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 283,
                 "column": 13
               },
@@ -2766,7 +2766,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 291,
                 "column": 13
               },
@@ -2783,7 +2783,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 299,
                 "column": 13
               },
@@ -2800,7 +2800,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 307,
                 "column": 13
               },
@@ -2817,7 +2817,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 315,
                 "column": 13
               },
@@ -2834,7 +2834,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 323,
                 "column": 13
               },
@@ -2851,7 +2851,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 331,
                 "column": 13
               },
@@ -2868,7 +2868,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 339,
                 "column": 13
               },
@@ -2876,7 +2876,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
             "line": 174,
             "column": 9
           },
@@ -2897,7 +2897,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 354,
                 "column": 13
               },
@@ -2911,7 +2911,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 359,
                 "column": 13
               },
@@ -2925,7 +2925,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 364,
                 "column": 13
               },
@@ -2939,7 +2939,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 369,
                 "column": 13
               },
@@ -2953,7 +2953,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 374,
                 "column": 13
               },
@@ -2967,7 +2967,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 379,
                 "column": 13
               },
@@ -2981,7 +2981,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 384,
                 "column": 13
               },
@@ -2995,7 +2995,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 389,
                 "column": 13
               },
@@ -3009,7 +3009,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 394,
                 "column": 13
               },
@@ -3023,7 +3023,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 399,
                 "column": 13
               },
@@ -3037,7 +3037,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
                 "line": 404,
                 "column": 13
               },
@@ -3045,7 +3045,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
             "line": 349,
             "column": 9
           },
@@ -3053,7 +3053,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\affix-rules.mwl",
         "line": 3,
         "column": 5
       },
@@ -3080,7 +3080,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 12,
                 "column": 13
               },
@@ -3094,7 +3094,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 17,
                 "column": 13
               },
@@ -3108,7 +3108,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 22,
                 "column": 13
               },
@@ -3122,7 +3122,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 28,
                 "column": 13
               },
@@ -3136,7 +3136,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 33,
                 "column": 13
               },
@@ -3150,7 +3150,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 39,
                 "column": 13
               },
@@ -3164,7 +3164,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 44,
                 "column": 13
               },
@@ -3178,7 +3178,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 51,
                 "column": 13
               },
@@ -3192,7 +3192,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 56,
                 "column": 13
               },
@@ -3206,7 +3206,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 61,
                 "column": 13
               },
@@ -3220,7 +3220,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 66,
                 "column": 13
               },
@@ -3228,7 +3228,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
             "line": 7,
             "column": 9
           },
@@ -3249,7 +3249,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 77,
                 "column": 13
               },
@@ -3263,7 +3263,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 78,
                 "column": 13
               },
@@ -3277,7 +3277,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 79,
                 "column": 13
               },
@@ -3291,7 +3291,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 80,
                 "column": 13
               },
@@ -3299,7 +3299,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
             "line": 73,
             "column": 9
           },
@@ -3324,7 +3324,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 90,
                 "column": 13
               },
@@ -3341,7 +3341,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 98,
                 "column": 13
               },
@@ -3358,7 +3358,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 106,
                 "column": 13
               },
@@ -3375,7 +3375,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 114,
                 "column": 13
               },
@@ -3392,7 +3392,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 122,
                 "column": 13
               },
@@ -3409,7 +3409,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 130,
                 "column": 13
               },
@@ -3426,7 +3426,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 143,
                 "column": 13
               },
@@ -3443,7 +3443,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 156,
                 "column": 13
               },
@@ -3460,7 +3460,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 164,
                 "column": 13
               },
@@ -3477,7 +3477,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 172,
                 "column": 13
               },
@@ -3494,7 +3494,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 180,
                 "column": 13
               },
@@ -3511,7 +3511,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 188,
                 "column": 13
               },
@@ -3528,7 +3528,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 196,
                 "column": 13
               },
@@ -3545,7 +3545,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 206,
                 "column": 13
               },
@@ -3562,7 +3562,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 216,
                 "column": 13
               },
@@ -3579,7 +3579,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 224,
                 "column": 13
               },
@@ -3596,7 +3596,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 232,
                 "column": 13
               },
@@ -3613,7 +3613,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 240,
                 "column": 13
               },
@@ -3630,7 +3630,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 248,
                 "column": 13
               },
@@ -3647,7 +3647,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 257,
                 "column": 13
               },
@@ -3664,7 +3664,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 266,
                 "column": 13
               },
@@ -3681,7 +3681,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 275,
                 "column": 13
               },
@@ -3698,7 +3698,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 284,
                 "column": 13
               },
@@ -3706,7 +3706,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
             "line": 84,
             "column": 9
           },
@@ -3729,7 +3729,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 299,
                 "column": 13
               },
@@ -3745,7 +3745,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 306,
                 "column": 13
               },
@@ -3761,7 +3761,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 313,
                 "column": 13
               },
@@ -3777,7 +3777,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 320,
                 "column": 13
               },
@@ -3793,7 +3793,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 327,
                 "column": 13
               },
@@ -3809,7 +3809,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 334,
                 "column": 13
               },
@@ -3825,7 +3825,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 341,
                 "column": 13
               },
@@ -3841,7 +3841,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 348,
                 "column": 13
               },
@@ -3857,7 +3857,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 355,
                 "column": 13
               },
@@ -3873,7 +3873,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 362,
                 "column": 13
               },
@@ -3889,7 +3889,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 369,
                 "column": 13
               },
@@ -3905,7 +3905,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 376,
                 "column": 13
               },
@@ -3921,7 +3921,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 383,
                 "column": 13
               },
@@ -3937,7 +3937,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 390,
                 "column": 13
               },
@@ -3953,7 +3953,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 397,
                 "column": 13
               },
@@ -3969,7 +3969,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 404,
                 "column": 13
               },
@@ -3985,7 +3985,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 411,
                 "column": 13
               },
@@ -4001,7 +4001,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 418,
                 "column": 13
               },
@@ -4017,7 +4017,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 425,
                 "column": 13
               },
@@ -4033,7 +4033,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 432,
                 "column": 13
               },
@@ -4049,7 +4049,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 439,
                 "column": 13
               },
@@ -4065,7 +4065,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 446,
                 "column": 13
               },
@@ -4081,7 +4081,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 453,
                 "column": 13
               },
@@ -4097,7 +4097,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 460,
                 "column": 13
               },
@@ -4113,7 +4113,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 467,
                 "column": 13
               },
@@ -4129,7 +4129,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 474,
                 "column": 13
               },
@@ -4145,7 +4145,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 481,
                 "column": 13
               },
@@ -4161,7 +4161,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 488,
                 "column": 13
               },
@@ -4177,7 +4177,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 495,
                 "column": 13
               },
@@ -4193,7 +4193,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 502,
                 "column": 13
               },
@@ -4209,7 +4209,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 509,
                 "column": 13
               },
@@ -4225,7 +4225,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 516,
                 "column": 13
               },
@@ -4241,7 +4241,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 523,
                 "column": 13
               },
@@ -4257,7 +4257,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 530,
                 "column": 13
               },
@@ -4273,7 +4273,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 537,
                 "column": 13
               },
@@ -4289,7 +4289,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 544,
                 "column": 13
               },
@@ -4305,7 +4305,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 551,
                 "column": 13
               },
@@ -4321,7 +4321,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 558,
                 "column": 13
               },
@@ -4337,7 +4337,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 565,
                 "column": 13
               },
@@ -4353,7 +4353,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 572,
                 "column": 13
               },
@@ -4369,7 +4369,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 579,
                 "column": 13
               },
@@ -4385,7 +4385,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 586,
                 "column": 13
               },
@@ -4401,7 +4401,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 593,
                 "column": 13
               },
@@ -4417,7 +4417,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 600,
                 "column": 13
               },
@@ -4433,7 +4433,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 607,
                 "column": 13
               },
@@ -4449,7 +4449,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
                 "line": 614,
                 "column": 13
               },
@@ -4457,7 +4457,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
             "line": 294,
             "column": 9
           },
@@ -4465,7 +4465,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\alchemy.mwl",
         "line": 3,
         "column": 5
       },
@@ -4492,7 +4492,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\appearances.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\appearances.mwl",
                 "line": 12,
                 "column": 13
               },
@@ -4500,7 +4500,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\appearances.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\appearances.mwl",
             "line": 7,
             "column": 9
           },
@@ -4521,7 +4521,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\appearances.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\appearances.mwl",
                 "line": 24,
                 "column": 13
               },
@@ -4529,7 +4529,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\appearances.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\appearances.mwl",
             "line": 19,
             "column": 9
           },
@@ -4537,7 +4537,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\appearances.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\appearances.mwl",
         "line": 3,
         "column": 5
       },
@@ -4565,7 +4565,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\artifacts.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\artifacts.mwl",
                 "line": 13,
                 "column": 13
               },
@@ -4573,7 +4573,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\artifacts.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\artifacts.mwl",
             "line": 7,
             "column": 9
           },
@@ -4595,7 +4595,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\artifacts.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\artifacts.mwl",
                 "line": 26,
                 "column": 13
               },
@@ -4603,7 +4603,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\artifacts.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\artifacts.mwl",
             "line": 20,
             "column": 9
           },
@@ -4625,7 +4625,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\artifacts.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\artifacts.mwl",
                 "line": 39,
                 "column": 13
               },
@@ -4633,7 +4633,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\artifacts.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\artifacts.mwl",
             "line": 33,
             "column": 9
           },
@@ -4655,7 +4655,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\artifacts.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\artifacts.mwl",
                 "line": 52,
                 "column": 13
               },
@@ -4663,7 +4663,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\artifacts.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\artifacts.mwl",
             "line": 46,
             "column": 9
           },
@@ -4685,7 +4685,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\artifacts.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\artifacts.mwl",
                 "line": 65,
                 "column": 13
               },
@@ -4693,7 +4693,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\artifacts.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\artifacts.mwl",
             "line": 59,
             "column": 9
           },
@@ -4715,7 +4715,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\artifacts.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\artifacts.mwl",
                 "line": 78,
                 "column": 13
               },
@@ -4723,7 +4723,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\artifacts.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\artifacts.mwl",
             "line": 72,
             "column": 9
           },
@@ -4745,7 +4745,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\artifacts.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\artifacts.mwl",
                 "line": 91,
                 "column": 13
               },
@@ -4753,7 +4753,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\artifacts.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\artifacts.mwl",
             "line": 85,
             "column": 9
           },
@@ -4775,7 +4775,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\artifacts.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\artifacts.mwl",
                 "line": 104,
                 "column": 13
               },
@@ -4783,7 +4783,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\artifacts.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\artifacts.mwl",
             "line": 98,
             "column": 9
           },
@@ -4805,7 +4805,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\artifacts.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\artifacts.mwl",
                 "line": 117,
                 "column": 13
               },
@@ -4813,7 +4813,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\artifacts.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\artifacts.mwl",
             "line": 111,
             "column": 9
           },
@@ -4835,7 +4835,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\artifacts.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\artifacts.mwl",
                 "line": 130,
                 "column": 13
               },
@@ -4843,7 +4843,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\artifacts.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\artifacts.mwl",
             "line": 124,
             "column": 9
           },
@@ -4865,7 +4865,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\artifacts.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\artifacts.mwl",
                 "line": 143,
                 "column": 13
               },
@@ -4873,7 +4873,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\artifacts.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\artifacts.mwl",
             "line": 137,
             "column": 9
           },
@@ -4895,7 +4895,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\artifacts.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\artifacts.mwl",
                 "line": 156,
                 "column": 13
               },
@@ -4903,7 +4903,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\artifacts.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\artifacts.mwl",
             "line": 150,
             "column": 9
           },
@@ -4925,7 +4925,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\artifacts.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\artifacts.mwl",
                 "line": 169,
                 "column": 13
               },
@@ -4933,7 +4933,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\artifacts.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\artifacts.mwl",
             "line": 163,
             "column": 9
           },
@@ -4955,7 +4955,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\artifacts.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\artifacts.mwl",
                 "line": 182,
                 "column": 13
               },
@@ -4963,7 +4963,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\artifacts.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\artifacts.mwl",
             "line": 176,
             "column": 9
           },
@@ -4971,7 +4971,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\artifacts.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\artifacts.mwl",
         "line": 3,
         "column": 5
       },
@@ -4992,7 +4992,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 7,
             "column": 9
           },
@@ -5007,7 +5007,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 13,
             "column": 9
           },
@@ -5022,7 +5022,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 19,
             "column": 9
           },
@@ -5037,7 +5037,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 25,
             "column": 9
           },
@@ -5052,7 +5052,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 31,
             "column": 9
           },
@@ -5067,7 +5067,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 37,
             "column": 9
           },
@@ -5082,7 +5082,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 43,
             "column": 9
           },
@@ -5097,7 +5097,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 49,
             "column": 9
           },
@@ -5112,7 +5112,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 55,
             "column": 9
           },
@@ -5127,7 +5127,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 63,
             "column": 9
           },
@@ -5142,7 +5142,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 72,
             "column": 9
           },
@@ -5157,7 +5157,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 82,
             "column": 9
           },
@@ -5172,7 +5172,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 88,
             "column": 9
           },
@@ -5187,7 +5187,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 93,
             "column": 9
           },
@@ -5202,7 +5202,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 94,
             "column": 9
           },
@@ -5217,7 +5217,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 95,
             "column": 9
           },
@@ -5232,7 +5232,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 96,
             "column": 9
           },
@@ -5247,7 +5247,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 97,
             "column": 9
           },
@@ -5262,7 +5262,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 98,
             "column": 9
           },
@@ -5277,7 +5277,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 99,
             "column": 9
           },
@@ -5292,7 +5292,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 100,
             "column": 9
           },
@@ -5307,7 +5307,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 101,
             "column": 9
           },
@@ -5322,7 +5322,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 102,
             "column": 9
           },
@@ -5337,7 +5337,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 103,
             "column": 9
           },
@@ -5352,7 +5352,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 104,
             "column": 9
           },
@@ -5367,7 +5367,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 105,
             "column": 9
           },
@@ -5382,7 +5382,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 106,
             "column": 9
           },
@@ -5397,7 +5397,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 107,
             "column": 9
           },
@@ -5412,7 +5412,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 108,
             "column": 9
           },
@@ -5427,7 +5427,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 109,
             "column": 9
           },
@@ -5442,7 +5442,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 110,
             "column": 9
           },
@@ -5457,7 +5457,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 111,
             "column": 9
           },
@@ -5472,7 +5472,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 112,
             "column": 9
           },
@@ -5487,7 +5487,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 113,
             "column": 9
           },
@@ -5502,7 +5502,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 114,
             "column": 9
           },
@@ -5517,7 +5517,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 115,
             "column": 9
           },
@@ -5532,7 +5532,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 116,
             "column": 9
           },
@@ -5547,7 +5547,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 117,
             "column": 9
           },
@@ -5562,7 +5562,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 118,
             "column": 9
           },
@@ -5577,7 +5577,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 119,
             "column": 9
           },
@@ -5592,7 +5592,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 120,
             "column": 9
           },
@@ -5607,7 +5607,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 121,
             "column": 9
           },
@@ -5622,7 +5622,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 122,
             "column": 9
           },
@@ -5637,7 +5637,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 123,
             "column": 9
           },
@@ -5652,7 +5652,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 124,
             "column": 9
           },
@@ -5667,7 +5667,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 125,
             "column": 9
           },
@@ -5682,7 +5682,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 126,
             "column": 9
           },
@@ -5697,7 +5697,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 127,
             "column": 9
           },
@@ -5712,7 +5712,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 128,
             "column": 9
           },
@@ -5727,7 +5727,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 129,
             "column": 9
           },
@@ -5742,7 +5742,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 130,
             "column": 9
           },
@@ -5757,7 +5757,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 131,
             "column": 9
           },
@@ -5778,7 +5778,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 138,
                 "column": 13
               },
@@ -5786,7 +5786,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 133,
             "column": 9
           },
@@ -5807,7 +5807,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 149,
                 "column": 13
               },
@@ -5821,7 +5821,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 150,
                 "column": 13
               },
@@ -5835,7 +5835,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 151,
                 "column": 13
               },
@@ -5849,7 +5849,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 152,
                 "column": 13
               },
@@ -5863,7 +5863,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 153,
                 "column": 13
               },
@@ -5877,7 +5877,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 154,
                 "column": 13
               },
@@ -5891,7 +5891,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 155,
                 "column": 13
               },
@@ -5905,7 +5905,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 156,
                 "column": 13
               },
@@ -5919,7 +5919,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 157,
                 "column": 13
               },
@@ -5933,7 +5933,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 158,
                 "column": 13
               },
@@ -5947,7 +5947,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 159,
                 "column": 13
               },
@@ -5961,7 +5961,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 160,
                 "column": 13
               },
@@ -5975,7 +5975,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 161,
                 "column": 13
               },
@@ -5989,7 +5989,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 162,
                 "column": 13
               },
@@ -6003,7 +6003,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 163,
                 "column": 13
               },
@@ -6017,7 +6017,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 164,
                 "column": 13
               },
@@ -6031,7 +6031,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 165,
                 "column": 13
               },
@@ -6045,7 +6045,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 166,
                 "column": 13
               },
@@ -6059,7 +6059,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 167,
                 "column": 13
               },
@@ -6073,7 +6073,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 168,
                 "column": 13
               },
@@ -6087,7 +6087,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 169,
                 "column": 13
               },
@@ -6101,7 +6101,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 170,
                 "column": 13
               },
@@ -6115,7 +6115,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 171,
                 "column": 13
               },
@@ -6129,7 +6129,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 172,
                 "column": 13
               },
@@ -6143,7 +6143,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 173,
                 "column": 13
               },
@@ -6157,7 +6157,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 174,
                 "column": 13
               },
@@ -6171,7 +6171,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 175,
                 "column": 13
               },
@@ -6179,7 +6179,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 145,
             "column": 9
           },
@@ -6202,7 +6202,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 183,
                 "column": 13
               },
@@ -6218,7 +6218,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 184,
                 "column": 13
               },
@@ -6234,7 +6234,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 185,
                 "column": 13
               },
@@ -6250,7 +6250,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 186,
                 "column": 13
               },
@@ -6266,7 +6266,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 187,
                 "column": 13
               },
@@ -6282,7 +6282,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 188,
                 "column": 13
               },
@@ -6298,7 +6298,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 189,
                 "column": 13
               },
@@ -6314,7 +6314,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 190,
                 "column": 13
               },
@@ -6330,7 +6330,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 191,
                 "column": 13
               },
@@ -6346,7 +6346,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 192,
                 "column": 13
               },
@@ -6362,7 +6362,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 193,
                 "column": 13
               },
@@ -6378,7 +6378,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 194,
                 "column": 13
               },
@@ -6394,7 +6394,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 195,
                 "column": 13
               },
@@ -6410,7 +6410,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 196,
                 "column": 13
               },
@@ -6426,7 +6426,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 197,
                 "column": 13
               },
@@ -6442,7 +6442,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 198,
                 "column": 13
               },
@@ -6458,7 +6458,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 199,
                 "column": 13
               },
@@ -6474,7 +6474,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 200,
                 "column": 13
               },
@@ -6490,7 +6490,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 201,
                 "column": 13
               },
@@ -6506,7 +6506,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 202,
                 "column": 13
               },
@@ -6522,7 +6522,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 203,
                 "column": 13
               },
@@ -6538,7 +6538,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 204,
                 "column": 13
               },
@@ -6554,7 +6554,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 206,
                 "column": 13
               },
@@ -6570,7 +6570,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 207,
                 "column": 13
               },
@@ -6586,7 +6586,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 209,
                 "column": 13
               },
@@ -6602,7 +6602,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 210,
                 "column": 13
               },
@@ -6618,7 +6618,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 211,
                 "column": 13
               },
@@ -6634,7 +6634,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 212,
                 "column": 13
               },
@@ -6650,7 +6650,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 213,
                 "column": 13
               },
@@ -6666,7 +6666,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 214,
                 "column": 13
               },
@@ -6682,7 +6682,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 215,
                 "column": 13
               },
@@ -6698,7 +6698,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 216,
                 "column": 13
               },
@@ -6714,7 +6714,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 217,
                 "column": 13
               },
@@ -6730,7 +6730,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 218,
                 "column": 13
               },
@@ -6746,7 +6746,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 219,
                 "column": 13
               },
@@ -6762,7 +6762,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 220,
                 "column": 13
               },
@@ -6778,7 +6778,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 221,
                 "column": 13
               },
@@ -6794,7 +6794,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 222,
                 "column": 13
               },
@@ -6810,7 +6810,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 223,
                 "column": 13
               },
@@ -6826,7 +6826,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 224,
                 "column": 13
               },
@@ -6842,7 +6842,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 225,
                 "column": 13
               },
@@ -6858,7 +6858,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 226,
                 "column": 13
               },
@@ -6874,7 +6874,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 227,
                 "column": 13
               },
@@ -6890,7 +6890,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 228,
                 "column": 13
               },
@@ -6906,7 +6906,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 229,
                 "column": 13
               },
@@ -6922,7 +6922,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 230,
                 "column": 13
               },
@@ -6938,7 +6938,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 231,
                 "column": 13
               },
@@ -6954,7 +6954,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 232,
                 "column": 13
               },
@@ -6970,7 +6970,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 233,
                 "column": 13
               },
@@ -6986,7 +6986,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 234,
                 "column": 13
               },
@@ -7002,7 +7002,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 235,
                 "column": 13
               },
@@ -7018,7 +7018,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 236,
                 "column": 13
               },
@@ -7034,7 +7034,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 237,
                 "column": 13
               },
@@ -7050,7 +7050,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 238,
                 "column": 13
               },
@@ -7066,7 +7066,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 239,
                 "column": 13
               },
@@ -7082,7 +7082,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 240,
                 "column": 13
               },
@@ -7098,7 +7098,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 241,
                 "column": 13
               },
@@ -7114,7 +7114,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 242,
                 "column": 13
               },
@@ -7130,7 +7130,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 244,
                 "column": 13
               },
@@ -7146,7 +7146,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 245,
                 "column": 13
               },
@@ -7162,7 +7162,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 246,
                 "column": 13
               },
@@ -7178,7 +7178,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 247,
                 "column": 13
               },
@@ -7194,7 +7194,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 249,
                 "column": 13
               },
@@ -7210,7 +7210,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 250,
                 "column": 13
               },
@@ -7226,7 +7226,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 252,
                 "column": 13
               },
@@ -7242,7 +7242,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 253,
                 "column": 13
               },
@@ -7258,7 +7258,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 254,
                 "column": 13
               },
@@ -7274,7 +7274,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 255,
                 "column": 13
               },
@@ -7290,7 +7290,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 256,
                 "column": 13
               },
@@ -7306,7 +7306,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 257,
                 "column": 13
               },
@@ -7322,7 +7322,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 258,
                 "column": 13
               },
@@ -7338,7 +7338,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 259,
                 "column": 13
               },
@@ -7354,7 +7354,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 260,
                 "column": 13
               },
@@ -7370,7 +7370,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 263,
                 "column": 13
               },
@@ -7386,7 +7386,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 264,
                 "column": 13
               },
@@ -7402,7 +7402,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 265,
                 "column": 13
               },
@@ -7418,7 +7418,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 268,
                 "column": 13
               },
@@ -7434,7 +7434,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 269,
                 "column": 13
               },
@@ -7450,7 +7450,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
                 "line": 270,
                 "column": 13
               },
@@ -7458,7 +7458,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
             "line": 179,
             "column": 9
           },
@@ -7466,7 +7466,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\asset-references.mwl",
         "line": 3,
         "column": 5
       },
@@ -7496,7 +7496,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\badges.mwl",
                 "line": 12,
                 "column": 13
               },
@@ -7513,7 +7513,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\badges.mwl",
                 "line": 20,
                 "column": 13
               },
@@ -7530,7 +7530,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\badges.mwl",
                 "line": 28,
                 "column": 13
               },
@@ -7547,7 +7547,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\badges.mwl",
                 "line": 36,
                 "column": 13
               },
@@ -7564,7 +7564,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\badges.mwl",
                 "line": 44,
                 "column": 13
               },
@@ -7581,7 +7581,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\badges.mwl",
                 "line": 52,
                 "column": 13
               },
@@ -7598,7 +7598,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\badges.mwl",
                 "line": 60,
                 "column": 13
               },
@@ -7615,7 +7615,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\badges.mwl",
                 "line": 68,
                 "column": 13
               },
@@ -7632,7 +7632,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\badges.mwl",
                 "line": 76,
                 "column": 13
               },
@@ -7649,7 +7649,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\badges.mwl",
                 "line": 84,
                 "column": 13
               },
@@ -7666,7 +7666,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\badges.mwl",
                 "line": 92,
                 "column": 13
               },
@@ -7683,7 +7683,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\badges.mwl",
                 "line": 100,
                 "column": 13
               },
@@ -7700,7 +7700,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\badges.mwl",
                 "line": 108,
                 "column": 13
               },
@@ -7717,7 +7717,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\badges.mwl",
                 "line": 116,
                 "column": 13
               },
@@ -7734,7 +7734,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\badges.mwl",
                 "line": 124,
                 "column": 13
               },
@@ -7751,7 +7751,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\badges.mwl",
                 "line": 132,
                 "column": 13
               },
@@ -7768,7 +7768,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\badges.mwl",
                 "line": 140,
                 "column": 13
               },
@@ -7785,7 +7785,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\badges.mwl",
                 "line": 148,
                 "column": 13
               },
@@ -7802,7 +7802,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\badges.mwl",
                 "line": 156,
                 "column": 13
               },
@@ -7819,7 +7819,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\badges.mwl",
                 "line": 164,
                 "column": 13
               },
@@ -7836,7 +7836,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\badges.mwl",
                 "line": 172,
                 "column": 13
               },
@@ -7853,7 +7853,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\badges.mwl",
                 "line": 180,
                 "column": 13
               },
@@ -7870,7 +7870,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\badges.mwl",
                 "line": 188,
                 "column": 13
               },
@@ -7887,7 +7887,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\badges.mwl",
                 "line": 196,
                 "column": 13
               },
@@ -7904,7 +7904,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\badges.mwl",
                 "line": 204,
                 "column": 13
               },
@@ -7921,7 +7921,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\badges.mwl",
                 "line": 212,
                 "column": 13
               },
@@ -7938,7 +7938,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\badges.mwl",
                 "line": 220,
                 "column": 13
               },
@@ -7955,7 +7955,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\badges.mwl",
                 "line": 228,
                 "column": 13
               },
@@ -7972,7 +7972,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\badges.mwl",
                 "line": 236,
                 "column": 13
               },
@@ -7989,7 +7989,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\badges.mwl",
                 "line": 244,
                 "column": 13
               },
@@ -7997,7 +7997,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\badges.mwl",
             "line": 7,
             "column": 9
           },
@@ -8005,7 +8005,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\badges.mwl",
         "line": 3,
         "column": 5
       },
@@ -8032,7 +8032,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 12,
                 "column": 13
               },
@@ -8040,7 +8040,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
             "line": 7,
             "column": 9
           },
@@ -8061,7 +8061,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 24,
                 "column": 13
               },
@@ -8075,7 +8075,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 29,
                 "column": 13
               },
@@ -8089,7 +8089,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 34,
                 "column": 13
               },
@@ -8103,7 +8103,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 41,
                 "column": 13
               },
@@ -8117,7 +8117,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 48,
                 "column": 13
               },
@@ -8131,7 +8131,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 55,
                 "column": 13
               },
@@ -8145,7 +8145,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 63,
                 "column": 13
               },
@@ -8159,7 +8159,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 70,
                 "column": 13
               },
@@ -8173,7 +8173,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 75,
                 "column": 13
               },
@@ -8187,7 +8187,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 80,
                 "column": 13
               },
@@ -8201,7 +8201,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 85,
                 "column": 13
               },
@@ -8215,7 +8215,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 90,
                 "column": 13
               },
@@ -8229,7 +8229,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 96,
                 "column": 13
               },
@@ -8243,7 +8243,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 101,
                 "column": 13
               },
@@ -8257,7 +8257,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 106,
                 "column": 13
               },
@@ -8271,7 +8271,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 111,
                 "column": 13
               },
@@ -8285,7 +8285,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 116,
                 "column": 13
               },
@@ -8299,7 +8299,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 121,
                 "column": 13
               },
@@ -8313,7 +8313,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 126,
                 "column": 13
               },
@@ -8327,7 +8327,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 131,
                 "column": 13
               },
@@ -8341,7 +8341,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 141,
                 "column": 13
               },
@@ -8355,7 +8355,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 146,
                 "column": 13
               },
@@ -8369,7 +8369,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 151,
                 "column": 13
               },
@@ -8383,7 +8383,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 156,
                 "column": 13
               },
@@ -8397,7 +8397,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 161,
                 "column": 13
               },
@@ -8411,7 +8411,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 166,
                 "column": 13
               },
@@ -8425,7 +8425,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 171,
                 "column": 13
               },
@@ -8439,7 +8439,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 176,
                 "column": 13
               },
@@ -8453,7 +8453,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 181,
                 "column": 13
               },
@@ -8467,7 +8467,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 188,
                 "column": 13
               },
@@ -8481,7 +8481,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 193,
                 "column": 13
               },
@@ -8495,7 +8495,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 203,
                 "column": 13
               },
@@ -8509,7 +8509,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 208,
                 "column": 13
               },
@@ -8523,7 +8523,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 216,
                 "column": 13
               },
@@ -8537,7 +8537,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 223,
                 "column": 13
               },
@@ -8551,7 +8551,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 228,
                 "column": 13
               },
@@ -8565,7 +8565,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 233,
                 "column": 13
               },
@@ -8579,7 +8579,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 238,
                 "column": 13
               },
@@ -8593,7 +8593,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 243,
                 "column": 13
               },
@@ -8607,7 +8607,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 248,
                 "column": 13
               },
@@ -8621,7 +8621,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 253,
                 "column": 13
               },
@@ -8635,7 +8635,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 258,
                 "column": 13
               },
@@ -8649,7 +8649,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 263,
                 "column": 13
               },
@@ -8663,7 +8663,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 268,
                 "column": 13
               },
@@ -8677,7 +8677,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 277,
                 "column": 13
               },
@@ -8691,7 +8691,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 282,
                 "column": 13
               },
@@ -8705,7 +8705,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 287,
                 "column": 13
               },
@@ -8719,7 +8719,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 292,
                 "column": 13
               },
@@ -8733,7 +8733,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 297,
                 "column": 13
               },
@@ -8747,7 +8747,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 311,
                 "column": 13
               },
@@ -8761,7 +8761,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 321,
                 "column": 13
               },
@@ -8775,7 +8775,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 330,
                 "column": 13
               },
@@ -8789,7 +8789,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 339,
                 "column": 13
               },
@@ -8803,7 +8803,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 347,
                 "column": 13
               },
@@ -8817,7 +8817,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 354,
                 "column": 13
               },
@@ -8831,7 +8831,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 363,
                 "column": 13
               },
@@ -8845,7 +8845,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 375,
                 "column": 13
               },
@@ -8859,7 +8859,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 383,
                 "column": 13
               },
@@ -8873,7 +8873,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 388,
                 "column": 13
               },
@@ -8887,7 +8887,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 396,
                 "column": 13
               },
@@ -8901,7 +8901,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 405,
                 "column": 13
               },
@@ -8915,7 +8915,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 412,
                 "column": 13
               },
@@ -8929,7 +8929,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 421,
                 "column": 13
               },
@@ -8943,7 +8943,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 430,
                 "column": 13
               },
@@ -8957,7 +8957,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 438,
                 "column": 13
               },
@@ -8971,7 +8971,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 447,
                 "column": 13
               },
@@ -8985,7 +8985,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 455,
                 "column": 13
               },
@@ -8999,7 +8999,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 464,
                 "column": 13
               },
@@ -9013,7 +9013,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 472,
                 "column": 13
               },
@@ -9027,7 +9027,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 480,
                 "column": 13
               },
@@ -9041,7 +9041,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 487,
                 "column": 13
               },
@@ -9055,7 +9055,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 496,
                 "column": 13
               },
@@ -9069,7 +9069,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 504,
                 "column": 13
               },
@@ -9083,7 +9083,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
                 "line": 515,
                 "column": 13
               },
@@ -9091,7 +9091,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
             "line": 19,
             "column": 9
           },
@@ -9099,7 +9099,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\buff-rules.mwl",
         "line": 3,
         "column": 5
       },
@@ -9120,7 +9120,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 8,
             "column": 9
           },
@@ -9134,7 +9134,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 13,
             "column": 9
           },
@@ -9148,7 +9148,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 18,
             "column": 9
           },
@@ -9162,7 +9162,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 23,
             "column": 9
           },
@@ -9176,7 +9176,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 28,
             "column": 9
           },
@@ -9190,7 +9190,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 33,
             "column": 9
           },
@@ -9204,7 +9204,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 38,
             "column": 9
           },
@@ -9218,7 +9218,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 43,
             "column": 9
           },
@@ -9232,7 +9232,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 48,
             "column": 9
           },
@@ -9246,7 +9246,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 53,
             "column": 9
           },
@@ -9260,7 +9260,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 58,
             "column": 9
           },
@@ -9274,7 +9274,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 63,
             "column": 9
           },
@@ -9288,7 +9288,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 68,
             "column": 9
           },
@@ -9302,7 +9302,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 73,
             "column": 9
           },
@@ -9316,7 +9316,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 78,
             "column": 9
           },
@@ -9330,7 +9330,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 83,
             "column": 9
           },
@@ -9338,7 +9338,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
         "line": 3,
         "column": 5
       },
@@ -9359,7 +9359,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 95,
             "column": 9
           },
@@ -9373,7 +9373,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 100,
             "column": 9
           },
@@ -9387,7 +9387,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 105,
             "column": 9
           },
@@ -9401,7 +9401,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 110,
             "column": 9
           },
@@ -9415,7 +9415,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 115,
             "column": 9
           },
@@ -9429,7 +9429,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 120,
             "column": 9
           },
@@ -9443,7 +9443,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 125,
             "column": 9
           },
@@ -9457,7 +9457,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 130,
             "column": 9
           },
@@ -9471,7 +9471,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 135,
             "column": 9
           },
@@ -9485,7 +9485,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 140,
             "column": 9
           },
@@ -9499,7 +9499,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 145,
             "column": 9
           },
@@ -9513,7 +9513,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 150,
             "column": 9
           },
@@ -9527,7 +9527,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 155,
             "column": 9
           },
@@ -9541,7 +9541,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 160,
             "column": 9
           },
@@ -9555,7 +9555,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 165,
             "column": 9
           },
@@ -9563,7 +9563,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
         "line": 90,
         "column": 5
       },
@@ -9584,7 +9584,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 177,
             "column": 9
           },
@@ -9598,7 +9598,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 182,
             "column": 9
           },
@@ -9612,7 +9612,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 187,
             "column": 9
           },
@@ -9626,7 +9626,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 192,
             "column": 9
           },
@@ -9640,7 +9640,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 197,
             "column": 9
           },
@@ -9654,7 +9654,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 202,
             "column": 9
           },
@@ -9668,7 +9668,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 207,
             "column": 9
           },
@@ -9682,7 +9682,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 212,
             "column": 9
           },
@@ -9696,7 +9696,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 217,
             "column": 9
           },
@@ -9710,7 +9710,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 222,
             "column": 9
           },
@@ -9724,7 +9724,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 227,
             "column": 9
           },
@@ -9738,7 +9738,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 232,
             "column": 9
           },
@@ -9752,7 +9752,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 237,
             "column": 9
           },
@@ -9766,7 +9766,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 242,
             "column": 9
           },
@@ -9780,7 +9780,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 247,
             "column": 9
           },
@@ -9794,7 +9794,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 252,
             "column": 9
           },
@@ -9802,7 +9802,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
         "line": 172,
         "column": 5
       },
@@ -9823,7 +9823,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 264,
             "column": 9
           },
@@ -9837,7 +9837,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 269,
             "column": 9
           },
@@ -9851,7 +9851,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 274,
             "column": 9
           },
@@ -9865,7 +9865,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 279,
             "column": 9
           },
@@ -9879,7 +9879,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 284,
             "column": 9
           },
@@ -9893,7 +9893,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 289,
             "column": 9
           },
@@ -9907,7 +9907,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 294,
             "column": 9
           },
@@ -9921,7 +9921,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 299,
             "column": 9
           },
@@ -9935,7 +9935,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 304,
             "column": 9
           },
@@ -9949,7 +9949,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 309,
             "column": 9
           },
@@ -9963,7 +9963,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 314,
             "column": 9
           },
@@ -9977,7 +9977,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 319,
             "column": 9
           },
@@ -9991,7 +9991,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 324,
             "column": 9
           },
@@ -10005,7 +10005,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 329,
             "column": 9
           },
@@ -10019,7 +10019,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 334,
             "column": 9
           },
@@ -10027,7 +10027,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
         "line": 259,
         "column": 5
       },
@@ -10048,7 +10048,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 346,
             "column": 9
           },
@@ -10062,7 +10062,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 351,
             "column": 9
           },
@@ -10076,7 +10076,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 356,
             "column": 9
           },
@@ -10090,7 +10090,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 361,
             "column": 9
           },
@@ -10104,7 +10104,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 366,
             "column": 9
           },
@@ -10118,7 +10118,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 371,
             "column": 9
           },
@@ -10132,7 +10132,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 376,
             "column": 9
           },
@@ -10146,7 +10146,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 381,
             "column": 9
           },
@@ -10160,7 +10160,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 386,
             "column": 9
           },
@@ -10174,7 +10174,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 391,
             "column": 9
           },
@@ -10188,7 +10188,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 396,
             "column": 9
           },
@@ -10202,7 +10202,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 401,
             "column": 9
           },
@@ -10216,7 +10216,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 406,
             "column": 9
           },
@@ -10230,7 +10230,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 411,
             "column": 9
           },
@@ -10244,7 +10244,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 416,
             "column": 9
           },
@@ -10258,7 +10258,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 421,
             "column": 9
           },
@@ -10266,7 +10266,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
         "line": 341,
         "column": 5
       },
@@ -10287,7 +10287,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 433,
             "column": 9
           },
@@ -10301,7 +10301,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 438,
             "column": 9
           },
@@ -10315,7 +10315,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 443,
             "column": 9
           },
@@ -10329,7 +10329,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 448,
             "column": 9
           },
@@ -10343,7 +10343,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 453,
             "column": 9
           },
@@ -10357,7 +10357,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 458,
             "column": 9
           },
@@ -10371,7 +10371,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 463,
             "column": 9
           },
@@ -10385,7 +10385,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 468,
             "column": 9
           },
@@ -10399,7 +10399,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 473,
             "column": 9
           },
@@ -10413,7 +10413,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 478,
             "column": 9
           },
@@ -10427,7 +10427,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 483,
             "column": 9
           },
@@ -10441,7 +10441,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 488,
             "column": 9
           },
@@ -10455,7 +10455,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 493,
             "column": 9
           },
@@ -10469,7 +10469,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 498,
             "column": 9
           },
@@ -10483,7 +10483,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
             "line": 503,
             "column": 9
           },
@@ -10491,7 +10491,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\classes.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\classes.mwl",
         "line": 428,
         "column": 5
       },
@@ -10519,7 +10519,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 11,
                 "column": 13
               },
@@ -10534,7 +10534,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 12,
                 "column": 13
               },
@@ -10549,7 +10549,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 13,
                 "column": 13
               },
@@ -10564,7 +10564,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 14,
                 "column": 13
               },
@@ -10579,7 +10579,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 15,
                 "column": 13
               },
@@ -10594,7 +10594,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 16,
                 "column": 13
               },
@@ -10609,7 +10609,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 17,
                 "column": 13
               },
@@ -10624,7 +10624,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 18,
                 "column": 13
               },
@@ -10639,7 +10639,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 19,
                 "column": 13
               },
@@ -10654,7 +10654,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 20,
                 "column": 13
               },
@@ -10669,7 +10669,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 21,
                 "column": 13
               },
@@ -10684,7 +10684,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 22,
                 "column": 13
               },
@@ -10699,7 +10699,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 23,
                 "column": 13
               },
@@ -10714,7 +10714,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 24,
                 "column": 13
               },
@@ -10729,7 +10729,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 25,
                 "column": 13
               },
@@ -10744,7 +10744,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 26,
                 "column": 13
               },
@@ -10759,7 +10759,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 27,
                 "column": 13
               },
@@ -10774,7 +10774,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 28,
                 "column": 13
               },
@@ -10789,7 +10789,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 29,
                 "column": 13
               },
@@ -10804,7 +10804,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 30,
                 "column": 13
               },
@@ -10819,7 +10819,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 31,
                 "column": 13
               },
@@ -10834,7 +10834,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 32,
                 "column": 13
               },
@@ -10849,7 +10849,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 33,
                 "column": 13
               },
@@ -10864,7 +10864,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 34,
                 "column": 13
               },
@@ -10879,7 +10879,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 35,
                 "column": 13
               },
@@ -10894,7 +10894,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 36,
                 "column": 13
               },
@@ -10909,7 +10909,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 37,
                 "column": 13
               },
@@ -10924,7 +10924,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 38,
                 "column": 13
               },
@@ -10939,7 +10939,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 39,
                 "column": 13
               },
@@ -10954,7 +10954,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 40,
                 "column": 13
               },
@@ -10969,7 +10969,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 41,
                 "column": 13
               },
@@ -10984,7 +10984,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 42,
                 "column": 13
               },
@@ -10999,7 +10999,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 43,
                 "column": 13
               },
@@ -11014,7 +11014,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 44,
                 "column": 13
               },
@@ -11029,7 +11029,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 45,
                 "column": 13
               },
@@ -11044,7 +11044,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 46,
                 "column": 13
               },
@@ -11059,7 +11059,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 47,
                 "column": 13
               },
@@ -11074,7 +11074,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 48,
                 "column": 13
               },
@@ -11089,7 +11089,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 49,
                 "column": 13
               },
@@ -11104,7 +11104,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 50,
                 "column": 13
               },
@@ -11119,7 +11119,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 51,
                 "column": 13
               },
@@ -11134,7 +11134,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 52,
                 "column": 13
               },
@@ -11149,7 +11149,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 53,
                 "column": 13
               },
@@ -11164,7 +11164,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 54,
                 "column": 13
               },
@@ -11179,7 +11179,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 55,
                 "column": 13
               },
@@ -11194,7 +11194,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 56,
                 "column": 13
               },
@@ -11209,7 +11209,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 57,
                 "column": 13
               },
@@ -11224,7 +11224,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
                 "line": 58,
                 "column": 13
               },
@@ -11232,7 +11232,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
             "line": 7,
             "column": 9
           },
@@ -11240,7 +11240,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumable-aliases.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumable-aliases.mwl",
         "line": 3,
         "column": 5
       },
@@ -11262,7 +11262,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 7,
             "column": 9
           },
@@ -11278,7 +11278,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 14,
             "column": 9
           },
@@ -11294,7 +11294,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 21,
             "column": 9
           },
@@ -11310,7 +11310,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 28,
             "column": 9
           },
@@ -11326,7 +11326,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 35,
             "column": 9
           },
@@ -11342,7 +11342,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 42,
             "column": 9
           },
@@ -11358,7 +11358,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 49,
             "column": 9
           },
@@ -11374,7 +11374,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 56,
             "column": 9
           },
@@ -11390,7 +11390,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 63,
             "column": 9
           },
@@ -11406,7 +11406,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 70,
             "column": 9
           },
@@ -11422,7 +11422,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 77,
             "column": 9
           },
@@ -11438,7 +11438,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 84,
             "column": 9
           },
@@ -11454,7 +11454,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 91,
             "column": 9
           },
@@ -11470,7 +11470,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 98,
             "column": 9
           },
@@ -11486,7 +11486,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 105,
             "column": 9
           },
@@ -11502,7 +11502,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 112,
             "column": 9
           },
@@ -11518,7 +11518,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 119,
             "column": 9
           },
@@ -11534,7 +11534,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 126,
             "column": 9
           },
@@ -11550,7 +11550,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 133,
             "column": 9
           },
@@ -11566,7 +11566,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 140,
             "column": 9
           },
@@ -11582,7 +11582,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 147,
             "column": 9
           },
@@ -11598,7 +11598,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 154,
             "column": 9
           },
@@ -11614,7 +11614,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 161,
             "column": 9
           },
@@ -11630,7 +11630,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 168,
             "column": 9
           },
@@ -11646,7 +11646,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 175,
             "column": 9
           },
@@ -11662,7 +11662,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 182,
             "column": 9
           },
@@ -11678,7 +11678,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 189,
             "column": 9
           },
@@ -11694,7 +11694,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 196,
             "column": 9
           },
@@ -11710,7 +11710,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 203,
             "column": 9
           },
@@ -11726,7 +11726,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 210,
             "column": 9
           },
@@ -11742,7 +11742,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 217,
             "column": 9
           },
@@ -11758,7 +11758,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 224,
             "column": 9
           },
@@ -11774,7 +11774,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 231,
             "column": 9
           },
@@ -11790,7 +11790,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 238,
             "column": 9
           },
@@ -11806,7 +11806,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 245,
             "column": 9
           },
@@ -11822,7 +11822,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 252,
             "column": 9
           },
@@ -11838,7 +11838,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 259,
             "column": 9
           },
@@ -11854,7 +11854,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 266,
             "column": 9
           },
@@ -11870,7 +11870,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 273,
             "column": 9
           },
@@ -11886,7 +11886,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 280,
             "column": 9
           },
@@ -11902,7 +11902,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 287,
             "column": 9
           },
@@ -11918,7 +11918,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 294,
             "column": 9
           },
@@ -11934,7 +11934,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 301,
             "column": 9
           },
@@ -11950,7 +11950,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 309,
             "column": 9
           },
@@ -11966,7 +11966,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 316,
             "column": 9
           },
@@ -11982,7 +11982,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 323,
             "column": 9
           },
@@ -11998,7 +11998,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 330,
             "column": 9
           },
@@ -12014,7 +12014,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 337,
             "column": 9
           },
@@ -12030,7 +12030,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 344,
             "column": 9
           },
@@ -12046,7 +12046,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 351,
             "column": 9
           },
@@ -12062,7 +12062,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 358,
             "column": 9
           },
@@ -12078,7 +12078,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 365,
             "column": 9
           },
@@ -12094,7 +12094,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 372,
             "column": 9
           },
@@ -12110,7 +12110,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 379,
             "column": 9
           },
@@ -12126,7 +12126,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 386,
             "column": 9
           },
@@ -12142,7 +12142,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 393,
             "column": 9
           },
@@ -12158,7 +12158,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 400,
             "column": 9
           },
@@ -12174,7 +12174,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 408,
             "column": 9
           },
@@ -12190,7 +12190,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 415,
             "column": 9
           },
@@ -12206,7 +12206,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 424,
             "column": 9
           },
@@ -12222,7 +12222,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 431,
             "column": 9
           },
@@ -12238,7 +12238,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 438,
             "column": 9
           },
@@ -12254,7 +12254,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 445,
             "column": 9
           },
@@ -12270,7 +12270,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 452,
             "column": 9
           },
@@ -12286,7 +12286,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 459,
             "column": 9
           },
@@ -12302,7 +12302,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 466,
             "column": 9
           },
@@ -12318,7 +12318,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 473,
             "column": 9
           },
@@ -12334,7 +12334,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 480,
             "column": 9
           },
@@ -12350,7 +12350,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 487,
             "column": 9
           },
@@ -12366,7 +12366,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 494,
             "column": 9
           },
@@ -12382,7 +12382,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 501,
             "column": 9
           },
@@ -12398,7 +12398,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 508,
             "column": 9
           },
@@ -12414,7 +12414,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 515,
             "column": 9
           },
@@ -12430,7 +12430,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 522,
             "column": 9
           },
@@ -12446,7 +12446,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 529,
             "column": 9
           },
@@ -12462,7 +12462,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 536,
             "column": 9
           },
@@ -12478,7 +12478,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 543,
             "column": 9
           },
@@ -12494,7 +12494,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 550,
             "column": 9
           },
@@ -12510,7 +12510,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 557,
             "column": 9
           },
@@ -12526,7 +12526,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 564,
             "column": 9
           },
@@ -12542,7 +12542,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 571,
             "column": 9
           },
@@ -12558,7 +12558,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 578,
             "column": 9
           },
@@ -12574,7 +12574,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 585,
             "column": 9
           },
@@ -12590,7 +12590,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 592,
             "column": 9
           },
@@ -12606,7 +12606,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 599,
             "column": 9
           },
@@ -12622,7 +12622,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 606,
             "column": 9
           },
@@ -12638,7 +12638,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 613,
             "column": 9
           },
@@ -12654,7 +12654,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 620,
             "column": 9
           },
@@ -12670,7 +12670,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 627,
             "column": 9
           },
@@ -12686,7 +12686,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 634,
             "column": 9
           },
@@ -12702,7 +12702,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 641,
             "column": 9
           },
@@ -12718,7 +12718,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 648,
             "column": 9
           },
@@ -12734,7 +12734,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 655,
             "column": 9
           },
@@ -12750,7 +12750,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 662,
             "column": 9
           },
@@ -12766,7 +12766,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 669,
             "column": 9
           },
@@ -12782,7 +12782,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 676,
             "column": 9
           },
@@ -12798,7 +12798,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 683,
             "column": 9
           },
@@ -12814,7 +12814,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 690,
             "column": 9
           },
@@ -12830,7 +12830,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 697,
             "column": 9
           },
@@ -12846,7 +12846,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 705,
             "column": 9
           },
@@ -12862,7 +12862,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 712,
             "column": 9
           },
@@ -12878,7 +12878,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 719,
             "column": 9
           },
@@ -12894,7 +12894,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 726,
             "column": 9
           },
@@ -12910,7 +12910,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 733,
             "column": 9
           },
@@ -12926,7 +12926,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 740,
             "column": 9
           },
@@ -12942,7 +12942,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 747,
             "column": 9
           },
@@ -12958,7 +12958,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
             "line": 754,
             "column": 9
           },
@@ -12966,7 +12966,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\consumables.mwl",
         "line": 3,
         "column": 5
       },
@@ -12997,7 +12997,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\curse-rules.mwl",
                 "line": 12,
                 "column": 13
               },
@@ -13015,7 +13015,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\curse-rules.mwl",
                 "line": 21,
                 "column": 13
               },
@@ -13033,7 +13033,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\curse-rules.mwl",
                 "line": 30,
                 "column": 13
               },
@@ -13051,7 +13051,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\curse-rules.mwl",
                 "line": 39,
                 "column": 13
               },
@@ -13069,7 +13069,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\curse-rules.mwl",
                 "line": 48,
                 "column": 13
               },
@@ -13087,7 +13087,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\curse-rules.mwl",
                 "line": 57,
                 "column": 13
               },
@@ -13105,7 +13105,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\curse-rules.mwl",
                 "line": 66,
                 "column": 13
               },
@@ -13123,7 +13123,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\curse-rules.mwl",
                 "line": 75,
                 "column": 13
               },
@@ -13141,7 +13141,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\curse-rules.mwl",
                 "line": 84,
                 "column": 13
               },
@@ -13159,7 +13159,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\curse-rules.mwl",
                 "line": 93,
                 "column": 13
               },
@@ -13177,7 +13177,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\curse-rules.mwl",
                 "line": 102,
                 "column": 13
               },
@@ -13195,7 +13195,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\curse-rules.mwl",
                 "line": 111,
                 "column": 13
               },
@@ -13213,7 +13213,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\curse-rules.mwl",
                 "line": 120,
                 "column": 13
               },
@@ -13231,7 +13231,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\curse-rules.mwl",
                 "line": 129,
                 "column": 13
               },
@@ -13249,7 +13249,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\curse-rules.mwl",
                 "line": 138,
                 "column": 13
               },
@@ -13267,7 +13267,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\curse-rules.mwl",
                 "line": 147,
                 "column": 13
               },
@@ -13275,7 +13275,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\curse-rules.mwl",
             "line": 7,
             "column": 9
           },
@@ -13283,7 +13283,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\curse-rules.mwl",
         "line": 3,
         "column": 5
       },
@@ -13310,7 +13310,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\decks.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\decks.mwl",
                 "line": 12,
                 "column": 13
               },
@@ -13324,7 +13324,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\decks.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\decks.mwl",
                 "line": 17,
                 "column": 13
               },
@@ -13332,7 +13332,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\decks.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\decks.mwl",
             "line": 7,
             "column": 9
           },
@@ -13353,7 +13353,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\decks.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\decks.mwl",
                 "line": 29,
                 "column": 13
               },
@@ -13367,7 +13367,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\decks.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\decks.mwl",
                 "line": 34,
                 "column": 13
               },
@@ -13375,7 +13375,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\decks.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\decks.mwl",
             "line": 24,
             "column": 9
           },
@@ -13383,7 +13383,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\decks.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\decks.mwl",
         "line": 3,
         "column": 5
       },
@@ -13411,7 +13411,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rosters.mwl",
                 "line": 13,
                 "column": 13
               },
@@ -13425,7 +13425,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rosters.mwl",
                 "line": 18,
                 "column": 13
               },
@@ -13439,7 +13439,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rosters.mwl",
                 "line": 23,
                 "column": 13
               },
@@ -13453,7 +13453,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rosters.mwl",
                 "line": 28,
                 "column": 13
               },
@@ -13461,7 +13461,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rosters.mwl",
             "line": 7,
             "column": 9
           },
@@ -13483,7 +13483,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rosters.mwl",
                 "line": 41,
                 "column": 13
               },
@@ -13497,7 +13497,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rosters.mwl",
                 "line": 46,
                 "column": 13
               },
@@ -13511,7 +13511,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rosters.mwl",
                 "line": 51,
                 "column": 13
               },
@@ -13525,7 +13525,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rosters.mwl",
                 "line": 56,
                 "column": 13
               },
@@ -13539,7 +13539,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rosters.mwl",
                 "line": 61,
                 "column": 13
               },
@@ -13553,7 +13553,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rosters.mwl",
                 "line": 66,
                 "column": 13
               },
@@ -13567,7 +13567,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rosters.mwl",
                 "line": 71,
                 "column": 13
               },
@@ -13581,7 +13581,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rosters.mwl",
                 "line": 76,
                 "column": 13
               },
@@ -13595,7 +13595,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rosters.mwl",
                 "line": 81,
                 "column": 13
               },
@@ -13609,7 +13609,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rosters.mwl",
                 "line": 86,
                 "column": 13
               },
@@ -13623,7 +13623,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rosters.mwl",
                 "line": 91,
                 "column": 13
               },
@@ -13637,7 +13637,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rosters.mwl",
                 "line": 96,
                 "column": 13
               },
@@ -13651,7 +13651,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rosters.mwl",
                 "line": 101,
                 "column": 13
               },
@@ -13665,7 +13665,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rosters.mwl",
                 "line": 106,
                 "column": 13
               },
@@ -13679,7 +13679,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rosters.mwl",
                 "line": 111,
                 "column": 13
               },
@@ -13693,7 +13693,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rosters.mwl",
                 "line": 116,
                 "column": 13
               },
@@ -13707,7 +13707,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rosters.mwl",
                 "line": 121,
                 "column": 13
               },
@@ -13721,7 +13721,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rosters.mwl",
                 "line": 126,
                 "column": 13
               },
@@ -13735,7 +13735,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rosters.mwl",
                 "line": 131,
                 "column": 13
               },
@@ -13749,7 +13749,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rosters.mwl",
                 "line": 136,
                 "column": 13
               },
@@ -13757,7 +13757,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rosters.mwl",
             "line": 35,
             "column": 9
           },
@@ -13765,7 +13765,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rosters.mwl",
         "line": 3,
         "column": 5
       },
@@ -13792,7 +13792,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rules.mwl",
                 "line": 12,
                 "column": 13
               },
@@ -13806,7 +13806,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rules.mwl",
                 "line": 17,
                 "column": 13
               },
@@ -13814,7 +13814,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rules.mwl",
             "line": 7,
             "column": 9
           },
@@ -13835,7 +13835,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rules.mwl",
                 "line": 29,
                 "column": 13
               },
@@ -13849,7 +13849,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rules.mwl",
                 "line": 34,
                 "column": 13
               },
@@ -13857,7 +13857,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rules.mwl",
             "line": 24,
             "column": 9
           },
@@ -13880,7 +13880,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rules.mwl",
                 "line": 47,
                 "column": 13
               },
@@ -13895,7 +13895,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rules.mwl",
                 "line": 53,
                 "column": 13
               },
@@ -13910,7 +13910,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rules.mwl",
                 "line": 59,
                 "column": 13
               },
@@ -13925,7 +13925,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rules.mwl",
                 "line": 65,
                 "column": 13
               },
@@ -13933,7 +13933,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rules.mwl",
             "line": 41,
             "column": 9
           },
@@ -13959,7 +13959,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rules.mwl",
                 "line": 78,
                 "column": 13
               },
@@ -13978,7 +13978,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rules.mwl",
                 "line": 88,
                 "column": 13
               },
@@ -13997,7 +13997,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rules.mwl",
                 "line": 98,
                 "column": 13
               },
@@ -14016,7 +14016,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rules.mwl",
                 "line": 108,
                 "column": 13
               },
@@ -14035,7 +14035,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rules.mwl",
                 "line": 118,
                 "column": 13
               },
@@ -14043,7 +14043,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rules.mwl",
             "line": 73,
             "column": 9
           },
@@ -14051,7 +14051,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rules.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\dungeon-rules.mwl",
         "line": 3,
         "column": 5
       },
@@ -14078,7 +14078,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-decks.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\generator-decks.mwl",
                 "line": 12,
                 "column": 13
               },
@@ -14092,7 +14092,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-decks.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\generator-decks.mwl",
                 "line": 17,
                 "column": 13
               },
@@ -14100,7 +14100,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-decks.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\generator-decks.mwl",
             "line": 7,
             "column": 9
           },
@@ -14121,7 +14121,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-decks.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\generator-decks.mwl",
                 "line": 29,
                 "column": 13
               },
@@ -14135,7 +14135,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-decks.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\generator-decks.mwl",
                 "line": 34,
                 "column": 13
               },
@@ -14143,7 +14143,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-decks.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\generator-decks.mwl",
             "line": 24,
             "column": 9
           },
@@ -14164,7 +14164,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-decks.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\generator-decks.mwl",
                 "line": 53,
                 "column": 13
               },
@@ -14178,7 +14178,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-decks.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\generator-decks.mwl",
                 "line": 58,
                 "column": 13
               },
@@ -14186,7 +14186,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-decks.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\generator-decks.mwl",
             "line": 41,
             "column": 9
           },
@@ -14207,7 +14207,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-decks.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\generator-decks.mwl",
                 "line": 70,
                 "column": 13
               },
@@ -14221,7 +14221,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-decks.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\generator-decks.mwl",
                 "line": 75,
                 "column": 13
               },
@@ -14229,7 +14229,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-decks.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\generator-decks.mwl",
             "line": 65,
             "column": 9
           },
@@ -14250,7 +14250,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-decks.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\generator-decks.mwl",
                 "line": 87,
                 "column": 13
               },
@@ -14264,7 +14264,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-decks.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\generator-decks.mwl",
                 "line": 92,
                 "column": 13
               },
@@ -14272,7 +14272,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-decks.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\generator-decks.mwl",
             "line": 82,
             "column": 9
           },
@@ -14280,7 +14280,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-decks.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\generator-decks.mwl",
         "line": 3,
         "column": 5
       },
@@ -14307,7 +14307,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\generator-rules.mwl",
                 "line": 12,
                 "column": 13
               },
@@ -14321,7 +14321,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\generator-rules.mwl",
                 "line": 17,
                 "column": 13
               },
@@ -14335,7 +14335,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\generator-rules.mwl",
                 "line": 22,
                 "column": 13
               },
@@ -14343,7 +14343,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\generator-rules.mwl",
             "line": 7,
             "column": 9
           },
@@ -14364,7 +14364,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\generator-rules.mwl",
                 "line": 34,
                 "column": 13
               },
@@ -14378,7 +14378,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\generator-rules.mwl",
                 "line": 39,
                 "column": 13
               },
@@ -14386,7 +14386,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\generator-rules.mwl",
             "line": 29,
             "column": 9
           },
@@ -14394,7 +14394,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-rules.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\generator-rules.mwl",
         "line": 3,
         "column": 5
       },
@@ -14422,7 +14422,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-tables.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\generator-tables.mwl",
                 "line": 13,
                 "column": 13
               },
@@ -14436,7 +14436,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-tables.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\generator-tables.mwl",
                 "line": 18,
                 "column": 13
               },
@@ -14450,7 +14450,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-tables.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\generator-tables.mwl",
                 "line": 23,
                 "column": 13
               },
@@ -14464,7 +14464,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-tables.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\generator-tables.mwl",
                 "line": 28,
                 "column": 13
               },
@@ -14478,7 +14478,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-tables.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\generator-tables.mwl",
                 "line": 33,
                 "column": 13
               },
@@ -14486,7 +14486,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-tables.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\generator-tables.mwl",
             "line": 7,
             "column": 9
           },
@@ -14494,7 +14494,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-tables.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\generator-tables.mwl",
         "line": 3,
         "column": 5
       },
@@ -14521,7 +14521,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 11,
                 "column": 13
               },
@@ -14535,7 +14535,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 12,
                 "column": 13
               },
@@ -14549,7 +14549,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 13,
                 "column": 13
               },
@@ -14563,7 +14563,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 14,
                 "column": 13
               },
@@ -14577,7 +14577,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 15,
                 "column": 13
               },
@@ -14591,7 +14591,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 16,
                 "column": 13
               },
@@ -14605,7 +14605,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 17,
                 "column": 13
               },
@@ -14619,7 +14619,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 18,
                 "column": 13
               },
@@ -14633,7 +14633,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 19,
                 "column": 13
               },
@@ -14647,7 +14647,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 20,
                 "column": 13
               },
@@ -14655,7 +14655,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
             "line": 7,
             "column": 9
           },
@@ -14676,7 +14676,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 28,
                 "column": 13
               },
@@ -14690,7 +14690,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 29,
                 "column": 13
               },
@@ -14704,7 +14704,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 30,
                 "column": 13
               },
@@ -14718,7 +14718,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 31,
                 "column": 13
               },
@@ -14732,7 +14732,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 32,
                 "column": 13
               },
@@ -14746,7 +14746,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 33,
                 "column": 13
               },
@@ -14760,7 +14760,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 34,
                 "column": 13
               },
@@ -14774,7 +14774,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 35,
                 "column": 13
               },
@@ -14788,7 +14788,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 36,
                 "column": 13
               },
@@ -14802,7 +14802,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 37,
                 "column": 13
               },
@@ -14816,7 +14816,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 38,
                 "column": 13
               },
@@ -14830,7 +14830,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 39,
                 "column": 13
               },
@@ -14844,7 +14844,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 40,
                 "column": 13
               },
@@ -14858,7 +14858,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 41,
                 "column": 13
               },
@@ -14872,7 +14872,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 42,
                 "column": 13
               },
@@ -14886,7 +14886,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 43,
                 "column": 13
               },
@@ -14900,7 +14900,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 44,
                 "column": 13
               },
@@ -14914,7 +14914,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 45,
                 "column": 13
               },
@@ -14928,7 +14928,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 46,
                 "column": 13
               },
@@ -14942,7 +14942,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 47,
                 "column": 13
               },
@@ -14956,7 +14956,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 48,
                 "column": 13
               },
@@ -14970,7 +14970,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 49,
                 "column": 13
               },
@@ -14984,7 +14984,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 50,
                 "column": 13
               },
@@ -14998,7 +14998,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 51,
                 "column": 13
               },
@@ -15012,7 +15012,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 52,
                 "column": 13
               },
@@ -15026,7 +15026,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 53,
                 "column": 13
               },
@@ -15040,7 +15040,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 54,
                 "column": 13
               },
@@ -15054,7 +15054,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 55,
                 "column": 13
               },
@@ -15068,7 +15068,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 56,
                 "column": 13
               },
@@ -15082,7 +15082,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 57,
                 "column": 13
               },
@@ -15096,7 +15096,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 58,
                 "column": 13
               },
@@ -15110,7 +15110,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 59,
                 "column": 13
               },
@@ -15124,7 +15124,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 60,
                 "column": 13
               },
@@ -15138,7 +15138,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 61,
                 "column": 13
               },
@@ -15146,7 +15146,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
             "line": 24,
             "column": 9
           },
@@ -15167,7 +15167,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 69,
                 "column": 13
               },
@@ -15181,7 +15181,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 70,
                 "column": 13
               },
@@ -15195,7 +15195,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 71,
                 "column": 13
               },
@@ -15209,7 +15209,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 72,
                 "column": 13
               },
@@ -15223,7 +15223,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 73,
                 "column": 13
               },
@@ -15237,7 +15237,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 74,
                 "column": 13
               },
@@ -15251,7 +15251,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 75,
                 "column": 13
               },
@@ -15265,7 +15265,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 76,
                 "column": 13
               },
@@ -15279,7 +15279,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 77,
                 "column": 13
               },
@@ -15293,7 +15293,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 78,
                 "column": 13
               },
@@ -15307,7 +15307,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 79,
                 "column": 13
               },
@@ -15321,7 +15321,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 80,
                 "column": 13
               },
@@ -15335,7 +15335,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 81,
                 "column": 13
               },
@@ -15343,7 +15343,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
             "line": 65,
             "column": 9
           },
@@ -15364,7 +15364,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 89,
                 "column": 13
               },
@@ -15378,7 +15378,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 90,
                 "column": 13
               },
@@ -15392,7 +15392,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 91,
                 "column": 13
               },
@@ -15406,7 +15406,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 92,
                 "column": 13
               },
@@ -15420,7 +15420,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 93,
                 "column": 13
               },
@@ -15434,7 +15434,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 94,
                 "column": 13
               },
@@ -15448,7 +15448,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 95,
                 "column": 13
               },
@@ -15462,7 +15462,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 96,
                 "column": 13
               },
@@ -15476,7 +15476,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 101,
                 "column": 13
               },
@@ -15490,7 +15490,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 102,
                 "column": 13
               },
@@ -15504,7 +15504,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 103,
                 "column": 13
               },
@@ -15518,7 +15518,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 104,
                 "column": 13
               },
@@ -15532,7 +15532,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 105,
                 "column": 13
               },
@@ -15546,7 +15546,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 106,
                 "column": 13
               },
@@ -15560,7 +15560,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 107,
                 "column": 13
               },
@@ -15574,7 +15574,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 108,
                 "column": 13
               },
@@ -15588,7 +15588,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 109,
                 "column": 13
               },
@@ -15602,7 +15602,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 110,
                 "column": 13
               },
@@ -15616,7 +15616,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 111,
                 "column": 13
               },
@@ -15630,7 +15630,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 112,
                 "column": 13
               },
@@ -15644,7 +15644,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 113,
                 "column": 13
               },
@@ -15658,7 +15658,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 114,
                 "column": 13
               },
@@ -15672,7 +15672,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 115,
                 "column": 13
               },
@@ -15686,7 +15686,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 116,
                 "column": 13
               },
@@ -15700,7 +15700,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 117,
                 "column": 13
               },
@@ -15714,7 +15714,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 118,
                 "column": 13
               },
@@ -15728,7 +15728,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 119,
                 "column": 13
               },
@@ -15742,7 +15742,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 120,
                 "column": 13
               },
@@ -15756,7 +15756,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 121,
                 "column": 13
               },
@@ -15770,7 +15770,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 122,
                 "column": 13
               },
@@ -15784,7 +15784,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 123,
                 "column": 13
               },
@@ -15792,7 +15792,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
             "line": 85,
             "column": 9
           },
@@ -15814,7 +15814,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 131,
                 "column": 13
               },
@@ -15829,7 +15829,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 132,
                 "column": 13
               },
@@ -15844,7 +15844,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 133,
                 "column": 13
               },
@@ -15859,7 +15859,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 134,
                 "column": 13
               },
@@ -15874,7 +15874,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 135,
                 "column": 13
               },
@@ -15889,7 +15889,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 136,
                 "column": 13
               },
@@ -15904,7 +15904,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 137,
                 "column": 13
               },
@@ -15919,7 +15919,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 138,
                 "column": 13
               },
@@ -15934,7 +15934,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 139,
                 "column": 13
               },
@@ -15949,7 +15949,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 140,
                 "column": 13
               },
@@ -15964,7 +15964,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 141,
                 "column": 13
               },
@@ -15979,7 +15979,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 142,
                 "column": 13
               },
@@ -15994,7 +15994,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 143,
                 "column": 13
               },
@@ -16009,7 +16009,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 144,
                 "column": 13
               },
@@ -16024,7 +16024,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 145,
                 "column": 13
               },
@@ -16039,7 +16039,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 146,
                 "column": 13
               },
@@ -16054,7 +16054,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 147,
                 "column": 13
               },
@@ -16069,7 +16069,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 148,
                 "column": 13
               },
@@ -16084,7 +16084,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 149,
                 "column": 13
               },
@@ -16099,7 +16099,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 150,
                 "column": 13
               },
@@ -16114,7 +16114,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 151,
                 "column": 13
               },
@@ -16129,7 +16129,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 152,
                 "column": 13
               },
@@ -16144,7 +16144,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 153,
                 "column": 13
               },
@@ -16159,7 +16159,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 154,
                 "column": 13
               },
@@ -16174,7 +16174,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 155,
                 "column": 13
               },
@@ -16189,7 +16189,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 156,
                 "column": 13
               },
@@ -16204,7 +16204,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 159,
                 "column": 13
               },
@@ -16219,7 +16219,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 163,
                 "column": 13
               },
@@ -16234,7 +16234,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 164,
                 "column": 13
               },
@@ -16249,7 +16249,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 165,
                 "column": 13
               },
@@ -16264,7 +16264,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 166,
                 "column": 13
               },
@@ -16279,7 +16279,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 167,
                 "column": 13
               },
@@ -16294,7 +16294,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 168,
                 "column": 13
               },
@@ -16309,7 +16309,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 169,
                 "column": 13
               },
@@ -16324,7 +16324,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 170,
                 "column": 13
               },
@@ -16339,7 +16339,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 171,
                 "column": 13
               },
@@ -16354,7 +16354,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 172,
                 "column": 13
               },
@@ -16369,7 +16369,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 173,
                 "column": 13
               },
@@ -16384,7 +16384,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 174,
                 "column": 13
               },
@@ -16399,7 +16399,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 178,
                 "column": 13
               },
@@ -16414,7 +16414,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 179,
                 "column": 13
               },
@@ -16429,7 +16429,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 180,
                 "column": 13
               },
@@ -16444,7 +16444,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 181,
                 "column": 13
               },
@@ -16452,7 +16452,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
             "line": 127,
             "column": 9
           },
@@ -16473,7 +16473,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 189,
                 "column": 13
               },
@@ -16487,7 +16487,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 190,
                 "column": 13
               },
@@ -16501,7 +16501,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 191,
                 "column": 13
               },
@@ -16515,7 +16515,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 192,
                 "column": 13
               },
@@ -16523,7 +16523,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
             "line": 185,
             "column": 9
           },
@@ -16546,7 +16546,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 200,
                 "column": 13
               },
@@ -16562,7 +16562,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 201,
                 "column": 13
               },
@@ -16578,7 +16578,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 202,
                 "column": 13
               },
@@ -16594,7 +16594,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 203,
                 "column": 13
               },
@@ -16610,7 +16610,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 204,
                 "column": 13
               },
@@ -16626,7 +16626,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 205,
                 "column": 13
               },
@@ -16642,7 +16642,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 206,
                 "column": 13
               },
@@ -16658,7 +16658,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 207,
                 "column": 13
               },
@@ -16674,7 +16674,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 208,
                 "column": 13
               },
@@ -16690,7 +16690,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 209,
                 "column": 13
               },
@@ -16706,7 +16706,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 210,
                 "column": 13
               },
@@ -16722,7 +16722,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 211,
                 "column": 13
               },
@@ -16738,7 +16738,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 212,
                 "column": 13
               },
@@ -16746,7 +16746,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
             "line": 196,
             "column": 9
           },
@@ -16767,7 +16767,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 220,
                 "column": 13
               },
@@ -16781,7 +16781,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 221,
                 "column": 13
               },
@@ -16795,7 +16795,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 222,
                 "column": 13
               },
@@ -16809,7 +16809,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 223,
                 "column": 13
               },
@@ -16823,7 +16823,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 224,
                 "column": 13
               },
@@ -16837,7 +16837,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 225,
                 "column": 13
               },
@@ -16851,7 +16851,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 226,
                 "column": 13
               },
@@ -16865,7 +16865,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 227,
                 "column": 13
               },
@@ -16879,7 +16879,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 228,
                 "column": 13
               },
@@ -16893,7 +16893,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 229,
                 "column": 13
               },
@@ -16907,7 +16907,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 230,
                 "column": 13
               },
@@ -16921,7 +16921,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 231,
                 "column": 13
               },
@@ -16929,7 +16929,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
             "line": 216,
             "column": 9
           },
@@ -16950,7 +16950,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 239,
                 "column": 13
               },
@@ -16964,7 +16964,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 240,
                 "column": 13
               },
@@ -16978,7 +16978,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 241,
                 "column": 13
               },
@@ -16992,7 +16992,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 242,
                 "column": 13
               },
@@ -17006,7 +17006,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 243,
                 "column": 13
               },
@@ -17020,7 +17020,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 244,
                 "column": 13
               },
@@ -17034,7 +17034,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 245,
                 "column": 13
               },
@@ -17048,7 +17048,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 246,
                 "column": 13
               },
@@ -17062,7 +17062,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 247,
                 "column": 13
               },
@@ -17076,7 +17076,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 248,
                 "column": 13
               },
@@ -17090,7 +17090,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 249,
                 "column": 13
               },
@@ -17104,7 +17104,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 250,
                 "column": 13
               },
@@ -17118,7 +17118,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 251,
                 "column": 13
               },
@@ -17132,7 +17132,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 252,
                 "column": 13
               },
@@ -17146,7 +17146,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 253,
                 "column": 13
               },
@@ -17160,7 +17160,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 254,
                 "column": 13
               },
@@ -17174,7 +17174,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 255,
                 "column": 13
               },
@@ -17188,7 +17188,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 256,
                 "column": 13
               },
@@ -17202,7 +17202,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 257,
                 "column": 13
               },
@@ -17216,7 +17216,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 258,
                 "column": 13
               },
@@ -17230,7 +17230,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 259,
                 "column": 13
               },
@@ -17244,7 +17244,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 260,
                 "column": 13
               },
@@ -17258,7 +17258,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 261,
                 "column": 13
               },
@@ -17272,7 +17272,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 262,
                 "column": 13
               },
@@ -17286,7 +17286,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 263,
                 "column": 13
               },
@@ -17300,7 +17300,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 264,
                 "column": 13
               },
@@ -17314,7 +17314,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 265,
                 "column": 13
               },
@@ -17328,7 +17328,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 266,
                 "column": 13
               },
@@ -17342,7 +17342,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 267,
                 "column": 13
               },
@@ -17356,7 +17356,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 268,
                 "column": 13
               },
@@ -17370,7 +17370,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 269,
                 "column": 13
               },
@@ -17384,7 +17384,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 270,
                 "column": 13
               },
@@ -17392,7 +17392,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
             "line": 235,
             "column": 9
           },
@@ -17413,7 +17413,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 280,
                 "column": 13
               },
@@ -17427,7 +17427,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 281,
                 "column": 13
               },
@@ -17441,7 +17441,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 282,
                 "column": 13
               },
@@ -17455,7 +17455,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 283,
                 "column": 13
               },
@@ -17469,7 +17469,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 284,
                 "column": 13
               },
@@ -17483,7 +17483,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 289,
                 "column": 13
               },
@@ -17497,7 +17497,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 290,
                 "column": 13
               },
@@ -17511,7 +17511,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 294,
                 "column": 13
               },
@@ -17525,7 +17525,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 295,
                 "column": 13
               },
@@ -17539,7 +17539,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 296,
                 "column": 13
               },
@@ -17553,7 +17553,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 297,
                 "column": 13
               },
@@ -17567,7 +17567,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 302,
                 "column": 13
               },
@@ -17581,7 +17581,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 303,
                 "column": 13
               },
@@ -17595,7 +17595,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 304,
                 "column": 13
               },
@@ -17609,7 +17609,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 305,
                 "column": 13
               },
@@ -17623,7 +17623,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 306,
                 "column": 13
               },
@@ -17637,7 +17637,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 312,
                 "column": 13
               },
@@ -17651,7 +17651,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 313,
                 "column": 13
               },
@@ -17665,7 +17665,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 314,
                 "column": 13
               },
@@ -17679,7 +17679,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 315,
                 "column": 13
               },
@@ -17693,7 +17693,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 316,
                 "column": 13
               },
@@ -17707,7 +17707,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 317,
                 "column": 13
               },
@@ -17721,7 +17721,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 318,
                 "column": 13
               },
@@ -17735,7 +17735,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 319,
                 "column": 13
               },
@@ -17749,7 +17749,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 320,
                 "column": 13
               },
@@ -17763,7 +17763,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 322,
                 "column": 13
               },
@@ -17777,7 +17777,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 323,
                 "column": 13
               },
@@ -17791,7 +17791,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 324,
                 "column": 13
               },
@@ -17805,7 +17805,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 325,
                 "column": 13
               },
@@ -17819,7 +17819,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 327,
                 "column": 13
               },
@@ -17833,7 +17833,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 330,
                 "column": 13
               },
@@ -17841,7 +17841,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
             "line": 274,
             "column": 9
           },
@@ -17863,7 +17863,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 338,
                 "column": 13
               },
@@ -17878,7 +17878,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 339,
                 "column": 13
               },
@@ -17886,7 +17886,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
             "line": 334,
             "column": 9
           },
@@ -17911,7 +17911,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 352,
                 "column": 13
               },
@@ -17929,7 +17929,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 353,
                 "column": 13
               },
@@ -17947,7 +17947,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 354,
                 "column": 13
               },
@@ -17965,7 +17965,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 355,
                 "column": 13
               },
@@ -17983,7 +17983,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 356,
                 "column": 13
               },
@@ -18001,7 +18001,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 357,
                 "column": 13
               },
@@ -18019,7 +18019,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 358,
                 "column": 13
               },
@@ -18037,7 +18037,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 359,
                 "column": 13
               },
@@ -18055,7 +18055,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 360,
                 "column": 13
               },
@@ -18073,7 +18073,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 361,
                 "column": 13
               },
@@ -18091,7 +18091,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 362,
                 "column": 13
               },
@@ -18109,7 +18109,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 363,
                 "column": 13
               },
@@ -18127,7 +18127,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 364,
                 "column": 13
               },
@@ -18145,7 +18145,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 365,
                 "column": 13
               },
@@ -18163,7 +18163,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 366,
                 "column": 13
               },
@@ -18181,7 +18181,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 367,
                 "column": 13
               },
@@ -18199,7 +18199,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 368,
                 "column": 13
               },
@@ -18217,7 +18217,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 369,
                 "column": 13
               },
@@ -18235,7 +18235,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 370,
                 "column": 13
               },
@@ -18253,7 +18253,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 371,
                 "column": 13
               },
@@ -18271,7 +18271,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 372,
                 "column": 13
               },
@@ -18289,7 +18289,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 373,
                 "column": 13
               },
@@ -18307,7 +18307,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 374,
                 "column": 13
               },
@@ -18325,7 +18325,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 375,
                 "column": 13
               },
@@ -18343,7 +18343,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 376,
                 "column": 13
               },
@@ -18361,7 +18361,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 377,
                 "column": 13
               },
@@ -18379,7 +18379,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 378,
                 "column": 13
               },
@@ -18397,7 +18397,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 379,
                 "column": 13
               },
@@ -18415,7 +18415,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 380,
                 "column": 13
               },
@@ -18433,7 +18433,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 381,
                 "column": 13
               },
@@ -18451,7 +18451,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 382,
                 "column": 13
               },
@@ -18459,7 +18459,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
             "line": 343,
             "column": 9
           },
@@ -18480,7 +18480,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 393,
                 "column": 13
               },
@@ -18494,7 +18494,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 394,
                 "column": 13
               },
@@ -18508,7 +18508,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 395,
                 "column": 13
               },
@@ -18522,7 +18522,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 396,
                 "column": 13
               },
@@ -18530,7 +18530,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
             "line": 386,
             "column": 9
           },
@@ -18551,7 +18551,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 404,
                 "column": 13
               },
@@ -18565,7 +18565,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 407,
                 "column": 13
               },
@@ -18579,7 +18579,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 410,
                 "column": 13
               },
@@ -18593,7 +18593,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 411,
                 "column": 13
               },
@@ -18607,7 +18607,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 412,
                 "column": 13
               },
@@ -18621,7 +18621,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 413,
                 "column": 13
               },
@@ -18635,7 +18635,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 414,
                 "column": 13
               },
@@ -18649,7 +18649,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 415,
                 "column": 13
               },
@@ -18663,7 +18663,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 416,
                 "column": 13
               },
@@ -18677,7 +18677,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 417,
                 "column": 13
               },
@@ -18691,7 +18691,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 418,
                 "column": 13
               },
@@ -18705,7 +18705,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 419,
                 "column": 13
               },
@@ -18719,7 +18719,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 420,
                 "column": 13
               },
@@ -18733,7 +18733,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 422,
                 "column": 13
               },
@@ -18747,7 +18747,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 423,
                 "column": 13
               },
@@ -18761,7 +18761,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 424,
                 "column": 13
               },
@@ -18775,7 +18775,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 428,
                 "column": 13
               },
@@ -18789,7 +18789,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 429,
                 "column": 13
               },
@@ -18803,7 +18803,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 430,
                 "column": 13
               },
@@ -18817,7 +18817,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 431,
                 "column": 13
               },
@@ -18831,7 +18831,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 432,
                 "column": 13
               },
@@ -18845,7 +18845,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 433,
                 "column": 13
               },
@@ -18859,7 +18859,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 434,
                 "column": 13
               },
@@ -18873,7 +18873,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 435,
                 "column": 13
               },
@@ -18887,7 +18887,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 436,
                 "column": 13
               },
@@ -18901,7 +18901,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 437,
                 "column": 13
               },
@@ -18915,7 +18915,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 438,
                 "column": 13
               },
@@ -18929,7 +18929,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 439,
                 "column": 13
               },
@@ -18943,7 +18943,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 440,
                 "column": 13
               },
@@ -18957,7 +18957,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 441,
                 "column": 13
               },
@@ -18971,7 +18971,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 442,
                 "column": 13
               },
@@ -18985,7 +18985,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 446,
                 "column": 13
               },
@@ -18999,7 +18999,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 447,
                 "column": 13
               },
@@ -19013,7 +19013,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 448,
                 "column": 13
               },
@@ -19027,7 +19027,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 449,
                 "column": 13
               },
@@ -19041,7 +19041,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 450,
                 "column": 13
               },
@@ -19055,7 +19055,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 451,
                 "column": 13
               },
@@ -19069,7 +19069,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 452,
                 "column": 13
               },
@@ -19083,7 +19083,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 457,
                 "column": 13
               },
@@ -19097,7 +19097,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 458,
                 "column": 13
               },
@@ -19111,7 +19111,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 459,
                 "column": 13
               },
@@ -19125,7 +19125,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 461,
                 "column": 13
               },
@@ -19139,7 +19139,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 462,
                 "column": 13
               },
@@ -19153,7 +19153,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 463,
                 "column": 13
               },
@@ -19167,7 +19167,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 464,
                 "column": 13
               },
@@ -19181,7 +19181,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 465,
                 "column": 13
               },
@@ -19195,7 +19195,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 466,
                 "column": 13
               },
@@ -19203,7 +19203,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
             "line": 400,
             "column": 9
           },
@@ -19224,7 +19224,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 478,
                 "column": 13
               },
@@ -19238,7 +19238,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 479,
                 "column": 13
               },
@@ -19252,7 +19252,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 480,
                 "column": 13
               },
@@ -19266,7 +19266,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 481,
                 "column": 13
               },
@@ -19280,7 +19280,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 482,
                 "column": 13
               },
@@ -19294,7 +19294,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 483,
                 "column": 13
               },
@@ -19302,7 +19302,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
             "line": 474,
             "column": 9
           },
@@ -19324,7 +19324,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 491,
                 "column": 13
               },
@@ -19339,7 +19339,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 492,
                 "column": 13
               },
@@ -19354,7 +19354,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 493,
                 "column": 13
               },
@@ -19369,7 +19369,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 494,
                 "column": 13
               },
@@ -19384,7 +19384,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 495,
                 "column": 13
               },
@@ -19399,7 +19399,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 496,
                 "column": 13
               },
@@ -19414,7 +19414,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 497,
                 "column": 13
               },
@@ -19429,7 +19429,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 498,
                 "column": 13
               },
@@ -19444,7 +19444,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 500,
                 "column": 13
               },
@@ -19459,7 +19459,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 501,
                 "column": 13
               },
@@ -19474,7 +19474,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 502,
                 "column": 13
               },
@@ -19489,7 +19489,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 503,
                 "column": 13
               },
@@ -19497,7 +19497,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
             "line": 487,
             "column": 9
           },
@@ -19520,7 +19520,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 511,
                 "column": 13
               },
@@ -19536,7 +19536,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 512,
                 "column": 13
               },
@@ -19552,7 +19552,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 513,
                 "column": 13
               },
@@ -19568,7 +19568,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 514,
                 "column": 13
               },
@@ -19584,7 +19584,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 516,
                 "column": 13
               },
@@ -19600,7 +19600,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 518,
                 "column": 13
               },
@@ -19616,7 +19616,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 519,
                 "column": 13
               },
@@ -19632,7 +19632,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 520,
                 "column": 13
               },
@@ -19648,7 +19648,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 521,
                 "column": 13
               },
@@ -19664,7 +19664,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 522,
                 "column": 13
               },
@@ -19680,7 +19680,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 523,
                 "column": 13
               },
@@ -19696,7 +19696,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 524,
                 "column": 13
               },
@@ -19712,7 +19712,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 525,
                 "column": 13
               },
@@ -19728,7 +19728,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 526,
                 "column": 13
               },
@@ -19744,7 +19744,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 527,
                 "column": 13
               },
@@ -19760,7 +19760,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 528,
                 "column": 13
               },
@@ -19776,7 +19776,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 532,
                 "column": 13
               },
@@ -19792,7 +19792,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 533,
                 "column": 13
               },
@@ -19808,7 +19808,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 534,
                 "column": 13
               },
@@ -19824,7 +19824,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 537,
                 "column": 13
               },
@@ -19840,7 +19840,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 538,
                 "column": 13
               },
@@ -19856,7 +19856,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 539,
                 "column": 13
               },
@@ -19872,7 +19872,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 540,
                 "column": 13
               },
@@ -19888,7 +19888,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 541,
                 "column": 13
               },
@@ -19904,7 +19904,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 542,
                 "column": 13
               },
@@ -19920,7 +19920,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 543,
                 "column": 13
               },
@@ -19936,7 +19936,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 544,
                 "column": 13
               },
@@ -19952,7 +19952,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 545,
                 "column": 13
               },
@@ -19968,7 +19968,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 546,
                 "column": 13
               },
@@ -19984,7 +19984,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 547,
                 "column": 13
               },
@@ -20000,7 +20000,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 548,
                 "column": 13
               },
@@ -20016,7 +20016,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 549,
                 "column": 13
               },
@@ -20032,7 +20032,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 550,
                 "column": 13
               },
@@ -20048,7 +20048,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 551,
                 "column": 13
               },
@@ -20064,7 +20064,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 552,
                 "column": 13
               },
@@ -20080,7 +20080,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 553,
                 "column": 13
               },
@@ -20096,7 +20096,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 554,
                 "column": 13
               },
@@ -20112,7 +20112,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 557,
                 "column": 13
               },
@@ -20128,7 +20128,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 558,
                 "column": 13
               },
@@ -20144,7 +20144,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 559,
                 "column": 13
               },
@@ -20160,7 +20160,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 560,
                 "column": 13
               },
@@ -20176,7 +20176,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 561,
                 "column": 13
               },
@@ -20192,7 +20192,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 562,
                 "column": 13
               },
@@ -20208,7 +20208,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 563,
                 "column": 13
               },
@@ -20224,7 +20224,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 564,
                 "column": 13
               },
@@ -20240,7 +20240,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 565,
                 "column": 13
               },
@@ -20256,7 +20256,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 570,
                 "column": 13
               },
@@ -20272,7 +20272,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 571,
                 "column": 13
               },
@@ -20288,7 +20288,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 572,
                 "column": 13
               },
@@ -20304,7 +20304,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 573,
                 "column": 13
               },
@@ -20320,7 +20320,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 574,
                 "column": 13
               },
@@ -20336,7 +20336,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 575,
                 "column": 13
               },
@@ -20352,7 +20352,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 576,
                 "column": 13
               },
@@ -20368,7 +20368,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 577,
                 "column": 13
               },
@@ -20384,7 +20384,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 578,
                 "column": 13
               },
@@ -20400,7 +20400,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 579,
                 "column": 13
               },
@@ -20416,7 +20416,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 580,
                 "column": 13
               },
@@ -20432,7 +20432,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 581,
                 "column": 13
               },
@@ -20448,7 +20448,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 582,
                 "column": 13
               },
@@ -20464,7 +20464,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 583,
                 "column": 13
               },
@@ -20480,7 +20480,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 584,
                 "column": 13
               },
@@ -20496,7 +20496,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 585,
                 "column": 13
               },
@@ -20512,7 +20512,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 586,
                 "column": 13
               },
@@ -20528,7 +20528,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 587,
                 "column": 13
               },
@@ -20544,7 +20544,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 588,
                 "column": 13
               },
@@ -20560,7 +20560,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 589,
                 "column": 13
               },
@@ -20576,7 +20576,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 593,
                 "column": 13
               },
@@ -20592,7 +20592,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 598,
                 "column": 13
               },
@@ -20608,7 +20608,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 599,
                 "column": 13
               },
@@ -20624,7 +20624,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 600,
                 "column": 13
               },
@@ -20640,7 +20640,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 605,
                 "column": 13
               },
@@ -20656,7 +20656,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 606,
                 "column": 13
               },
@@ -20672,7 +20672,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 610,
                 "column": 13
               },
@@ -20688,7 +20688,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 611,
                 "column": 13
               },
@@ -20704,7 +20704,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 614,
                 "column": 13
               },
@@ -20720,7 +20720,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 615,
                 "column": 13
               },
@@ -20736,7 +20736,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 616,
                 "column": 13
               },
@@ -20752,7 +20752,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 617,
                 "column": 13
               },
@@ -20768,7 +20768,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 626,
                 "column": 13
               },
@@ -20784,7 +20784,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 627,
                 "column": 13
               },
@@ -20800,7 +20800,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 630,
                 "column": 13
               },
@@ -20816,7 +20816,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 631,
                 "column": 13
               },
@@ -20832,7 +20832,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 635,
                 "column": 13
               },
@@ -20848,7 +20848,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 636,
                 "column": 13
               },
@@ -20864,7 +20864,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 640,
                 "column": 13
               },
@@ -20880,7 +20880,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 644,
                 "column": 13
               },
@@ -20896,7 +20896,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 645,
                 "column": 13
               },
@@ -20912,7 +20912,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 646,
                 "column": 13
               },
@@ -20928,7 +20928,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 647,
                 "column": 13
               },
@@ -20944,7 +20944,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 650,
                 "column": 13
               },
@@ -20960,7 +20960,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 651,
                 "column": 13
               },
@@ -20976,7 +20976,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 652,
                 "column": 13
               },
@@ -20992,7 +20992,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 655,
                 "column": 13
               },
@@ -21008,7 +21008,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 656,
                 "column": 13
               },
@@ -21024,7 +21024,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 657,
                 "column": 13
               },
@@ -21040,7 +21040,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 658,
                 "column": 13
               },
@@ -21056,7 +21056,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 662,
                 "column": 13
               },
@@ -21072,7 +21072,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 663,
                 "column": 13
               },
@@ -21088,7 +21088,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 664,
                 "column": 13
               },
@@ -21104,7 +21104,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 665,
                 "column": 13
               },
@@ -21120,7 +21120,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 669,
                 "column": 13
               },
@@ -21136,7 +21136,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 670,
                 "column": 13
               },
@@ -21152,7 +21152,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 671,
                 "column": 13
               },
@@ -21168,7 +21168,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 672,
                 "column": 13
               },
@@ -21184,7 +21184,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 676,
                 "column": 13
               },
@@ -21200,7 +21200,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 677,
                 "column": 13
               },
@@ -21216,7 +21216,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 680,
                 "column": 13
               },
@@ -21232,7 +21232,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 681,
                 "column": 13
               },
@@ -21248,7 +21248,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 682,
                 "column": 13
               },
@@ -21264,7 +21264,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 683,
                 "column": 13
               },
@@ -21280,7 +21280,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 684,
                 "column": 13
               },
@@ -21296,7 +21296,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 685,
                 "column": 13
               },
@@ -21312,7 +21312,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 691,
                 "column": 13
               },
@@ -21328,7 +21328,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 692,
                 "column": 13
               },
@@ -21344,7 +21344,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 693,
                 "column": 13
               },
@@ -21360,7 +21360,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 694,
                 "column": 13
               },
@@ -21376,7 +21376,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 695,
                 "column": 13
               },
@@ -21392,7 +21392,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 696,
                 "column": 13
               },
@@ -21408,7 +21408,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 697,
                 "column": 13
               },
@@ -21424,7 +21424,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 698,
                 "column": 13
               },
@@ -21440,7 +21440,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 699,
                 "column": 13
               },
@@ -21456,7 +21456,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 700,
                 "column": 13
               },
@@ -21472,7 +21472,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 701,
                 "column": 13
               },
@@ -21488,7 +21488,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 702,
                 "column": 13
               },
@@ -21504,7 +21504,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 703,
                 "column": 13
               },
@@ -21520,7 +21520,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 706,
                 "column": 13
               },
@@ -21536,7 +21536,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 707,
                 "column": 13
               },
@@ -21552,7 +21552,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 710,
                 "column": 13
               },
@@ -21568,7 +21568,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 711,
                 "column": 13
               },
@@ -21584,7 +21584,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 714,
                 "column": 13
               },
@@ -21600,7 +21600,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 715,
                 "column": 13
               },
@@ -21616,7 +21616,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 719,
                 "column": 13
               },
@@ -21632,7 +21632,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 720,
                 "column": 13
               },
@@ -21648,7 +21648,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 722,
                 "column": 13
               },
@@ -21664,7 +21664,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 723,
                 "column": 13
               },
@@ -21680,7 +21680,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 726,
                 "column": 13
               },
@@ -21696,7 +21696,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 727,
                 "column": 13
               },
@@ -21712,7 +21712,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 730,
                 "column": 13
               },
@@ -21728,7 +21728,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 735,
                 "column": 13
               },
@@ -21744,7 +21744,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 736,
                 "column": 13
               },
@@ -21760,7 +21760,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 737,
                 "column": 13
               },
@@ -21776,7 +21776,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 738,
                 "column": 13
               },
@@ -21792,7 +21792,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 739,
                 "column": 13
               },
@@ -21808,7 +21808,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 740,
                 "column": 13
               },
@@ -21824,7 +21824,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 741,
                 "column": 13
               },
@@ -21840,7 +21840,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 742,
                 "column": 13
               },
@@ -21856,7 +21856,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 743,
                 "column": 13
               },
@@ -21872,7 +21872,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 747,
                 "column": 13
               },
@@ -21888,7 +21888,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 748,
                 "column": 13
               },
@@ -21904,7 +21904,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 751,
                 "column": 13
               },
@@ -21920,7 +21920,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 752,
                 "column": 13
               },
@@ -21936,7 +21936,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 753,
                 "column": 13
               },
@@ -21952,7 +21952,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 754,
                 "column": 13
               },
@@ -21968,7 +21968,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 755,
                 "column": 13
               },
@@ -21984,7 +21984,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 756,
                 "column": 13
               },
@@ -22000,7 +22000,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 757,
                 "column": 13
               },
@@ -22016,7 +22016,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 758,
                 "column": 13
               },
@@ -22032,7 +22032,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 759,
                 "column": 13
               },
@@ -22048,7 +22048,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 760,
                 "column": 13
               },
@@ -22064,7 +22064,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 761,
                 "column": 13
               },
@@ -22080,7 +22080,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 762,
                 "column": 13
               },
@@ -22096,7 +22096,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 763,
                 "column": 13
               },
@@ -22112,7 +22112,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 764,
                 "column": 13
               },
@@ -22128,7 +22128,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 765,
                 "column": 13
               },
@@ -22144,7 +22144,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 766,
                 "column": 13
               },
@@ -22160,7 +22160,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 767,
                 "column": 13
               },
@@ -22176,7 +22176,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 768,
                 "column": 13
               },
@@ -22192,7 +22192,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 769,
                 "column": 13
               },
@@ -22208,7 +22208,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 770,
                 "column": 13
               },
@@ -22224,7 +22224,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 771,
                 "column": 13
               },
@@ -22240,7 +22240,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 772,
                 "column": 13
               },
@@ -22256,7 +22256,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 773,
                 "column": 13
               },
@@ -22272,7 +22272,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 774,
                 "column": 13
               },
@@ -22288,7 +22288,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 775,
                 "column": 13
               },
@@ -22304,7 +22304,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 776,
                 "column": 13
               },
@@ -22320,7 +22320,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 780,
                 "column": 13
               },
@@ -22336,7 +22336,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 781,
                 "column": 13
               },
@@ -22352,7 +22352,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 782,
                 "column": 13
               },
@@ -22368,7 +22368,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 783,
                 "column": 13
               },
@@ -22384,7 +22384,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 784,
                 "column": 13
               },
@@ -22400,7 +22400,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 785,
                 "column": 13
               },
@@ -22408,7 +22408,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
             "line": 507,
             "column": 9
           },
@@ -22429,7 +22429,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 800,
                 "column": 13
               },
@@ -22443,7 +22443,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 801,
                 "column": 13
               },
@@ -22457,7 +22457,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 802,
                 "column": 13
               },
@@ -22471,7 +22471,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 803,
                 "column": 13
               },
@@ -22485,7 +22485,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 804,
                 "column": 13
               },
@@ -22499,7 +22499,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 805,
                 "column": 13
               },
@@ -22513,7 +22513,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 806,
                 "column": 13
               },
@@ -22527,7 +22527,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 807,
                 "column": 13
               },
@@ -22541,7 +22541,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 808,
                 "column": 13
               },
@@ -22555,7 +22555,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 809,
                 "column": 13
               },
@@ -22569,7 +22569,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 810,
                 "column": 13
               },
@@ -22583,7 +22583,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 811,
                 "column": 13
               },
@@ -22591,7 +22591,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
             "line": 789,
             "column": 9
           },
@@ -22612,7 +22612,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 819,
                 "column": 13
               },
@@ -22626,7 +22626,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 820,
                 "column": 13
               },
@@ -22640,7 +22640,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 821,
                 "column": 13
               },
@@ -22654,7 +22654,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 822,
                 "column": 13
               },
@@ -22668,7 +22668,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 823,
                 "column": 13
               },
@@ -22682,7 +22682,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 824,
                 "column": 13
               },
@@ -22696,7 +22696,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 825,
                 "column": 13
               },
@@ -22710,7 +22710,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 826,
                 "column": 13
               },
@@ -22724,7 +22724,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 827,
                 "column": 13
               },
@@ -22738,7 +22738,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 828,
                 "column": 13
               },
@@ -22752,7 +22752,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 829,
                 "column": 13
               },
@@ -22766,7 +22766,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 830,
                 "column": 13
               },
@@ -22780,7 +22780,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 831,
                 "column": 13
               },
@@ -22794,7 +22794,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 832,
                 "column": 13
               },
@@ -22808,7 +22808,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 833,
                 "column": 13
               },
@@ -22822,7 +22822,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 834,
                 "column": 13
               },
@@ -22836,7 +22836,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 835,
                 "column": 13
               },
@@ -22850,7 +22850,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 836,
                 "column": 13
               },
@@ -22864,7 +22864,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 837,
                 "column": 13
               },
@@ -22878,7 +22878,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 838,
                 "column": 13
               },
@@ -22892,7 +22892,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 839,
                 "column": 13
               },
@@ -22906,7 +22906,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 840,
                 "column": 13
               },
@@ -22920,7 +22920,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 841,
                 "column": 13
               },
@@ -22934,7 +22934,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 842,
                 "column": 13
               },
@@ -22948,7 +22948,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 843,
                 "column": 13
               },
@@ -22962,7 +22962,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 844,
                 "column": 13
               },
@@ -22976,7 +22976,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 845,
                 "column": 13
               },
@@ -22990,7 +22990,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 846,
                 "column": 13
               },
@@ -23004,7 +23004,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 847,
                 "column": 13
               },
@@ -23018,7 +23018,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 848,
                 "column": 13
               },
@@ -23032,7 +23032,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 849,
                 "column": 13
               },
@@ -23046,7 +23046,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 850,
                 "column": 13
               },
@@ -23060,7 +23060,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 851,
                 "column": 13
               },
@@ -23074,7 +23074,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 852,
                 "column": 13
               },
@@ -23088,7 +23088,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 853,
                 "column": 13
               },
@@ -23102,7 +23102,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 854,
                 "column": 13
               },
@@ -23116,7 +23116,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 855,
                 "column": 13
               },
@@ -23130,7 +23130,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 856,
                 "column": 13
               },
@@ -23144,7 +23144,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 857,
                 "column": 13
               },
@@ -23158,7 +23158,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 858,
                 "column": 13
               },
@@ -23172,7 +23172,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 859,
                 "column": 13
               },
@@ -23186,7 +23186,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 860,
                 "column": 13
               },
@@ -23200,7 +23200,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 861,
                 "column": 13
               },
@@ -23214,7 +23214,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 862,
                 "column": 13
               },
@@ -23228,7 +23228,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 863,
                 "column": 13
               },
@@ -23242,7 +23242,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 864,
                 "column": 13
               },
@@ -23256,7 +23256,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 865,
                 "column": 13
               },
@@ -23270,7 +23270,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 866,
                 "column": 13
               },
@@ -23284,7 +23284,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 867,
                 "column": 13
               },
@@ -23298,7 +23298,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 868,
                 "column": 13
               },
@@ -23312,7 +23312,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 869,
                 "column": 13
               },
@@ -23326,7 +23326,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 870,
                 "column": 13
               },
@@ -23340,7 +23340,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 871,
                 "column": 13
               },
@@ -23354,7 +23354,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 872,
                 "column": 13
               },
@@ -23368,7 +23368,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 873,
                 "column": 13
               },
@@ -23382,7 +23382,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 874,
                 "column": 13
               },
@@ -23396,7 +23396,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 875,
                 "column": 13
               },
@@ -23410,7 +23410,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 876,
                 "column": 13
               },
@@ -23424,7 +23424,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 877,
                 "column": 13
               },
@@ -23438,7 +23438,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 878,
                 "column": 13
               },
@@ -23452,7 +23452,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 879,
                 "column": 13
               },
@@ -23466,7 +23466,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 880,
                 "column": 13
               },
@@ -23480,7 +23480,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 881,
                 "column": 13
               },
@@ -23494,7 +23494,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 882,
                 "column": 13
               },
@@ -23508,7 +23508,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 883,
                 "column": 13
               },
@@ -23522,7 +23522,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 884,
                 "column": 13
               },
@@ -23536,7 +23536,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 885,
                 "column": 13
               },
@@ -23550,7 +23550,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 886,
                 "column": 13
               },
@@ -23564,7 +23564,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 887,
                 "column": 13
               },
@@ -23578,7 +23578,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 888,
                 "column": 13
               },
@@ -23592,7 +23592,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 889,
                 "column": 13
               },
@@ -23600,7 +23600,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
             "line": 815,
             "column": 9
           },
@@ -23621,7 +23621,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 897,
                 "column": 13
               },
@@ -23635,7 +23635,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 898,
                 "column": 13
               },
@@ -23649,7 +23649,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 899,
                 "column": 13
               },
@@ -23663,7 +23663,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 900,
                 "column": 13
               },
@@ -23677,7 +23677,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 901,
                 "column": 13
               },
@@ -23691,7 +23691,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 902,
                 "column": 13
               },
@@ -23705,7 +23705,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 903,
                 "column": 13
               },
@@ -23719,7 +23719,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 904,
                 "column": 13
               },
@@ -23733,7 +23733,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 905,
                 "column": 13
               },
@@ -23747,7 +23747,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 906,
                 "column": 13
               },
@@ -23761,7 +23761,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 907,
                 "column": 13
               },
@@ -23775,7 +23775,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 908,
                 "column": 13
               },
@@ -23789,7 +23789,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 909,
                 "column": 13
               },
@@ -23803,7 +23803,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 910,
                 "column": 13
               },
@@ -23817,7 +23817,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 911,
                 "column": 13
               },
@@ -23831,7 +23831,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 912,
                 "column": 13
               },
@@ -23845,7 +23845,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 913,
                 "column": 13
               },
@@ -23859,7 +23859,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 914,
                 "column": 13
               },
@@ -23873,7 +23873,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 915,
                 "column": 13
               },
@@ -23887,7 +23887,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 916,
                 "column": 13
               },
@@ -23901,7 +23901,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 917,
                 "column": 13
               },
@@ -23915,7 +23915,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 918,
                 "column": 13
               },
@@ -23929,7 +23929,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 919,
                 "column": 13
               },
@@ -23943,7 +23943,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 920,
                 "column": 13
               },
@@ -23957,7 +23957,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 921,
                 "column": 13
               },
@@ -23971,7 +23971,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 922,
                 "column": 13
               },
@@ -23985,7 +23985,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 923,
                 "column": 13
               },
@@ -23999,7 +23999,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 924,
                 "column": 13
               },
@@ -24013,7 +24013,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 925,
                 "column": 13
               },
@@ -24027,7 +24027,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 926,
                 "column": 13
               },
@@ -24041,7 +24041,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 927,
                 "column": 13
               },
@@ -24055,7 +24055,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 928,
                 "column": 13
               },
@@ -24069,7 +24069,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 929,
                 "column": 13
               },
@@ -24083,7 +24083,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 930,
                 "column": 13
               },
@@ -24097,7 +24097,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 931,
                 "column": 13
               },
@@ -24111,7 +24111,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 932,
                 "column": 13
               },
@@ -24125,7 +24125,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 933,
                 "column": 13
               },
@@ -24139,7 +24139,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 934,
                 "column": 13
               },
@@ -24153,7 +24153,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 935,
                 "column": 13
               },
@@ -24167,7 +24167,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 936,
                 "column": 13
               },
@@ -24181,7 +24181,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 937,
                 "column": 13
               },
@@ -24195,7 +24195,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 938,
                 "column": 13
               },
@@ -24209,7 +24209,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 939,
                 "column": 13
               },
@@ -24223,7 +24223,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 940,
                 "column": 13
               },
@@ -24237,7 +24237,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 941,
                 "column": 13
               },
@@ -24251,7 +24251,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 942,
                 "column": 13
               },
@@ -24265,7 +24265,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 943,
                 "column": 13
               },
@@ -24273,7 +24273,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
             "line": 893,
             "column": 9
           },
@@ -24301,7 +24301,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 951,
                 "column": 13
               },
@@ -24322,7 +24322,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 952,
                 "column": 13
               },
@@ -24343,7 +24343,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 953,
                 "column": 13
               },
@@ -24364,7 +24364,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 954,
                 "column": 13
               },
@@ -24385,7 +24385,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 955,
                 "column": 13
               },
@@ -24406,7 +24406,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 956,
                 "column": 13
               },
@@ -24414,7 +24414,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
             "line": 947,
             "column": 9
           },
@@ -24435,7 +24435,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
                 "line": 964,
                 "column": 13
               },
@@ -24443,7 +24443,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
             "line": 960,
             "column": 9
           },
@@ -24451,7 +24451,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\item-rules.mwl",
         "line": 3,
         "column": 5
       },
@@ -24472,7 +24472,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 7,
             "column": 9
           },
@@ -24487,7 +24487,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 13,
             "column": 9
           },
@@ -24502,7 +24502,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 19,
             "column": 9
           },
@@ -24517,7 +24517,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 25,
             "column": 9
           },
@@ -24532,7 +24532,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 31,
             "column": 9
           },
@@ -24547,7 +24547,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 37,
             "column": 9
           },
@@ -24562,7 +24562,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 43,
             "column": 9
           },
@@ -24577,7 +24577,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 49,
             "column": 9
           },
@@ -24592,7 +24592,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 55,
             "column": 9
           },
@@ -24607,7 +24607,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 61,
             "column": 9
           },
@@ -24622,7 +24622,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 67,
             "column": 9
           },
@@ -24637,7 +24637,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 73,
             "column": 9
           },
@@ -24652,7 +24652,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 79,
             "column": 9
           },
@@ -24667,7 +24667,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 85,
             "column": 9
           },
@@ -24682,7 +24682,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 91,
             "column": 9
           },
@@ -24697,7 +24697,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 97,
             "column": 9
           },
@@ -24712,7 +24712,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 103,
             "column": 9
           },
@@ -24727,7 +24727,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 109,
             "column": 9
           },
@@ -24742,7 +24742,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 115,
             "column": 9
           },
@@ -24757,7 +24757,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 121,
             "column": 9
           },
@@ -24772,7 +24772,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 127,
             "column": 9
           },
@@ -24787,7 +24787,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 133,
             "column": 9
           },
@@ -24802,7 +24802,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 139,
             "column": 9
           },
@@ -24817,7 +24817,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 145,
             "column": 9
           },
@@ -24832,7 +24832,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 151,
             "column": 9
           },
@@ -24847,7 +24847,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 157,
             "column": 9
           },
@@ -24862,7 +24862,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 163,
             "column": 9
           },
@@ -24877,7 +24877,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 169,
             "column": 9
           },
@@ -24892,7 +24892,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 175,
             "column": 9
           },
@@ -24907,7 +24907,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 181,
             "column": 9
           },
@@ -24922,7 +24922,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 187,
             "column": 9
           },
@@ -24937,7 +24937,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 193,
             "column": 9
           },
@@ -24952,7 +24952,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 199,
             "column": 9
           },
@@ -24967,7 +24967,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 205,
             "column": 9
           },
@@ -24982,7 +24982,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 211,
             "column": 9
           },
@@ -24997,7 +24997,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 217,
             "column": 9
           },
@@ -25019,7 +25019,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 229,
                 "column": 13
               },
@@ -25033,7 +25033,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 234,
                 "column": 13
               },
@@ -25041,7 +25041,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 223,
             "column": 9
           },
@@ -25063,7 +25063,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 247,
                 "column": 13
               },
@@ -25077,7 +25077,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 252,
                 "column": 13
               },
@@ -25085,7 +25085,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 241,
             "column": 9
           },
@@ -25107,7 +25107,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 265,
                 "column": 13
               },
@@ -25121,7 +25121,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 270,
                 "column": 13
               },
@@ -25129,7 +25129,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 259,
             "column": 9
           },
@@ -25151,7 +25151,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 283,
                 "column": 13
               },
@@ -25165,7 +25165,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 288,
                 "column": 13
               },
@@ -25173,7 +25173,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 277,
             "column": 9
           },
@@ -25195,7 +25195,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 301,
                 "column": 13
               },
@@ -25209,7 +25209,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 306,
                 "column": 13
               },
@@ -25217,7 +25217,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 295,
             "column": 9
           },
@@ -25239,7 +25239,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 319,
                 "column": 13
               },
@@ -25253,7 +25253,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 324,
                 "column": 13
               },
@@ -25261,7 +25261,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 313,
             "column": 9
           },
@@ -25283,7 +25283,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 337,
                 "column": 13
               },
@@ -25297,7 +25297,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 342,
                 "column": 13
               },
@@ -25305,7 +25305,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 331,
             "column": 9
           },
@@ -25327,7 +25327,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 355,
                 "column": 13
               },
@@ -25341,7 +25341,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 360,
                 "column": 13
               },
@@ -25349,7 +25349,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 349,
             "column": 9
           },
@@ -25371,7 +25371,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 373,
                 "column": 13
               },
@@ -25385,7 +25385,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 378,
                 "column": 13
               },
@@ -25393,7 +25393,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 367,
             "column": 9
           },
@@ -25415,7 +25415,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 391,
                 "column": 13
               },
@@ -25429,7 +25429,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 396,
                 "column": 13
               },
@@ -25437,7 +25437,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 385,
             "column": 9
           },
@@ -25459,7 +25459,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 409,
                 "column": 13
               },
@@ -25473,7 +25473,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 414,
                 "column": 13
               },
@@ -25481,7 +25481,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 403,
             "column": 9
           },
@@ -25503,7 +25503,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 427,
                 "column": 13
               },
@@ -25517,7 +25517,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 432,
                 "column": 13
               },
@@ -25525,7 +25525,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 421,
             "column": 9
           },
@@ -25547,7 +25547,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 445,
                 "column": 13
               },
@@ -25561,7 +25561,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 450,
                 "column": 13
               },
@@ -25569,7 +25569,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 439,
             "column": 9
           },
@@ -25591,7 +25591,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 463,
                 "column": 13
               },
@@ -25605,7 +25605,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 468,
                 "column": 13
               },
@@ -25613,7 +25613,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 457,
             "column": 9
           },
@@ -25635,7 +25635,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 481,
                 "column": 13
               },
@@ -25649,7 +25649,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 486,
                 "column": 13
               },
@@ -25657,7 +25657,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 475,
             "column": 9
           },
@@ -25679,7 +25679,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 499,
                 "column": 13
               },
@@ -25693,7 +25693,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 504,
                 "column": 13
               },
@@ -25701,7 +25701,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 493,
             "column": 9
           },
@@ -25723,7 +25723,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 517,
                 "column": 13
               },
@@ -25737,7 +25737,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 522,
                 "column": 13
               },
@@ -25745,7 +25745,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 511,
             "column": 9
           },
@@ -25767,7 +25767,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 535,
                 "column": 13
               },
@@ -25781,7 +25781,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 540,
                 "column": 13
               },
@@ -25789,7 +25789,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 529,
             "column": 9
           },
@@ -25811,7 +25811,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 553,
                 "column": 13
               },
@@ -25825,7 +25825,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 558,
                 "column": 13
               },
@@ -25833,7 +25833,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 547,
             "column": 9
           },
@@ -25855,7 +25855,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 571,
                 "column": 13
               },
@@ -25869,7 +25869,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 576,
                 "column": 13
               },
@@ -25877,7 +25877,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 565,
             "column": 9
           },
@@ -25899,7 +25899,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 589,
                 "column": 13
               },
@@ -25913,7 +25913,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 594,
                 "column": 13
               },
@@ -25921,7 +25921,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 583,
             "column": 9
           },
@@ -25943,7 +25943,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 607,
                 "column": 13
               },
@@ -25957,7 +25957,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 612,
                 "column": 13
               },
@@ -25965,7 +25965,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 601,
             "column": 9
           },
@@ -25987,7 +25987,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 625,
                 "column": 13
               },
@@ -26001,7 +26001,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 630,
                 "column": 13
               },
@@ -26009,7 +26009,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 619,
             "column": 9
           },
@@ -26031,7 +26031,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 643,
                 "column": 13
               },
@@ -26045,7 +26045,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 648,
                 "column": 13
               },
@@ -26053,7 +26053,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 637,
             "column": 9
           },
@@ -26075,7 +26075,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 661,
                 "column": 13
               },
@@ -26089,7 +26089,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 666,
                 "column": 13
               },
@@ -26097,7 +26097,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 655,
             "column": 9
           },
@@ -26119,7 +26119,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 679,
                 "column": 13
               },
@@ -26133,7 +26133,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 684,
                 "column": 13
               },
@@ -26141,7 +26141,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 673,
             "column": 9
           },
@@ -26163,7 +26163,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 697,
                 "column": 13
               },
@@ -26177,7 +26177,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 702,
                 "column": 13
               },
@@ -26185,7 +26185,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 691,
             "column": 9
           },
@@ -26207,7 +26207,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 715,
                 "column": 13
               },
@@ -26221,7 +26221,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 720,
                 "column": 13
               },
@@ -26229,7 +26229,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 709,
             "column": 9
           },
@@ -26251,7 +26251,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 733,
                 "column": 13
               },
@@ -26265,7 +26265,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 738,
                 "column": 13
               },
@@ -26273,7 +26273,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 727,
             "column": 9
           },
@@ -26295,7 +26295,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 751,
                 "column": 13
               },
@@ -26309,7 +26309,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 756,
                 "column": 13
               },
@@ -26317,7 +26317,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 745,
             "column": 9
           },
@@ -26339,7 +26339,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 769,
                 "column": 13
               },
@@ -26353,7 +26353,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 774,
                 "column": 13
               },
@@ -26361,7 +26361,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 763,
             "column": 9
           },
@@ -26383,7 +26383,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 787,
                 "column": 13
               },
@@ -26397,7 +26397,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 792,
                 "column": 13
               },
@@ -26405,7 +26405,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 781,
             "column": 9
           },
@@ -26427,7 +26427,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 805,
                 "column": 13
               },
@@ -26441,7 +26441,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 810,
                 "column": 13
               },
@@ -26449,7 +26449,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 799,
             "column": 9
           },
@@ -26471,7 +26471,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 823,
                 "column": 13
               },
@@ -26485,7 +26485,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 828,
                 "column": 13
               },
@@ -26493,7 +26493,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 817,
             "column": 9
           },
@@ -26515,7 +26515,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 841,
                 "column": 13
               },
@@ -26529,7 +26529,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 846,
                 "column": 13
               },
@@ -26537,7 +26537,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 835,
             "column": 9
           },
@@ -26559,7 +26559,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 859,
                 "column": 13
               },
@@ -26573,7 +26573,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 864,
                 "column": 13
               },
@@ -26581,7 +26581,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 853,
             "column": 9
           },
@@ -26603,7 +26603,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 877,
                 "column": 13
               },
@@ -26617,7 +26617,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 882,
                 "column": 13
               },
@@ -26625,7 +26625,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 871,
             "column": 9
           },
@@ -26647,7 +26647,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 895,
                 "column": 13
               },
@@ -26661,7 +26661,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 900,
                 "column": 13
               },
@@ -26669,7 +26669,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 889,
             "column": 9
           },
@@ -26691,7 +26691,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 913,
                 "column": 13
               },
@@ -26705,7 +26705,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 918,
                 "column": 13
               },
@@ -26713,7 +26713,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 907,
             "column": 9
           },
@@ -26735,7 +26735,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 931,
                 "column": 13
               },
@@ -26749,7 +26749,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 936,
                 "column": 13
               },
@@ -26757,7 +26757,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 925,
             "column": 9
           },
@@ -26779,7 +26779,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 949,
                 "column": 13
               },
@@ -26793,7 +26793,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 954,
                 "column": 13
               },
@@ -26801,7 +26801,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 943,
             "column": 9
           },
@@ -26823,7 +26823,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 967,
                 "column": 13
               },
@@ -26837,7 +26837,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 972,
                 "column": 13
               },
@@ -26845,7 +26845,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 961,
             "column": 9
           },
@@ -26867,7 +26867,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 985,
                 "column": 13
               },
@@ -26881,7 +26881,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 990,
                 "column": 13
               },
@@ -26889,7 +26889,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 979,
             "column": 9
           },
@@ -26911,7 +26911,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 1003,
                 "column": 13
               },
@@ -26925,7 +26925,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 1008,
                 "column": 13
               },
@@ -26933,7 +26933,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 997,
             "column": 9
           },
@@ -26955,7 +26955,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 1021,
                 "column": 13
               },
@@ -26969,7 +26969,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 1026,
                 "column": 13
               },
@@ -26977,7 +26977,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 1015,
             "column": 9
           },
@@ -26999,7 +26999,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 1039,
                 "column": 13
               },
@@ -27013,7 +27013,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 1044,
                 "column": 13
               },
@@ -27021,7 +27021,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 1033,
             "column": 9
           },
@@ -27043,7 +27043,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 1057,
                 "column": 13
               },
@@ -27057,7 +27057,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 1062,
                 "column": 13
               },
@@ -27065,7 +27065,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 1051,
             "column": 9
           },
@@ -27087,7 +27087,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 1075,
                 "column": 13
               },
@@ -27101,7 +27101,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 1080,
                 "column": 13
               },
@@ -27109,7 +27109,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 1069,
             "column": 9
           },
@@ -27131,7 +27131,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 1093,
                 "column": 13
               },
@@ -27145,7 +27145,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 1098,
                 "column": 13
               },
@@ -27153,7 +27153,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 1087,
             "column": 9
           },
@@ -27175,7 +27175,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 1111,
                 "column": 13
               },
@@ -27189,7 +27189,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
                 "line": 1116,
                 "column": 13
               },
@@ -27197,7 +27197,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
             "line": 1105,
             "column": 9
           },
@@ -27205,7 +27205,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\items.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\items.mwl",
         "line": 3,
         "column": 5
       },
@@ -27233,7 +27233,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 12,
                 "column": 13
               },
@@ -27248,7 +27248,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 18,
                 "column": 13
               },
@@ -27263,7 +27263,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 24,
                 "column": 13
               },
@@ -27278,7 +27278,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 30,
                 "column": 13
               },
@@ -27293,7 +27293,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 40,
                 "column": 13
               },
@@ -27308,7 +27308,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 46,
                 "column": 13
               },
@@ -27323,7 +27323,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 52,
                 "column": 13
               },
@@ -27338,7 +27338,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 63,
                 "column": 13
               },
@@ -27353,7 +27353,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 69,
                 "column": 13
               },
@@ -27368,7 +27368,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 79,
                 "column": 13
               },
@@ -27383,7 +27383,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 88,
                 "column": 13
               },
@@ -27398,7 +27398,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 94,
                 "column": 13
               },
@@ -27413,7 +27413,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 100,
                 "column": 13
               },
@@ -27428,7 +27428,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 106,
                 "column": 13
               },
@@ -27443,7 +27443,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 112,
                 "column": 13
               },
@@ -27458,7 +27458,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 118,
                 "column": 13
               },
@@ -27473,7 +27473,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 124,
                 "column": 13
               },
@@ -27488,7 +27488,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 130,
                 "column": 13
               },
@@ -27503,7 +27503,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 136,
                 "column": 13
               },
@@ -27518,7 +27518,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 142,
                 "column": 13
               },
@@ -27533,7 +27533,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 148,
                 "column": 13
               },
@@ -27548,7 +27548,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 154,
                 "column": 13
               },
@@ -27563,7 +27563,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 166,
                 "column": 13
               },
@@ -27578,7 +27578,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 172,
                 "column": 13
               },
@@ -27593,7 +27593,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 178,
                 "column": 13
               },
@@ -27608,7 +27608,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 184,
                 "column": 13
               },
@@ -27623,7 +27623,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 190,
                 "column": 13
               },
@@ -27638,7 +27638,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 198,
                 "column": 13
               },
@@ -27653,7 +27653,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 204,
                 "column": 13
               },
@@ -27668,7 +27668,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 210,
                 "column": 13
               },
@@ -27683,7 +27683,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 220,
                 "column": 13
               },
@@ -27698,7 +27698,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 228,
                 "column": 13
               },
@@ -27713,7 +27713,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 234,
                 "column": 13
               },
@@ -27721,7 +27721,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
             "line": 7,
             "column": 9
           },
@@ -27743,7 +27743,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 247,
                 "column": 13
               },
@@ -27758,7 +27758,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 253,
                 "column": 13
               },
@@ -27773,7 +27773,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 259,
                 "column": 13
               },
@@ -27788,7 +27788,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 265,
                 "column": 13
               },
@@ -27803,7 +27803,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 271,
                 "column": 13
               },
@@ -27818,7 +27818,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 277,
                 "column": 13
               },
@@ -27833,7 +27833,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 283,
                 "column": 13
               },
@@ -27848,7 +27848,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 289,
                 "column": 13
               },
@@ -27863,7 +27863,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 295,
                 "column": 13
               },
@@ -27878,7 +27878,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
                 "line": 301,
                 "column": 13
               },
@@ -27886,7 +27886,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
             "line": 242,
             "column": 9
           },
@@ -27894,7 +27894,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\loot-rules.mwl",
         "line": 3,
         "column": 5
       },
@@ -27916,7 +27916,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
             "line": 7,
             "column": 9
           },
@@ -27932,7 +27932,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
             "line": 14,
             "column": 9
           },
@@ -27948,7 +27948,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
             "line": 21,
             "column": 9
           },
@@ -27964,7 +27964,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
             "line": 28,
             "column": 9
           },
@@ -27980,7 +27980,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
             "line": 35,
             "column": 9
           },
@@ -27996,7 +27996,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
             "line": 42,
             "column": 9
           },
@@ -28012,7 +28012,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
             "line": 49,
             "column": 9
           },
@@ -28028,7 +28028,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
             "line": 56,
             "column": 9
           },
@@ -28044,7 +28044,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
             "line": 63,
             "column": 9
           },
@@ -28060,7 +28060,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
             "line": 70,
             "column": 9
           },
@@ -28076,7 +28076,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
             "line": 77,
             "column": 9
           },
@@ -28092,7 +28092,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
             "line": 84,
             "column": 9
           },
@@ -28108,7 +28108,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
             "line": 91,
             "column": 9
           },
@@ -28124,7 +28124,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
             "line": 98,
             "column": 9
           },
@@ -28140,7 +28140,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
             "line": 105,
             "column": 9
           },
@@ -28156,7 +28156,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
             "line": 112,
             "column": 9
           },
@@ -28181,7 +28181,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 129,
                 "column": 13
               },
@@ -28199,7 +28199,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 138,
                 "column": 13
               },
@@ -28217,7 +28217,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 147,
                 "column": 13
               },
@@ -28235,7 +28235,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 156,
                 "column": 13
               },
@@ -28253,7 +28253,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 165,
                 "column": 13
               },
@@ -28271,7 +28271,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 174,
                 "column": 13
               },
@@ -28289,7 +28289,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 183,
                 "column": 13
               },
@@ -28307,7 +28307,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 192,
                 "column": 13
               },
@@ -28325,7 +28325,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 201,
                 "column": 13
               },
@@ -28343,7 +28343,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 210,
                 "column": 13
               },
@@ -28361,7 +28361,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 219,
                 "column": 13
               },
@@ -28379,7 +28379,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 228,
                 "column": 13
               },
@@ -28397,7 +28397,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 237,
                 "column": 13
               },
@@ -28415,7 +28415,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 246,
                 "column": 13
               },
@@ -28433,7 +28433,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 255,
                 "column": 13
               },
@@ -28451,7 +28451,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 267,
                 "column": 13
               },
@@ -28459,7 +28459,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
             "line": 119,
             "column": 9
           },
@@ -28481,7 +28481,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 293,
                 "column": 13
               },
@@ -28496,7 +28496,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 294,
                 "column": 13
               },
@@ -28511,7 +28511,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 295,
                 "column": 13
               },
@@ -28526,7 +28526,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 296,
                 "column": 13
               },
@@ -28541,7 +28541,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 297,
                 "column": 13
               },
@@ -28556,7 +28556,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 298,
                 "column": 13
               },
@@ -28571,7 +28571,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 299,
                 "column": 13
               },
@@ -28586,7 +28586,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 300,
                 "column": 13
               },
@@ -28601,7 +28601,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 301,
                 "column": 13
               },
@@ -28616,7 +28616,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 302,
                 "column": 13
               },
@@ -28631,7 +28631,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 303,
                 "column": 13
               },
@@ -28646,7 +28646,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 304,
                 "column": 13
               },
@@ -28661,7 +28661,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 305,
                 "column": 13
               },
@@ -28676,7 +28676,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 306,
                 "column": 13
               },
@@ -28691,7 +28691,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 307,
                 "column": 13
               },
@@ -28706,7 +28706,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 308,
                 "column": 13
               },
@@ -28714,7 +28714,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
             "line": 278,
             "column": 9
           },
@@ -28736,7 +28736,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 316,
                 "column": 13
               },
@@ -28751,7 +28751,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 317,
                 "column": 13
               },
@@ -28766,7 +28766,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 318,
                 "column": 13
               },
@@ -28781,7 +28781,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 319,
                 "column": 13
               },
@@ -28796,7 +28796,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 320,
                 "column": 13
               },
@@ -28811,7 +28811,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 321,
                 "column": 13
               },
@@ -28826,7 +28826,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 322,
                 "column": 13
               },
@@ -28841,7 +28841,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 323,
                 "column": 13
               },
@@ -28856,7 +28856,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 324,
                 "column": 13
               },
@@ -28871,7 +28871,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 325,
                 "column": 13
               },
@@ -28886,7 +28886,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 326,
                 "column": 13
               },
@@ -28901,7 +28901,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 327,
                 "column": 13
               },
@@ -28916,7 +28916,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 328,
                 "column": 13
               },
@@ -28931,7 +28931,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 329,
                 "column": 13
               },
@@ -28946,7 +28946,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 330,
                 "column": 13
               },
@@ -28961,7 +28961,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 331,
                 "column": 13
               },
@@ -28969,7 +28969,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
             "line": 312,
             "column": 9
           },
@@ -28990,7 +28990,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 340,
                 "column": 13
               },
@@ -28998,7 +28998,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
             "line": 335,
             "column": 9
           },
@@ -29019,7 +29019,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 355,
                 "column": 13
               },
@@ -29033,7 +29033,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 360,
                 "column": 13
               },
@@ -29041,7 +29041,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
             "line": 350,
             "column": 9
           },
@@ -29062,7 +29062,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 372,
                 "column": 13
               },
@@ -29076,7 +29076,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 377,
                 "column": 13
               },
@@ -29084,7 +29084,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
             "line": 367,
             "column": 9
           },
@@ -29105,7 +29105,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 389,
                 "column": 13
               },
@@ -29119,7 +29119,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 394,
                 "column": 13
               },
@@ -29127,7 +29127,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
             "line": 384,
             "column": 9
           },
@@ -29148,7 +29148,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 406,
                 "column": 13
               },
@@ -29162,7 +29162,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 411,
                 "column": 13
               },
@@ -29170,7 +29170,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
             "line": 401,
             "column": 9
           },
@@ -29191,7 +29191,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 423,
                 "column": 13
               },
@@ -29205,7 +29205,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
                 "line": 428,
                 "column": 13
               },
@@ -29213,7 +29213,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
             "line": 418,
             "column": 9
           },
@@ -29221,7 +29221,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\missiles.mwl",
         "line": 3,
         "column": 5
       },
@@ -29245,7 +29245,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 3,
         "column": 5
       },
@@ -29269,7 +29269,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 18,
         "column": 5
       },
@@ -29293,7 +29293,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 33,
         "column": 5
       },
@@ -29317,7 +29317,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 48,
         "column": 5
       },
@@ -29341,7 +29341,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 63,
         "column": 5
       },
@@ -29365,7 +29365,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 78,
         "column": 5
       },
@@ -29389,7 +29389,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 93,
         "column": 5
       },
@@ -29413,7 +29413,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 108,
         "column": 5
       },
@@ -29437,7 +29437,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 125,
         "column": 5
       },
@@ -29461,7 +29461,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 140,
         "column": 5
       },
@@ -29485,7 +29485,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 159,
         "column": 5
       },
@@ -29509,7 +29509,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 178,
         "column": 5
       },
@@ -29533,7 +29533,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 193,
         "column": 5
       },
@@ -29557,7 +29557,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 208,
         "column": 5
       },
@@ -29581,7 +29581,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 223,
         "column": 5
       },
@@ -29605,7 +29605,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 238,
         "column": 5
       },
@@ -29629,7 +29629,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 253,
         "column": 5
       },
@@ -29653,7 +29653,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 271,
         "column": 5
       },
@@ -29677,7 +29677,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 286,
         "column": 5
       },
@@ -29701,7 +29701,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 303,
         "column": 5
       },
@@ -29725,7 +29725,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 318,
         "column": 5
       },
@@ -29749,7 +29749,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 333,
         "column": 5
       },
@@ -29773,7 +29773,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 348,
         "column": 5
       },
@@ -29797,7 +29797,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 363,
         "column": 5
       },
@@ -29821,7 +29821,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 378,
         "column": 5
       },
@@ -29845,7 +29845,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 393,
         "column": 5
       },
@@ -29869,7 +29869,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 408,
         "column": 5
       },
@@ -29893,7 +29893,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 423,
         "column": 5
       },
@@ -29917,7 +29917,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 438,
         "column": 5
       },
@@ -29941,7 +29941,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 453,
         "column": 5
       },
@@ -29965,7 +29965,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 472,
         "column": 5
       },
@@ -29989,7 +29989,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 487,
         "column": 5
       },
@@ -30013,7 +30013,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 502,
         "column": 5
       },
@@ -30037,7 +30037,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 521,
         "column": 5
       },
@@ -30061,7 +30061,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 536,
         "column": 5
       },
@@ -30085,7 +30085,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 551,
         "column": 5
       },
@@ -30109,7 +30109,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 566,
         "column": 5
       },
@@ -30133,7 +30133,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 581,
         "column": 5
       },
@@ -30157,7 +30157,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 596,
         "column": 5
       },
@@ -30181,7 +30181,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 611,
         "column": 5
       },
@@ -30205,7 +30205,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 626,
         "column": 5
       },
@@ -30229,7 +30229,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 641,
         "column": 5
       },
@@ -30253,7 +30253,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 656,
         "column": 5
       },
@@ -30277,7 +30277,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 671,
         "column": 5
       },
@@ -30301,7 +30301,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 686,
         "column": 5
       },
@@ -30325,7 +30325,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 701,
         "column": 5
       },
@@ -30349,7 +30349,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 719,
         "column": 5
       },
@@ -30373,7 +30373,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 740,
         "column": 5
       },
@@ -30397,7 +30397,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 760,
         "column": 5
       },
@@ -30421,7 +30421,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 775,
         "column": 5
       },
@@ -30445,7 +30445,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 790,
         "column": 5
       },
@@ -30469,7 +30469,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 805,
         "column": 5
       },
@@ -30493,7 +30493,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 822,
         "column": 5
       },
@@ -30517,7 +30517,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 837,
         "column": 5
       },
@@ -30541,7 +30541,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 852,
         "column": 5
       },
@@ -30565,7 +30565,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 868,
         "column": 5
       },
@@ -30589,7 +30589,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 885,
         "column": 5
       },
@@ -30613,7 +30613,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 900,
         "column": 5
       },
@@ -30637,7 +30637,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 915,
         "column": 5
       },
@@ -30661,7 +30661,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 930,
         "column": 5
       },
@@ -30685,7 +30685,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 945,
         "column": 5
       },
@@ -30709,7 +30709,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 960,
         "column": 5
       },
@@ -30733,7 +30733,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 975,
         "column": 5
       },
@@ -30757,7 +30757,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 990,
         "column": 5
       },
@@ -30781,7 +30781,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 1005,
         "column": 5
       },
@@ -30805,7 +30805,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 1020,
         "column": 5
       },
@@ -30829,7 +30829,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 1035,
         "column": 5
       },
@@ -30853,7 +30853,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 1050,
         "column": 5
       },
@@ -30877,7 +30877,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 1065,
         "column": 5
       },
@@ -30901,7 +30901,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 1080,
         "column": 5
       },
@@ -30925,7 +30925,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 1099,
         "column": 5
       },
@@ -30949,7 +30949,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 1114,
         "column": 5
       },
@@ -30973,7 +30973,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 1134,
         "column": 5
       },
@@ -30997,7 +30997,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 1158,
         "column": 5
       },
@@ -31021,7 +31021,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 1173,
         "column": 5
       },
@@ -31045,7 +31045,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 1188,
         "column": 5
       },
@@ -31069,7 +31069,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 1205,
         "column": 5
       },
@@ -31093,7 +31093,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 1220,
         "column": 5
       },
@@ -31117,7 +31117,7 @@ var gameData = {
       },
       "children": [],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\monsters.mwl",
         "line": 1237,
         "column": 5
       },
@@ -31144,7 +31144,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\progression-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\progression-rules.mwl",
                 "line": 12,
                 "column": 13
               },
@@ -31158,7 +31158,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\progression-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\progression-rules.mwl",
                 "line": 17,
                 "column": 13
               },
@@ -31166,7 +31166,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\progression-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\progression-rules.mwl",
             "line": 7,
             "column": 9
           },
@@ -31174,7 +31174,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\progression-rules.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\progression-rules.mwl",
         "line": 3,
         "column": 5
       },
@@ -31201,7 +31201,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\resistance-rules.mwl",
                 "line": 12,
                 "column": 13
               },
@@ -31215,7 +31215,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\resistance-rules.mwl",
                 "line": 17,
                 "column": 13
               },
@@ -31229,7 +31229,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\resistance-rules.mwl",
                 "line": 22,
                 "column": 13
               },
@@ -31237,7 +31237,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\resistance-rules.mwl",
             "line": 7,
             "column": 9
           },
@@ -31260,7 +31260,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\resistance-rules.mwl",
                 "line": 47,
                 "column": 13
               },
@@ -31275,7 +31275,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\resistance-rules.mwl",
                 "line": 48,
                 "column": 13
               },
@@ -31290,7 +31290,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\resistance-rules.mwl",
                 "line": 49,
                 "column": 13
               },
@@ -31305,7 +31305,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\resistance-rules.mwl",
                 "line": 50,
                 "column": 13
               },
@@ -31320,7 +31320,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\resistance-rules.mwl",
                 "line": 51,
                 "column": 13
               },
@@ -31335,7 +31335,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\resistance-rules.mwl",
                 "line": 52,
                 "column": 13
               },
@@ -31350,7 +31350,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\resistance-rules.mwl",
                 "line": 53,
                 "column": 13
               },
@@ -31365,7 +31365,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\resistance-rules.mwl",
                 "line": 54,
                 "column": 13
               },
@@ -31380,7 +31380,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\resistance-rules.mwl",
                 "line": 55,
                 "column": 13
               },
@@ -31395,7 +31395,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\resistance-rules.mwl",
                 "line": 56,
                 "column": 13
               },
@@ -31410,7 +31410,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\resistance-rules.mwl",
                 "line": 57,
                 "column": 13
               },
@@ -31425,7 +31425,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\resistance-rules.mwl",
                 "line": 58,
                 "column": 13
               },
@@ -31440,7 +31440,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\resistance-rules.mwl",
                 "line": 59,
                 "column": 13
               },
@@ -31455,7 +31455,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\resistance-rules.mwl",
                 "line": 65,
                 "column": 13
               },
@@ -31470,7 +31470,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\resistance-rules.mwl",
                 "line": 66,
                 "column": 13
               },
@@ -31485,7 +31485,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\resistance-rules.mwl",
                 "line": 67,
                 "column": 13
               },
@@ -31500,7 +31500,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\resistance-rules.mwl",
                 "line": 68,
                 "column": 13
               },
@@ -31515,7 +31515,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\resistance-rules.mwl",
                 "line": 69,
                 "column": 13
               },
@@ -31530,7 +31530,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\resistance-rules.mwl",
                 "line": 70,
                 "column": 13
               },
@@ -31545,7 +31545,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\resistance-rules.mwl",
                 "line": 71,
                 "column": 13
               },
@@ -31560,7 +31560,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\resistance-rules.mwl",
                 "line": 72,
                 "column": 13
               },
@@ -31575,7 +31575,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\resistance-rules.mwl",
                 "line": 73,
                 "column": 13
               },
@@ -31590,7 +31590,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\resistance-rules.mwl",
                 "line": 74,
                 "column": 13
               },
@@ -31598,7 +31598,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\resistance-rules.mwl",
             "line": 42,
             "column": 9
           },
@@ -31606,7 +31606,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\resistance-rules.mwl",
         "line": 3,
         "column": 5
       },
@@ -31627,7 +31627,7 @@ var gameData = {
           },
           "children": [],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\rings.mwl",
             "line": 7,
             "column": 9
           },
@@ -31651,7 +31651,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\rings.mwl",
                 "line": 27,
                 "column": 13
               },
@@ -31659,7 +31659,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\rings.mwl",
             "line": 19,
             "column": 9
           },
@@ -31683,7 +31683,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\rings.mwl",
                 "line": 42,
                 "column": 13
               },
@@ -31691,7 +31691,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\rings.mwl",
             "line": 34,
             "column": 9
           },
@@ -31715,7 +31715,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\rings.mwl",
                 "line": 57,
                 "column": 13
               },
@@ -31723,7 +31723,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\rings.mwl",
             "line": 49,
             "column": 9
           },
@@ -31747,7 +31747,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\rings.mwl",
                 "line": 72,
                 "column": 13
               },
@@ -31755,7 +31755,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\rings.mwl",
             "line": 64,
             "column": 9
           },
@@ -31779,7 +31779,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\rings.mwl",
                 "line": 87,
                 "column": 13
               },
@@ -31787,7 +31787,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\rings.mwl",
             "line": 79,
             "column": 9
           },
@@ -31811,7 +31811,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\rings.mwl",
                 "line": 102,
                 "column": 13
               },
@@ -31819,7 +31819,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\rings.mwl",
             "line": 94,
             "column": 9
           },
@@ -31843,7 +31843,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\rings.mwl",
                 "line": 117,
                 "column": 13
               },
@@ -31851,7 +31851,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\rings.mwl",
             "line": 109,
             "column": 9
           },
@@ -31875,7 +31875,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\rings.mwl",
                 "line": 132,
                 "column": 13
               },
@@ -31883,7 +31883,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\rings.mwl",
             "line": 124,
             "column": 9
           },
@@ -31907,7 +31907,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\rings.mwl",
                 "line": 147,
                 "column": 13
               },
@@ -31915,7 +31915,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\rings.mwl",
             "line": 139,
             "column": 9
           },
@@ -31939,7 +31939,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\rings.mwl",
                 "line": 162,
                 "column": 13
               },
@@ -31947,7 +31947,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\rings.mwl",
             "line": 154,
             "column": 9
           },
@@ -31971,7 +31971,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\rings.mwl",
                 "line": 177,
                 "column": 13
               },
@@ -31979,7 +31979,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\rings.mwl",
             "line": 169,
             "column": 9
           },
@@ -32003,7 +32003,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\rings.mwl",
                 "line": 192,
                 "column": 13
               },
@@ -32011,7 +32011,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\rings.mwl",
             "line": 184,
             "column": 9
           },
@@ -32019,7 +32019,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\rings.mwl",
         "line": 3,
         "column": 5
       },
@@ -32047,7 +32047,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
                 "line": 13,
                 "column": 13
               },
@@ -32061,7 +32061,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
                 "line": 18,
                 "column": 13
               },
@@ -32075,7 +32075,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
                 "line": 23,
                 "column": 13
               },
@@ -32089,7 +32089,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
                 "line": 28,
                 "column": 13
               },
@@ -32103,7 +32103,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
                 "line": 33,
                 "column": 13
               },
@@ -32117,7 +32117,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
                 "line": 38,
                 "column": 13
               },
@@ -32131,7 +32131,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
                 "line": 43,
                 "column": 13
               },
@@ -32139,7 +32139,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
             "line": 7,
             "column": 9
           },
@@ -32166,7 +32166,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
                 "line": 56,
                 "column": 13
               },
@@ -32185,7 +32185,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
                 "line": 66,
                 "column": 13
               },
@@ -32204,7 +32204,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
                 "line": 76,
                 "column": 13
               },
@@ -32223,7 +32223,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
                 "line": 86,
                 "column": 13
               },
@@ -32242,7 +32242,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
                 "line": 96,
                 "column": 13
               },
@@ -32250,7 +32250,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
             "line": 50,
             "column": 9
           },
@@ -32271,7 +32271,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
                 "line": 113,
                 "column": 13
               },
@@ -32279,7 +32279,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
             "line": 108,
             "column": 9
           },
@@ -32300,7 +32300,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
                 "line": 125,
                 "column": 13
               },
@@ -32314,7 +32314,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
                 "line": 130,
                 "column": 13
               },
@@ -32328,7 +32328,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
                 "line": 135,
                 "column": 13
               },
@@ -32342,7 +32342,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
                 "line": 140,
                 "column": 13
               },
@@ -32350,7 +32350,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
             "line": 120,
             "column": 9
           },
@@ -32371,7 +32371,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
                 "line": 152,
                 "column": 13
               },
@@ -32379,7 +32379,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
             "line": 147,
             "column": 9
           },
@@ -32401,7 +32401,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
                 "line": 165,
                 "column": 13
               },
@@ -32415,7 +32415,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
                 "line": 170,
                 "column": 13
               },
@@ -32429,7 +32429,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
                 "line": 175,
                 "column": 13
               },
@@ -32443,7 +32443,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
                 "line": 180,
                 "column": 13
               },
@@ -32457,7 +32457,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
                 "line": 185,
                 "column": 13
               },
@@ -32471,7 +32471,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
                 "line": 190,
                 "column": 13
               },
@@ -32485,7 +32485,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
                 "line": 195,
                 "column": 13
               },
@@ -32499,7 +32499,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
                 "line": 200,
                 "column": 13
               },
@@ -32513,7 +32513,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
                 "line": 205,
                 "column": 13
               },
@@ -32527,15 +32527,71 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
                 "line": 210,
+                "column": 13
+              },
+              "gettext": []
+            },
+            {
+              "tag": "row",
+              "attributes": {
+                "depth": "11",
+                "chances": "12,0,0,5,5,3"
+              },
+              "children": [],
+              "location": {
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
+                "line": 220,
+                "column": 13
+              },
+              "gettext": []
+            },
+            {
+              "tag": "row",
+              "attributes": {
+                "depth": "16",
+                "chances": "0,0,18,3,3,1"
+              },
+              "children": [],
+              "location": {
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
+                "line": 225,
+                "column": 13
+              },
+              "gettext": []
+            },
+            {
+              "tag": "row",
+              "attributes": {
+                "depth": "21",
+                "chances": "20,0,0,0,0,0"
+              },
+              "children": [],
+              "location": {
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
+                "line": 230,
+                "column": 13
+              },
+              "gettext": []
+            },
+            {
+              "tag": "row",
+              "attributes": {
+                "depth": "22",
+                "chances": "15,4,0,2,3,2"
+              },
+              "children": [],
+              "location": {
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
+                "line": 235,
                 "column": 13
               },
               "gettext": []
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
             "line": 159,
             "column": 9
           },
@@ -32543,7 +32599,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\room-rules.mwl",
         "line": 3,
         "column": 5
       },
@@ -32570,7 +32626,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\runestones.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\runestones.mwl",
                 "line": 12,
                 "column": 13
               },
@@ -32584,7 +32640,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\runestones.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\runestones.mwl",
                 "line": 17,
                 "column": 13
               },
@@ -32592,7 +32648,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\runestones.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\runestones.mwl",
             "line": 7,
             "column": 9
           },
@@ -32600,7 +32656,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\runestones.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\runestones.mwl",
         "line": 3,
         "column": 5
       },
@@ -32629,7 +32685,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\scenario-rules.mwl",
                 "line": 12,
                 "column": 13
               },
@@ -32645,7 +32701,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\scenario-rules.mwl",
                 "line": 19,
                 "column": 13
               },
@@ -32661,7 +32717,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\scenario-rules.mwl",
                 "line": 26,
                 "column": 13
               },
@@ -32677,7 +32733,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\scenario-rules.mwl",
                 "line": 33,
                 "column": 13
               },
@@ -32693,7 +32749,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\scenario-rules.mwl",
                 "line": 40,
                 "column": 13
               },
@@ -32701,7 +32757,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\scenario-rules.mwl",
             "line": 7,
             "column": 9
           },
@@ -32724,7 +32780,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\scenario-rules.mwl",
                 "line": 54,
                 "column": 13
               },
@@ -32740,7 +32796,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\scenario-rules.mwl",
                 "line": 61,
                 "column": 13
               },
@@ -32756,7 +32812,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\scenario-rules.mwl",
                 "line": 68,
                 "column": 13
               },
@@ -32772,7 +32828,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\scenario-rules.mwl",
                 "line": 75,
                 "column": 13
               },
@@ -32788,7 +32844,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\scenario-rules.mwl",
                 "line": 82,
                 "column": 13
               },
@@ -32796,7 +32852,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\scenario-rules.mwl",
             "line": 49,
             "column": 9
           },
@@ -32819,7 +32875,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\scenario-rules.mwl",
                 "line": 97,
                 "column": 13
               },
@@ -32834,7 +32890,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\scenario-rules.mwl",
                 "line": 103,
                 "column": 13
               },
@@ -32849,7 +32905,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\scenario-rules.mwl",
                 "line": 109,
                 "column": 13
               },
@@ -32864,7 +32920,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\scenario-rules.mwl",
                 "line": 115,
                 "column": 13
               },
@@ -32879,7 +32935,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\scenario-rules.mwl",
                 "line": 121,
                 "column": 13
               },
@@ -32887,7 +32943,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\scenario-rules.mwl",
             "line": 91,
             "column": 9
           },
@@ -32910,7 +32966,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\scenario-rules.mwl",
                 "line": 134,
                 "column": 13
               },
@@ -32926,7 +32982,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\scenario-rules.mwl",
                 "line": 141,
                 "column": 13
               },
@@ -32942,7 +32998,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\scenario-rules.mwl",
                 "line": 148,
                 "column": 13
               },
@@ -32958,7 +33014,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\scenario-rules.mwl",
                 "line": 155,
                 "column": 13
               },
@@ -32966,7 +33022,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\scenario-rules.mwl",
             "line": 129,
             "column": 9
           },
@@ -32974,7 +33030,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\scenario-rules.mwl",
         "line": 3,
         "column": 5
       },
@@ -33001,7 +33057,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\seeds.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\seeds.mwl",
                 "line": 12,
                 "column": 13
               },
@@ -33015,7 +33071,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\seeds.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\seeds.mwl",
                 "line": 17,
                 "column": 13
               },
@@ -33023,7 +33079,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\seeds.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\seeds.mwl",
             "line": 7,
             "column": 9
           },
@@ -33031,7 +33087,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\seeds.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\seeds.mwl",
         "line": 3,
         "column": 5
       },
@@ -33061,7 +33117,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 11,
                 "column": 13
               },
@@ -33069,7 +33125,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
             "line": 7,
             "column": 9
           },
@@ -33090,7 +33146,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 19,
                 "column": 13
               },
@@ -33104,7 +33160,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 20,
                 "column": 13
               },
@@ -33118,7 +33174,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 21,
                 "column": 13
               },
@@ -33132,7 +33188,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 22,
                 "column": 13
               },
@@ -33146,7 +33202,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 23,
                 "column": 13
               },
@@ -33160,7 +33216,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 24,
                 "column": 13
               },
@@ -33174,7 +33230,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 26,
                 "column": 13
               },
@@ -33188,7 +33244,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 27,
                 "column": 13
               },
@@ -33202,7 +33258,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 28,
                 "column": 13
               },
@@ -33216,7 +33272,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 29,
                 "column": 13
               },
@@ -33230,7 +33286,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 30,
                 "column": 13
               },
@@ -33244,7 +33300,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 31,
                 "column": 13
               },
@@ -33258,7 +33314,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 32,
                 "column": 13
               },
@@ -33272,7 +33328,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 33,
                 "column": 13
               },
@@ -33286,7 +33342,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 35,
                 "column": 13
               },
@@ -33300,7 +33356,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 36,
                 "column": 13
               },
@@ -33314,7 +33370,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 37,
                 "column": 13
               },
@@ -33328,7 +33384,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 38,
                 "column": 13
               },
@@ -33342,7 +33398,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 39,
                 "column": 13
               },
@@ -33356,7 +33412,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 40,
                 "column": 13
               },
@@ -33370,7 +33426,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 41,
                 "column": 13
               },
@@ -33384,7 +33440,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 42,
                 "column": 13
               },
@@ -33398,7 +33454,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 43,
                 "column": 13
               },
@@ -33412,7 +33468,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 44,
                 "column": 13
               },
@@ -33426,7 +33482,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 46,
                 "column": 13
               },
@@ -33440,7 +33496,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 47,
                 "column": 13
               },
@@ -33454,7 +33510,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 48,
                 "column": 13
               },
@@ -33468,7 +33524,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 49,
                 "column": 13
               },
@@ -33482,7 +33538,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 50,
                 "column": 13
               },
@@ -33496,7 +33552,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 51,
                 "column": 13
               },
@@ -33510,7 +33566,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 52,
                 "column": 13
               },
@@ -33524,7 +33580,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 53,
                 "column": 13
               },
@@ -33538,7 +33594,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 54,
                 "column": 13
               },
@@ -33552,7 +33608,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 55,
                 "column": 13
               },
@@ -33566,7 +33622,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 56,
                 "column": 13
               },
@@ -33580,7 +33636,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 57,
                 "column": 13
               },
@@ -33594,7 +33650,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 58,
                 "column": 13
               },
@@ -33608,7 +33664,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 59,
                 "column": 13
               },
@@ -33622,7 +33678,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 60,
                 "column": 13
               },
@@ -33636,7 +33692,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 61,
                 "column": 13
               },
@@ -33650,7 +33706,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 62,
                 "column": 13
               },
@@ -33664,7 +33720,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 63,
                 "column": 13
               },
@@ -33678,7 +33734,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 64,
                 "column": 13
               },
@@ -33692,7 +33748,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 65,
                 "column": 13
               },
@@ -33706,7 +33762,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 66,
                 "column": 13
               },
@@ -33720,7 +33776,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 67,
                 "column": 13
               },
@@ -33734,7 +33790,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 68,
                 "column": 13
               },
@@ -33748,7 +33804,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 69,
                 "column": 13
               },
@@ -33762,7 +33818,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 70,
                 "column": 13
               },
@@ -33776,7 +33832,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 71,
                 "column": 13
               },
@@ -33790,7 +33846,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 72,
                 "column": 13
               },
@@ -33804,7 +33860,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 73,
                 "column": 13
               },
@@ -33818,7 +33874,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 74,
                 "column": 13
               },
@@ -33832,7 +33888,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 75,
                 "column": 13
               },
@@ -33846,7 +33902,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 76,
                 "column": 13
               },
@@ -33860,7 +33916,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 77,
                 "column": 13
               },
@@ -33874,7 +33930,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 78,
                 "column": 13
               },
@@ -33888,7 +33944,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 79,
                 "column": 13
               },
@@ -33902,7 +33958,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 80,
                 "column": 13
               },
@@ -33916,7 +33972,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 81,
                 "column": 13
               },
@@ -33930,7 +33986,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 82,
                 "column": 13
               },
@@ -33944,7 +34000,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 83,
                 "column": 13
               },
@@ -33958,7 +34014,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 84,
                 "column": 13
               },
@@ -33972,7 +34028,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 85,
                 "column": 13
               },
@@ -33986,7 +34042,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 86,
                 "column": 13
               },
@@ -34000,7 +34056,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 87,
                 "column": 13
               },
@@ -34014,7 +34070,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 88,
                 "column": 13
               },
@@ -34028,7 +34084,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 89,
                 "column": 13
               },
@@ -34042,7 +34098,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 90,
                 "column": 13
               },
@@ -34056,7 +34112,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 91,
                 "column": 13
               },
@@ -34070,7 +34126,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 92,
                 "column": 13
               },
@@ -34084,7 +34140,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 93,
                 "column": 13
               },
@@ -34098,7 +34154,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 94,
                 "column": 13
               },
@@ -34112,7 +34168,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
                 "line": 95,
                 "column": 13
               },
@@ -34120,7 +34176,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
             "line": 15,
             "column": 9
           },
@@ -34128,7 +34184,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\shop-rules.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\shop-rules.mwl",
         "line": 3,
         "column": 5
       },
@@ -34155,7 +34211,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
                 "line": 12,
                 "column": 13
               },
@@ -34163,7 +34219,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
             "line": 7,
             "column": 9
           },
@@ -34185,7 +34241,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
                 "line": 25,
                 "column": 13
               },
@@ -34199,7 +34255,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
                 "line": 30,
                 "column": 13
               },
@@ -34213,7 +34269,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
                 "line": 35,
                 "column": 13
               },
@@ -34227,7 +34283,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
                 "line": 40,
                 "column": 13
               },
@@ -34241,7 +34297,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
                 "line": 45,
                 "column": 13
               },
@@ -34255,7 +34311,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
                 "line": 50,
                 "column": 13
               },
@@ -34269,7 +34325,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
                 "line": 55,
                 "column": 13
               },
@@ -34283,7 +34339,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
                 "line": 60,
                 "column": 13
               },
@@ -34297,7 +34353,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
                 "line": 65,
                 "column": 13
               },
@@ -34311,7 +34367,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
                 "line": 70,
                 "column": 13
               },
@@ -34325,7 +34381,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
                 "line": 79,
                 "column": 13
               },
@@ -34339,7 +34395,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
                 "line": 86,
                 "column": 13
               },
@@ -34347,7 +34403,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
             "line": 19,
             "column": 9
           },
@@ -34372,7 +34428,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
                 "line": 99,
                 "column": 13
               },
@@ -34389,7 +34445,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
                 "line": 107,
                 "column": 13
               },
@@ -34406,7 +34462,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
                 "line": 115,
                 "column": 13
               },
@@ -34423,25 +34479,8 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
                 "line": 123,
-                "column": 13
-              },
-              "gettext": []
-            },
-            {
-              "tag": "row",
-              "attributes": {
-                "id": "warpbeacon",
-                "class": "mage",
-                "charge": "35",
-                "targeting": "beacon",
-                "talents": "telefrag,remote_beacon,longrange_warp"
-              },
-              "children": [],
-              "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-                "line": 131,
                 "column": 13
               },
               "gettext": []
@@ -34457,8 +34496,25 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-                "line": 139,
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
+                "line": 134,
+                "column": 13
+              },
+              "gettext": []
+            },
+            {
+              "tag": "row",
+              "attributes": {
+                "id": "warpbeacon",
+                "class": "mage",
+                "charge": "35",
+                "targeting": "beacon",
+                "talents": "telefrag,remote_beacon,longrange_warp"
+              },
+              "children": [],
+              "location": {
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
+                "line": 142,
                 "column": 13
               },
               "gettext": []
@@ -34474,8 +34530,8 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-                "line": 147,
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
+                "line": 150,
                 "column": 13
               },
               "gettext": []
@@ -34491,8 +34547,8 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-                "line": 155,
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
+                "line": 158,
                 "column": 13
               },
               "gettext": []
@@ -34508,8 +34564,8 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-                "line": 163,
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
+                "line": 166,
                 "column": 13
               },
               "gettext": []
@@ -34525,8 +34581,8 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-                "line": 171,
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
+                "line": 174,
                 "column": 13
               },
               "gettext": []
@@ -34542,8 +34598,8 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-                "line": 179,
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
+                "line": 182,
                 "column": 13
               },
               "gettext": []
@@ -34559,8 +34615,8 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-                "line": 187,
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
+                "line": 190,
                 "column": 13
               },
               "gettext": []
@@ -34576,8 +34632,8 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-                "line": 195,
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
+                "line": 198,
                 "column": 13
               },
               "gettext": []
@@ -34593,8 +34649,8 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-                "line": 203,
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
+                "line": 206,
                 "column": 13
               },
               "gettext": []
@@ -34610,8 +34666,8 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-                "line": 211,
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
+                "line": 214,
                 "column": 13
               },
               "gettext": []
@@ -34627,8 +34683,8 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-                "line": 219,
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
+                "line": 222,
                 "column": 13
               },
               "gettext": []
@@ -34644,8 +34700,8 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-                "line": 227,
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
+                "line": 230,
                 "column": 13
               },
               "gettext": []
@@ -34661,8 +34717,8 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-                "line": 235,
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
+                "line": 238,
                 "column": 13
               },
               "gettext": []
@@ -34678,15 +34734,15 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-                "line": 243,
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
+                "line": 246,
                 "column": 13
               },
               "gettext": []
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
             "line": 93,
             "column": 9
           },
@@ -34709,8 +34765,8 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-                "line": 259,
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
+                "line": 262,
                 "column": 13
               },
               "gettext": []
@@ -34724,8 +34780,8 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-                "line": 265,
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
+                "line": 268,
                 "column": 13
               },
               "gettext": []
@@ -34739,8 +34795,8 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-                "line": 271,
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
+                "line": 274,
                 "column": 13
               },
               "gettext": []
@@ -34754,8 +34810,8 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-                "line": 277,
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
+                "line": 280,
                 "column": 13
               },
               "gettext": []
@@ -34769,8 +34825,8 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-                "line": 283,
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
+                "line": 286,
                 "column": 13
               },
               "gettext": []
@@ -34784,8 +34840,8 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-                "line": 289,
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
+                "line": 292,
                 "column": 13
               },
               "gettext": []
@@ -34799,8 +34855,8 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-                "line": 295,
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
+                "line": 298,
                 "column": 13
               },
               "gettext": []
@@ -34814,8 +34870,8 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-                "line": 301,
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
+                "line": 304,
                 "column": 13
               },
               "gettext": []
@@ -34829,8 +34885,8 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-                "line": 307,
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
+                "line": 310,
                 "column": 13
               },
               "gettext": []
@@ -34844,8 +34900,8 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-                "line": 313,
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
+                "line": 316,
                 "column": 13
               },
               "gettext": []
@@ -34859,8 +34915,8 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-                "line": 322,
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
+                "line": 325,
                 "column": 13
               },
               "gettext": []
@@ -34874,8 +34930,8 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-                "line": 331,
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
+                "line": 334,
                 "column": 13
               },
               "gettext": []
@@ -34889,23 +34945,23 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-                "line": 339,
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
+                "line": 342,
                 "column": 13
               },
               "gettext": []
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-            "line": 253,
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
+            "line": 256,
             "column": 9
           },
           "gettext": []
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\talent-rules.mwl",
         "line": 3,
         "column": 5
       },
@@ -34934,7 +34990,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 12,
                 "column": 13
               },
@@ -34950,7 +35006,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 19,
                 "column": 13
               },
@@ -34966,7 +35022,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 26,
                 "column": 13
               },
@@ -34982,7 +35038,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 33,
                 "column": 13
               },
@@ -34998,7 +35054,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 40,
                 "column": 13
               },
@@ -35014,7 +35070,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 47,
                 "column": 13
               },
@@ -35030,7 +35086,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 54,
                 "column": 13
               },
@@ -35046,7 +35102,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 61,
                 "column": 13
               },
@@ -35062,7 +35118,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 68,
                 "column": 13
               },
@@ -35078,7 +35134,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 75,
                 "column": 13
               },
@@ -35094,7 +35150,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 82,
                 "column": 13
               },
@@ -35110,7 +35166,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 89,
                 "column": 13
               },
@@ -35126,7 +35182,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 96,
                 "column": 13
               },
@@ -35134,7 +35190,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
             "line": 7,
             "column": 9
           },
@@ -35156,7 +35212,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 109,
                 "column": 13
               },
@@ -35171,7 +35227,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 110,
                 "column": 13
               },
@@ -35179,7 +35235,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
             "line": 105,
             "column": 9
           },
@@ -35202,7 +35258,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 118,
                 "column": 13
               },
@@ -35218,7 +35274,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 119,
                 "column": 13
               },
@@ -35234,7 +35290,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 120,
                 "column": 13
               },
@@ -35242,7 +35298,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
             "line": 114,
             "column": 9
           },
@@ -35266,7 +35322,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 130,
                 "column": 13
               },
@@ -35283,7 +35339,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 131,
                 "column": 13
               },
@@ -35300,7 +35356,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 132,
                 "column": 13
               },
@@ -35317,7 +35373,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 133,
                 "column": 13
               },
@@ -35334,7 +35390,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 134,
                 "column": 13
               },
@@ -35351,7 +35407,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 135,
                 "column": 13
               },
@@ -35368,7 +35424,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 136,
                 "column": 13
               },
@@ -35376,7 +35432,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
             "line": 126,
             "column": 9
           },
@@ -35400,7 +35456,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 144,
                 "column": 13
               },
@@ -35417,7 +35473,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 145,
                 "column": 13
               },
@@ -35434,7 +35490,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 146,
                 "column": 13
               },
@@ -35451,7 +35507,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 147,
                 "column": 13
               },
@@ -35468,7 +35524,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 148,
                 "column": 13
               },
@@ -35485,7 +35541,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 149,
                 "column": 13
               },
@@ -35493,7 +35549,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
             "line": 140,
             "column": 9
           },
@@ -35519,7 +35575,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 157,
                 "column": 13
               },
@@ -35538,7 +35594,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 158,
                 "column": 13
               },
@@ -35557,7 +35613,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 159,
                 "column": 13
               },
@@ -35565,7 +35621,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
             "line": 153,
             "column": 9
           },
@@ -35591,7 +35647,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 167,
                 "column": 13
               },
@@ -35610,7 +35666,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 168,
                 "column": 13
               },
@@ -35629,7 +35685,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
                 "line": 169,
                 "column": 13
               },
@@ -35637,7 +35693,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
             "line": 163,
             "column": 9
           },
@@ -35645,7 +35701,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\wands.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\wands.mwl",
         "line": 3,
         "column": 5
       },
@@ -35672,7 +35728,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\weapon-decks.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\weapon-decks.mwl",
                 "line": 12,
                 "column": 13
               },
@@ -35686,7 +35742,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\weapon-decks.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\weapon-decks.mwl",
                 "line": 17,
                 "column": 13
               },
@@ -35694,7 +35750,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\weapon-decks.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\weapon-decks.mwl",
             "line": 7,
             "column": 9
           },
@@ -35715,7 +35771,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\weapon-decks.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\weapon-decks.mwl",
                 "line": 29,
                 "column": 13
               },
@@ -35729,7 +35785,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\weapon-decks.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\weapon-decks.mwl",
                 "line": 34,
                 "column": 13
               },
@@ -35737,7 +35793,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\weapon-decks.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\weapon-decks.mwl",
             "line": 24,
             "column": 9
           },
@@ -35758,7 +35814,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\weapon-decks.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\weapon-decks.mwl",
                 "line": 46,
                 "column": 13
               },
@@ -35772,7 +35828,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\weapon-decks.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\weapon-decks.mwl",
                 "line": 51,
                 "column": 13
               },
@@ -35780,7 +35836,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\weapon-decks.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\weapon-decks.mwl",
             "line": 41,
             "column": 9
           },
@@ -35801,7 +35857,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\weapon-decks.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\weapon-decks.mwl",
                 "line": 63,
                 "column": 13
               },
@@ -35815,7 +35871,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\weapon-decks.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\weapon-decks.mwl",
                 "line": 68,
                 "column": 13
               },
@@ -35823,7 +35879,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\weapon-decks.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\weapon-decks.mwl",
             "line": 58,
             "column": 9
           },
@@ -35844,7 +35900,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\weapon-decks.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\weapon-decks.mwl",
                 "line": 80,
                 "column": 13
               },
@@ -35858,7 +35914,7 @@ var gameData = {
               },
               "children": [],
               "location": {
-                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\weapon-decks.mwl",
+                "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\weapon-decks.mwl",
                 "line": 85,
                 "column": 13
               },
@@ -35866,7 +35922,7 @@ var gameData = {
             }
           ],
           "location": {
-            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\weapon-decks.mwl",
+            "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\weapon-decks.mwl",
             "line": 75,
             "column": 9
           },
@@ -35874,7 +35930,7 @@ var gameData = {
         }
       ],
       "location": {
-        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\weapon-decks.mwl",
+        "file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\.claude\\worktrees\\agent-ab1cfc5dc4e67973f\\src\\content\\weapon-decks.mwl",
         "line": 3,
         "column": 5
       },

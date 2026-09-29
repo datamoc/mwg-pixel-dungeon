@@ -4,7 +4,7 @@ import { planDisintegration } from '../simulation/disintegration';
 import { preservationChance } from '../talentEffects';
 import { SOLID } from '../dungeonConstants';
 import type { Creature, Step } from '../combat';
-import { doomDamage } from '../combat';
+import type { CharacterDamageOptions } from './bombEffects';
 
 /** Wand identity and pure shared rules.
  *
@@ -140,12 +140,11 @@ export interface DisintegrationWandScene {
 	burnFireTerrain(x: number, y: number): void;
 	talentRank(id: string): number;
 	grantHeroShield(amount: number, cap: number): number;
-	/** The scene's shared `Char.damage()` dispatch (`applyCharacterDamage`) for an already Doom-scaled roll: it carries the
-	 * `MirrorImage`/`PrismaticImage` fade hooks, the floater and the wake-up; the kill stays with this module's tail.
-	 * Returns true when a mirror/prismatic image faded on the hit (this hit's post-effects are skipped). */
-	applyWandDamage(target: Creature, damage: number): boolean;
+	fadeMirrorOnDamage(target: Creature, damage: number): boolean;
+	/** The shared scene-backed `Char.damage()` dispatch (`panelsSingleUse`), reached through
+	 * the scene binding below - Doom, shields, floater and death all live inside it now. */
+	applyCharacterDamage(target: Creature, damage: number, options: CharacterDamageOptions): boolean;
 	say(line: string, level?: 'info' | 'positive' | 'negative' | 'warning'): void;
-	kill(target: Creature): void;
 	spendHeroTurn(turnCost: number): void;
 	getAttackTurnCostMod(): number;
 	message(target: Creature, damage: number): string;
@@ -186,11 +185,19 @@ export function useDisintegrationWand(scene: DisintegrationWandScene, target: St
 	for (const index of plan.victimCells) {
 		const victim = creatures[index];
 		if (!victim || victim.hp <= 0) continue;
-		const damage = doomDamage(Random.normalRange(2 + plan.effectiveLevel, 8 + 4 * plan.effectiveLevel), victim);
-		//`WandOfDisintegration.onZap()` -> `ch.damage(dmg, this)`: the shared dispatch, replacing the
-		//hand-rolled `hp -=`, mirror-fade check, floater and wake-up this loop used to carry.
-		if (scene.applyWandDamage(victim, damage)) continue;
+		//`MirrorImage.damage()` fades on the first positive damage event regardless of
+		//lethality - event-based, so the prelude stays ahead of the dispatch like every
+		//other wand seam's own.
+		const damage = Random.normalRange(2 + plan.effectiveLevel, 8 + 4 * plan.effectiveLevel);
+		if (scene.fadeMirrorOnDamage(victim, damage)) continue;
+		//No wand roll subtracts DR here, so the shared `Char.damage()` dispatch takes the
+		//hit with `pierceArmor`; it also applies Aura (Java's zap src is the wand itself -
+		//a non-`Char` - so `damage()`'s aura clause runs), Doom (this seam used to roll it
+		//itself), defender curves, shields, the floater, the wake and death - including
+		//`kill()`'s prismatic-image fade backstop, which replaces this loop's old
+		//`!victim.isAlly` kill guard that left a lethally zapped ally lingering at 0 HP
+		//(Java lets any lethal `Char.damage()` kill).
+		scene.applyCharacterDamage(victim, damage, { pierceArmor: true, cause: 'foe' });
 		scene.say(scene.message(victim, damage), 'positive');
-		if (victim.hp <= 0 && !victim.isAlly) scene.kill(victim);
 	}
 }

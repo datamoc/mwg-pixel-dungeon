@@ -16,8 +16,9 @@ import { SpdRandom } from '../spdRng';
 import { MWL_TABLE_ROWS, MWL_TRAIT_NODES } from '../mwlContent';
 
 /**
- * `ConnectionRoom.chances[]`, indexed by depth (1-26); this port covers Sewers (1-5) and
- * Prison (6-10). Note Prison's table zeroes `TunnelRoom`/`BridgeRoom` entirely and is dominated
+ * `ConnectionRoom.chances[]`, indexed by depth (1-26): Sewers rows 1-5, Prison 6-10,
+ * Caves 11-15, City 16-20, depth 21 alone (a repeat of the depth-5 row), Halls 22-26.
+ * Note Prison's table zeroes `TunnelRoom`/`BridgeRoom` entirely and is dominated
  * by `PerimeterRoom` (22) with a little `WalkwayRoom` (3) - the inverse of Sewers, where
  * `PerimeterRoom` is the one class that can never appear.
  */
@@ -42,7 +43,12 @@ export function createConnectionRoom(depth: number, maze: boolean): Room {
 		const r = new Room('mazeConnection');
 		return r;
 	}
-	const table = CHANCES[depth] ?? CHANCES[1];
+	// Nearest row at or below the depth, mirroring `standardRoomChances()` in
+	// `regularLevel.ts` (the MWL table carries anchor rows 1-10, 11, 16, 21, 22,
+	// matching `ConnectionRoom.chances[]`'s own depth bands at tag v3.3.8).
+	const depths = Object.keys(CHANCES).map(Number).sort((x, y) => x - y);
+	let table = CHANCES[depths[0]];
+	for (const anchor of depths) { if (anchor <= depth) table = CHANCES[anchor]; }
 	const ordinal = SpdRandom.chances(table);
 	const kind = KINDS[ordinal] ?? 'tunnel';
 	return new Room('connection', undefined, undefined, undefined, kind);
