@@ -157,6 +157,7 @@ export const npcShopBlacksmithMethods = {
 	/** both layers at once, for the floor-wide reveals where restitching each cell's ring would redo most of the map anyway */
 	restitchAllTiles(this: DungeonScene): void {
 		this.map.setLayerData('terrain', this.terrainFrames());
+		this.refreshVisualGrid();
 		this.wallsMap.setLayerData('walls', this.wallFrames());
 		this.wallsMap.setLayerData('grass', this.foregroundGrassFrames());
 		this.featuresMap?.setLayerData('features', this.featureFrames());

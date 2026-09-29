@@ -1756,7 +1756,7 @@ export const monsterAiMethods = {
 			wasUnsealed: (depth) => this.bossUnsealedDepths.has(depth),
 			makeFloor: (x, y) => this.level.set(x, y, FLOOR),
 			restitch: (x, y) => this.restitchTilesAround(x, y),
-			refreshTerrain: () => this.map?.setLayerData('terrain', this.terrainFrames()),
+			refreshTerrain: () => { this.map?.setLayerData('terrain', this.terrainFrames()); this.refreshVisualGrid(); },
 			refreshWater: () => this.map?.setLayerData('water', this.waterFrames()),
 			placeDoor: (at) => {
 				this.doors.place(at.x, at.y, { open: DOOR, closed: DOOR_CLOSED, startOpen: false });

@@ -343,7 +343,7 @@ export class DungeonScene extends Scene2D {
 	//sprites), so a wall top and its overhanging lip hide whoever is behind them - and layers
 	//within one mwg TileMap all draw under whatever is added to the world after it.
 	waterSurface?: WaterSurface;
-	wallsMap!: TileMap;
+	wallsMap!: TileMap; gridMap?: TileMap; gridApplied = -2;
 	featuresMap?: TileMap;
 	monsterMotion = new Map<TintedSprite, Tweener>();
 	dyingMonsters = new Map<TintedSprite, { x: number; y: number; fade: number; duration: number; playDieClip: boolean }>();
@@ -2529,7 +2529,7 @@ export class DungeonScene extends Scene2D {
 		syncPourAuras(this, dt);
 		this.camera.update(dt);
 		this.map?.cull(this.camera);
-		this.wallsMap?.cull(this.camera);
+		this.wallsMap?.cull(this.camera); this.gridMap?.cull(this.camera);
 		this.featuresMap?.cull(this.camera);
 		this.wallBlocking?.cull(this.camera);
 		this.badgeBanner.update(dt);

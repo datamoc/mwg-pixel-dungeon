@@ -1,3 +1,4 @@
+import { visualGrid } from '../../settings';
 import type { DungeonScene } from '../dungeonScene';
 import { fallenItemStore } from './fallenItems';
 import { FogOfWar } from '../../ui/fogOfWar';
@@ -1154,6 +1155,8 @@ export const deathSaveRefreshMethods = {
 	},
 
 	refresh(this: DungeonScene): void {
+		//A changed `SPDSettings.visualGrid()` applies on the next refresh (Java's `GridTileMap.updateMap()` reads it each redraw).
+		if (this.gridMap && this.gridApplied !== visualGrid()) this.refreshVisualGrid();
 		this.fov.update(this.hero.x, this.hero.y, this.viewRadius());
 		this.shareAllyVision();
 		this.pruneSmokeFromSight(this.fov, this.hero.x, this.hero.y);
