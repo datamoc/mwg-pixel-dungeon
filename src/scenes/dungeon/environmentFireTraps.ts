@@ -42,6 +42,7 @@ import { ignoresCrystalGuardianBeckon } from '../../simulation/crystalSpire';
 import { mwlItemEffectValue } from '../../mwlContent';
 import { applySandalsNaturalismCharge, sandalsNaturalismLevel } from '../../items/sandals';
 import { regrowthMethods } from './regrowth';
+import { gatewayGuardianTrapMethods } from './gatewayGuardianTraps';
 import { DOOR, DOOR_CLOSED, EMBERS, FLOOR, GRASS, HIGH_GRASS, TILE, TRAP, WALL, WATER, modeledTrapTable, sewerTrapTable, type TrapKind } from '../../dungeonConstants';
 import { regionForDepth, type Region } from '../../genericDungeon';
 import { addBuff, applyElementalBacklash, buffBlocked, electricDamageHalved, explosiveTrapBounds, grimTrapDamage, icyBuffImmune, reigniteBuff, rollDamage, setBleeding, type Creature, type GroundItem, type Step } from '../../combat';
@@ -56,14 +57,19 @@ import { spawnTrapSpecks } from '../../ui/effectBursts';
 type UtilityTrap = 'alarm' | 'teleportation' | 'summoning' | 'chilling' | 'ooze' | 'flock' | 'warping' | 'gripping' | 'rockfall' | 'pitfall' | 'frost' | 'geyser' | 'gateway' | 'guardian';
 const UTILITY_TRAPS: ReadonlySet<TrapKind> = new Set<TrapKind>(['alarm', 'teleportation', 'summoning', 'chilling', 'ooze', 'flock', 'warping', 'gripping', 'rockfall', 'pitfall', 'frost', 'geyser', 'gateway', 'guardian']);
 function isUtilityTrap(kind: TrapKind): kind is UtilityTrap { return UTILITY_TRAPS.has(kind); }
-/** The utility traps that aim at no one, so mark no mob for the hazard-assist tracker (Freezing
- * and Ooze are gas/buff producers like the shock and gas traps, and stay marked; Gateway marks
- * only the hunting mob it relocates on the linking trigger, Guardian only beckons). */
-const UNMARKED_TRAPS: ReadonlySet<TrapKind> = new Set<TrapKind>(['alarm', 'teleportation', 'summoning', 'flock', 'warping', 'gripping', 'pitfall', 'gateway', 'guardian']);
+/** The utility traps that get no blanket 3x3 `markHazardArea` after the activation. Alarm, Summoning,
+	* Pitfall and Guardian never touch `HazardAssistTracker` in Java (`v3.3.8`); the rest mark from INSIDE
+	* `activateUtilityTrap`, at the scope and moment their own `activate()` does (R007/R075): Gripping the
+	* non-flying stepper, Rockfall each char of its room/5x5 before the hit, Frost every mob in its
+	* distance-2 flood, Flock every mob already standing in the flood, Ooze non-flying mobs on non-solid
+	* cells, Teleportation/Warping (`WarpingTrap.activate()` calls `super`) only a teleported HUNTING mob,
+	* Gateway only the hunting mob it relocates. Chilling keeps the ordinary 3x3 area mark. */
+const UNMARKED_TRAPS: ReadonlySet<TrapKind> = new Set<TrapKind>(['alarm', 'teleportation', 'summoning', 'flock', 'warping', 'gripping', 'pitfall', 'gateway', 'guardian', 'frost', 'rockfall', 'ooze']);
 function isUnmarkedTrap(kind: TrapKind): boolean { return UNMARKED_TRAPS.has(kind); }
 
 export const environmentFireTrapsMethods = {
 	...regrowthMethods,
+	...gatewayGuardianTrapMethods,
 	...missileThrowConfirmationMethods,
 	scrollEffectsContext(this: DungeonScene): ScrollEffectsContext {
 		return {
@@ -1536,9 +1542,7 @@ export const environmentFireTrapsMethods = {
 
 	/**
 	 * `AlarmTrap`/`TeleportationTrap`/`SummoningTrap.activate()` (tag v3.3.8), shared by the hero and
-	 * mob step paths. Not ported: the alert sound, the scream/light specks, and `TeleportationTrap`'s
-	 * relocation of loose item heaps (Java drops each plain heap around the trap on a random
-	 * respawn cell; here items stay put).
+	 * mob step paths.
 	 * - Alarm: `mob.beckon(pos)` on every mob - wakes it and sends it to the trap cell. `lastSeen` is
 	 *   this port's hunt-to-last-known-cell target, the same field `takeWanderingTurn` paths to.
 	 *   Allies and NPCs are left alone (their AI never used `beckon`'s target here).
@@ -1560,8 +1564,10 @@ export const environmentFireTrapsMethods = {
 				const dr = Math.floor(Random.normalRange(c.armor[0], c.armor[1]) / 2);
 				setBleeding(c, Math.max(0, 2 + Math.floor(this.depth / 2) - dr));
 				reigniteBuff(c, 'cripple');
-			}
-			if (this.fov.isVisible(x, y)) spawnTrapSpecks(this.effectLayer, this.effectBursts, x, y, 'wound');
+				//Java marks a mob stepper (`c instanceof Mob`, non-flying branch only).
+				this.markHazardMob(c);
+				}
+				if (this.fov.isVisible(x, y)) spawnTrapSpecks(this.effectLayer, this.effectBursts, x, y, 'wound');
 		} else if (kind === 'rockfall') {
 			//`RockfallTrap.activate()`: rocks land on every non-solid cell of the trap's room (a 5x5
 			//flood when it is not in one), each char there taking `NormalIntRange(5+d, 10+2d)` minus its
@@ -1591,6 +1597,9 @@ export const environmentFireTrapsMethods = {
 			for (const cell of cells) {
 				const ch = this.creatureAt(cell.x, cell.y);
 				if (!ch || ch.hp <= 0) continue;
+				//`Buff.prolong(HazardAssistTracker)` runs for every Mob in the room BEFORE the hit, so a mob the
+				//rocks kill still counts toward the assist badge (the old post-hoc 3x3 mark skipped it).
+				this.markHazardMob(ch);
 				let damage = Math.max(0, Random.normalRange(5 + this.depth, 10 + this.depth * 2) - Random.normalRange(ch.armor[0], ch.armor[1]));
 				// Challenge.SpectatorFreeze keeps Java's damage/armor rolls but blocks HP damage.
 				if (ch.buffs['spectatorFreeze'] !== undefined) { /* no HP damage */
@@ -1646,7 +1655,12 @@ export const environmentFireTrapsMethods = {
 			const reach = this.pathfinder.distanceMap({ x, y });
 			for (let fy = 0; fy < this.level.height; fy++) for (let fx = 0; fx < this.level.width; fx++) {
 				const steps = reach[this.level.index(fx, fy)] ?? -1;
-				if (steps >= 0 && steps <= 2 && this.level.passable(fx, fy)) this.plantFreeze.seed(fx, fy, 20);
+				if (steps >= 0 && steps <= 2 && this.level.passable(fx, fy)) {
+				this.plantFreeze.seed(fx, fy, 20);
+				//Every mob standing in the flood is marked (Java: `Actor.findChar(i) instanceof Mob`).
+				const floodMob = this.creatureAt(fx, fy);
+				if (floodMob) this.markHazardMob(floodMob);
+				}
 			}
 		} else if (kind === 'chilling') {
 			//`ChillingTrap.activate()`: `Freezing` volume 10 on every non-solid NEIGHBOURS9 cell (the
@@ -1666,7 +1680,10 @@ export const environmentFireTrapsMethods = {
 				if (this.level.inside(x + dx, y + dy) && this.level.passable(x + dx, y + dy)
 					&& this.fov.isVisible(x + dx, y + dy)) spawnTrapSpecks(this.effectLayer, this.effectBursts, x + dx, y + dy, 'ooze');
 				const ch = this.level.passable(x + dx, y + dy) ? this.creatureAt(x + dx, y + dy) : null;
-				if (ch && ch.hp > 0 && !ch.flying) addBuff(ch, 'ooze');
+				if (ch && ch.hp > 0 && !ch.flying) {
+				addBuff(ch, 'ooze');
+				this.markHazardMob(ch);
+				}
 			}
 		} else if (kind === 'flock') {
 			//`FlockTrap.activate()`: a `Sheep` (lifespan 6) on every free non-pit cell within distance 2
@@ -1679,7 +1696,10 @@ export const environmentFireTrapsMethods = {
 				for (let cx = 0; cx < this.level.width; cx++) {
 					const steps = distances[this.level.index(cx, cy)] ?? -1;
 					if (steps < 0 || steps > 2 || !this.level.passable(cx, cy)) continue;
-					if (this.creatureAt(cx, cy) || this.isChasmCell(cx, cy)) continue;
+					//Java's else-branch: a Mob already on the cell (or on a pit cell) is marked instead of getting a sheep.
+					const occupant = this.creatureAt(cx, cy);
+					if (occupant) { this.markHazardMob(occupant); continue; }
+					if (this.isChasmCell(cx, cy)) continue;
 					const sheep = this.spawnSheep({ x: cx, y: cy }, 6);
 					if (this.fov.isVisible(cx, cy)) spawnTrapSpecks(this.effectLayer, this.effectBursts, cx, cy, 'wool');
 					this.triggerMobTrapAt(sheep);
@@ -1718,8 +1738,10 @@ export const environmentFireTrapsMethods = {
 					continue;
 				}
 				const from = { x: ch.x, y: ch.y };
+				//`TeleportationTrap.activate()` marks only a mob that was HUNTING when it teleported.
+				const wasHunting = !ch.isHero && (ch.seesHero || ch.lastSeen !== undefined);
 				if (ch.isHero) {
-					//`teleportChar` detaches Roots and cancels the hero's queued action.
+				//`teleportChar` detaches Roots and cancels the hero's queued action.
 					delete ch.buffs['roots'];
 					this.travelTarget = null;
 					this.moveTo(ch, destination);
@@ -1732,8 +1754,29 @@ export const environmentFireTrapsMethods = {
 					ch.lastSeen = undefined;
 				}
 				this.playTeleportAppear(from, destination, ch);
-			}
-		} else if (kind === 'geyser') {
+				if (wasHunting) this.markHazardMob(ch);
+				}
+				//`TeleportationTrap.activate()` also relocates every plain floor heap (`Heap.Type.HEAP`, so not chests or
+				//shop stands) on the 3x3 to `Level.randomRespawnCell(null)`, then plays TELEPORT and a 4-mote LIGHT burst at the
+				//TRAP's own cell (both un-gated by the hero's FOV, per `CellEmitter.get(pos)`/`Sample.play`). A heap keeps one
+				//payload per cell here, as in the Gateway relocation (stated: Java's `pickUp()` moves the top item of a stack);
+				//`Honeypot.ShatteredPot.movePot` has no counterpart (no shattered-pot item exists).
+				for (const [dx, dy] of [[0, 0], ...Roguelike.neighbourOffsets(8)] as const) {
+				const heap = this.groundItemAt(x + dx, y + dy);
+				if (!heap || heap.chest || heap.forSale) continue;
+				let destination: Step | undefined;
+				for (let attempt = 0; attempt < 5 && !destination; attempt++) {
+				const candidate = this.randomFreeCell({ x, y });
+				if (candidate && !this.groundItemAt(candidate.x, candidate.y)) destination = candidate;
+				}
+				if (!destination) continue;
+				const { kind, item, chest, forSale } = heap;
+				this.removeGroundItem(heap);
+				this.spawnGroundItem(kind, destination.x, destination.y, item, chest, forSale);
+				runState.audio.cue('teleport', 0.7);
+				spawnTrapSpecks(this.effectLayer, this.effectBursts, x, y, 'light');
+				}
+				} else if (kind === 'geyser') {
 			activateGeyserTrapFlow({ depth: this.depth, random: Random, neighbourOffsets: Roguelike.neighbourOffsets(8) as ReadonlyArray<readonly [number, number]>, randomElement: <T>(values: readonly T[]) => Random.element(values), width: this.level.width, height: this.level.height, distanceMap: (origin) => this.pathfinder.distanceMap(origin), passable: (gx, gy) => this.level.passable(gx, gy), setWater: (gx, gy) => this.level.set(gx, gy, WATER), clearFire: (gx, gy) => this.fire.clear(gx, gy), restitch: () => this.restitchAllTiles(), creatureAt: (gx, gy) => this.creatureAt(gx, gy), hero: this.hero, absorbHeroDamage: (damage) => this.absorbHeroDamage(damage), showDamage: (target, damage) => this.showDamage(target, damage), kill: (target, cause) => this.kill(target, cause), moveTo: (creature, destination) => this.moveTo(creature, destination) }, x, y);
 		} else if (kind === 'gateway') {
 			this.activateGatewayTrap(x, y);
@@ -1761,155 +1804,6 @@ export const environmentFireTrapsMethods = {
 			}
 		}
 		return false;
-	},
-
-	/**
-	 * `GatewayTrap.activate()` (`levels/traps/GatewayTrap.java`, tag `v3.3.8`), shared by the
-	 * hero and mob step paths. The trap is reusable (`disarmedByActivation = false` - the
-	 * callers skip the spent set for this kind), and its `telePos` link lives on the scene
-	 * (`gatewayTelePos`, floor-scoped and persisted). First trigger links the trap: the first
-	 * char in `NEIGHBOURS9` order (Java's top-left-to-bottom-right offsets, center fifth) is
-	 * sent to a random respawn cell - or, if no char teleports, the first loose heap is
-	 * relocated there instead - and that destination is recorded. Every trigger (including
-	 * the linking one) then gathers everything in the trap's own 3x3 around the recorded
-	 * cell: chars ride `teleportToLocation` onto free cells around it (center preferred),
-	 * heaps are dropped on it. Stated simplifications: LARGE chars' `openSpace` shortlist has
-	 * no counterpart here (a size property exists now - `LARGE_KINDS` - but this draw still doesn't gate; everyone draws from the one shuffled list);
-	 * heap stacking collapses to one payload per cell (a blocked destination leaves the heap
-	 * where it is); `Honeypot.ShatteredPot`'s pot-link move has no counterpart (no shattered
-	 * pot item here); the TELEPORT sample/speck presentation is the shared appear effect.
-	 */
-	activateGatewayTrap(this: DungeonScene, x: number, y: number): void {
-		const trapCell = this.level.index(x, y);
-		//Java's `PathFinder.NEIGHBOURS9` order: top-left to bottom-right, center fifth.
-		const around9: ReadonlyArray<readonly [number, number]> = [[-1, -1], [0, -1], [1, -1], [-1, 0], [0, 0], [1, 0], [-1, 1], [0, 1], [1, 1]];
-		if (!this.gatewayTelePos.has(trapCell)) {
-			for (const [dx, dy] of around9) {
-				const cx = x + dx, cy = y + dy;
-				if (!this.level.inside(cx, cy)) continue;
-				const ch = this.creatureAt(cx, cy);
-				if (ch && ch.hp > 0) {
-					if (ch.isHero || (ch.kind !== undefined && !IMMOVABLE_KINDS.has(ch.kind as MonsterId))) {
-						const destination = this.randomFreeCell(ch);
-						if (destination) {
-							const hunting = !ch.isHero && (ch.seesHero || ch.lastSeen !== undefined);
-							const from = { x: ch.x, y: ch.y };
-							if (ch.isHero) {
-								delete ch.buffs['roots'];
-								this.travelTarget = null;
-								this.moveTo(ch, destination);
-							} else {
-								ch.x = destination.x;
-								ch.y = destination.y;
-								this.sprite(ch).position.set(destination.x * TILE, destination.y * TILE);
-								ch.seesHero = false;
-								ch.lastSeen = undefined;
-							}
-							this.playTeleportAppear(from, destination, ch);
-							if (hunting) this.markHazardMob(ch);
-							this.gatewayTelePos.set(trapCell, this.level.index(destination.x, destination.y));
-							break;
-						}
-					}
-				}
-				const heap = this.groundItemAt(cx, cy);
-				if (heap) {
-					let destination: Step | undefined;
-					for (let attempt = 0; attempt < 5 && !destination; attempt++) {
-						const candidate = this.randomFreeCell({ x, y });
-						if (candidate && !this.groundItemAt(candidate.x, candidate.y)) destination = candidate;
-					}
-					if (destination) {
-						const { kind, item, chest, forSale } = heap;
-						this.removeGroundItem(heap);
-						this.spawnGroundItem(kind, destination.x, destination.y, item, chest, forSale);
-						if (this.groundItemAt(destination.x, destination.y)) {
-							this.gatewayTelePos.set(trapCell, this.level.index(destination.x, destination.y));
-							break;
-						}
-					}
-				}
-			}
-		}
-		const linked = this.gatewayTelePos.get(trapCell);
-		if (linked === undefined) return;
-		const lx = linked % this.level.width, ly = Math.floor(linked / this.level.width);
-		//Java's `NEIGHBOURS8` order (same ring minus the center), shuffled, with the free
-		//center itself prepended - so the center wins when it is open.
-		const ring8: ReadonlyArray<readonly [number, number]> = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]];
-		const telePositions: Step[] = [];
-		for (const [dx, dy] of ring8) {
-			const px = lx + dx, py = ly + dy;
-			if (this.level.inside(px, py) && this.level.passable(px, py) && !this.creatureAt(px, py)) telePositions.push({ x: px, y: py });
-		}
-		Random.shuffle(telePositions);
-		if (this.level.inside(lx, ly) && this.level.passable(lx, ly) && !this.creatureAt(lx, ly)) telePositions.unshift({ x: lx, y: ly });
-		for (const [dx, dy] of around9) {
-			const cx = x + dx, cy = y + dy;
-			if (!this.level.inside(cx, cy)) continue;
-			const ch = this.creatureAt(cx, cy);
-			if (ch && ch.hp > 0 && (ch.isHero || (ch.kind !== undefined && !IMMOVABLE_KINDS.has(ch.kind as MonsterId)))) {
-				const next = telePositions.shift();
-				if (!next) continue;
-				const from = { x: ch.x, y: ch.y };
-				//`teleportToLocation` refuses an occupied or impassable cell - the list only
-				//holds free passable cells, so it always lands; Roots still detaches.
-				if (ch.isHero) {
-					delete ch.buffs['roots'];
-					this.travelTarget = null;
-					this.moveTo(ch, next);
-				} else {
-					ch.x = next.x;
-					ch.y = next.y;
-					this.sprite(ch).position.set(next.x * TILE, next.y * TILE);
-					ch.seesHero = false;
-					ch.lastSeen = undefined;
-				}
-				this.playTeleportAppear(from, next, ch);
-			}
-			const heap = this.groundItemAt(cx, cy);
-			if (heap && !this.groundItemAt(lx, ly)) {
-				const { kind, item, chest, forSale } = heap;
-				this.removeGroundItem(heap);
-				this.spawnGroundItem(kind, lx, ly, item, chest, forSale);
-				if (!this.groundItemAt(lx, ly)) this.spawnGroundItem(kind, cx, cy, item, chest, forSale);
-				else this.playTeleportAppear({ x: cx, y: cy }, { x: lx, y: ly }, this.hero);
-			}
-		}
-	},
-
-	/**
-	 * `GuardianTrap.activate()` (`levels/traps/GuardianTrap.java`, tag `v3.3.8`), shared by
-	 * the hero and mob step paths: every mob is beckoned to the trap cell (Java's `beckon`
-	 * wakes and, unless hunting/fleeing, retargets to wandering - the port's `lastSeen`
-	 * retarget with the same guards), the alarm line logs when visible, and
-	 * `(scalingDepth() - 5) / 5` guardians (Java integer division, truncating toward zero -
-	 * none below depth 6) arrive on random respawn cells, awake and beckoned to the hero.
-	 * Stated simplifications: the guardians are ordinary depth-scaled statues (Java's
-	 * `Guardian extends Statue` rolls a fresh uncursed level-0 unenchanted melee weapon per
-	 * spawn - this port's statue damage comes from its depth table, with no per-instance
-	 * weapon to roll); the ALERT sample and SCREAM specks have no layer here; the blue tint
-	 * on `GuardianSprite` has no sprite layer to carry it.
-	 */
-	activateGuardianTrap(this: DungeonScene, x: number, y: number): void {
-		for (const mob of this.creatures) {
-			if (mob.isHero || mob.isNPC || mob.isAlly || mob.hp <= 0) continue;
-			mob.sleeping = false;
-			if (!mob.fleeing && !mob.seesHero) mob.lastSeen = { x, y };
-		}
-		if (this.fov.isVisible(x, y)) this.say(t('levels.traps.guardiantrap.alarm'), 'warning');
-		//`scalingDepth()` is `this.depth` everywhere else in this port; Java's `(d - 5) / 5`
-		//is integer division truncating toward zero, so depths 1-9 spawn nothing.
-		const count = Math.max(0, Math.trunc((this.depth - 5) / 5));
-		for (let i = 0; i < count; i++) {
-			const at = this.randomFreeCell({ x, y });
-			if (!at) continue;
-			const guardian = this.spawnMonster('statue', at, false);
-			guardian.sleeping = false;
-			guardian.seesHero = false;
-			guardian.lastSeen = { x: this.hero.x, y: this.hero.y };
-			this.playTeleportAppear(at, at, guardian);
-		}
 	},
 
 	/** `PitfallTrap.DelayedPit` for the hero: `Chasm.heroFall`, minus the one-turn delay. A levitating
