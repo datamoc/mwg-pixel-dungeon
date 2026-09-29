@@ -12,7 +12,7 @@ import { lethalHasteDuration, soulSiphonCharge } from '../../talentEffects';
 import { SpdRandom } from '../../spdRng';
 import { runState } from '../../runState';
 import { recordRun } from '../../rankings';
-import { isChallengeEnabled, isItemBlocked } from '../../challenges';
+import { challenges, isChallengeEnabled, isItemBlocked } from '../../challenges';
 import { PRISMATIC_FADE_TURNS } from '../../simulation/prismatic';
 import { shieldOfLightRange } from '../../simulation/clericSpells';
 import { absorbEarthrootArmor } from '../../simulation/plantPools';
@@ -1410,6 +1410,7 @@ export const deathSaveRefreshMethods = {
 		if (!this.miningBranchActive) this.captureActiveFloor();
 		this.saves.save('run', {
 			runSeed: this.runSeed,
+			challenges: [...challenges()],
 			runSeedLong: this.runSeedLong.toString(),
 			seededRun: this.seededRun,
 		depth: this.depth,

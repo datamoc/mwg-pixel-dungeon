@@ -36,7 +36,7 @@ import { DungeonHud } from '../../ui/dungeonHud';
 import { lightCloakArtifactBonus, lightCloakRechargeRate } from '../../talentEffects';
 import { resetPortedRun } from '../../spdLevelGen/gameBridge';
 import { runState } from '../../runState';
-import { isChallengeEnabled } from '../../challenges';
+import { isChallengeEnabled, restoreRunChallenges } from '../../challenges';
 import { CLASS_TALENTS, TALENT_TIERS, armorTalentDefinitions, hasClassTier3Row, subclassTalentDefinitions, talentDescKey, talentTitleKey, type TalentDefinition } from '../../talents';
 import { recallTrackerDuration } from '../../simulation/clericSpells';
 import { ARMOR_CHARGE_START, armorAbilitiesFor, armorAbilityDef, armorAbilityKey, isKnownArmorAbility } from '../../armorAbilities';
@@ -90,6 +90,8 @@ export const panelsSingleUseMethods = {
 		fallenStore.clear();
 		for (const [depth, entries] of s.fallenItems ?? []) fallenStore.set(depth, entries);
 		resetPortedRun();
+		//`Dungeon.loadGame`: the run keeps the challenges it started with, not whatever the setup screen says now.
+		if (s.challenges) restoreRunChallenges(s.challenges);
 		this.runSeedLong = s.runSeedLong ? BigInt(s.runSeedLong) : BigInt(s.runSeed ?? this.runSeed);
 		this.runSeed = Number(this.runSeedLong % 4294967296n) >>> 0;
 		this.runSeedLabel = s.runSeedLong ?? String(this.runSeed);

@@ -259,6 +259,8 @@ export interface Creature extends Combatant {
 	 * moved around a blind corner (especially into a doorway) remains vulnerable until it gets
 	 * another turn to notice the hero. */
 	seesHero?: boolean;
+	/** `CharSprite.showAlert()`/`showLost()`: the yellow "!" over a mob that just noticed the hero, or the "?" over one that lost track of them. Shown until the mob's next turn (`Mob.act()` hides both). */
+	emote?: 'alert' | 'lost';
 	/** Generic `Mob.Fleeing` state. Thief/Bandit derive it from `stolen` (see
 	 * `takeMonsterTurn`); Spinner sets it directly from `Spinner.attackProc()`. */
 	fleeing?: boolean;

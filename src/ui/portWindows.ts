@@ -116,8 +116,12 @@ export function showChoiceWindow(
 	windows.push(window);
 }
 
-/** `WndChallenges`: selected challenge ids persist between runs like SPD's settings. */
-export function showChallengesWindow(windows: WindowStack): void {
+/**
+ * `WndChallenges(checked, editable)`: on the hero-select screen it edits the persisted selection
+ * (`SPDSettings.challenges()`); in a run it is read-only and shows the run's own snapshot
+ * (`WndGame.java:65`, `MenuPane.java:121-138`), so a running game's rules cannot be edited.
+ */
+export function showChallengesWindow(windows: WindowStack, editable = false): void {
 	const width = windowWidth(250);
 	const window = new Window({ width, height: CHALLENGES.length * 24 + 52, title: t('windows.wndchallenges.title'), anchor: 'center', blocker: true });
 	const description = new Label({ size: 6, wrapWidth: width - 16, color: theme().color.textDim });
@@ -129,9 +133,10 @@ export function showChallengesWindow(windows: WindowStack): void {
 			height: 21,
 			text: `${challenges().has(def.id) ? '✓ ' : ''}${challengeLabel(def)}`,
 			onClick: () => {
+				if (!editable) { description.setText(challengeDescription(def)); return; }
 				toggleChallenge(def.id);
 				window.close();
-				showChallengesWindow(windows);
+				showChallengesWindow(windows, true);
 			},
 		});
 		button.position.set(0, index * 24);

@@ -10,6 +10,8 @@ import { CLASSES, CLASS_UNLOCK_HINT, type ClassId } from '../classes';
 import { loadBadges, classUnlocked } from '../badges';
 import { SpdButton as Button, menuScale } from '../ui/spdButton';
 import { titleIcon } from '../ui/titleIcons';
+import { showChallengesWindow, showInfoWindow } from '../ui/portWindows';
+import { endRunChallenges } from '../challenges';
 import { TitleScene } from './titleScene';
 import { DungeonScene } from './dungeonScene';
 
@@ -32,6 +34,7 @@ export class ClassSelectScene extends Scene2D {
 	private readonly windows = new WindowStack();
 
 	override create(): void {
+		endRunChallenges(); //back on the setup screen: the selection is editable again
 		// HeroSelectScene.java: compact hero buttons, splash art, then explicit Start.
 		const root = new Container();
 		this.stage.addChild(root);
@@ -58,6 +61,15 @@ export class ClassSelectScene extends Scene2D {
 		info.visible = false;
 		info.on('pointertap', () => { if (this.selected) this.windows.push(createHeroInfoWindow(this.selected, (window) => this.windows.push(window))); });
 		root.addChild(heading, name, description, info);
+		//`HeroSelectScene.btnChallenges`: opens the editable `WndChallenges` once the game has been won
+		//(`Badges.isUnlocked(Badge.VICTORY)`), else the `challenges_nowin` explanation. The run
+		//snapshots the selection when it starts (`beginRunChallenges`).
+		const challengesButton = new Button({ width: 20, height: 20, icon: titleIcon(runState.sprites.uiIcons, 'challenge', 1),
+			onClick: () => {
+				if (this.badges.unlocked('victory')) showChallengesWindow(this.windows, true);
+				else showInfoWindow(this.windows, t('windows.wndgame.challenges'), t('scenes.heroselectscene.challenges_nowin'));
+			} });
+		root.addChild(challengesButton);
 		const start = new Button({ width: 80, height: 21, text: capitalize(t('scenes.heroselectscene.start')),
 			icon: titleIcon(runState.sprites.uiIcons, 'enter', 1), onClick: () => {
 				if (!this.selected) return;
@@ -191,6 +203,7 @@ export class ClassSelectScene extends Scene2D {
 				start.position.set((w - 80) / 2, h - 65);
 			}
 			back.position.set(w - 20, 0);
+			challengesButton.position.set(0, 0);
 			this.windows.scale.set(scale);
 			this.windows.setViewport(w, h);
 			drawFocusRing();

@@ -1,6 +1,6 @@
 import { Container, Rectangle, Sprite, Texture } from 'mwg/two-d/pixi-interop';
 
-interface CharacterVisual { sprite: Sprite; sleeping?: boolean; shadowOffset?: number; castsShadow?: boolean; }
+interface CharacterVisual { sprite: Sprite; sleeping?: boolean; emote?: 'alert' | 'lost'; shadowOffset?: number; castsShadow?: boolean; }
 
 /** CharSprite's flattened sprite shadow and EmoIcon.Sleep's pulsing icon.
  * Java's per-sprite flying/jumping shadow offsets are not modeled yet.
@@ -8,20 +8,23 @@ interface CharacterVisual { sprite: Sprite; sleeping?: boolean; shadowOffset?: n
 export class CharacterEffects {
 	readonly shadows = new Container();
 	readonly icons = new Container();
-	private entries = new Map<Sprite, { shadow: Sprite; sleep?: Sprite; pulse: number }>();
+	private entries = new Map<Sprite, { shadow: Sprite; sleep?: Sprite; emo?: Sprite; emoKind?: string; pulse: number }>();
 	private sleepTexture: Texture;
+	private emoTextures: Record<'alert' | 'lost', Texture>;
 	constructor(icons: Texture) {
 		this.sleepTexture = new Texture({ source: icons.source, frame: new Rectangle(32, 64, 9, 8) });
+		//`Icons.ALERT`/`LOST` (`uvRectBySize(16,80,8,8)`/`(24,80,8,8)` in Java), pasted byte-for-byte into this sheet's first row.
+		this.emoTextures = { alert: new Texture({ source: icons.source, frame: new Rectangle(166, 0, 8, 8) }), lost: new Texture({ source: icons.source, frame: new Rectangle(175, 0, 8, 8) }) };
 		this.shadows.eventMode = this.icons.eventMode = 'none';
 	}
 	update(dt: number, characters: CharacterVisual[]): void {
 		const current = new Set(characters.map(character => character.sprite));
 		for (const [sprite, entry] of this.entries) {
 			if (sprite.destroyed || !current.has(sprite)) {
-				entry.shadow.destroy(); entry.sleep?.destroy(); this.entries.delete(sprite);
+				entry.shadow.destroy(); entry.sleep?.destroy(); entry.emo?.destroy(); this.entries.delete(sprite);
 			}
 		}
-		for (const { sprite, sleeping, shadowOffset = 0, castsShadow = true } of characters) {
+		for (const { sprite, sleeping, emote, shadowOffset = 0, castsShadow = true } of characters) {
 			if (sprite.destroyed) continue;
 			let entry = this.entries.get(sprite);
 			if (!entry) {
@@ -45,6 +48,20 @@ export class CharacterEffects {
 				entry.sleep = new Sprite(this.sleepTexture); entry.sleep.anchor.set(0.5);
 				this.icons.addChild(entry.sleep);
 			}
+			//`EmoIcon.Alert`/`Lost`: pulses 1..maxSize (1.3/1.25) at timeScale 2/1, top-right of the sprite, bottom-left anchored.
+			if (emote && entry.emoKind !== emote) {
+				entry.emo?.destroy();
+				entry.emo = new Sprite(this.emoTextures[emote]); entry.emo.anchor.set(0, 1);
+				entry.emoKind = emote; this.icons.addChild(entry.emo);
+			}
+			if (entry.emo) {
+				entry.emo.visible = !!emote && sprite.visible;
+				if (!emote) entry.emoKind = undefined;
+				const max = emote === 'lost' ? 1.25 : 1.3, rate = emote === 'lost' ? 1 : 2;
+				entry.pulse = (entry.pulse + dt * rate) % (2 * (max - 1));
+				entry.emo.scale.set(1 + (entry.pulse <= max - 1 ? entry.pulse : 2 * (max - 1) - entry.pulse));
+				entry.emo.position.set(left + w - 1, top);
+			}
 			if (entry.sleep) {
 				entry.sleep.visible = !!sleeping && sprite.visible;
 				if (entry.sleep.visible) entry.pulse = (entry.pulse + dt * 0.5) % 0.4;
@@ -54,7 +71,7 @@ export class CharacterEffects {
 		}
 	}
 	clear(): void {
-		for (const entry of this.entries.values()) { entry.shadow.destroy(); entry.sleep?.destroy(); }
+		for (const entry of this.entries.values()) { entry.shadow.destroy(); entry.sleep?.destroy(); entry.emo?.destroy(); }
 		this.entries.clear();
 	}
 }

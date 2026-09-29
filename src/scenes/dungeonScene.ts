@@ -148,7 +148,7 @@ import { Feeling } from '../spdLevelGen/regularPainter';
 import { WallDecorationLayer, WaterEmberLayer, WellRippleLayer } from '../ui/wallDecorations';
 import { runState, LANGUAGE_KEY } from '../runState';
 import { recordRun } from '../rankings';
-import { isChallengeEnabled } from '../challenges';
+import { beginRunChallenges, isChallengeEnabled } from '../challenges';
 import { HUNGRY, STARVING } from '../simulation/hunger';
 import { CLASS_TALENTS, armorTalentDefinitions, subclassTalentDefinitions, TALENT_TIERS, type TalentDefinition } from '../talents';
 import {
@@ -350,7 +350,7 @@ export class DungeonScene extends Scene2D {
 	dyingMonsters = new Map<TintedSprite, { x: number; y: number; fade: number; duration: number; playDieClip: boolean }>();
 	characterEffects!: CharacterEffects;
 	/** Reused each frame; avoids rebuilding the character-visual array in `update()`. */
-	characterEffectCharacters: Array<{ sprite: TintedSprite; sleeping?: boolean; shadowOffset?: number; castsShadow?: boolean }> = [];
+	characterEffectCharacters: Array<{ sprite: TintedSprite; sleeping?: boolean; emote?: 'alert' | 'lost'; shadowOffset?: number; castsShadow?: boolean }> = [];
 	fog?: FogOfWar;
 	wallBlocking?: TileMap;
 	level!: Roguelike.Level;
@@ -1474,6 +1474,7 @@ export class DungeonScene extends Scene2D {
 	interlevel: { root: Container; backdrop: TilingSprite; elapsed: number; duration: number; curtain: Graphics; message: Label } | null = null;
 
 	override create(): void {
+		beginRunChallenges(); //`Dungeon.init()` snapshots `SPDSettings.challenges()` into the run
 		this.heroClass = runState.pendingClass;
 		// Hoisted ahead of buildInterface() (below): its refreshInventoryPanel() call reads
 		// this.heroStats.base('gold') synchronously, before makeHero() - where this used to be
@@ -2522,7 +2523,7 @@ export class DungeonScene extends Scene2D {
 		//CharacterEffects still receives an exact current-frame list and owns its own entry cleanup.
 		const characterEffects = this.characterEffectCharacters;
 		characterEffects.length = 0;
-		for (const creature of this.creatures) characterEffects.push({ sprite: this.sprite(creature), sleeping: creature.sleeping && !(creature.kind === 'mimic' && creature.mimicRevealed === false) /* MimicSprite.hideSleep() */, shadowOffset: crystalShadowOffsets.get(creature.id), castsShadow: creature.allyKind !== 'shadowClone' });
+		for (const creature of this.creatures) characterEffects.push({ sprite: this.sprite(creature), sleeping: creature.sleeping && !(creature.kind === 'mimic' && creature.mimicRevealed === false) /* MimicSprite.hideSleep() */, shadowOffset: crystalShadowOffsets.get(creature.id), castsShadow: creature.allyKind !== 'shadowClone', emote: creature.emote });
 		for (const sprite of this.dyingMonsters.keys()) characterEffects.push({ sprite });
 		const heroVisual = this.sprite(this.hero);
 		if (this.gameOver && !heroVisual.destroyed) characterEffects.push({ sprite: heroVisual });

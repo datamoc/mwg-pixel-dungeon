@@ -45,7 +45,7 @@ export function openGameMenu({ windows, gameOver, canLeave, saveRun, startNewRun
 		onClick: closeThen(() => showSettingsWindow(windows, () => showSettingsWindow(windows, () => undefined))),
 	});
 	if (challenges().size > 0) {
-		entries.push({ label: t('windows.wndgame.challenges'), icon: 'challenge', onClick: closeThen(() => showChallengesWindow(windows)) });
+		entries.push({ label: t('windows.wndgame.challenges'), icon: 'challenge', onClick: closeThen(() => showChallengesWindow(windows, false)) });
 	}
 	if (gameOver) {
 		entries.push({

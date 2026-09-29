@@ -408,6 +408,7 @@ export const monsterAiMethods = {
 				}
 			}
 			monster.lastSeen = undefined;
+			monster.emote = 'lost'; //`Mob.Hunting.act()` giving up -> `sprite.showLost()`
 			return true;
 		}
 		const target = monster.patrolTarget;

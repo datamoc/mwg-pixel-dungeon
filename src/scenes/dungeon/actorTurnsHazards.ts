@@ -943,6 +943,7 @@ export const actorTurnsHazardsMethods = {
 	takeMonsterTurn(this: DungeonScene, monster: Creature): void {
 		this.pendingMonsterTurnCost = null;
 		beginMonsterTurn(monster);
+		monster.emote = undefined; //`Mob.act()`: `hideAlert()`/`hideLost()` unless it was just alerted again this turn
 		//The GNOLL mine quest's own `act()` prologue (queued boulder throws, the dormant geomancer) - `gnollMine.ts`.
 		if (monster.kind && GNOLL_MINE_KINDS.has(monster.kind) && this.gnollMinePreTurn(monster)) return;
 		//The CRYSTAL mine's (a crumpled guardian's recovery, the unreachable-hero sleep, the spire's whole act) - `crystalMine.ts`.
@@ -1088,6 +1089,7 @@ export const actorTurnsHazardsMethods = {
 				monster.seesHero = false;
 				return;
 			}
+			monster.emote = 'alert'; //`Mob.Wandering.noticeEnemy()` -> `sprite.showAlert()`
 			//Mob.Wandering.noticeEnemy(): Java's second SWARM_INTELLIGENCE hook runs
 			//when an already-awake enemy first acquires the hero, not only on wake-up.
 			beckonSwarmIntelligence(this, monster);
@@ -1328,6 +1330,7 @@ export const actorTurnsHazardsMethods = {
 				if (!Random.chance(1 / (distance + this.heroStealth()))) return;
 			}
 		monster.sleeping = false;
+		monster.emote = 'alert'; //`Mob.awaken()`/`notice()` -> `sprite.showAlert()`
 		//`Goo.notice()` yells `actors.mobs.goo.notice` ("GLURP-GLURP!") on first awareness -
 		//the one boss yell the generic wake line below would otherwise swallow. Said only on
 		//the detection path (`!debuffed`): Java's `damage()` seals without yelling, and a
