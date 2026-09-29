@@ -217,7 +217,10 @@ export function rollDamage(attacker: Readonly<Combatant>, defender: Readonly<Com
 	const rawDr = random.normalRange(0, defender.barkskinLevel ?? 0)
 		+ (defender.armor[0] === 0 && defender.armor[1] === 0 && !defender.barkskinLevel
 			? 0
-			: random.normalRange(defender.armor[0], defender.armor[1]));
+			: random.normalRange(defender.armor[0], defender.armor[1]))
+		//`DriedRose.GhostHero.drRoll()` (`DriedRose.java`, tag `v3.3.8`) adds a second,
+		//independent NormalIntRange roll from the equipped weapon after armor DR.
+		+ (defender.weaponDefense !== undefined ? random.normalRange(0, defender.weaponDefense) : 0);
 	// `Char.attack()` (Char.java:386, tag v3.3.8) rounds `enemy.drRoll() *
 	// AscensionChallenge.statModifier(enemy)` before subtracting it (`ascensionModFor` carries
 	// the table and both exemptions, including the blocked-holder return-1).

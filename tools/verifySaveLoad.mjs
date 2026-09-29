@@ -21,7 +21,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const SNAP = `(() => {
 	const s = mwg.currentScene, h = s.hero;
-	const creatures = s.creatures.filter((c) => !c.isHero).map((c) => [c.kind || c.name, c.hp, c.x, c.y]).sort((a, b) => JSON.stringify(a) < JSON.stringify(b) ? -1 : 1);
+	const creatures = s.creatures.filter((c) => !c.isHero).map((c) => [c.kind || c.name, c.hp, c.x, c.y, c.allyKind ?? null, c.allyDefendCell ?? null, c.allyMovingToDefend ?? null]).sort((a, b) => JSON.stringify(a) < JSON.stringify(b) ? -1 : 1);
+	const rose = s.bag?.items?.find((item) => item.id === 'rose');
 	return {
 		depth: s.depth, deepest: s.deepestDepth,
 		hero: { hp: h.hp, maxHp: h.maxHp, x: h.x, y: h.y, buffs: JSON.parse(JSON.stringify(h.buffs || {})) },
@@ -30,6 +31,8 @@ const SNAP = `(() => {
 		terrain: (() => { let h = 0; const t = s.level.terrain; for (let i = 0; i < t.length; i++) h = (h * 31 + t[i]) | 0; return h; })(),
 		secretDoors: [...(s.secretDoorCells || [])].sort((a, b) => a - b).map((i) => i + ':' + s.level.terrain[i]),
 		creatures, groundItems: (s.groundItems || []).length, bag: s.bag && s.bag.items ? s.bag.items.map((i) => i.id + ':' + (i.quantity ?? 1)).sort() : null,
+		rose: { firstSummon: s.roseFirstSummon === true, activeGhost: s.roseGhost ? [s.roseGhost.kind, s.roseGhost.hp, s.roseGhost.x, s.roseGhost.y, [...s.roseGhost.damage], [...s.roseGhost.armor], s.roseGhost.str ?? null, s.roseGhost.weaponDefense ?? null, s.roseGhost.allyDefendCell ?? null, s.roseGhost.allyMovingToDefend ?? null] : null,
+			weapon: rose?.ghostWeapon ?? null, armor: rose?.ghostArmor ?? null },
 	};
 })()`;
 
@@ -44,6 +47,7 @@ const PAYLOAD = `(() => {
 
 const SCENARIOS = [
 	{ name: 'fresh floor 1', setup: '0' },
+	{ name: 'active Rose GhostHero with weapon, armor and DIRECT defend order', setup: `(() => { const s = mwg.currentScene; s.bag.add({ id: 'rose', instanceId: 'save-rose', quantity: 1, identified: true, level: 0, charge: 100, ghostWeapon: { id: 'sword', instanceId: 'save-sword', sourceClass: 'sword', tier: 1, level: 0 }, ghostArmor: { id: 'armor', instanceId: 'save-armor', sourceClass: 'armor', tier: 1, level: 0 } }); const originalStatus = s.quests.status.bind(s.quests); s.quests.status = (id) => id === 'sadGhost' ? 'complete' : originalStatus(id); s.useRose('save-rose'); const rows = (s.itemPickerEntries ?? []).map((entry) => entry.instanceId); const summon = rows.indexOf('rose-summon'); if (summon < 0) throw new Error('Rose did not offer AC_SUMMON'); s.chooseItemPicker(summon); const ghost = s.roseGhost; if (!ghost) throw new Error('AC_SUMMON did not create GhostHero'); ghost.allyDefendCell = s.randomFreeCell(s.hero); ghost.allyMovingToDefend = true; return { ghost: [ghost.hp, ghost.x, ghost.y, [...ghost.damage], [...ghost.armor]], defend: ghost.allyDefendCell }; })()` },
 	{ name: 'hurt hero, gold, bless + weakness buffs', setup: `(() => { const s = mwg.currentScene; s.hero.hp = Math.max(1, s.hero.maxHp - 7); s.heroStats.setBase && s.heroStats.setBase('gold', 137); s.hero.buffs.bless = 20; s.hero.buffs.weakness = 12; return 1; })()` },
 	{ name: 'floor 3 via the real level transition', setup: `(() => { const s = mwg.currentScene; s.depth = 3; s.deepestDepth = 3; s.enterLevel(); return 1; })()`, wait: 4000 },
 	{ name: 'boss floor 5 (Goo), hero damaged', setup: `(() => { const s = mwg.currentScene; s.depth = 5; s.deepestDepth = 5; s.enterLevel(); s.hero.hp = Math.max(1, s.hero.hp - 5); return 1; })()`, wait: 4000 },

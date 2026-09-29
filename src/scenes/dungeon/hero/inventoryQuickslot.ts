@@ -24,6 +24,7 @@ import { SPD_STATUS_COLOR } from '../../../ui/spdTheme';
 import { enhancedRingsDuration } from '../../../talentEffects';
 import { SpdRandom } from '../../../spdRng';
 import { entranceRoomContext } from '../../../spdLevelGen/rooms/standard/entranceRoom';
+import { Terrain } from '../../../spdLevelGen/paintLevel';
 import { runState } from '../../../runState';
 import { STARVING } from '../../../simulation/hunger';
 import { armorAbilityDef, armorAbilityKey, armorChargeUse, type ArmorAbilityDef } from '../../../armorAbilities';
@@ -37,10 +38,10 @@ import { BLESS_COST, CLEANSE_COST, DIVINE_SENSE_COST, GUIDING_LIGHT_DAMAGE, JUDG
 import { findHolyTome, isHolyIntuitionCandidate, tomePickerCost, tomeSpellKey, useHolyTomeFlow, type HolyTomeBagPick, type HolyTomeContext, type TomeBagItem } from '../../../items/holyTome';
 import { type DeathBurstSpec } from '../../../simulation/deathBursts';
 import { useTorchFlow, type TorchContext } from '../../../items/selfUse';
-import { WEAPON_NAME_BY_CLASS, isClassArmorId } from '../../../items/catalog';
+import { WEAPON_NAME_BY_CLASS, armorReductionRange, isClassArmorId, weaponCombat } from '../../../items/catalog';
 import { getCurse } from '../../../items/itemCurses';
 import { Cat, generatorItemOrder, randomArmor, randomArtifact, randomGold, randomUsingDefaults, randomWeapon } from '../../../items/generator';
-import { MWL_ITEM_SPECIFIC_FRAMES, MWL_MISSILE_BY_CLASS, MWL_STARTING_WEAPON_FRAMES, mwlItemEffectValue } from '../../../mwlContent';
+import { MWL_ITEM_SLOTS, MWL_ITEM_SPECIFIC_FRAMES, MWL_MISSILE_BY_CLASS, MWL_STARTING_WEAPON_FRAMES, mwlItemEffectValue } from '../../../mwlContent';
 import { assignQuickslot as assignFamilyQuickslot, readQuickslotStates, useItemById as routeItemAction, useQuickslot as useQuickslotEntry, type ItemActionContext, type QuickslotContext } from '../../../items/itemActions';
 import { appearanceItemFrame } from '../../../items/appearanceFrames';
 import { addScrollToSpellbook, applyCapeOfThornsProc, spellbookChargeCap, useSpellbook as useArtifactSpellbook, useToolkit as useArtifactToolkit } from '../../../items/artifactActions';
@@ -50,16 +51,28 @@ import { hornChargeCap, useHornFlow, type HornFlowContext } from '../../../items
 import { useArmbandFlow, type ArmbandFlowContext } from '../../../items/armband';
 import { skeletonKeyChargeCap } from '../../../items/skeletonKey';
 import { checkTalismanAwarenessFlow, talismanArtifactProcPlan, useTalismanFlow, type TalismanFlowContext } from '../../../items/talisman';
-import { roseChargeCap, roseGhostMaxHp, rosePetalDropCap, rosePetalPickup, rosePetalsNeeded, useRoseFlow, type RoseFlowContext } from '../../../items/rose';
+import { applyRoseGhostEquipment, randomRosePetalDropCell, roseChargeCap, roseGhostAttackSkill, roseGhostMaxHp, roseGhostStrength, rosePetalDropCap, rosePetalPickup, rosePetalsNeeded, useRoseFlow, type RoseFlowContext, type RosePetalRoom } from '../../../items/rose';
 import { beaconChargeCap, useBeaconFlow, type BeaconFlowContext, type BeaconItem, type BeaconMobView } from '../../../items/beacon';
 import { type WealthDropPlan } from '../../../items/wealthDrops';
 import { artifactRechargeAmount, artifactRechargeEffect, bankArtifactCharge, chaliceRechargeHeal, roseRechargeGhostHeal } from '../../../items/artifactRecharge';
 import { getAllArtifactIds } from '../../../items/artifacts';
 import { openClassArmorTransfer as openInventoryClassArmorTransfer } from '../../../items/equipment';
-import { FLOOR, GRASS, HIGH_GRASS, TILE } from '../../../dungeonConstants';
+import { DOOR, DOOR_CLOSED, FLOOR, GRASS, HIGH_GRASS, SOLID, TILE, WALL, WATER } from '../../../dungeonConstants';
 import { BUFF_DURATION, NEGATIVE_BUFFS, addBuff, buffBlocked, doomDamage, reigniteBuff, type BuffId, type Creature, type GroundItem, type Step } from '../../../combat';
 import { BOSSES, IMMOVABLE_KINDS, LIMITED_DROP_DECAY, MOB_LOOT, MONSTERS, isLargeCreature, isUndeadOrDemonic, type MonsterId } from '../../../monsters';
 import { APPEARANCE_TABLES, SPD_LEVEL_CURVE, effectMarkSheet } from '../shared';
+
+// `Terrain.java` SOLID flag members used by `RegularLevel.randomDropCell()`; open doors are
+// handled from the live game terrain because the raw paint map retains their closed state.
+const ROSE_DROP_SOLID_TERRAIN = new Set<number>([
+	Terrain.WALL, Terrain.DOOR, Terrain.LOCKED_DOOR, Terrain.WALL_DECO, Terrain.BARRICADE,
+	Terrain.SECRET_DOOR, Terrain.LOCKED_EXIT, Terrain.BOOKSHELF, Terrain.ALCHEMY,
+	Terrain.STATUE, Terrain.STATUE_SP, Terrain.REGION_DECO, Terrain.REGION_DECO_ALT,
+	Terrain.CRYSTAL_DOOR, Terrain.MINE_CRYSTAL, Terrain.MINE_BOULDER,
+]);
+const ROSE_DROP_DESTROYING_TRAPS = new Set<string>([
+	'burning', 'blazing', 'chilling', 'frost', 'explosive', 'disintegration', 'pitfall',
+]);
 
 /** DungeonScene methods, moved verbatim from `dungeonScene.ts` (group `inventoryQuickslot`). Each takes the scene as `this`;
  * `dungeonScene.ts` merges them back onto the class prototype. */
@@ -458,6 +471,36 @@ export const inventoryQuickslotMethods = {
 				spawnGhostAlly: (at) => scene.spawnMonster('ghost', at, false, undefined, true, 'ghost'),
 				setActiveGhost: (ghost) => { scene.roseGhost = ghost as Creature | null; },
 				activeGhost: () => scene.roseGhost,
+				bagItems: () => scene.bag.items.map((rawItem) => {
+					const item = rawItem as typeof rawItem & { tier?: number; sourceClass?: string; hardened?: boolean; cursedKnown?: boolean; curseInfusionBonus?: boolean; unique?: boolean; seal?: boolean };
+					const slot = MWL_ITEM_SLOTS.get(item.id) ?? (item.id === 'weaponReward' ? 'weapon' : ['armor', 'armorReward', 'clothArmor'].includes(item.id) ? 'armor' : undefined);
+					const equipped = (slot === 'weapon' && item.id === scene.weaponId && item.instanceId === scene.weaponInstanceId)
+						|| (slot === 'armor' && item.id === scene.armorId && item.instanceId === scene.armorInstanceId);
+					return { id: item.id, instanceId: item.instanceId, quantity: item.quantity, level: item.level, tier: item.tier, sourceClass: item.sourceClass, affix: item.affix, cursed: item.cursed, cursedKnown: item.cursedKnown, identified: item.identified, hardened: item.hardened, curseInfusionBonus: item.curseInfusionBonus, unique: item.unique, seal: item.seal, slot, equipped };
+				}),
+					equipGhost: (slot, gear) => {
+					const ghost = scene.roseGhost;
+					if (!ghost || ghost.hp <= 0) return;
+					const key = slot === 'weapon' ? 'roseWeapon' : 'roseArmor';
+					const previous = ghost[key];
+					const item = gear ? scene.bag.find(gear.id, gear.instanceId) : undefined;
+					if (gear && (!item || item.quantity <= 0)) return;
+					const rose = scene.roseItem();
+					if (!rose) return;
+					if (previous) scene.bag.add({ ...previous, quantity: 1 } as never);
+					if (gear && item) {
+						scene.bag.remove(item.id, 1, item.instanceId);
+						ghost[key] = gear;
+						if (slot === 'weapon') rose.ghostWeapon = gear;
+						else rose.ghostArmor = gear;
+					} else {
+						delete ghost[key];
+						if (slot === 'weapon') delete rose.ghostWeapon;
+						else delete rose.ghostArmor;
+					}
+					applyRoseGhostEquipment(ghost, rose, scene.progression.level);
+					scene.refresh();
+				},
 				directAlly: (ghost, cell, lines) => { scene.directAlly(ghost as Creature, cell, lines); },
 				heroLevel: () => scene.progression.level,
 				get roseFirstSummon() { return scene.roseFirstSummon; },
@@ -2026,15 +2069,52 @@ export const inventoryQuickslotMethods = {
 		},
 
 		randomPetalCell(this: DungeonScene): Step | null {
-			for (let attempt = 0; attempt < 100; attempt++) {
-				const at = { x: SpdRandom.int(this.level.width), y: SpdRandom.int(this.level.height) };
-				if (![FLOOR, GRASS, HIGH_GRASS].includes(this.level.get(at.x, at.y))) continue;
-				if (this.creatureAt(at.x, at.y) || this.groundItemAt(at.x, at.y)) continue;
-				if (at.x === this.hero.x && at.y === this.hero.y) continue;
-				if (this.hasStairs && at.x === this.stairs.x && at.y === this.stairs.y) continue;
-				return at;
-			}
-			return null;
+			// `RegularLevel.randomDropCell()` (`RegularLevel.java`, tag `v3.3.8`) shuffles
+			// `rooms`, picks a `StandardRoom`, samples `room.random()` and tries the full
+			// passability/solidity/exit/heap/room/mob/trap predicate up to 100 times. The
+			// ported floor rectangles retain Java's room class in their `kind:subkind` label;
+			// the fallback generator has no labels, so its first rectangle is treated as entrance.
+			const rooms = this.level.rooms as unknown as RosePetalRoom[];
+			return randomRosePetalDropCell({
+				rooms,
+				shuffle: (roomList) => SpdRandom.shuffle(roomList),
+				randomIntRange: (min, max) => SpdRandom.intRange(min, max),
+				passable: ({ x, y }) => this.level.passable(x, y),
+				solid: ({ x, y }) => {
+					const liveTerrain = this.level.get(x, y);
+					const rawTerrain = this.portedPaint?.map[this.level.index(x, y)];
+					// Live open doors are no longer SOLID even though the paint grid keeps the
+					// original closed-door value; `Level.open()` updates the Java map itself.
+					return liveTerrain === WALL || liveTerrain === DOOR_CLOSED || liveTerrain === SOLID
+						|| (liveTerrain !== DOOR && rawTerrain !== undefined && ROSE_DROP_SOLID_TERRAIN.has(rawTerrain));
+				},
+				isExit: ({ x, y }) => this.hasStairs && x === this.stairs.x && y === this.stairs.y,
+				hasHeap: ({ x, y }) => this.groundItemAt(x, y) != null,
+				roomCanPlaceItem: (room, at) => {
+					const label = room.label?.split(':') ?? [];
+					const standardKind = room.standardKind ?? (label[0] === 'standard' ? label[1] : undefined);
+					// Java's `AquariumRoom.canPlaceItem()` rejects WATER, `CavesFissureRoom`
+					// rejects EMPTY_SP, and `PlantsRoom` rejects an existing plant
+					// (`levels/rooms/standard/{AquariumRoom,CavesFissureRoom,PlantsRoom}.java`).
+					// Other StandardRooms inherit `Room.canPlaceItem()` -> `inside(point)`; the
+					// room.random() sample is already inside with Java's default margin of one.
+					if (standardKind === 'aquarium' && this.level.get(at.x, at.y) === WATER) return false;
+					const cell = this.level.index(at.x, at.y);
+					if (standardKind === 'cavesFissure' && this.portedPaint?.map[cell] === Terrain.EMPTY_SP) return false;
+					if (standardKind === 'plants') {
+						const paintedPlant = this.portedPaint?.plants.some((plant) => plant.pos === cell) ?? false;
+						const featurePlant = this.portedFeatures.kindAt(cell)?.startsWith('plant:') ?? false;
+						if (paintedPlant || this.manualPlants.has(cell) || featurePlant) return false;
+					}
+					return true;
+				},
+				hasMob: ({ x, y }) => this.creatureAt(x, y) !== null,
+				trapDestroysItems: ({ x, y }) => {
+					const cell = this.level.index(x, y);
+					const kind = this.trapKinds.get(cell) ?? this.portedPaint?.traps.get(cell)?.kind;
+					return kind !== undefined && ROSE_DROP_DESTROYING_TRAPS.has(kind);
+				},
+			});
 		},
 
 		collectRosePetal(this: DungeonScene): 'no_rose' | 'no_room' | 'levelup' | 'maxlevel' {
@@ -2053,6 +2133,7 @@ export const inventoryQuickslotMethods = {
 			if (ghost && ghost.hp > 0) {
 				ghost.maxHp = roseGhostMaxHp(rose.level);
 				ghost.hp = Math.min(ghost.hp + 8, ghost.maxHp);
+				applyRoseGhostEquipment(ghost, rose, this.progression.level);
 			}
 			this.say(t(outcome === 'maxlevel' ? 'items.artifacts.driedrose$petal.maxlevel' : 'items.artifacts.driedrose$petal.levelup'),
 				outcome === 'maxlevel' ? 'positive' : 'info');

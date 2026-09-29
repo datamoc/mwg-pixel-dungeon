@@ -49,6 +49,8 @@ export interface Combatant extends Step {
 	champion?: 'blessed' | 'blazing' | 'giant' | 'growing' | 'antimagic' | 'projecting' | null;
 	str?: number;
 	strReq?: number;
+	/** DriedRose.GhostHero weapon defenseFactor; rolled independently after armor DR. */
+	weaponDefense?: number;
 	/** `Brute.BruteRage` active (post-revival), boosting `damageRoll()` to 15-40. */
 	raged?: boolean;
 	/** `ChampionEnemy.Growing`'s own growth multiplier, starting at 1.19 and rising 0.01/turn

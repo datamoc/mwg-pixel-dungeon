@@ -21,6 +21,7 @@ import { BADGE_DEFS, BADGE_ICON } from '../../../badges';
 import { Cat, randomUsingDefaults, type GenItem } from '../../../items/generator';
 import { MISSILE_MAX_DURABILITY, TIPPED_DART_BY_SEED } from '../../../items/missiles';
 import { weaponCombat } from '../../../items/catalog';
+import { roseGhostAttackSkill } from '../../../items/rose';
 import { gainSpareWandCharge } from '../../../simulation/spareWands';
 import { equipWand as equipInventoryWand, type EquipWandContext } from '../../../items/equipWand';
 import { imbueStaffLevel, setStaffImbue, staffImbueFor, wandTypeFromSource } from '../../../items/wands';
@@ -90,7 +91,17 @@ export const weaponSpellsGearMethods = {
 				this.preciseAssaultReady = false;
 			}
 		}
-		const roll = runAttackResolution(attacker, defender, simulationRandom, false, force, acc, mult);
+		//`DriedRose.GhostHero.attackSkill()` and `MechWeapon.accuracyFactor()` (DriedRose.java,
+		//tag v3.3.8): the ghost reads the hero's current level and its own weapon class per swing.
+		const roseGearSwing = attacker.allyKind === 'ghost' && attacker.roseWeapon !== undefined && attacker.attackMode !== 'throw';
+		const originalRoseAccuracy = roseGearSwing ? attacker.accuracy : undefined;
+		if (roseGearSwing) {
+			attacker.accuracy = roseGhostAttackSkill(this.progression.level);
+			acc *= weaponCombat(attacker.roseWeapon!.sourceClass, attacker.roseWeapon!.tier, attacker.roseWeapon!.level).accuracy;
+		}
+		let roll: ReturnType<typeof runAttackResolution>;
+		try { roll = runAttackResolution(attacker, defender, simulationRandom, false, force, acc, mult); }
+		finally { if (originalRoseAccuracy !== undefined) attacker.accuracy = originalRoseAccuracy; }
 		if (roll.hit && attacker.isHero) {
 			//Combo strike's window counts melee AND thrown hits (`ability_desc`: "melee or
 			//thrown weapons" - the throw path reaches this same choke point on a hero copy,

@@ -48,6 +48,7 @@ import { STARTING_WEAPON_CLASS, armorReductionRange, isClassArmorId, weaponComba
 import { MWL_HERO_BASE_STATS, MWL_HERO_LEVEL_GROWTH } from '../../mwlContent';
 import { dungeonRegion } from '../regions';
 import { applyArmbandGainCharge, applyChainsGainExp, applyHornGainCharge, applyToolkitGainCharge } from '../../items/artifactActions';
+import { applyRoseGhostEquipment } from '../../items/rose';
 import { type FloorState, type SavedCreature } from '../floorState';
 import { monsterSpawnProfile } from '../../actors/monsterSpawn';
 import { ritualSiteState } from '../../spdLevelGen/rooms/standard/ritualSiteRoom';
@@ -890,6 +891,8 @@ export const coreSpawnTilesMethods = {
 				impShopkeeperGreeted: creature.impShopkeeperGreeted,
 				isAlly: creature.isAlly,
 				allyKind: creature.allyKind,
+				allyDefendCell: creature.allyDefendCell ? { ...creature.allyDefendCell } : undefined,
+				allyMovingToDefend: creature.allyMovingToDefend,
 				lightAllyClass: creature.lightAllyClass,
 				powerOfManyBarrier: creature.powerOfManyBarrier,
 				powerOfManyBarrierPartial: creature.powerOfManyBarrierPartial,
@@ -1065,6 +1068,8 @@ export const coreSpawnTilesMethods = {
 				impShopkeeperGreeted: saved.impShopkeeperGreeted ?? false,
 				isAlly: saved.isAlly,
 				allyKind: saved.allyKind,
+				allyDefendCell: saved.allyDefendCell ? { ...saved.allyDefendCell } : undefined,
+				allyMovingToDefend: saved.allyMovingToDefend,
 				lightAllyClass: saved.lightAllyClass,
 				powerOfManyBarrier: saved.powerOfManyBarrier,
 				powerOfManyBarrierPartial: saved.powerOfManyBarrierPartial,
@@ -1072,8 +1077,7 @@ export const coreSpawnTilesMethods = {
 				sheepTurns: saved.sheepTurns,
 				wardTier: saved.wardTier, wardWandLevel: saved.wardWandLevel, wardTotalZaps: saved.wardTotalZaps,
 				earthGuardianWandLevel: saved.earthGuardianWandLevel, earthGuardianDefense: saved.earthGuardianDefense,
-				//`HawkAlly.storeInBundle`'s two fields. The ally's standing order is not saved (see
-				//`Creature.allyDefendCell`'s note), but how long the hawk has left is its own state.
+				//`HawkAlly.storeInBundle`'s two fields; its directable defend order is saved above.
 				spiritHawkTime: saved.spiritHawkTime, spiritHawkDodges: saved.spiritHawkDodges,
 				speed: saved.hasteTurns ? (saved.hasteBaseSpeed ?? 1) * 2 : undefined,
 			});
@@ -1090,6 +1094,12 @@ export const coreSpawnTilesMethods = {
 			const skeletonIndex = state.creatures[i].skeletonIndex;
 			if (skeletonIndex !== undefined) restored[i].skeleton = restored[skeletonIndex] ?? null;
 		}
+		// `DriedRose.storeInBundle()` re-finds its `GhostHero` through `ghostID` after restore.
+		// The floor snapshot's creature index is this port's equivalent actor reference.
+		const roseGhost = restored.find((creature) => creature.isAlly && creature.allyKind === 'ghost') ?? null;
+		this.roseGhost = roseGhost;
+		const rose = this.roseItem();
+		if (rose && roseGhost) applyRoseGhostEquipment(roseGhost, rose, this.progression.level);
 		//`BossHealthBar.bleed(true)` is transition-latched, not HP-derived: a save loaded
 		//into King P3 or Yog P5 re-latches from the persisted phase (see `bossBleedLatched`).
 		this.bossBleedLatched = restored.some((creature) =>
@@ -1221,6 +1231,8 @@ export const coreSpawnTilesMethods = {
 		this.characterEffects?.clear();
 		for (const sprite of this.itemLayer.removeChildren()) sprite.destroy();
 		this.creatures = this.creatures.filter((c) => c.isHero);
+		// The old floor owns the ghost in its snapshot; only restoreFloor may rebind this live pointer.
+		this.roseGhost = null;
 		this.groundItems = [];
 		this.manualPlants.clear();
 		this.furrowedGrass.clear();

@@ -42,7 +42,7 @@ let delegatedGearSwing = false;
 
 /** DungeonScene methods, moved verbatim from `dungeonScene.ts` (group `combatResolution`). Each takes the scene as `this`;
  * `dungeonScene.ts` merges them back onto the class prototype. */
-export const combatResolutionMethods = {
+export const combatResolutionMethods: Record<string, any> = {
 	/** `PhantomPiranha.damage()` (tag `v3.3.8`): a remote hit is halved before
 	 * `super.damage()`, then the fish relocates to water. The scene owns the
 	 * occupancy/FOV and teleport presentation seams, so the small adapter lives here. */
@@ -82,6 +82,45 @@ export const combatResolutionMethods = {
 	 * splits (numbers verbatim); Fury kindles below half HP.
 	 */
 	attack(this: DungeonScene, attacker: Creature, defender: Creature, accFactor = 1, damageMultiplier = 1): boolean {
+		//`DriedRose.GhostHero.weapon()`/`armor()` (DriedRose.java, tag v3.3.8) expose the ghost's
+		//own carried gear to the ordinary attack/defense proc pipeline. The port's mature proc hooks
+		//are scene-slot based, so install only the relevant slot for this synchronous exchange and
+		//restore it in finally; no hero turn can observe the temporary view.
+		const gearOwner = attacker.allyKind === 'ghost' && attacker.roseWeapon ? attacker
+			: defender.allyKind === 'ghost' && defender.roseArmor ? defender : undefined;
+		if (!gearOwner) return combatResolutionMethods.resolveAttackWithGear.call(this, attacker, defender, accFactor, damageMultiplier);
+		const previous = {
+			weaponId: this.weaponId, weaponInstanceId: this.weaponInstanceId, weaponSourceClass: this.weaponSourceClass,
+			weaponTier: this.weaponTier, weaponLevel: this.weaponLevel, weaponAffix: this.weaponAffix,
+			weaponCursed: this.weaponCursed, weaponCursedKnown: this.weaponCursedKnown, weaponIdentified: this.weaponIdentified,
+			weaponHardened: this.weaponHardened, weaponCurseInfusionBonus: this.weaponCurseInfusionBonus,
+			armorId: this.armorId, armorInstanceId: this.armorInstanceId, armorSourceClass: this.armorSourceClass,
+			armorTier: this.armorTier, armorLevel: this.armorLevel, armorGlyph: this.armorGlyph,
+			armorCursed: this.armorCursed, armorCursedKnown: this.armorCursedKnown, armorIdentified: this.armorIdentified,
+			armorHardened: this.armorHardened, armorCurseInfusionBonus: this.armorCurseInfusionBonus,
+		};
+		try {
+			if (attacker === gearOwner && gearOwner.roseWeapon) Object.assign(this, {
+				weaponId: gearOwner.roseWeapon.id, weaponInstanceId: gearOwner.roseWeapon.instanceId,
+				weaponSourceClass: gearOwner.roseWeapon.sourceClass, weaponTier: gearOwner.roseWeapon.tier,
+				weaponLevel: gearOwner.roseWeapon.level, weaponAffix: gearOwner.roseWeapon.affix ?? null,
+				weaponCursed: gearOwner.roseWeapon.cursed ?? false, weaponCursedKnown: gearOwner.roseWeapon.cursedKnown ?? false,
+				weaponIdentified: gearOwner.roseWeapon.identified ?? false, weaponHardened: gearOwner.roseWeapon.hardened ?? false,
+				weaponCurseInfusionBonus: gearOwner.roseWeapon.curseInfusionBonus ?? false,
+			});
+			if (defender === gearOwner && gearOwner.roseArmor) Object.assign(this, {
+				armorId: gearOwner.roseArmor.id, armorInstanceId: gearOwner.roseArmor.instanceId,
+				armorSourceClass: gearOwner.roseArmor.sourceClass, armorTier: gearOwner.roseArmor.tier,
+				armorLevel: gearOwner.roseArmor.level, armorGlyph: gearOwner.roseArmor.affix ?? null,
+				armorCursed: gearOwner.roseArmor.cursed ?? false, armorCursedKnown: gearOwner.roseArmor.cursedKnown ?? false,
+				armorIdentified: gearOwner.roseArmor.identified ?? false, armorHardened: gearOwner.roseArmor.hardened ?? false,
+				armorCurseInfusionBonus: gearOwner.roseArmor.curseInfusionBonus ?? false,
+			});
+			return combatResolutionMethods.resolveAttackWithGear.call(this, attacker, defender, accFactor, damageMultiplier);
+		} finally { Object.assign(this, previous); }
+	},
+
+	resolveAttackWithGear(this: DungeonScene, attacker: Creature, defender: Creature, accFactor = 1, damageMultiplier = 1): boolean {
 		//Reset before any early return below, so a previous delegated `ShadowAlly` swing can never
 		//leak into a later `heroOnHit` call from another path (`armorAbilityUse`, elemental strike).
 		delegatedGearSwing = false;
@@ -406,8 +445,9 @@ export const combatResolutionMethods = {
 		//port keeps one hero-scoped `kineticStored`.
 		const cloneGearSwing = attacker !== this.hero && attacker.allyKind === 'shadowClone'
 			&& shadowCloneBladeProc(Random.int(4), this.talentRank('shadow_blade'), this.weaponId != null);
-		delegatedGearSwing = cloneGearSwing;
-		const gearAttacker = attacker === this.hero || cloneGearSwing;
+		const roseWeaponSwing = attacker !== this.hero && attacker.allyKind === 'ghost' && attacker.roseWeapon !== undefined;
+		delegatedGearSwing = cloneGearSwing || roseWeaponSwing;
+		const gearAttacker = attacker === this.hero || cloneGearSwing || roseWeaponSwing;
 		const strikeAffix = this.weaponAffix === 'unstable' && gearAttacker
 			? Random.element(UNSTABLE_DELEGATES)!
 			: this.weaponAffix;
@@ -505,14 +545,15 @@ export const combatResolutionMethods = {
 		//and the hero is armored. Java makes exactly one `defenseProc` call per attack, so the roll
 		//is drawn once here - after the attacker's own `attackProc` above, matching Java's order -
 		//and the result is handed to `mobOnHit` instead of being re-rolled per glyph site.
-		const cloneDefenderGate = defender.allyKind === 'shadowClone'
-			&& shadowCloneArmorProc(Random.int(4), this.talentRank('cloned_armor'), this.armorGlyph != null);
-		if ((defender.isHero || cloneDefenderGate) && ((this.armorGlyphActive() && this.armorGlyph === 'stone') || this.trinityBodyGlyphIs('stone')) && damage > 0) {
-			damage = Math.ceil(damage * stoneGlyphReduction(liveStats(attacker).accuracy, this.hero.evasion, this.armorProcMultiplier(defender)));
+		const roseArmorGate = defender.allyKind === 'ghost' && defender.roseArmor !== undefined;
+		const cloneDefenderGate = roseArmorGate || (defender.allyKind === 'shadowClone'
+			&& shadowCloneArmorProc(Random.int(4), this.talentRank('cloned_armor'), this.armorGlyph != null));
+		if ((defender.isHero || cloneDefenderGate) && ((this.armorGlyphActive(defender) && this.armorGlyph === 'stone') || (defender.isHero && this.trinityBodyGlyphIs('stone'))) && damage > 0) {
+			damage = Math.ceil(damage * stoneGlyphReduction(liveStats(attacker).accuracy, defender.evasion, this.armorProcMultiplier(defender)));
 		}
 		//Displacement.proc(): a 1-in-20 x arcana armor-curse proc teleports the defender
 		//and replaces the incoming hit with zero damage.
-		if ((defender.isHero || cloneDefenderGate) && this.armorGlyphActive() && this.armorGlyph === 'displacement' && Random.chance((1 / 20) * this.armorProcMultiplier(defender))) {
+		if ((defender.isHero || cloneDefenderGate) && this.armorGlyphActive(defender) && this.armorGlyph === 'displacement' && Random.chance((1 / 20) * this.armorProcMultiplier(defender))) {
 			const armorDisplaceFrom = { x: defender.x, y: defender.y };
 			const destination = this.randomFreeCell(defender);
 			if (destination) {
@@ -982,12 +1023,12 @@ export const combatResolutionMethods = {
 			//The clone's `defenseProc` must also run when the *hero* attacks it - the defend-side
 			//glyph sites live in `mobOnHit`, which the branch below otherwise reaches only for a
 			//non-hero attacker. Same single roll, same gate.
-			if (defender.allyKind === 'shadowClone') this.mobOnHit(attacker, defender, damage, cloneDefenderGate);
+			if (defender.allyKind === 'shadowClone' || roseArmorGate) this.mobOnHit(attacker, defender, damage, cloneDefenderGate);
 		} else {
 			//`ShadowAlly.attackProc()`'s delegated `Weapon.proc` half lives in `heroOnHit`, which
 			//owns the affix-keyed branches; `gearDelegated` keeps it to the weapon slot, so the
 			//hero-only Battlemage/Monk hooks there never fire for a clone.
-			if (cloneGearSwing) {
+			if (cloneGearSwing || roseWeaponSwing) {
 				this.heroOnHit(attacker, defender, damage, true);
 				delegatedGearSwing = false;
 			}
@@ -1076,7 +1117,7 @@ export const combatResolutionMethods = {
 		//it still stops at walls/occupants and lets moveTo apply flying/chasm and piranha
 		//post-move rules. This is deliberately after damage, while Java's armor proc is
 		//inside Char.damage(), because the observable result is the same hit plus displacement.
-		if ((defender.isHero || cloneDefenderGate) && ((this.armorGlyphActive() && this.armorGlyph === 'repulsion') || this.trinityBodyGlyphIs('repulsion')) && attacker.hp > 0
+		if ((defender.isHero || cloneDefenderGate) && ((this.armorGlyphActive(defender) && this.armorGlyph === 'repulsion') || (defender.isHero && this.trinityBodyGlyphIs('repulsion'))) && attacker.hp > 0
 			&& Roguelike.chebyshevDistance(attacker, defender) <= 1) {
 			const level = this.degradedLevel(this.armorLevel);
 			const procChance = ((level + 1) / (level + 5)) * this.armorProcMultiplier(defender);
@@ -1223,7 +1264,7 @@ export const combatResolutionMethods = {
 		const withinRange = Roguelike.chebyshevDistance(defender, this.hero) <= 2;
 		//Armor.Glyph.genericProcChanceMultiplier() uses Arcana plus Aura only; Java's
 		//Weapon.Enchantment twin alone adds the Berserk/EnragedCatalyst term.
-		const arcana = ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
+		const arcana = defender.allyKind === 'ghost' ? 1 : ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
 		return arcana + auraProcBonus(this.talentRank('aura_of_protection'),
 			this.hero.buffs['auraProtection'] !== undefined, sameAlignment, withinRange);
 	},
@@ -1868,9 +1909,9 @@ export const combatResolutionMethods = {
 
 	/** `Armor.hasGlyph()`'s HolyWard gate (tag `v3.3.8`): good glyphs are dormant while
 	 * HolyWard is active, except on Paladin armor; cursed glyphs remain active. */
-	armorGlyphActive(this: DungeonScene): boolean {
+	armorGlyphActive(this: DungeonScene, owner: Creature = this.hero): boolean {
 		const glyph = this.armorGlyph;
-		return glyph !== null && (this.hero.buffs['holyWard'] === undefined || this.subclass() === 'paladin' || getCurse(glyph) !== undefined);
+		return glyph !== null && (owner.buffs['holyWard'] === undefined || (owner.isHero === true && this.subclass() === 'paladin') || getCurse(glyph) !== undefined);
 	},
 
 	/** Java's `Armor.proc()` runs `BodyFormBuff.glyph()` independently of the worn glyph and
@@ -2061,15 +2102,15 @@ export const combatResolutionMethods = {
 		const scene = this;
 		mobOnHit({
 			get armorGlyph() { return scene.armorGlyph; }, set armorGlyph(value) { scene.armorGlyph = value; },
-			armorGlyphActive: scene.armorGlyphActive(),
+			armorGlyphActive: scene.armorGlyphActive(defender),
 			get armorLevel() { return scene.armorLevel; },
 			get hunger() { return scene.hunger; }, set hunger(value) { scene.hunger = value; },
 			get earthrootArmor() { return scene.earthrootArmor; }, set earthrootArmor(value) { scene.earthrootArmor = value; },
 			hero: scene.hero, level: scene.level, charmTargets: scene.charmTargets, manualPlants: scene.manualPlants,
 			stenchGas: scene.stenchGas, toxicGas: scene.toxicGas, wandCharges: scene.wandCharges,
 			creatureAt: (x, y) => scene.creatureAt(x, y), degradedLevel: (level) => scene.degradedLevel(level),
-			genericProcMultiplier: () => scene.genericProcMultiplier(), armorProcMultiplier: (defender) => scene.armorProcMultiplier(defender),
-			trinityBodyGlyphIs: (glyph) => scene.trinityBodyGlyphIs(glyph), grantHeroShield: (amount, cap) => scene.grantHeroShield(amount, cap),
+			genericProcMultiplier: () => defender.allyKind === 'ghost' ? scene.armorProcMultiplier(defender) : scene.genericProcMultiplier(), armorProcMultiplier: (defender) => scene.armorProcMultiplier(defender),
+			trinityBodyGlyphIs: (glyph) => defender.isHero && scene.trinityBodyGlyphIs(glyph), grantHeroShield: (amount, cap) => scene.grantHeroShield(amount, cap),
 			isChasmCell: (x, y) => scene.isChasmCell(x, y), placePortedFeature: (cell, kind) => scene.placePortedFeature(cell, kind),
 			say: (message, level) => scene.say(message, level), shakeScreen: (magnitude, duration) => scene.shakeScreen(magnitude, duration),
 			showHeal: (target, amount) => scene.showHeal(target, amount), spawnMonster: (kind, at) => scene.spawnMonster(kind, at),

@@ -939,10 +939,8 @@ export class DungeonScene extends Scene2D {
 	 * saved buff on, so they live as live maps here (and, unlike Java's buffs, do not survive a
 	 * save/load - recorded in `PORT_COVERAGE.md`). */
 	awareCreatures = new Map<Creature, number>();
-	/** The Dried Rose's live `GhostHero`, and whether this run has summoned one before (Java's
-	 *  `firstSummon`, which picks the arrival line). Java re-finds its ghost by actor id after a
-	 *  save; this port's reference does not survive one, so a reload leaves the rose thinking it
-	 *  has no ghost until it is charged and summoned again - see `PORT_COVERAGE.md`. */
+	/** The Dried Rose's live `GhostHero`, rebound from the restored floor creature snapshot, and
+	 *  whether this run has summoned one before (`DriedRose.firstSummon`, stored with the run). */
 	roseGhost: Creature | null = null;
 	roseFirstSummon = false;
 	/** `ArtifactRecharge`'s remaining turns (Java's `left`). Modelled as a scene timer rather than a

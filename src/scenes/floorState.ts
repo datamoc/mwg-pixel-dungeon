@@ -149,6 +149,9 @@ export interface SavedCreature {
 	nextTurn: number | null;
 	isAlly?: boolean;
 	allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost' | 'ninjaLog' | 'spiritHawk' | 'lightAlly' | 'afterImage' | 'shadowClone' | 'prismatic';
+	/** `DirectableAlly.storeInBundle()` (`v3.3.8`): the Rose ghost's defend cell/order state. */
+	allyDefendCell?: { x: number; y: number };
+	allyMovingToDefend?: boolean;
 	lightAllyClass?: 'warrior' | 'mage' | 'rogue' | 'huntress' | 'duelist';
 	powerOfManyBarrier?: number;
 	powerOfManyBarrierPartial?: number;

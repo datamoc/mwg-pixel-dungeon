@@ -1632,6 +1632,8 @@ export const actorTurnsHazardsMethods = {
 			return;
 		}
 		if (ally.allyKind === 'prismatic') this.syncPrismaticImage(ally);
+		// `GhostHero.updateRose()` refreshes evasion from the hero's current level on each ghost turn.
+		if (ally.allyKind === 'ghost') ally.evasion = this.progression.level + 4;
 		const hostiles = this.visibleAllyHostiles(ally)
 			.sort((a, b) => Roguelike.chebyshevDistance(ally, a) - Roguelike.chebyshevDistance(ally, b));
 		//`DirectableAlly`'s standing order, if this ally has one: an ordered attack target takes
@@ -1668,8 +1670,11 @@ export const actorTurnsHazardsMethods = {
 		//`activateFeint` reduction: this port's AI retargets from FOV every turn, so a
 		//mob that cannot see the hero already comes for the visible image through the
 		//shared paths, and there is no persistent enemy pointer to redirect.
-		if (target && Roguelike.chebyshevDistance(ally, target) === 1) {
+		const ghostReach = ally.allyKind === 'ghost' ? Math.max(1, ally.reach ?? 1) : 1;
+		if (target && Roguelike.chebyshevDistance(ally, target) <= ghostReach) {
 			this.attack(ally, target);
+			//`GhostHero.attackDelay()` adds the equipped weapon's delay factor to its own base.
+			if (ally.allyKind === 'ghost') this.pendingMonsterTurnCost = ally.attackDelay ?? 1;
 			return;
 		}
 		const destination = target ?? defend ?? this.hero;

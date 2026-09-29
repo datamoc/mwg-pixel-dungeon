@@ -149,6 +149,11 @@ export function itemDisplayName(scene: ItemDisplayContext, id: string, identifie
 	//`DriedRose.actions()`'s own `AC_SUMMON`/`AC_DIRECT` labels, on the same synthetic-id trick.
 	if (id === 'rose' && instanceId === 'rose-summon') return t('items.artifacts.driedrose.ac_summon');
 	if (id === 'rose' && instanceId === 'rose-direct') return t('items.artifacts.driedrose.ac_direct');
+	if (id === 'rose' && instanceId === 'rose-outfit') return t('items.artifacts.driedrose.ac_outfit');
+	if (id === 'rose' && instanceId === 'rose-outfit-weapon') return t('items.artifacts.driedrose$wndghosthero.weapon_prompt');
+	if (id === 'rose' && instanceId === 'rose-outfit-armor') return t('items.artifacts.driedrose$wndghosthero.armor_prompt');
+	if (id === 'rose' && instanceId === 'rose-remove-weapon') return t('items.artifacts.driedrose$wndghosthero.weapon_prompt');
+	if (id === 'rose' && instanceId === 'rose-remove-armor') return t('items.artifacts.driedrose$wndghosthero.armor_prompt');
 	//`UnstableSpellbook.actions()`'s own `AC_READ`/`AC_ADD` labels, on the same synthetic-id trick.
 	if (id === 'spellbook' && instanceId === 'spellbook-read') return t('items.artifacts.unstablespellbook.ac_read');
 	if (id === 'spellbook' && instanceId === 'spellbook-add') return t('items.artifacts.unstablespellbook.ac_add');

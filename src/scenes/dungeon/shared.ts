@@ -533,13 +533,13 @@ export interface SaveShape {
 	upgradeScrollDrops?: number;
 	/** Java Dungeon.LimitedDrops.COOKING_HP count, persisted for SeedToPotion's healing reroll. */
 	cookingHpCount?: number;
-	bag: { id: string; quantity: number; instanceId?: string; identified?: boolean; level?: number; sandBags?: number; affix?: string; cursed?: boolean; cursedKnown?: boolean; returnDepth?: number; returnBranch?: number; returnPos?: number; returnX?: number; returnY?: number;
+	bag: { id: string; quantity: number; instanceId?: string; identified?: boolean; level?: number; tier?: number; sourceClass?: string; sandBags?: number; affix?: string; cursed?: boolean; cursedKnown?: boolean; curseInfusionBonus?: boolean; ghostWeapon?: { id: string; instanceId?: string; sourceClass: string; tier: number; level: number; affix?: string; cursed?: boolean; cursedKnown?: boolean; identified?: boolean; hardened?: boolean; curseInfusionBonus?: boolean }; ghostArmor?: { id: string; instanceId?: string; sourceClass: string; tier: number; level: number; affix?: string; cursed?: boolean; cursedKnown?: boolean; identified?: boolean; hardened?: boolean; curseInfusionBonus?: boolean }; returnDepth?: number; returnBranch?: number; returnPos?: number; returnX?: number; returnY?: number;
 		usesLeftToIdentify?: number; availableUsesToIdentify?: number; durability?: number; maxDurability?: number; seal?: boolean; hardened?: boolean; wandCur?: number; wandPartial?: number; wandMax?: number }[];
 	/** MWG actor inventory save; `bag` remains for loading pre-migration slots. */
 	bagState?: Actors.SavedInventory;
 	bagDefinitions?: [string, Actors.ItemDefinition][];
-		bagSources?: { id: string; instanceId?: string; sandBags?: number; charges?: number; sourceClass?: string; cursedKnown?: boolean; returnDepth?: number; returnBranch?: number; returnPos?: number; returnX?: number; returnY?: number;
-		usesLeftToIdentify?: number; availableUsesToIdentify?: number; durability?: number; maxDurability?: number; seal?: boolean; blessed?: boolean; hardened?: boolean; curseInfusionBonus?: boolean; beaconCharge?: number; beaconPartialCharge?: number; wandCur?: number; wandPartial?: number; wandMax?: number; tomeCharge?: number; tomePartialCharge?: number; tomeExp?: number; tomeLevel?: number;
+		bagSources?: { id: string; instanceId?: string; sandBags?: number; charges?: number; sourceClass?: string; level?: number; tier?: number; affix?: string; cursed?: boolean; cursedKnown?: boolean; curseInfusionBonus?: boolean; hardened?: boolean; ghostWeapon?: { id: string; instanceId?: string; sourceClass: string; tier: number; level: number; affix?: string; cursed?: boolean; cursedKnown?: boolean; identified?: boolean; hardened?: boolean; curseInfusionBonus?: boolean }; ghostArmor?: { id: string; instanceId?: string; sourceClass: string; tier: number; level: number; affix?: string; cursed?: boolean; cursedKnown?: boolean; identified?: boolean; hardened?: boolean; curseInfusionBonus?: boolean }; returnDepth?: number; returnBranch?: number; returnPos?: number; returnX?: number; returnY?: number;
+		usesLeftToIdentify?: number; availableUsesToIdentify?: number; durability?: number; maxDurability?: number; seal?: boolean; blessed?: boolean; beaconCharge?: number; beaconPartialCharge?: number; wandCur?: number; wandPartial?: number; wandMax?: number; tomeCharge?: number; tomePartialCharge?: number; tomeExp?: number; tomeLevel?: number;
 		/** A carried missile stack's own set id - see `src/missiles.ts`. Its `level`/`durability`/
 		 * `maxDurability` ride `Actors.Inventory.toJSON` itself, so only this needs the side channel. */
 		missileSet?: string;
@@ -551,6 +551,8 @@ export interface SaveShape {
 	appearances?: { assigned: [string, [string, string][]][] };
 	switches: [string, boolean][];
 	ascensionChallengeActive?: boolean;
+	/** `DriedRose.firstSummon` (`DriedRose.storeInBundle()`, tag `v3.3.8`). */
+	roseFirstSummon?: boolean;
 	/** `Dungeon.challenges` (`Dungeon.java:742,861`): the run's challenge ids; absent in older saves. */
 	challengeIds?: string[];
 	questStages: [string, number][];

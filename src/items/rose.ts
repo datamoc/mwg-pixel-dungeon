@@ -13,14 +13,20 @@
  */
 import { Random, Roguelike } from 'mwg';
 import { mwlItemEffectValue } from '../mwlContent';
+import { armorReductionRange, weaponCombat } from './catalog';
+import { armorSTRReq, weaponSTRReq } from './strReq';
 
 export type RoseItem = {
 	level?: number;
+	identified?: boolean;
 	/** Java's `charge` (an int) and `partialCharge` (the float build-up toward the next one), the
 	 *  same pair `Artifact.java` gives every artifact. */
 	charge?: number;
 	partialCharge?: number;
 	cursed?: boolean;
+	/** `DriedRose.weapon` and `.armor` survive independently of the temporary GhostHero actor. */
+	ghostWeapon?: RoseGhostGear;
+	ghostArmor?: RoseGhostGear;
 	/** Java's `droppedPetals`: how many petals this run has already dropped, capped at 11, and the
 	 *  input the per-floor drop count is computed from. */
 	droppedPetals?: number;
@@ -52,9 +58,7 @@ export function roseGhostDefenseSkill(heroLevel: number): number {
 	return heroLevel + mwlItemEffectValue('rose', 'ghostDefenseSkillOffset');
 }
 
-/** `GhostHero.damageRoll()` with no weapon equipped: `Random.NormalIntRange(0, 5)`. Java's
- *  weapon branch is Not ported - this port has no ally-equipment model (see `PORT_COVERAGE.md`),
- *  so a rose here always fights bare-handed. */
+/** `GhostHero.damageRoll()` with no weapon equipped: `Random.NormalIntRange(0, 5)`. */
 export function roseGhostDamageRange(): readonly [number, number] {
 	return [mwlItemEffectValue('rose', 'ghostDamageMin'), mwlItemEffectValue('rose', 'ghostDamageMax')];
 }
@@ -64,6 +68,48 @@ export function roseGhostDamageRange(): readonly [number, number] {
  *  reported rather than applied. */
 export function roseGhostStrength(level: number): number {
 	return mwlItemEffectValue('rose', 'ghostStrengthBase') + Math.floor(level / mwlItemEffectValue('rose', 'ghostStrengthLevelDivisor'));
+}
+
+/** Gear instance stored on a GhostHero; `sourceClass` preserves generated reward subclasses. */
+export interface RoseGhostGear {
+	id: string;
+	instanceId?: string;
+	sourceClass: string;
+	tier: number;
+	level: number;
+	affix?: string;
+	cursed?: boolean;
+	identified?: boolean;
+	hardened?: boolean;
+	cursedKnown?: boolean;
+	curseInfusionBonus?: boolean;
+}
+
+/** `GhostHero`'s weapon()/armor()-backed stats (`DriedRose.java`, tag `v3.3.8`). */
+export function applyRoseGhostEquipment(ghost: RoseGhostView, rose: RoseItem, heroLevel: number): void {
+	ghost.str = roseGhostStrength(rose.level ?? 0);
+	ghost.accuracy = roseGhostAttackSkill(heroLevel);
+	ghost.evasion = roseGhostDefenseSkill(heroLevel);
+	if (rose.ghostWeapon) {
+		const weapon = rose.ghostWeapon;
+		const combat = weaponCombat(weapon.sourceClass, weapon.tier, weapon.level);
+		ghost.damage = [combat.min, combat.max];
+		ghost.weaponDefense = combat.defense;
+		ghost.strReq = weaponSTRReq(weapon.tier, weapon.level);
+		ghost.reach = combat.reach;
+		ghost.attackDelay = combat.delay;
+	} else {
+		ghost.damage = [...roseGhostDamageRange()];
+		ghost.weaponDefense = undefined;
+		ghost.strReq = undefined;
+		ghost.reach = 1;
+		ghost.attackDelay = 1;
+	}
+	ghost.roseWeapon = rose.ghostWeapon;
+	ghost.roseArmor = rose.ghostArmor;
+	ghost.armor = rose.ghostArmor
+		? armorReductionRange(rose.ghostArmor.tier, rose.ghostArmor.level)
+		: [0, 0];
 }
 
 export interface RoseRechargeInput {
@@ -182,6 +228,62 @@ export function rosePetalDropCap(): number {
 	return mwlItemEffectValue('rose', 'petalDropCap');
 }
 
+export interface RosePetalRoom {
+	left: number;
+	top: number;
+	right: number;
+	bottom: number;
+	/** `PortedFloor.rooms` preserves the exact Java class label as `kind:subkind`. */
+	label?: string;
+	kind?: string;
+	standardKind?: string;
+	random?: () => { x: number; y: number };
+}
+
+/** `RegularLevel.randomDropCell()` (tag `v3.3.8`): shuffle rooms, sample a StandardRoom
+ *  interior, and retry its 100-cell predicate. The injected predicates keep this picker
+ *  scene-free while the scene supplies its live terrain, heap, mob, and trap state. */
+export function randomRosePetalDropCell(ctx: {
+	rooms: RosePetalRoom[];
+	shuffle(rooms: RosePetalRoom[]): void;
+	randomIntRange(min: number, max: number): number;
+	passable(at: { x: number; y: number }): boolean;
+	solid(at: { x: number; y: number }): boolean;
+	isExit(at: { x: number; y: number }): boolean;
+	hasHeap(at: { x: number; y: number }): boolean;
+	roomCanPlaceItem(room: RosePetalRoom, at: { x: number; y: number }): boolean;
+	hasMob(at: { x: number; y: number }): boolean;
+	trapDestroysItems(at: { x: number; y: number }): boolean;
+}): { x: number; y: number } | null {
+	const labelParts = (room: RosePetalRoom): { kind?: string; subkind?: string } => {
+		const [kind, subkind] = room.label?.split(':') ?? [];
+		return { kind: room.kind ?? kind, subkind: room.standardKind ?? (kind === 'standard' ? subkind : undefined) };
+	};
+	const hasRoomLabels = ctx.rooms.some((room) => room.label !== undefined);
+	const genericEntrance = !hasRoomLabels && ctx.rooms[0]?.kind === undefined ? ctx.rooms[0] : undefined;
+	const entrance = ctx.rooms.find((room) => {
+		const meta = labelParts(room);
+		return meta.kind === 'entrance' || meta.subkind === 'mineEntrance';
+	}) ?? genericEntrance;
+	for (let attempt = 0; attempt < 100; attempt++) {
+		ctx.shuffle(ctx.rooms);
+		const room = ctx.rooms.find((candidate) => {
+			const kind = labelParts(candidate).kind;
+			return kind === 'standard' || (kind === undefined && !hasRoomLabels);
+		});
+		if (!room) return null;
+		if (room === entrance) continue;
+		const at = room.random?.() ?? {
+			x: ctx.randomIntRange(room.left + 1, room.right - 1),
+			y: ctx.randomIntRange(room.top + 1, room.bottom - 1),
+		};
+		if (!ctx.passable(at) || ctx.solid(at) || ctx.isExit(at) || ctx.hasHeap(at)
+			|| !ctx.roomCanPlaceItem(room, at) || ctx.hasMob(at) || ctx.trapDestroysItems(at)) continue;
+		return at;
+	}
+	return null;
+}
+
 /** `DriedRose.Petal.doPickUp()`'s two refusals and its success path: no rose at all is a warning
  *  that *blocks* the pickup; a rose already at `levelCap` spends the turn and keeps the petal on
  *  the floor; otherwise the petal levels the rose (`upgrade()`, which also heals a live ghost by
@@ -206,6 +308,13 @@ export interface RoseGhostView {
 	armor: number[];
 	isNPC?: boolean | undefined;
 	npcKind?: string | undefined;
+	str?: number | undefined;
+	strReq?: number | undefined;
+	weaponDefense?: number | undefined;
+	reach?: number | undefined;
+	attackDelay?: number | undefined;
+	roseWeapon?: RoseGhostGear | undefined;
+	roseArmor?: RoseGhostGear | undefined;
 }
 
 /**
@@ -230,6 +339,8 @@ export interface RoseFlowContext {
 	spawnGhostAlly(at: { x: number; y: number }): RoseGhostView;
 	setActiveGhost(ghost: RoseGhostView | null): void;
 	activeGhost(): RoseGhostView | null;
+	bagItems(): { id: string; instanceId?: string; quantity: number; level?: number; tier?: number; sourceClass?: string; affix?: string; cursed?: boolean; cursedKnown?: boolean; identified?: boolean; hardened?: boolean; curseInfusionBonus?: boolean; unique?: boolean; seal?: boolean; slot?: string; equipped?: boolean }[];
+	equipGhost(slot: 'weapon' | 'armor', gear: RoseGhostGear | null): void;
 	directAlly(ghost: RoseGhostView, cell: { x: number; y: number }, lines: { defend: string; follow: string; attack: string }): void;
 	heroLevel(): number;
 	get roseFirstSummon(): boolean;
@@ -251,7 +362,8 @@ export function useRoseFlow(ctx: RoseFlowContext, instanceId?: string): void {
 	const canSummon = roseSummonGate(rose, ctx.sadGhostComplete, ghostAlive, ctx.magicImmune) === 'ok';
 	const entries = [
 		...(canSummon ? [{ id: 'rose', instanceId: summonEntry, identified: true, quantity: 1 }] : []),
-		...(ghostAlive ? [{ id: 'rose', instanceId: directEntry, identified: true, quantity: 1 }] : []),
+		...(ghostAlive && ctx.sadGhostComplete ? [{ id: 'rose', instanceId: directEntry, identified: true, quantity: 1 }] : []),
+		...(ghostAlive && ctx.sadGhostComplete && rose.identified !== false && !rose.cursed ? [{ id: 'rose', instanceId: 'rose-outfit', identified: true, quantity: 1 }] : []),
 	];
 	if (entries.length === 0) {
 		//Java reports each refusal with its own line from `execute()`'s ladder; with no action
@@ -268,6 +380,64 @@ export function useRoseFlow(ctx: RoseFlowContext, instanceId?: string): void {
 	ctx.openPicker(ctx.roseTitle(instanceId), entries, (entry) => {
 		if (entry.instanceId === summonEntry) summonRoseGhostFlow(ctx, instanceId);
 		else if (entry.instanceId === directEntry) beginRoseDirectFlow(ctx);
+		else if (entry.instanceId === 'rose-outfit') openRoseOutfitFlow(ctx, instanceId);
+	});
+}
+
+/** DriedRose.AC_OUTFIT / WndGhostHero: select a weapon or armor slot, then a backpack instance. */
+export function openRoseOutfitFlow(ctx: RoseFlowContext, instanceId?: string): void {
+	const ghost = ctx.activeGhost();
+	if (!ghost || ghost.hp <= 0) return;
+	const rose = ctx.roseOf(instanceId);
+	const strength = roseGhostStrength(rose?.level ?? 0);
+	const slotEntries = [
+		{ id: 'rose', instanceId: 'rose-outfit-weapon', identified: true, quantity: 1 },
+		{ id: 'rose', instanceId: 'rose-outfit-armor', identified: true, quantity: 1 },
+	];
+	const currentWeapon = ghost.roseWeapon;
+	const currentArmor = ghost.roseArmor;
+	if (currentWeapon) slotEntries.push({ id: 'rose', instanceId: 'rose-remove-weapon', identified: true, quantity: 1 });
+	if (currentArmor) slotEntries.push({ id: 'rose', instanceId: 'rose-remove-armor', identified: true, quantity: 1 });
+	ctx.openPicker(ctx.t('items.artifacts.driedrose.ac_outfit'), slotEntries, (slot) => {
+		if (slot.instanceId === 'rose-remove-weapon') { ctx.equipGhost('weapon', null); return; }
+		if (slot.instanceId === 'rose-remove-armor') { ctx.equipGhost('armor', null); return; }
+		const kind = slot.instanceId === 'rose-outfit-weapon' ? 'weapon' : 'armor';
+		// `WndGhostHero` selects from the hero's Backpack only. The port's inventory is flat and also
+		// contains the separately equipped instance, so the context marks that instance to keep it
+		// out of this backpack picker instead of allowing both hero and ghost to own it.
+		const eligible = ctx.bagItems().filter((item) => item.quantity > 0 && item.slot === kind && !item.equipped);
+		// Java's WndBag displays the whole weapon/armor category, then reports a reason if the
+		// chosen item is refused. The shared picker accepts a concrete list, so this port includes
+		// every matching carried instance and applies the same checks after selection.
+		const rows = eligible.map((item) => ({ id: item.id, instanceId: item.instanceId, identified: item.identified ?? false, quantity: item.quantity }));
+		if (rows.length === 0) return;
+		ctx.openPicker(ctx.t(kind === 'weapon' ? 'items.artifacts.driedrose$wndghosthero.weapon_prompt' : 'items.artifacts.driedrose$wndghosthero.armor_prompt'), rows, (pick) => {
+			const item = eligible.find((candidate) => candidate.id === pick.id && candidate.instanceId === pick.instanceId);
+			if (!item || item.quantity <= 0) return;
+			const uniqueReward = kind === 'weapon' && /spiritbow|dwarfkinghalberd/i.test(item.sourceClass ?? item.id);
+			if (item.unique || uniqueReward || (kind === 'armor' && item.seal)) {
+				ctx.say(ctx.t('items.artifacts.driedrose$wndghosthero.cant_unique'), 'warning');
+				return;
+			}
+			if (item.cursed || !(item.cursedKnown ?? (item.identified === true))) {
+				ctx.say(ctx.t('items.artifacts.driedrose$wndghosthero.cant_cursed'), 'warning');
+				return;
+			}
+			const tier = Math.max(1, item.tier ?? 1), level = item.level ?? 0;
+			const strengthRequirement = kind === 'weapon' ? weaponSTRReq : armorSTRReq;
+			// Java tracks `levelKnown` separately from identification; this inventory model exposes
+			// only `identified`, so an unidentified item is the closest available unknown-level state.
+			if (item.identified === false && strengthRequirement(tier, 0) > strength) {
+				ctx.say(ctx.t('items.artifacts.driedrose$wndghosthero.cant_strength_unknown'), 'warning');
+				return;
+			}
+			if (strengthRequirement(tier, level) > strength) {
+				ctx.say(ctx.t('items.artifacts.driedrose$wndghosthero.cant_strength'), 'warning');
+				return;
+			}
+			const gear: RoseGhostGear = { id: item.id, ...(item.instanceId ? { instanceId: item.instanceId } : {}), sourceClass: item.sourceClass ?? item.id, tier: Math.max(1, item.tier ?? 1), level: item.level ?? 0, ...(item.affix ? { affix: item.affix } : {}), ...(item.cursed !== undefined ? { cursed: item.cursed } : {}), ...(item.cursedKnown !== undefined ? { cursedKnown: item.cursedKnown } : {}), ...(item.identified !== undefined ? { identified: item.identified } : {}), ...(item.hardened !== undefined ? { hardened: item.hardened } : {}), ...(item.curseInfusionBonus !== undefined ? { curseInfusionBonus: item.curseInfusionBonus } : {}) };
+			ctx.equipGhost(kind, gear);
+		});
 	});
 }
 
@@ -299,10 +469,12 @@ export function summonRoseGhostFlow(ctx: RoseFlowContext, instanceId?: string): 
 	const level = rose.level ?? 0;
 	ghost.maxHp = roseGhostMaxHp(level);
 	ghost.hp = ghost.maxHp;
+	ghost.str = roseGhostStrength(level);
 	ghost.accuracy = roseGhostAttackSkill(ctx.heroLevel());
 	ghost.evasion = roseGhostDefenseSkill(ctx.heroLevel());
 	ghost.damage = [...roseGhostDamageRange()];
 	ghost.armor = [0, 0];
+	applyRoseGhostEquipment(ghost, rose, ctx.heroLevel());
 	ctx.setActiveGhost(ghost);
 	rose.charge = 0;
 	rose.partialCharge = 0;

@@ -63,7 +63,8 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	//`potential`/`antientropy` charge the hero's wands and hunger (Java's clone carries neither,
 	//so those two are nil for it in Java) - those five stay keyed on `defender.isHero`; every
 	//site below that treats `defender`/`attacker` generically takes the clone too.
-	const glyphDefender = defender.isHero || cloneDefenderGate;
+	const roseArmorGate = defender.allyKind === 'ghost' && defender.roseArmor !== undefined;
+	const glyphDefender = defender.isHero || cloneDefenderGate || roseArmorGate;
 	if (defender.isHero) ctx.grantHeroShield(lethalDefenseShield(ctx.subclass(), ctx.talentRank('lethal_defense')), ctx.hero.maxHp);
 	//`RottingFist.attackProc` is the only fist subclass with a melee-contact effect:
 	//half of all landed melee hits ooze the victim (`Ooze.DURATION` is the table's own
@@ -128,10 +129,10 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	//at `Ooze.DURATION/2` (10). What stood here skipped the wearer and applied
 	//the table's whole-20 duration.
 	if (glyphDefender && armorGlyph('corrosion') && Random.chance((1 / 10) * ctx.genericProcMultiplier())) {
-		addBuff(ctx.hero, 'ooze', 10);
+		addBuff(defender, 'ooze', 10);
 		for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
-			const nearby = ctx.creatureAt(ctx.hero.x + dx, ctx.hero.y + dy);
-			if (nearby && nearby !== ctx.hero) addBuff(nearby, 'ooze', 10);
+			const nearby = ctx.creatureAt(defender.x + dx, defender.y + dy);
+			if (nearby && nearby !== defender) addBuff(nearby, 'ooze', 10);
 		}
 	}
 	//Multiplicity.proc(): a 1-in-20 proc duplicates the attacker into an available
@@ -149,7 +150,7 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	if (glyphDefender && armorGlyph('multiplicity') && !attacker.isHero && !attacker.isNPC
 		&& !attacker.boss && !attacker.miniboss && Random.chance((1 / 20) * ctx.genericProcMultiplier())) {
 		const adjacent = Roguelike.neighbourOffsets(8)
-			.map(([dx, dy]) => ({ x: ctx.hero.x + dx, y: ctx.hero.y + dy }))
+			.map(([dx, dy]) => ({ x: defender.x + dx, y: defender.y + dy }))
 			.filter((at) => ctx.level.passable(at.x, at.y) && !ctx.isChasmCell(at.x, at.y) && !ctx.creatureAt(at.x, at.y));
 		const destination = Random.element(adjacent);
 		const attackerKind = attacker.kind;
@@ -175,7 +176,7 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	//250-volume ToxicGas blob at the wearer's own feet. Java's Stench.java imports
 	//ToxicGas; only FetidRat's defenseProc seeds the distinct StenchGas blob.
 	if (glyphDefender && armorGlyph('stench') && Random.chance((1 / 8) * ctx.genericProcMultiplier())) {
-		ctx.toxicGas.seed(ctx.hero.x, ctx.hero.y, 250);
+		ctx.toxicGas.seed(defender.x, defender.y, 250);
 		ctx.say(t('port.log.stenchcurse'), 'negative');
 	}
 	if (attacker.kind === 'bat' && damage > 4) {

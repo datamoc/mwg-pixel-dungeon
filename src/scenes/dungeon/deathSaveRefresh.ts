@@ -1,5 +1,6 @@
 import { visualGrid } from '../../settings';
 import type { DungeonScene } from '../dungeonScene';
+import type { SaveShape } from './shared';
 import { fallenItemStore } from './fallenItems';
 import { FogOfWar } from '../../ui/fogOfWar';
 import { wallBlockingFrame } from '../../spdLevelGen/wallBlocking';
@@ -1522,7 +1523,7 @@ export const deathSaveRefreshMethods = {
 			armorHardened: this.armorHardened,
 			armorCursed: this.armorCursed,
 			armorCursedKnown: this.armorCursedKnown,
-			bag: this.bag.items.map((i) => ({ id: i.id, quantity: i.quantity, instanceId: i.instanceId, identified: i.identified, level: i.level, sandBags: (i as typeof i & { sandBags?: number }).sandBags, charges: (i as typeof i & { charges?: number }).charges, affix: i.affix, cursed: i.cursed,
+			bag: this.bag.items.map((i) => ({ id: i.id, quantity: i.quantity, instanceId: i.instanceId, identified: i.identified, level: i.level, tier: (i as typeof i & { tier?: number }).tier, sourceClass: (i as typeof i & { sourceClass?: string }).sourceClass, sandBags: (i as typeof i & { sandBags?: number }).sandBags, charges: (i as typeof i & { charges?: number }).charges, affix: i.affix, cursed: i.cursed, curseInfusionBonus: (i as typeof i & { curseInfusionBonus?: boolean }).curseInfusionBonus,
 				wandCur: (i as typeof i & { wandCur?: number }).wandCur, wandPartial: (i as typeof i & { wandPartial?: number }).wandPartial, wandMax: (i as typeof i & { wandMax?: number }).wandMax,
 				returnDepth: (i as typeof i & { returnDepth?: number }).returnDepth, returnBranch: (i as typeof i & { returnBranch?: number }).returnBranch,
 				returnPos: (i as typeof i & { returnPos?: number }).returnPos, returnX: (i as typeof i & { returnX?: number }).returnX, returnY: (i as typeof i & { returnY?: number }).returnY,
@@ -1531,7 +1532,9 @@ export const deathSaveRefreshMethods = {
 				availableUsesToIdentify: (i as typeof i & { availableUsesToIdentify?: number }).availableUsesToIdentify,
 				durability: (i as typeof i & { durability?: number }).durability,
 				maxDurability: (i as typeof i & { maxDurability?: number }).maxDurability,
-				seal: (i as typeof i & { seal?: boolean }).seal, blessed: (i as typeof i & { blessed?: boolean }).blessed })),
+				seal: (i as typeof i & { seal?: boolean }).seal, blessed: (i as typeof i & { blessed?: boolean }).blessed,
+				ghostWeapon: (i as typeof i & { ghostWeapon?: unknown }).ghostWeapon as SaveShape['bag'][number]['ghostWeapon'],
+				ghostArmor: (i as typeof i & { ghostArmor?: unknown }).ghostArmor as SaveShape['bag'][number]['ghostArmor'] })),
 			bagState: this.bag.toJSON(),
 			bagDefinitions: [...new Map(this.bag.items.map((item) => [item.id, { stackable: item.stackable, weight: item.weight } as Actors.ItemDefinition]))],
 			bagSources: this.bag.items.map((item) => ({
@@ -1543,6 +1546,12 @@ export const deathSaveRefreshMethods = {
 			wandPartial: (item as typeof item & { wandPartial?: number }).wandPartial,
 			wandMax: (item as typeof item & { wandMax?: number }).wandMax,
 				sourceClass: (item as typeof item & { sourceClass?: string }).sourceClass,
+				level: item.level, tier: (item as typeof item & { tier?: number }).tier, affix: item.affix, cursed: item.cursed,
+				hardened: (item as typeof item & { hardened?: boolean }).hardened,
+				curseInfusionBonus: (item as typeof item & { curseInfusionBonus?: boolean }).curseInfusionBonus,
+				// `DriedRose.storeInBundle()` saves its weapon and armor with the artifact.
+				ghostWeapon: (item as typeof item & { ghostWeapon?: SaveShape['bag'][number]['ghostWeapon'] }).ghostWeapon,
+				ghostArmor: (item as typeof item & { ghostArmor?: SaveShape['bag'][number]['ghostArmor'] }).ghostArmor,
 				cursedKnown: (item as typeof item & { cursedKnown?: boolean }).cursedKnown,
 				usesLeftToIdentify: (item as typeof item & { usesLeftToIdentify?: number }).usesLeftToIdentify,
 				availableUsesToIdentify: (item as typeof item & { availableUsesToIdentify?: number }).availableUsesToIdentify,
@@ -1569,6 +1578,7 @@ export const deathSaveRefreshMethods = {
 			appearances: this.appearances.toJSON(),
 			switches: this.gameState.toJSON().switches,
 			ascensionChallengeActive: this.ascensionChallengeActive,
+			roseFirstSummon: this.roseFirstSummon,
 			challengeIds: runChallengeIds(),
 			questStages: this.quests.toJSON().stageIndex,
 			equippedRing: this.equippedRing,

@@ -1,4 +1,5 @@
 import type { DungeonScene } from '../dungeonScene';
+import type { SaveShape } from './shared';
 import { fallenItemStore } from './fallenItems';
 import { growRegrowthBomb } from './regrowthBomb';
 import { InfoWindow } from '../../ui/infoWindow';
@@ -366,6 +367,15 @@ export const panelsSingleUseMethods = {
 			for (const item of this.bag.items) {
 				const source = s.bagSources?.find((saved) => saved.id === item.id && saved.instanceId === item.instanceId);
 				if (source?.sourceClass) (item as typeof item & { sourceClass?: string }).sourceClass = source.sourceClass;
+				const gearState = item as typeof item & { tier?: number; affix?: string; cursed?: boolean; level?: number; hardened?: boolean; curseInfusionBonus?: boolean; ghostWeapon?: SaveShape['bag'][number]['ghostWeapon']; ghostArmor?: SaveShape['bag'][number]['ghostArmor'] };
+				if (source?.level !== undefined) gearState.level = source.level;
+				if (source?.tier !== undefined) gearState.tier = source.tier;
+				if (source?.affix !== undefined) gearState.affix = source.affix;
+				if (source?.cursed !== undefined) gearState.cursed = source.cursed;
+				if (source?.hardened !== undefined) gearState.hardened = source.hardened;
+				if (source?.curseInfusionBonus !== undefined) gearState.curseInfusionBonus = source.curseInfusionBonus;
+				if (source?.ghostWeapon !== undefined) gearState.ghostWeapon = source.ghostWeapon;
+				if (source?.ghostArmor !== undefined) gearState.ghostArmor = source.ghostArmor;
 				if (source?.sandBags !== undefined) (item as typeof item & { sandBags?: number }).sandBags = source.sandBags;
 				if (source?.charges !== undefined) (item as typeof item & { charges?: number }).charges = source.charges;
 				if (source?.wandCur !== undefined) (item as typeof item & { wandCur?: number }).wandCur = source.wandCur;
@@ -401,7 +411,7 @@ export const panelsSingleUseMethods = {
 			this.bag = new Actors.Inventory();
 			for (const item of s.bag) {
 				const instanceId = item.instanceId ?? (item.id === 'clothArmor' || item.id === 'armor' || item.id === 'armorReward' || isClassArmorId(item.id) || item.id === 'weaponReward' || item.id.startsWith('ring_') ? this.newItemInstanceId(item.id) : undefined);
-				this.bag.add({ ...item, instanceId, stackable: true });
+				this.bag.add({ ...item, instanceId, stackable: true } as never);
 				if (instanceId && s.itemSerial === undefined) this.itemSerial++;
 			}
 		}
@@ -420,6 +430,7 @@ export const panelsSingleUseMethods = {
 		//`ascensionChallengeActive`'s field comment) does too - `enterLevel()` re-syncs it into
 		//`combat.ts` right after this method calls it, below.
 		this.ascensionChallengeActive = s.ascensionChallengeActive ?? false;
+		this.roseFirstSummon = s.roseFirstSummon ?? false;
 		this.quests = Rpg.QuestLog.fromJSON(
 			[SAD_GHOST_QUEST, WANDMAKER_QUEST, BLACKSMITH_QUEST, IMP_QUEST],
 			{ stageIndex: s.questStages },

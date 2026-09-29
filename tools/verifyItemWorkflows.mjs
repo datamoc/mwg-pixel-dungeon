@@ -885,8 +885,10 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 		assert.match(quickslot, /addBuff\(target, 'bless', BUFF_DURATION\.bless\)/);
 		assert.match(quickslot, /Random\.normalRange\(10 \+ Math\.floor\(this\.depth \/ 3\), 20 \+ Math\.floor\(this\.depth \/ 3\)\)/);
 		assert.match(quickslot, /Random\.normalRange\(5 \+ Math\.floor\(this\.depth \/ 4\), 10 \+ Math\.floor\(this\.depth \/ 4\)\)/);
-		assert.match(quickslot, /target\.corrosionTurns = 5/);
-		assert.match(quickslot, /target\.corrosionTurns = 10/);
+		assert.match(quickslot, /target\.corrosionTurns = resistedBuffDuration\(target, 'corrosion', 5\)/);
+		assert.match(quickslot, /target\.corrosionDamage = Math\.floor\(this\.depth \/ 3\)/);
+		assert.match(quickslot, /target\.corrosionTurns = resistedBuffDuration\(target, 'corrosion', 10\)/);
+		assert.match(quickslot, /target\.corrosionDamage = this\.depth/);
 		assert.match(quickslot, /const pool = 3 \+ Math\.floor\(this\.depth \/ 2\)/);
 		assert.match(quickslot, /reigniteBuff\(target, 'paralysis', 5\)/);
 		assert.match(quickslot, /this\.level\.get\(target\.x, target\.y\) === WATER \? BUFF_DURATION\.chill : 6/);
@@ -1157,6 +1159,8 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 	assert.equal(resolveWandPickup('frost', null), 'absorb', 'unknown class absorbs');
 	assert.equal(resolveWandPickup('frost', 'fireblast'), 'spare', 'another class spares');
 	assert.equal(resolveWandPickup(null, 'fireblast'), 'spare', 'no wielded wand spares');
+	const spareBag = new Inventory();
+	const spare = newSpareWandCharges(wandInitialCharges('fireblast'));
 	const partial = { cur: 1, partial: 0.5, max: 3 };
 	gainSpareWandCharge(partial, 1);
 	assert.deepEqual(partial, { cur: 2, partial: 0.5, max: 3 }, 'Belongings.charge adds to each wand own partial bank');
@@ -1166,8 +1170,6 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 	const full = { cur: 3, partial: 0, max: 3 };
 	gainSpareWandCharge(full, 1);
 	assert.deepEqual(full, { cur: 3, partial: 0, max: 3 }, 'a full wand ignores an immediate grant');
-	const spareBag = new Inventory();
-	const spare = newSpareWandCharges(wandInitialCharges('fireblast'));
 	spareBag.add({ id: 'wand', quantity: 1, instanceId: 'wand:1', identified: true, ...{ sourceClass: 'WandOfFireblast', wandCur: spare.cur, wandPartial: spare.partial, wandMax: spare.max } });
 	assert.equal(spareBag.items.length, 1, 'the spare keeps its own entry');
 	spareBag.add({ id: 'wand', quantity: 1, stackable: true, identified: true });
@@ -2164,7 +2166,7 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 			//duration-less marker, like `sunrayUsed`). `lightWallActive` is port-only (no
 			//Java DURATION - stated at `resolveWallOfLight`), tracking the 20-turn
 			//`WallOfLight` terrain clock it stands in for.
-			lanceCooldown: 30, auraProtection: 20, smiteTracker: 1, guidingPriestCooldown: 50,
+			lanceCooldown: 30, auraProtection: 20, smiteTracker: 1, guidingPriestCooldown: 50, searingLightCooldown: 20,
 			lightWallActive: 20,
 		},
 		'buff durations match the authored table',
@@ -2962,7 +2964,7 @@ function armbandDrive(overrides = {}, confirmCell = { x: 1, y: 0 }) {
 	assert.equal(succubusDrop?.kind, 'scroll', 'succubi carry scrolls');
 // The moved rose flow (`RoseFlowContext`, the file-size refactor's thirteenth extraction):
 // driven headlessly with a scripted picker and stub floor.
-const { useRoseFlow } = require('./items/rose.js');
+const { useRoseFlow, openRoseOutfitFlow, applyRoseGhostEquipment } = require('./items/rose.js');
 function roseDrive(overrides = {}, pickScript = [0]) {
 	const log = [];
 	const flags = { turns: 0, uncloaked: false, refreshed: false, orders: [], spawnedAt: null, active: null };
@@ -3028,7 +3030,7 @@ function roseDrive(overrides = {}, pickScript = [0]) {
 {
 	const ghost = { sleeping: false, maxHp: 20, hp: 20, accuracy: 14, evasion: 9, damage: [0, 5], armor: [0, 0] };
 	const d = roseDrive({ ghost }, [0]);
-	assert.ok(d.log[0].endsWith('rose-direct'), `direct alone while summoned, got ${d.log[0]}`);
+	assert.ok(d.log[0].includes('rose-direct,rose-outfit'), `direct and outfit while summoned, got ${d.log[0]}`);
 	assert.equal(d.log[1], 'aim:10', 'orders aim over the whole floor');
 	d.ctx.aimOpts.onConfirm({ x: 7, y: 5 });
 	assert.equal(d.flags.orders.length, 1, 'one order issued');
@@ -3036,6 +3038,46 @@ function roseDrive(overrides = {}, pickScript = [0]) {
 	assert.ok(/^items\.artifacts\.driedrose\$ghosthero\.directed_position_[1-5]$/.test(lines.defend), `a numbered yell, got ${lines.defend}`);
 	assert.ok(lines.follow.includes('directed_follow') && lines.attack.includes('directed_attack'), 'all three orders scripted');
 	assert.deepEqual(d.flags.orders[0].cell, { x: 7, y: 5 });
+	const unidentifiedRose = roseDrive({ ghost, rose: { identified: false } });
+	assert.ok(!unidentifiedRose.log[0].includes('rose-outfit'), 'Java hides AC_OUTFIT until the rose is identified');
+	const cursedRose = roseDrive({ ghost, rose: { cursed: true } });
+	assert.ok(!cursedRose.log[0].includes('rose-outfit'), 'Java hides AC_OUTFIT while the rose is cursed');
+}
+// Outfit: Java exposes weapon/armor selectors, refuses unique gear with its own message,
+// and equips an eligible backpack instance on the ghost without consuming a hero turn.
+{
+	const gear = [
+		{ id: 'weaponReward', instanceId: 'good-sword', sourceClass: 'Sword', tier: 1, level: 0, quantity: 1, slot: 'weapon', identified: true, cursedKnown: true },
+		{ id: 'weaponReward', instanceId: 'unique-bow', sourceClass: 'SpiritBow', tier: 1, level: 0, quantity: 1, slot: 'weapon', identified: true, cursedKnown: true },
+	];
+	const ghost = { hp: 20, maxHp: 20, roseWeapon: undefined, roseArmor: undefined };
+	const picks = [];
+	const messages = [];
+	const equipped = [];
+	const ctx = {
+		roseOf: () => ({ level: 0 }), activeGhost: () => ghost, bagItems: () => gear,
+		openPicker: (title, entries, onPick) => picks.push({ title, entries, onPick }),
+		equipGhost: (slot, selected) => equipped.push({ slot, selected }),
+		t: (key) => key, say: (line) => messages.push(line),
+	};
+	openRoseOutfitFlow(ctx);
+	picks[0].onPick(picks[0].entries.find((entry) => entry.instanceId === 'rose-outfit-weapon'));
+	assert.equal(picks[1].entries.length, 2, 'the picker shows eligible and refused weapons for Java-like feedback');
+	picks[1].onPick(picks[1].entries.find((entry) => entry.instanceId === 'unique-bow'));
+	assert.ok(messages[0].endsWith('cant_unique'), 'unique rewards get the Java refusal');
+	picks[1].onPick(picks[1].entries.find((entry) => entry.instanceId === 'good-sword'));
+	assert.deepEqual(equipped[0], { slot: 'weapon', selected: { id: 'weaponReward', instanceId: 'good-sword', sourceClass: 'Sword', tier: 1, level: 0, identified: true, cursedKnown: true } });
+	const statGhost = {};
+	applyRoseGhostEquipment(statGhost, {
+		level: 0,
+		ghostWeapon: { id: 'weaponReward', sourceClass: 'sword', tier: 1, level: 0 },
+		ghostArmor: { id: 'armor', sourceClass: 'armor', tier: 1, level: 1 },
+	}, 5);
+	assert.deepEqual({ str: statGhost.str, accuracy: statGhost.accuracy, evasion: statGhost.evasion, damage: statGhost.damage,
+		strReq: statGhost.strReq, weaponDefense: statGhost.weaponDefense, reach: statGhost.reach, attackDelay: statGhost.attackDelay,
+		armor: statGhost.armor, roseWeapon: statGhost.roseWeapon?.sourceClass, roseArmor: statGhost.roseArmor?.tier },
+	{ str: 13, accuracy: 14, evasion: 9, damage: [1, 10], strReq: 10, weaponDefense: 0, reach: 1, attackDelay: 1,
+		armor: [1, 3], roseWeapon: 'sword', roseArmor: 1 }, 'GhostHero uses its own stored weapon/armor stats');
 }
 // Refusals: no quest, no charge, no room, and AntiMagic each name their own line.
 {
@@ -3370,7 +3412,7 @@ function spellDrive(overrides = {}) {
 	d.flags.aim.onConfirm({ x: 3, y: 3 });
 	assert.equal(d.trapState.carried, 'fire', 'the class is stored');
 	assert.ok(d.trapState.spent.has('3,3'), 'the cell is spent');
-	assert.equal(d.flags.refunds, 1, 'a wand charge is refunded');
+	assert.equal(d.flags.refunds, 1, 'the captured trap operation completes once');
 	assert.ok(d.log.some((l) => l.includes('stored')), 'with the stored line');
 	assert.deepEqual(d.flags.consumed, [], 'storing keeps the spell');
 	assert.equal(d.flags.restitched, 1, 'tiles restitch');
@@ -3561,6 +3603,7 @@ function infusionDrive(kind, overrides = {}, pickIndex = 0) {
 	const wild = spellDrive({ bag: { wildEnergy: 1 } });
 	useWildEnergyFlow(wild.ctx);
 	assert.deepEqual(wild.flags.wandChargeGrants, [1], 'Belongings.charge(1f) grants one charge to every active Wand.Charger');
+	assert.deepEqual(wild.flags.wandChargeGrants, [1], 'one immediate charge is granted to every active wand charger');
 	assert.equal(wild.flags.buffs.recharging, BUFF_DURATION.recharging, 'recharging granted for the table duration');
 	assert.deepEqual(wild.flags.recharged, [4], 'four artifact turns banked at once');
 	assert.deepEqual(wild.flags.extended, [wildEnergyRechargeTurns()], 'the timer extended by the table turns');
@@ -4080,7 +4123,6 @@ function talismanDrive(overrides = {}) {
 	d.ctx.aimOpts.onConfirm({ x: 3, y: 0 });
 	assert.deepEqual(d.flags.procs, [{ creature: target, artifactLevel: 0, chargesUsed: 6 }], 'distance 3 passes (int)(3 + dist*1.08) once');
 }
-
 // Refusals: aiming at his own cell spends nothing; cursed/low/AntiMagic never reach the aimer.
 {
 	const own = talismanDrive();
@@ -4114,7 +4156,7 @@ function talismanDrive(overrides = {}) {
 }
 	const { roseLevelCap, roseChargeCap, roseGhostMaxHp, roseGhostAttackSkill, roseGhostDefenseSkill,
 		roseGhostDamageRange, roseGhostStrength, applyRoseRecharge, roseSummonGate, rosePetalsNeeded,
-		rosePetalDropCap, rosePetalPickup } = require('./items/rose.js');
+		rosePetalDropCap, rosePetalPickup, randomRosePetalDropCell } = require('./items/rose.js');
 	// `DriedRose` (tag `v3.3.8`): the caps and the ghost's whole stat line.
 	assert.equal(roseLevelCap(), 10);
 	assert.equal(roseChargeCap(), 100);
@@ -4176,6 +4218,47 @@ function talismanDrive(overrides = {}) {
 	assert.equal(rosePetalPickup({ level: 0 }), 'levelup');
 	assert.equal(rosePetalPickup({ level: 9 }), 'maxlevel', 'the tenth petal tops it out');
 	assert.equal(rosePetalPickup({ level: 10 }), 'no_room');
+	// `RegularLevel.randomDropCell()` shuffles rooms, samples only StandardRoom interiors,
+	// and applies its ordered 100-try placement predicate (tag `v3.3.8`).
+	const petalPoints = Array.from({ length: 8 }, (_, i) => ({ x: i + 1, y: i + 1 }));
+	let petalPointIndex = 0, petalShuffleCount = 0, entranceSamples = 0;
+	const petalRoom = { label: 'standard:plants', left: 0, top: 0, right: 9, bottom: 9,
+		random: () => petalPoints[petalPointIndex++] };
+	const petalRooms = [
+		{ label: 'entrance:plain', left: 0, top: 0, right: 4, bottom: 4, random: () => { entranceSamples++; throw new Error('entrance room sampled'); } },
+		{ label: 'special:magicWell', left: 0, top: 0, right: 4, bottom: 4, random: () => { throw new Error('special room sampled'); } },
+		petalRoom,
+	];
+	const petalDrop = randomRosePetalDropCell({
+		rooms: petalRooms,
+		shuffle: () => { petalShuffleCount++; },
+		randomIntRange: () => { throw new Error('room.random() must supply the point'); },
+		passable: (at) => at.x !== 1,
+		solid: (at) => at.x === 2,
+		isExit: (at) => at.x === 3,
+		hasHeap: (at) => at.x === 4,
+		roomCanPlaceItem: (_room, at) => at.x !== 5,
+		hasMob: (at) => at.x === 6,
+		trapDestroysItems: (at) => at.x === 7,
+	});
+	assert.deepEqual(petalDrop, { x: 8, y: 8 }, 'each Java exclusion retries within the selected standard room');
+	assert.equal(petalPointIndex, 8);
+	assert.equal(petalShuffleCount, 8, 'Java shuffles the room list before each attempt');
+	assert.equal(entranceSamples, 0, 'roomEntrance is skipped before sampling');
+	let exhaustedPetalAttempts = 0;
+	assert.equal(randomRosePetalDropCell({
+		rooms: [{ kind: 'standard', left: 1, top: 1, right: 3, bottom: 3, random: () => { exhaustedPetalAttempts++; return { x: 2, y: 2 }; } }],
+		shuffle: () => {}, randomIntRange: () => 2, passable: () => true, solid: () => false,
+		isExit: () => false, hasHeap: () => false, roomCanPlaceItem: () => true, hasMob: () => false,
+		trapDestroysItems: () => true,
+	}), null, 'no valid cell after Java’s 100 tries returns no drop cell');
+	assert.equal(exhaustedPetalAttempts, 100);
+	assert.equal(randomRosePetalDropCell({
+		rooms: [{ kind: 'special', left: 1, top: 1, right: 3, bottom: 3 }],
+		shuffle: () => {}, randomIntRange: () => 2, passable: () => true, solid: () => false,
+		isExit: () => false, hasHeap: () => false, roomCanPlaceItem: () => true, hasMob: () => false,
+		trapDestroysItems: () => false,
+	}), null, 'without a StandardRoom Java returns no drop cell');
 	const { wealthEquipBonus, wealthConsumableTier, wealthDeathRolls, initialiseWealthTrackers,
 		planWealthDrops } = require('./items/wealthDrops.js');
 	// `RingOfWealth.tryForBonusDrop` (tag `v3.3.8`): the capped equip-bonus loop, the consumable

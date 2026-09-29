@@ -146,6 +146,10 @@ export interface Creature extends Combatant {
 	isAlly?: boolean;
 	/** Friendly summon subtype; sheep are neutral, short-lived and non-combatant. */
 	allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost' | 'ninjaLog' | 'spiritHawk' | 'lightAlly' | 'afterImage' | 'shadowClone' | 'prismatic';
+	/** DriedRose.GhostHero's own equipment slots (DriedRose.java, tag v3.3.8).
+	 *  These are serialized with the creature so a saved ghost keeps the exact item instances. */
+	roseWeapon?: { id: string; instanceId?: string; sourceClass: string; tier: number; level: number; affix?: string; cursed?: boolean; cursedKnown?: boolean; identified?: boolean; hardened?: boolean; curseInfusionBonus?: boolean };
+	roseArmor?: { id: string; instanceId?: string; sourceClass: string; tier: number; level: number; affix?: string; cursed?: boolean; cursedKnown?: boolean; identified?: boolean; hardened?: boolean; curseInfusionBonus?: boolean };
 	/** `PowerOfMany.LightAlly`'s Java hero class, used to rebuild its class-specific sprite. */
 	lightAllyClass?: 'warrior' | 'mage' | 'rogue' | 'huntress' | 'duelist';
 	/** `PowerOfMany`'s Barrier pool and Barrier.partialLostShield actor state. */
@@ -170,19 +174,19 @@ export interface Creature extends Combatant {
 	/** `DirectableAlly.defendingPos`/`enemy`: the standing order a hero gives a directable ally
 	 *  (the Dried Rose's `AC_DIRECT` order, and the spirit hawk's re-cast). An ordered attack
 	 *  target wins over the nearest hostile, and an ordered defend cell replaces the hero as the
-	 *  ally's fallback destination - see `takeAllyTurn`'s directable branch. Neither is persisted:
-	 *  Java saves them on the ally, which this port cannot do without a per-creature id, so a
-	 *  save/load drops a standing order (the ally simply follows the hero again). */
+	 *  ally's fallback destination - see `takeAllyTurn`'s directable branch. Java's
+	 *  `DirectableAlly.storeInBundle()` saves the defend cell and moving flag but not the enemy
+	 *  target; floor snapshots persist the two saved fields, while the target reference is rebuilt. */
 	allyDefendCell?: { x: number; y: number };
 	allyTargetChar?: Creature;
 	/** `DirectableAlly.movingToDefendPos`: true from the moment a defend cell is ordered until
 	 *  the ally actually arrives (or gives up on an unreachable post). While set, the ally
 	 *  ignores enemies entirely and marches to the cell - see `takeAllyTurn`'s order branch.
-	 *  Not persisted, like the other two order fields above. */
+	 *  Floor snapshots persist this flag with the defend cell. */
 	allyMovingToDefend?: boolean;
 	/** `SpiritHawk.HawkAlly`'s two instance fields: the `SWIFT_SPIRIT` dodge pool already spent,
-	 *  and its 100-unit lifespan. Java keeps them on the ally rather than in a stat, so they live
-	 *  here too - and, like the two order fields above, are not persisted. */
+	 *  and its 100-unit lifespan. Java keeps them on the ally rather than in a stat; both and the
+	 *  directable ally's defend order are persisted in floor snapshots. */
 	spiritHawkDodges?: number;
 	spiritHawkTime?: number;
 	sheepTurns?: number;
