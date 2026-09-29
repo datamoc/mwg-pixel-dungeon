@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const source = readFileSync(new URL('../src/content/dungeon-rosters.mwl', import.meta.url), 'utf8');
+const source = readFileSync(new URL('../src/content/dungeon-rosters.mwl', import.meta.url), 'utf8').split(String.fromCharCode(13)).join(''); //working copies may be CRLF
 const implementation = readFileSync(new URL('../src/monsters.ts', import.meta.url), 'utf8');
 const rosterTable = source.match(/id: "monsterRosterByDepth"[\s\S]*?children: \[([\s\S]*?)\n        \],\n      \},/);
 assert.ok(rosterTable, 'MWL has the standard per-depth mob roster table');
