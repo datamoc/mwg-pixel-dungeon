@@ -1128,7 +1128,7 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 	// its own identity and full charge state instead of being silently destroyed.
 	{
 	const { wandInitialCharges, resolveWandPickup, imbueStaffLevel, staffImbueFor, setStaffImbue, isWandType } = require('./items/wands.js');
-	const { newSpareWandCharges } = require('./simulation/spareWands.js');
+	const { newSpareWandCharges, gainSpareWandCharge } = require('./simulation/spareWands.js');
 	const sceneSource = readSceneSource();
 	assert.equal(staffImbueFor({}), 'magicMissile', 'the staff starts on Magic Missile');
 	{
@@ -1157,6 +1157,15 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 	assert.equal(resolveWandPickup('frost', null), 'absorb', 'unknown class absorbs');
 	assert.equal(resolveWandPickup('frost', 'fireblast'), 'spare', 'another class spares');
 	assert.equal(resolveWandPickup(null, 'fireblast'), 'spare', 'no wielded wand spares');
+	const partial = { cur: 1, partial: 0.5, max: 3 };
+	gainSpareWandCharge(partial, 1);
+	assert.deepEqual(partial, { cur: 2, partial: 0.5, max: 3 }, 'Belongings.charge adds to each wand own partial bank');
+	const capped = { cur: 2, partial: 0.75, max: 3 };
+	gainSpareWandCharge(capped, 1.5);
+	assert.deepEqual(capped, { cur: 3, partial: 0, max: 3 }, 'a grant clamps at max and drops leftover partial charge');
+	const full = { cur: 3, partial: 0, max: 3 };
+	gainSpareWandCharge(full, 1);
+	assert.deepEqual(full, { cur: 3, partial: 0, max: 3 }, 'a full wand ignores an immediate grant');
 	const spareBag = new Inventory();
 	const spare = newSpareWandCharges(wandInitialCharges('fireblast'));
 	spareBag.add({ id: 'wand', quantity: 1, instanceId: 'wand:1', identified: true, ...{ sourceClass: 'WandOfFireblast', wandCur: spare.cur, wandPartial: spare.partial, wandMax: spare.max } });
@@ -1165,6 +1174,7 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 	assert.equal(spareBag.items.length, 2, '...and never merges with the absorb pile');
 	assert.ok(sceneSource.includes("resolveWandPickup(this.wandType, groundType) === 'spare'"), 'the scene stashes other-class pickups as spares');
 	assert.ok(sceneSource.includes('rechargeSpareWand(state, wandRate)'), 'spares recharge on the shared rate each hero turn');
+	assert.ok(sceneSource.includes('gainSpareWandCharge(state, amount)'), 'Wild Energy applies its immediate gain to each spare charger');
 	}
 	assert.equal(removed, 1, '...with sound and removal as usual');
 }
@@ -2140,7 +2150,7 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 			bless: 30, hex: 30, daze: 5, blindness: 10, monkEnergy: 9999, combo: 5, vertigo: 10, chill: 10, frost: 10, drowsy: 5, magicalSleep: 0, fury: 9999,
 			berserk: 9999, doom: 9999, weakness: 20, vulnerable: 20, burning: 8, poison: 6, bleeding: 0, cripple: 10,
 			paralysis: 3, roots: 3, levitation: 20, featherFall: 50, invisibility: 20, cloak: 9999, timeStasis: 100,
-			focus: 9999, recharging: 30, wellFed: 450, frostImbue: 15, fireImbue: 15, toxicImbue: 15, blobImmunity: 10, adrenalineSurge: 200, mindvision: 20,
+			focus: 9999, recharging: 30, artifactRecharge: 30, wellFed: 450, frostImbue: 15, fireImbue: 15, toxicImbue: 15, blobImmunity: 10, adrenalineSurge: 200, mindvision: 20,
 			terror: 20, amok: 5, aggression: 20, awareness: 2, haste: 20, degrade: 30, ooze: 20,
 		wayward: 10, soulmark: 10, charm: 10, lethalHasteCooldown: 100, light: 250, invulnerability: 3,
 			feintConfusion: 2, counterAbility: 3, hazardAssist: 50,
@@ -3234,7 +3244,7 @@ const { BUFF_DURATION } = require('./simulation/buffs.js');
 const { wildEnergyRechargeTurns } = require('./items/artifactRecharge.js');
 function spellDrive(overrides = {}) {
 	const log = [];
-	const flags = { aim: null, grabbed: [], moved: [], teleports: [], calmed: [], paralysed: [], turns: 0, consumed: [], refunds: 0, restitched: 0, buffs: {}, recharged: [], extended: [] };
+	const flags = { aim: null, grabbed: [], moved: [], teleports: [], calmed: [], paralysed: [], turns: 0, consumed: [], refunds: 0, wandChargeGrants: [], restitched: 0, buffs: {}, recharged: [], extended: [] };
 	const bag = overrides.bag ?? { telekineticGrab: 1, phaseShift: 1, reclaimTrap: 1 };
 	const creatures = overrides.creatures ?? {};
 	const heaps = overrides.heaps ?? {};
@@ -3275,7 +3285,7 @@ function spellDrive(overrides = {}) {
 		},
 		refreshTiles: () => { flags.restitched++; },
 		applyFeatherFall: (duration) => { flags.buffs.featherFall = duration; },
-		refundWandCharge: () => { flags.refunds++; },
+		chargeWands: (amount) => { flags.wandChargeGrants.push(amount); },
 		grantRecharging: (duration) => { flags.buffs.recharging = duration; },
 		rechargeArtifacts: (amount) => { flags.recharged.push(amount); },
 		extendRechargeTurns: (turns) => { flags.extended.push(turns); },
@@ -3534,8 +3544,8 @@ function infusionDrive(kind, overrides = {}, pickIndex = 0) {
 	assert.ok(bare.log.some((l) => l.includes('nothing') && l.startsWith('say:negative')), 'just the nothing line');
 }
 // The moved self-buffs (`useFeatherFallFlow`/`useWildEnergyFlow`, the file-size refactor's
-// twenty-first extraction): a missing Feather Fall elixir does nothing; uses consume, buff, refund and
-// recharge, and spend exactly one turn.
+// twenty-first extraction): a missing Feather Fall elixir does nothing; uses consume, grant charges to
+// wand chargers, apply buffs/recharge and spend exactly one turn.
 {
 	const missing = spellDrive({ bag: {} });
 	useFeatherFallFlow(missing.ctx);
@@ -3550,7 +3560,7 @@ function infusionDrive(kind, overrides = {}, pickIndex = 0) {
 	assert.equal(feather.flags.turns, 1, 'and spending the turn');
 	const wild = spellDrive({ bag: { wildEnergy: 1 } });
 	useWildEnergyFlow(wild.ctx);
-	assert.equal(wild.flags.refunds, 1, 'one wand charge refunded');
+	assert.deepEqual(wild.flags.wandChargeGrants, [1], 'Belongings.charge(1f) grants one charge to every active Wand.Charger');
 	assert.equal(wild.flags.buffs.recharging, BUFF_DURATION.recharging, 'recharging granted for the table duration');
 	assert.deepEqual(wild.flags.recharged, [4], 'four artifact turns banked at once');
 	assert.deepEqual(wild.flags.extended, [wildEnergyRechargeTurns()], 'the timer extended by the table turns');
@@ -4181,7 +4191,7 @@ function talismanDrive(overrides = {}) {
 	const doubleBomb = planWealthDrops({ triesToDrop: 0, dropsToEquip: 5 }, 1, 1, 1, scripted([0.95, 0, 4, 7]));
 	assert.deepEqual(doubleBomb.plans, [{ kind: 'doubleBomb' }]);
 	assert.deepEqual(doubleBomb.trackers, { triesToDrop: 6, dropsToEquip: 4 });
-	const { artifactRechargeEffect, bankArtifactCharge, chaliceRechargeHeal, roseRechargeGhostHeal, weaponRechargeWindow } = require('./items/artifactRecharge.js');
+	const { artifactRechargeAmount, artifactRechargeEffect, bankArtifactCharge, chaliceRechargeHeal, roseRechargeGhostHeal, weaponRechargeWindow } = require('./items/artifactRecharge.js');
 	// `ArtifactRecharge.chargeArtifacts()` (tag `v3.3.8`): every artifact's own `charge()` override,
 	// with its rate and its guard set. Java's base `Artifact.charge()` is a no-op, so anything not
 	// in the table must be too.
@@ -4191,6 +4201,12 @@ function talismanDrive(overrides = {}) {
 	assert.deepEqual(artifactRechargeEffect('toolkit'), { kind: 'charge', rate: 0.25, capZeroesPartial: false, guards: 'immuneOnly' });
 	assert.deepEqual(artifactRechargeEffect('cape'), { kind: 'addCharge', rate: 4, procAtCap: true, guards: 'none' });
 	assert.deepEqual(artifactRechargeEffect('chains'), { kind: 'charge', rate: 0.5, capZeroesPartial: false, guards: 'cursedAndImmune' });
+	assert.equal(artifactRechargeAmount(artifactRechargeEffect('cloak'), 1, true, 3), 1, 'equipped cloak receives the full ArtifactRecharge amount');
+	assert.equal(artifactRechargeAmount(artifactRechargeEffect('cloak'), 1, false, 0), 0, 'unequipped cloak without Light Cloak receives no recharge');
+	assert.equal(artifactRechargeAmount(artifactRechargeEffect('cloak'), 1, false, 1), 0.25, 'unequipped cloak at Light Cloak I receives 0.75*1/3');
+	assert.equal(artifactRechargeAmount(artifactRechargeEffect('cloak'), 1, false, 2), 0.5, 'unequipped cloak at Light Cloak II receives 0.75*2/3');
+	assert.equal(artifactRechargeAmount(artifactRechargeEffect('cloak'), 1, false, 3), 0.75, 'unequipped cloak at Light Cloak III receives 0.75*3/3');
+	assert.equal(artifactRechargeAmount(artifactRechargeEffect('talisman'), 1, false, 1), 1, 'Light Cloak scaling applies only to the Cloak');
 	assert.equal(artifactRechargeEffect('hourglass').kind, 'none', 'the Hourglass never overrides charge()');
 	assert.equal(artifactRechargeEffect('not-an-artifact').kind, 'none');
 	assert.equal(weaponRechargeWindow(false, 0), false, 'no recharge buff means no Weapon Recharging window');

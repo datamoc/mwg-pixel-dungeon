@@ -21,6 +21,7 @@ import { BADGE_DEFS, BADGE_ICON } from '../../../badges';
 import { Cat, randomUsingDefaults, type GenItem } from '../../../items/generator';
 import { MISSILE_MAX_DURABILITY, TIPPED_DART_BY_SEED } from '../../../items/missiles';
 import { weaponCombat } from '../../../items/catalog';
+import { gainSpareWandCharge } from '../../../simulation/spareWands';
 import { equipWand as equipInventoryWand, type EquipWandContext } from '../../../items/equipWand';
 import { imbueStaffLevel, setStaffImbue, staffImbueFor, wandTypeFromSource } from '../../../items/wands';
 import { WAND_KEYS } from '../../../i18n/spdKeys';
@@ -775,7 +776,21 @@ export const weaponSpellsGearMethods = {
 		const scene = this;
 		return {
 			...scene.castBase(),
-			refundWandCharge: () => { scene.wandCharges.refund(1); },
+			//`Belongings.charge(1f)` (`Belongings.java`, tag `v3.3.8`): every active
+			//`Wand.Charger` receives a full charge grant. `wandCharges` is the wielded
+			//pool; individually modeled carried wands each retain their own bank.
+			chargeWands: (amount) => {
+				scene.wandCharges.refund(amount);
+				for (const entry of scene.bag.items) {
+					if (entry.id !== 'wand' || entry.instanceId === undefined) continue;
+					const spare = entry as typeof entry & { wandCur?: number; wandPartial?: number; wandMax?: number };
+					if (spare.wandCur === undefined || spare.wandMax === undefined) continue;
+					const state = { cur: spare.wandCur, partial: spare.wandPartial ?? 0, max: spare.wandMax };
+					gainSpareWandCharge(state, amount);
+					spare.wandCur = state.cur;
+					spare.wandPartial = state.partial;
+				}
+			},
 			grantRecharging: (duration) => { addBuff(scene.hero, 'recharging', duration); },
 			rechargeArtifacts: (amount) => { scene.applyArtifactRecharge(amount); },
 			extendRechargeTurns: (turns) => { scene.artifactRechargeTurns = Math.max(scene.artifactRechargeTurns, turns); },

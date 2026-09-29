@@ -47,6 +47,23 @@ export function rechargeSpareWand(state: SpareWandCharges, ratePerTurn: number):
 	if (state.cur >= state.max) state.partial = 0;
 }
 
+/** `Wand.Charger.gainCharge()` (`Wand.java`, tag `v3.3.8`): add an immediate
+ *  charge grant to this wand's own partial bank, carry fractional grants, clamp
+ *  at max, and discard progress once full. `Belongings.charge()` applies this to
+ *  every active Charger rather than refunding only the currently wielded wand. */
+export function gainSpareWandCharge(state: SpareWandCharges, amount: number): void {
+	if (state.cur >= state.max) return;
+	state.partial += amount;
+	while (state.partial >= 1) {
+		state.cur++;
+		state.partial--;
+	}
+	if (state.cur >= state.max) {
+		state.cur = state.max;
+		state.partial = 0;
+	}
+}
+
 /** `WildMagic.activate()`'s per-shot cost off `partialCharge`. */
 export function wildMagicShotCost(conservedMagicRank: number): number {
 	return 0.5 * Math.pow(0.67, Math.max(0, conservedMagicRank));

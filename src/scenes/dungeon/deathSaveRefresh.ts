@@ -1282,6 +1282,8 @@ export const deathSaveRefreshMethods = {
 			//status pane (icon text, info window) reads the pool instead, which is
 			//what Java's `iconTextDisplay()`/`desc()` show (`(int)HP`, `{0}/{1}`).
 			buffs: [...Object.entries(this.hero.buffs).map(([id, turns]) => ({ id: id as BuffId, turns: id === 'prismaticGuard' ? Math.floor(this.hero.prismaticGuardHp ?? 0) : turns })),
+				//`ArtifactRecharge` is a scene-owned timer here; expose the same buff identity the HUD uses in Java.
+				...(this.artifactRechargeTurns > 0 ? [{ id: 'artifactRecharge' as BuffId, turns: this.artifactRechargeTurns }] : []),
 				//`LockedFloor` has no `iconTextDisplay()` override: icon only.
 				...(this.regeneration.lockLeft !== null ? [{ id: 'lockedFloor' as BuffId, turns: undefined }] : [])],
 			staff: this.heroClass === 'mage' ? { current: this.wandCharges.current, max: this.wandCharges.max } : null,

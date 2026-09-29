@@ -86,6 +86,8 @@ const BUFF_ICON: Record<string, number> = {
 	berserk: 40,
 	//RECHARGING = 34; HASTE = 41 (`BuffIndicator.java`, tag `v3.3.8`)
 	recharging: 34,
+	//`ArtifactRecharge.icon()` reuses RECHARGING and hardlights it green (`ArtifactRecharge.java`).
+	artifactRecharge: 34,
 	haste: 41,
 	//VULNERABLE = 46
 	vulnerable: 46,
@@ -492,6 +494,7 @@ export class StatusPane extends Container {
 			);
 			//Monk's Focus is hardlit green in Java (tintIcon: 0.25, 1.5, 1.0)
 			if (buff === 'focus') icon.tint = 0x40ff80;
+			if (buff === 'artifactRecharge') icon.tint = 0x00ff00;
 			//`PotionOfCleansing.Cleanse.tintIcon` hardlights the immunity icon pink
 			//(1.0, 0.0, 2.0); a multiply tint cannot exceed 1 per channel, so this
 			//is the closest magenta (red kept, green dropped, blue kept).

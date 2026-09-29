@@ -183,6 +183,12 @@
             duration: 30,
           },
           {
+            // `ArtifactRecharge.DURATION` (`actors/buffs/ArtifactRecharge.java`, tag `v3.3.8`).
+            tag: "row",
+            buff: "artifactRecharge",
+            duration: 30,
+          },
+          {
             // WellFed.reset() normally starts at Hunger.STARVING (450); MeatPie shortens it
             // to 150 under the NO_FOOD challenge, so the scene overrides this default clock.
             tag: "row",

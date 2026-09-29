@@ -31,6 +31,9 @@ function compile(source, destination) {
 const approx = (actual, expected) => {
 	assert.ok(Math.abs(actual - expected) < 1e-9, `expected ${expected}, got ${actual}`);
 };
+const statusPaneSource = readFileSync(new URL('../src/ui/statusPane.ts', import.meta.url), 'utf8');
+const buffInfoSource = readFileSync(new URL('../src/ui/buffInfo.ts', import.meta.url), 'utf8');
+const deathSaveSource = readFileSync(new URL('../src/scenes/dungeon/deathSaveRefresh.ts', import.meta.url), 'utf8');
 
 try {
 	writeFileSync(join(output, 'package.json'), '{"type":"commonjs"}');
@@ -43,6 +46,16 @@ try {
 		BUFF_TEXT_POSITIVE_HIGH_CONTRAST, BUFF_TEXT_NEGATIVE_HIGH_CONTRAST } = require('./ui/buffOverlays');
 	const settings = require('./settings');
 	const { syncDoomSpriteTint } = require('./ui/doomSprite');
+
+	check('ArtifactRecharge uses the green Recharging icon, countdown, fade and status wiring', () => {
+		assert.equal(buffIconText('artifactRecharge', 8), '9', 'Java overlays left + 1');
+		approx(buffIconFade('artifactRecharge', 8), 22 / 30, 'Java fades from left, without the text +1');
+		assert.equal(buffIconTextColor('artifactRecharge'), BUFF_TEXT_POSITIVE);
+		assert.ok(statusPaneSource.includes('artifactRecharge: 34'), 'BuffIndicator.RECHARGING icon index');
+		assert.ok(statusPaneSource.includes("buff === 'artifactRecharge') icon.tint = 0x00ff00"), 'green tint');
+		assert.ok(buffInfoSource.includes("artifactRecharge: 'actors.buffs.artifactrecharge'"), 'Java buff message keys');
+		assert.ok(deathSaveSource.includes("id: 'artifactRecharge' as BuffId, turns: this.artifactRechargeTurns"), 'scene timer appears as a status buff');
+	});
 
 	check('flavour buffs show remaining turns plus one', () => {
 		//Java's `(int)visualcooldown()` with `visualcooldown() == cooldown() + 1`

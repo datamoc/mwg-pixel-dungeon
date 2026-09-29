@@ -162,7 +162,7 @@ export interface FeatherFallContext extends CastBase {
  * `useWildEnergy` adapter the item-use router calls.
  */
 export interface WildEnergyContext extends CastBase {
-	refundWandCharge(): void;
+	chargeWands(amount: number): void;
 	grantRecharging(duration: number): void;
 	rechargeArtifacts(amount: number): void;
 	extendRechargeTurns(turns: number): void;
@@ -178,15 +178,14 @@ export function useFeatherFallFlow(ctx: FeatherFallContext, instanceId?: string)
 	ctx.spendTurn();
 }
 
-/** `WildEnergy.affectTarget()` (tag `v3.3.8`): this port refunds one selected-wand charge,
- * grants the Recharging buff, banks four turns of every artifact hook, and extends the artifact
- * timer. Java additionally calls `ScrollOfRecharging.charge(hero)` and
- * `hero.belongings.charge(1f)`, which charge every active `Wand.Charger`; this shared-wand model
- * does not represent that per-wand charge grant yet (open under ROADMAP R043). */
+/** `WildEnergy.affectTarget()` (tag `v3.3.8`): `ScrollOfRecharging.charge(hero)` is
+ * visual-only; `Belongings.charge(1f)` grants one charge to every active `Wand.Charger`,
+ * then Recharging is applied, four artifact turns are charged immediately, and the
+ * eight-turn ArtifactRecharge timer is extended. */
 export function useWildEnergyFlow(ctx: WildEnergyContext, instanceId?: string): void {
 	if (!ctx.hasSpell('wildEnergy', instanceId)) return;
 	ctx.consumeSpell('wildEnergy', instanceId);
-	ctx.refundWandCharge();
+	ctx.chargeWands(1);
 	ctx.grantRecharging(BUFF_DURATION.recharging);
 	//`WildEnergy.onCast()`: `ArtifactRecharge.chargeArtifacts(hero, 4f)` immediately, then the
 	//buff is extended by 8 turns - so the cast banks four turns of every artifact hook at once

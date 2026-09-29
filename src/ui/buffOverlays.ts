@@ -78,6 +78,8 @@ const ICON_TEXT_KIND: Partial<Record<BuffId | 'hungry' | 'starving', 'flavour' |
 	//Charm, Recharging and Haste all extend FlavourBuff at tag v3.3.8.
 	charm: 'flavour',
 	recharging: 'flavour',
+	//`ArtifactRecharge.iconTextDisplay()` is `(int)left + 1` (`ArtifactRecharge.java`).
+	artifactRecharge: 'flavour',
 	haste: 'flavour',
 	invulnerability: 'flavour',
 	//`HolyWepBuff`/`HolyArmBuff` are `FlavourBuff`s with `DURATION = 50`, so both
@@ -154,6 +156,8 @@ export function buffIconFade(id: BuffId | 'hungry' | 'starving', turns: number |
 	//`WellFed.iconFadePercent()` uses Hunger.STARVING (450) directly, not the visual
 	//left-plus-one value used by FlavourBuff. Keep the Java boundary at a fresh 450.
 	if (id === 'wellFed') return Math.min(1, Math.max(0, (duration - turns) / duration));
+	//`ArtifactRecharge.iconFadePercent()` uses `left` directly, not `left + 1`.
+	if (id === 'artifactRecharge') return Math.min(1, Math.max(0, (duration - turns) / duration));
 	if (id === 'amok') return 0;
 	//Aggression's Java fade is target-dependent (DURATION 20, or DURATION/4 for
 	//bosses/minibosses), but the compact status value does not retain its target class.

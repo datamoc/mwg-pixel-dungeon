@@ -29,6 +29,7 @@ export const BUFF_DURATION_DATA = {
   "cloak": 9999,
   "focus": 9999,
   "recharging": 30,
+  "artifactRecharge": 30,
   "wellFed": 450,
   "frostImbue": 15,
   "fireImbue": 15,

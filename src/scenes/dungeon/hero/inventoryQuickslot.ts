@@ -39,8 +39,8 @@ import { type DeathBurstSpec } from '../../../simulation/deathBursts';
 import { useTorchFlow, type TorchContext } from '../../../items/selfUse';
 import { WEAPON_NAME_BY_CLASS, isClassArmorId } from '../../../items/catalog';
 import { getCurse } from '../../../items/itemCurses';
-import { Cat, randomArmor, randomArtifact, randomGold, randomUsingDefaults, randomWeapon } from '../../../items/generator';
-import { MWL_MISSILE_BY_CLASS, MWL_STARTING_WEAPON_FRAMES, mwlItemEffectValue } from '../../../mwlContent';
+import { Cat, generatorItemOrder, randomArmor, randomArtifact, randomGold, randomUsingDefaults, randomWeapon } from '../../../items/generator';
+import { MWL_ITEM_SPECIFIC_FRAMES, MWL_MISSILE_BY_CLASS, MWL_STARTING_WEAPON_FRAMES, mwlItemEffectValue } from '../../../mwlContent';
 import { assignQuickslot as assignFamilyQuickslot, readQuickslotStates, useItemById as routeItemAction, useQuickslot as useQuickslotEntry, type ItemActionContext, type QuickslotContext } from '../../../items/itemActions';
 import { appearanceItemFrame } from '../../../items/appearanceFrames';
 import { addScrollToSpellbook, applyCapeOfThornsProc, spellbookChargeCap, useSpellbook as useArtifactSpellbook, useToolkit as useArtifactToolkit } from '../../../items/artifactActions';
@@ -53,7 +53,8 @@ import { checkTalismanAwarenessFlow, useTalismanFlow, type TalismanFlowContext }
 import { roseChargeCap, roseGhostMaxHp, rosePetalDropCap, rosePetalPickup, rosePetalsNeeded, useRoseFlow, type RoseFlowContext } from '../../../items/rose';
 import { beaconChargeCap, useBeaconFlow, type BeaconFlowContext, type BeaconItem, type BeaconMobView } from '../../../items/beacon';
 import { type WealthDropPlan } from '../../../items/wealthDrops';
-import { artifactRechargeEffect, bankArtifactCharge, chaliceRechargeHeal, roseRechargeGhostHeal } from '../../../items/artifactRecharge';
+import { artifactRechargeAmount, artifactRechargeEffect, bankArtifactCharge, chaliceRechargeHeal, roseRechargeGhostHeal } from '../../../items/artifactRecharge';
+import { getAllArtifactIds } from '../../../items/artifacts';
 import { openClassArmorTransfer as openInventoryClassArmorTransfer } from '../../../items/equipment';
 import { FLOOR, GRASS, HIGH_GRASS, TILE } from '../../../dungeonConstants';
 import { BUFF_DURATION, NEGATIVE_BUFFS, addBuff, buffBlocked, doomDamage, reigniteBuff, type BuffId, type Creature, type GroundItem, type Step } from '../../../combat';
@@ -1446,6 +1447,15 @@ export const inventoryQuickslotMethods = {
 		},
 
 		applyArtifactRecharge(this: DungeonScene, amount: number): void {
+			// Keep the equip signal identical to `inventoryPanel.ts`: the artifact slot
+			// shows the first carried artifact in Generator order. A dedicated, selectable
+			// artifact slot remains a separate UI gap; this allows every carried artifact's
+			// charge hook to distinguish the displayed one from the others.
+			const artifactIds = new Set([...getAllArtifactIds(), 'holyTome']);
+			const equippedArtifact = this.bag.items
+				.filter((item) => item.quantity > 0 && artifactIds.has(item.id))
+				.sort((a, b) => generatorItemOrder((a as typeof a & { sourceClass?: string }).sourceClass, a.id, MWL_ITEM_SPECIFIC_FRAMES[a.id] ?? 0)
+					- generatorItemOrder((b as typeof b & { sourceClass?: string }).sourceClass, b.id, MWL_ITEM_SPECIFIC_FRAMES[b.id] ?? 0))[0];
 			for (const item of [...this.bag.items]) {
 				if (item.quantity <= 0) continue;
 				const effect = artifactRechargeEffect(item.id);
@@ -1459,7 +1469,8 @@ export const inventoryQuickslotMethods = {
 				switch (effect.kind) {
 					case 'charge': {
 						const cap = this.artifactRechargeCap(item.id, level, item);
-						if (bankArtifactCharge(art, cap, effect.rate, amount, effect.capZeroesPartial) && effect.fullLineKey) {
+						const chargeAmount = artifactRechargeAmount(effect, amount, item === equippedArtifact, this.talentRank('light_cloak'));
+						if (bankArtifactCharge(art, cap, effect.rate, chargeAmount, effect.capZeroesPartial) && effect.fullLineKey) {
 							this.say(t(effect.fullLineKey), 'positive');
 						}
 						break;

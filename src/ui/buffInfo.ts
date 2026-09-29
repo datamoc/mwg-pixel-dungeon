@@ -38,6 +38,7 @@ const BUFF_MESSAGE_KEY: Partial<Record<BuffId, string>> = {
 	fury: 'actors.buffs.fury',
 	charm: 'actors.buffs.charm',
 	recharging: 'actors.buffs.recharging',
+	artifactRecharge: 'actors.buffs.artifactrecharge',
 	haste: 'actors.buffs.haste',
 	cripple: 'actors.buffs.cripple',
 	bless: 'actors.buffs.bless',
@@ -120,6 +121,10 @@ export function buffInfo(id: BuffId | 'hungry' | 'starving', turns: number | und
 	if (!key) return null;
 	if (id === 'recallUsed') {
 		return { name: titleCase(t(`${key}.name`)), desc: t(`${key}.desc`, { 0: itemName ?? '?', 1: Math.max(0, turns ?? 0) }) };
+	}
+	//`ArtifactRecharge.desc()` (`ArtifactRecharge.java`, tag `v3.3.8`) displays `left + 1`.
+	if (id === 'artifactRecharge') {
+		return { name: titleCase(t(`${key}.name`)), desc: t(`${key}.desc`, { 0: Math.max(0, (turns ?? 0) + 1) }) };
 	}
 	if (id === 'prismaticGuard') {
 		return { name: titleCase(t(`${key}.name`)), desc: t(`${key}.desc`, { 0: Math.max(0, Math.trunc(turns ?? 0)), 1: Math.max(0, Math.trunc(maxHp ?? 0)) }) };

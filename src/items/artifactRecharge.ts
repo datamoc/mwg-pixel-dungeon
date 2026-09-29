@@ -25,7 +25,8 @@ export type RechargeGuards = 'cursedAndImmune' | 'immuneOnly' | 'none';
 export type ArtifactRechargeEffect =
 	/** `partialCharge += rate*amount`, banked in whole units onto the integer `charge`. The Cloak's
 	 *  own extra clause (`amount *= 0.75*pointsInTalent(LIGHT_CLOAK)/3` while unequipped) is what
-	 *  `talentScale` marks - it is not applied here, since this port has no artifact equip slot. */
+	 *  `talentScale` marks and `artifactRechargeAmount()` applies using the artifact currently
+	 *  shown in the inventory's artifact slot. */
 	| { kind: 'charge'; rate: number; capZeroesPartial: boolean; fullLineKey?: string; talentScale?: true }
 	/** Cape of Thorns: `charge += round(4*amount)` while `cooldown == 0`, then procs at the cap. */
 	| { kind: 'addCharge'; rate: number; procAtCap: true }
@@ -79,6 +80,22 @@ type RechargeEffect = ArtifactRechargeEffect & { guards: RechargeGuards };
 /** The table entry for an artifact id, defaulting to Java's own no-op. */
 export function artifactRechargeEffect(id: string): RechargeEffect {
 	return ARTIFACT_RECHARGE_EFFECTS[id] ?? { kind: 'none', guards: 'cursedAndImmune' };
+}
+
+/**
+ * CloakOfShadows.charge() scales the amount before banking when the Cloak is not the
+ * equipped artifact: `amount *= 0.75f * pointsInTalent(LIGHT_CLOAK) / 3f` (tag
+ * `v3.3.8`). The port's artifact slot displays the first sorted carried artifact; until
+ * that slot has a player-controlled equip action, that display is the equip-state signal.
+ */
+export function artifactRechargeAmount(
+	effect: ArtifactRechargeEffect,
+	amount: number,
+	equipped: boolean,
+	lightCloakRank: number,
+): number {
+	if (effect.kind !== 'charge' || !effect.talentScale || equipped) return amount;
+	return amount * 0.75 * Math.max(0, Math.min(3, lightCloakRank)) / 3;
 }
 
 /** `ArtifactRecharge.DURATION` (30) and the amount WildEnergy extends it by (8). */
