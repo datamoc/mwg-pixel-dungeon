@@ -18,6 +18,7 @@ import { MOB_KEYS, has, t } from '../../i18n/index';
 import { evasiveArmorBonus, unencumberedSpiritEvasion } from '../../talentEffects';
 import { SpdJavaRandom, spdScramble, spdSeedForDepth } from '../../spdRng';
 import { isPortedDepth, miningBranchFloor, portedFloor, toGameTerrain } from '../../spdLevelGen/gameBridge';
+import { resetTenguDartTraps } from '../../simulation/tenguDartTrap';
 import { stripGeneratedPlants } from '../../spdLevelGen/barrenLand';
 import { CITY_BOTTOM_DOOR, CITY_TOP_DOOR, HALLS_EXIT_CELL } from '../../spdLevelGen/bossLevels';
 import { hallsCenterPieceLayer, hallsCenterWallLayer } from '../../spdLevelGen/hallsBossVisuals';
@@ -1324,6 +1325,7 @@ export const coreSpawnTilesMethods = {
 		this.secrets = new Roguelike.Secrets(this.level);
 		this.doors = new Roguelike.Doors(this.level);
 		this.trapKinds = new Map();
+		resetTenguDartTraps();
 		this.spentTrapCells = new Set();
 		this.gatewayTelePos = new Map();
 		this.secretDoorCells = new Set();

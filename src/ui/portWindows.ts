@@ -3,7 +3,7 @@ import { Game, theme, Window, WindowStack } from 'mwg';
 import { t } from '../i18n/index';
 import { runState } from '../runState';
 import { BADGE_DEFS, BADGE_ICON, badgeDescriptionKey, loadBadges } from '../badges';
-import { CHALLENGES, challenges, challengeDescription, challengeLabel, toggleChallenge } from '../challenges';
+import { CHALLENGES, challenges, challengeDescription, challengeLabel, challengesFromMask, setupChallenges, toggleChallenge } from '../challenges';
 import { rankings } from '../rankings';
 import { SpdButton as Button, menuScale } from './spdButton';
 import { SpdLabel as Label } from './spdLabel';
@@ -116,8 +116,14 @@ export function showChoiceWindow(
 	windows.push(window);
 }
 
-/** `WndChallenges`: selected challenge ids persist between runs like SPD's settings. */
-export function showChallengesWindow(windows: WindowStack): void {
+/**
+ * `WndChallenges(checked, editable)` (tag `v3.3.8`): `editable` is the hero-select setup screen
+ * (`HeroSelectScene.java:798-924`), whose selection persists between runs like `SPDSettings.challenges()`;
+ * in a run (`WndGame.java:65`, `MenuPane.java:121-138`) it opens read-only over the run's own mask.
+ * Rows follow `Challenges.NAME_IDS` order; the description shows on hover/tap of a row (Java's per-row
+ * info button opens the same `_desc` text).
+ */
+export function showChallengesWindow(windows: WindowStack, editable = true): void {
 	const width = windowWidth(250);
 	const window = new Window({ width, height: CHALLENGES.length * 24 + 52, title: t('windows.wndchallenges.title'), anchor: 'center', blocker: true });
 	const description = new Label({ size: 6, wrapWidth: width - 16, color: theme().color.textDim });
@@ -127,11 +133,12 @@ export function showChallengesWindow(windows: WindowStack): void {
 		const button = new Button({
 			width: window.contentWidth,
 			height: 21,
-			text: `${challenges().has(def.id) ? '✓ ' : ''}${challengeLabel(def)}`,
+			text: `${(editable ? setupChallenges() : challenges()).has(def.id) ? '✓ ' : ''}${challengeLabel(def)}`,
 			onClick: () => {
+				if (!editable) { description.setText(challengeDescription(def)); return; }
 				toggleChallenge(def.id);
 				window.close();
-				showChallengesWindow(windows);
+				showChallengesWindow(windows, editable);
 			},
 		});
 		button.position.set(0, index * 24);
@@ -156,7 +163,9 @@ export function showRankingsWindow(windows: WindowStack): void {
 	}
 	const body = records.slice(0, 8).map((record, index) => {
 		const result = t(record.result === 'won' ? 'rankings$record.won' : 'rankings$record.something');
-		return `#${index + 1}  ${result}\n${t('windows.wndranking$statstab.score')}: ${record.score}`;
+		//`WndRanking.java:116,446-466`: a record with challenges lists them under the score.
+		const chal = record.challenges ? `\n${t('windows.wndchallenges.title')}: ${challengesFromMask(record.challenges).map(challengeLabel).join(', ')}` : '';
+		return `#${index + 1}  ${result}\n${t('windows.wndranking$statstab.score')}: ${record.score}${chal}`;
 	}).join('\n\n');
 	const total = new Label({ text: `${t('scenes.rankingsscene.total')} ${records.length}`, size: 7, color: theme().color.textDim });
 	const entries = new Label({ text: body, size: 6, wrapWidth: width - 16, color: theme().color.text });

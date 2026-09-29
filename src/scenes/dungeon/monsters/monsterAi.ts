@@ -13,6 +13,7 @@ import { simulationRandom } from '../../../adapters/mwgRandom';
 import { simulationRoguelike } from '../../../adapters/mwgRoguelike';
 import { wraithCombatStats } from '../../../simulation/wraith';
 import { stepTenguAbility, tenguAbilityCost } from '../../../simulation/tenguAbility';
+import { markTenguDartTrap, tenguTrapFill } from '../../../simulation/tenguDartTrap';
 import { colorblind, highContrast } from '../../../settings';
 import { capitalize, has, t } from '../../../i18n/index';
 import { SPD_TERRAIN_TO_GAME_KIND, toGameTerrain } from '../../../spdLevelGen/gameBridge';
@@ -1808,7 +1809,7 @@ export const monsterAiMethods = {
 			break;
 		}
 		const half = tengu.maxHp / 2;
-		const fill = Math.min(0.9, Math.max(0.4, 0.9 - 0.5 * ((tengu.hp - half) / half)));
+		const fill = tenguTrapFill(Math.min(0.9, Math.max(0.4, 0.9 - 0.5 * ((tengu.hp - half) / half))), isChallengeEnabled('stronger_bosses'));
 		const width = room.right - room.left + 1;
 		const height = room.bottom - room.top + 1;
 		const patch = spdPatchGenerate(width, height, fill, 0, false);
@@ -1818,6 +1819,7 @@ export const monsterAiMethods = {
 			if (this.creatureAt(x, y)) continue;
 			if (Math.max(Math.abs(x - this.hero.x), Math.abs(y - this.hero.y)) <= 1) continue;
 			this.seedBossTrap({ x, y }, 'poisonDart');
+			markTenguDartTrap(this.level.index(x, y));
 		}
 		this.say(t('port.log.tenguvanish'), 'warning');
 		this.say(t('port.log.tengutraps'), 'warning');

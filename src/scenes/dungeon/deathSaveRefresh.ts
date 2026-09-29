@@ -11,7 +11,7 @@ import { lethalHasteDuration, soulSiphonCharge } from '../../talentEffects';
 import { SpdRandom } from '../../spdRng';
 import { runState } from '../../runState';
 import { recordRun } from '../../rankings';
-import { isChallengeEnabled } from '../../challenges';
+import { isChallengeEnabled, runChallengeIds } from '../../challenges';
 import { PRISMATIC_FADE_TURNS } from '../../simulation/prismatic';
 import { shieldOfLightRange } from '../../simulation/clericSpells';
 import { absorbEarthrootArmor } from '../../simulation/plantPools';
@@ -781,7 +781,9 @@ export const deathSaveRefreshMethods = {
 				this.say(t('port.log.pickup', { item: t('items.kingscrown.name') }), 'positive');
 			}
 			if (creature.kind === 'yog') {
-				if (this.qualifiedForBossChallenge) this.awardBadge('boss_challenge_yog');
+				//`YogDzewa.die()` (`YogDzewa.java:534`): the badge is only validated under Badder bosses with all four
+				//DemonSpawners still alive (`Statistics.spawnersAlive == 4`); otherwise the flag is cleared.
+				if (isChallengeEnabled('stronger_bosses') && this.creatures.filter((c) => c.kind === 'demonSpawner' && c.hp > 0).length === 4) { if (this.qualifiedForBossChallenge) this.awardBadge('boss_challenge_yog'); } else this.qualifiedForBossChallenge = false;
 				//`YogDzewa.die()` kills every summoned minion: Larva, YogRipper, YogEye,
 				//YogScorpio (fists die through their own `YogFist.die()` cascade). The list
 				//used to omit `'larva'`, so larvae outlived their summoner - found by the
@@ -1521,6 +1523,7 @@ export const deathSaveRefreshMethods = {
 			appearances: this.appearances.toJSON(),
 			switches: this.gameState.toJSON().switches,
 			ascensionChallengeActive: this.ascensionChallengeActive,
+			challengeIds: runChallengeIds(),
 			questStages: this.quests.toJSON().stageIndex,
 			equippedRing: this.equippedRing,
 			ringTypesKnown: [...ringTypesKnownFor(this)],

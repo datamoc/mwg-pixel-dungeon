@@ -549,6 +549,8 @@ export interface SaveShape {
 	appearances?: { assigned: [string, [string, string][]][] };
 	switches: [string, boolean][];
 	ascensionChallengeActive?: boolean;
+	/** `Dungeon.challenges` (`Dungeon.java:742,861`): the run's challenge ids; absent in older saves. */
+	challengeIds?: string[];
 	questStages: [string, number][];
 	equippedRing?: EquippedRing | null;
 	ringHtBonus?: number;

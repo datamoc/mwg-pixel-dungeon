@@ -1806,7 +1806,7 @@ export const npcShopBlacksmithMethods = {
 				//already enforced that half). The real win only fires at the depth-1 surface exit
 				//(`SewerLevel.activateTransition`'s `LevelTransition.Type.SURFACE` branch) - see
 				//`tryAscendStairs`. PORT_COVERAGE.md: "Post-victory ascent".
-				this.awardBadge('amulet'); this.say(t('scenes.amuletscene.text'), 'positive');
+				this.awardBadge('amulet'); this.awardChampionBadges(); this.say(t('scenes.amuletscene.text'), 'positive');
 				return true;
 			},
 			pickupRing: () => {

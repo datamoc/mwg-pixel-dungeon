@@ -1,4 +1,5 @@
 import { RunHistory } from 'mwg';
+import { activeChallengeCount, challengeMask, challengeScoreMultiplier } from './challenges';
 
 /**
  * Small persistent run history behind `RankingsScene`. This deliberately stores completed runs
@@ -22,6 +23,8 @@ export interface RunRecord {
 	level: number;
 	gold: number;
 	score: number;
+	/** the run's `Dungeon.challenges` int mask (`Rankings.java:308,344`), 0 when none. */
+	challenges?: number;
 }
 
 /** `RankingsScene`'s score: depth dominates, then level, then gold. */
@@ -46,9 +49,12 @@ export function rankings(): RunRecord[] {
 
 export function recordRun(record: Omit<RunRecord, 'score'>): void {
 	try {
+		//`Rankings.calculateScore()` (`Rankings.java:225-231`): the score is scaled by `1.25^active`, rounded to 0.05.
+		const mask = challengeMask();
 		history.record({
 			...record,
-			score: runScore(record.depth, record.level, record.gold),
+			score: Math.round(runScore(record.depth, record.level, record.gold) * challengeScoreMultiplier(activeChallengeCount())),
+			...(mask !== 0 ? { challenges: mask } : {}),
 		});
 	} catch {
 		//Private browsing/storage denial should not prevent a run ending normally.

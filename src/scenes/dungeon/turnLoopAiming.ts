@@ -16,8 +16,7 @@ import { directTomeCharge, findHolyTome } from '../../items/holyTome';
 import { tomeChargeCap, tomeTickRate } from '../../simulation/clericSpells';
 import { advanceWellFed, HUNGRY, STARVING } from '../../simulation/hunger';
 import { addLockedFloorTime, lockedFloorBossTime, regenOn, regenerationDelay, removeLockedFloorTime, tickLockedFloor, tickRegeneration } from '../../simulation/regeneration';
-import { isChallengeEnabled } from '../../challenges';
-import { prolongPrismaticWandLight } from '../../simulation/prismaticWandLight';
+import { isChallengeEnabled } from '../../challenges'; import { prolongPrismaticWandLight } from '../../simulation/prismaticWandLight';
 import { ARMOR_CHARGE_MAX, ARMOR_CHARGE_PER_TURN } from '../../armorAbilities';
 import { CLASSES } from '../../classes';
 import { drawAimPreview } from '../../ui/aimOverlay';
@@ -93,7 +92,7 @@ export const turnLoopAimingMethods = {
 		//`isHero: true` while ordinary monsters omit every false-valued flag), so
 		//`'isHero' in target` is false for every mob and every zap aimed at one
 		//would fizzle with an empty victim list.
-		const targetCreature: Creature | null = typeof (target as Creature).hp === 'number' ? (target as Creature) : null;
+		const targetCreature: Creature | null = typeof (target as Creature).hp === 'number' ? (target as Creature) : null; if (wandType === 'prismaticLight') prolongPrismaticWandLight(this.hero.buffs, this.depth, isChallengeEnabled('darkness'), this.depth === 25 ? this.creatures.find((c) => c.kind === 'yog' && c.hp > 0)?.yogPhase : undefined, zapLevel); //`WandOfPrismaticLight.onZap()`: Light before the `findChar` branch
 		//GreatCrab.damage negates wand bolts from a seen hero - kept verbatim
 		//`GreatCrab.damage()` (tag v3.3.8): `enemySeen && state != SLEEPING && paralysed == 0
 		//&& src instanceof Wand && enemy == Dungeon.hero && enemy.invisible == 0`. This port\u2019s
@@ -102,8 +101,6 @@ export const turnLoopAimingMethods = {
 		//set), so only the missing `paralysed == 0` term needed adding; `!target.sleeping`
 		//alone previously let a paralysed crab (which cannot act, let alone react to a hit)
 		//still parry every wand hit.
-		//`WandOfPrismaticLight.onZap()` grants Light before its `findChar` branch, hit or parried (R088 hook).
-		if (wandType === 'prismaticLight') prolongPrismaticWandLight(this.hero.buffs, this.depth, isChallengeEnabled('darkness'), this.depth === 25 ? this.creatures.find((c) => c.kind === 'yog' && c.hp > 0)?.yogPhase : undefined, zapLevel);
 		if (targetCreature?.kind === 'greatCrab' && !targetCreature.sleeping && targetCreature.seesHero && targetCreature.buffs['paralysis'] === undefined) {
 			this.say(t('port.log.crabparries'), 'negative');
 			return false;

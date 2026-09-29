@@ -44,7 +44,7 @@ import { ignoresCrystalGuardianBeckon } from '../../simulation/crystalSpire';
 import { markRingTypesKnown } from '../../simulation/ringKnow';
 import { isWandType, setStaffImbue } from '../../items/wands';
 import { CLASSES } from '../../classes';
-import { showChoiceWindow } from '../../ui/portWindows';
+import { showChallengesWindow, showChoiceWindow } from '../../ui/portWindows';
 import { useBrewFlow, type BrewFlowContext } from '../../simulation/brews';
 import { useHoneypotFlow, type HoneypotFlowContext } from '../../items/honeypot';
 import { useAnkhFlow, type AnkhContext } from '../../items/selfUse';
@@ -62,6 +62,7 @@ import { setWandmakerQuestType, setWandmakerQuestWands, wandmakerQuestType } fro
 import { ITEM_FRAME, WATER } from '../../dungeonConstants';
 import { BUFF_DURATION, absorbShield, addBuff, doomDamage, setAnnounceBuff, setAttachBacklash, type BuffId, type Creature, type GroundItem, type Step } from '../../combat';
 import { BOSSES } from '../../monsters';
+import { restoreRunChallenges } from '../../challenges';
 import { APPEARANCE_TABLES, AUGMENT_OPTIONS, BLACKSMITH_QUEST, IMP_QUEST, SAD_GHOST_QUEST, SPD_LEVEL_CURVE, SUBCLASS_OPTIONS, SUBCLASS_TRACK, WANDMAKER_QUEST } from './shared';
 
 /**
@@ -415,6 +416,7 @@ export const panelsSingleUseMethods = {
 		//`ascensionChallengeActive`'s field comment) does too - `enterLevel()` re-syncs it into
 		//`combat.ts` right after this method calls it, below.
 		this.ascensionChallengeActive = s.ascensionChallengeActive ?? false;
+		restoreRunChallenges(s.challengeIds);
 		this.quests = Rpg.QuestLog.fromJSON(
 			[SAD_GHOST_QUEST, WANDMAKER_QUEST, BLACKSMITH_QUEST, IMP_QUEST],
 			{ stageIndex: s.questStages },
@@ -461,7 +463,7 @@ export const panelsSingleUseMethods = {
 		this.stage.addChild(this.statusPane);
 		//GameScene.java's compact top-right chrome is separate from StatusPane: it carries the
 		//version, floor label, carried key counters and the entry point for WndGame.
-		this.dungeonHud = new DungeonHud(() => this.onAction('gameMenu'), () => this.openJournal());
+		this.dungeonHud = new DungeonHud(() => this.onAction('gameMenu'), () => this.openJournal(), () => showChallengesWindow(this.gameWindows, false));
 		this.stage.addChild(this.dungeonHud);
 		this.statusPane.on('pointertap', () => {
 			//InfoWindow is a spent Window after close, so create a fresh instance for each opening.

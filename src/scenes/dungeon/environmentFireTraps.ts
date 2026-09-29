@@ -4,6 +4,8 @@ import { placeCharacterArt } from '../../ui/characterPlacement';
 import { Actors, Blob, Random, Roguelike } from 'mwg';
 import { missileBaseUses, missileBaseUsesOrDefault, tippedDartUseDivisor } from '../../items/missiles';
 import { collectDewdrop as collectConsumableDewdrop } from '../../items/consumables';
+import { poisonDartAmount } from '../../simulation/tenguDartTrap';
+import { isChallengeEnabled } from '../../challenges';
 import { rollUpgradeAffixLoss, upgradeGearFlow, type ScrollEffectsContext, type UpgradeGearContext } from '../../items/scrollEffects';
 import { detonateBomb } from '../../items/bombEffects';
 import { HOLSTER_DURABILITY_FACTOR, ownsBag, type BagId } from '../../items/bags';
@@ -1469,7 +1471,7 @@ export const environmentFireTrapsMethods = {
 			this.showDamage(this.hero, damage);
 			this.say(t('port.log.trap.poisondart', { damage }), 'negative');
 			addBuff(this.hero, 'poison');
-			if (!buffBlocked(this.hero, 'poison')) this.hero.buffs['poison'] = 8 + Math.round((2 * this.depth) / 3);
+			if (!buffBlocked(this.hero, 'poison')) this.hero.buffs['poison'] = poisonDartAmount(this.level.index(x, y), this.depth, isChallengeEnabled('stronger_bosses'));
 		} else if (kind === 'wornDart') {
 			//WornDartTrap (WornDartTrap.java, tag 3.3.8) is the poison dart's weak
 			//sibling: the same 4-8-minus-armor dart with no poison, and the only trap
@@ -1931,7 +1933,7 @@ export const environmentFireTrapsMethods = {
 			});
 			//`reigniteBuff` keeps the max-duration semantics and routes through the shared
 			//immunity gate, so INORGANIC kinds refuse the dart's poison like Java's isImmune.
-			reigniteBuff(monster, 'poison', 8 + Math.round((2 * this.depth) / 3));
+			reigniteBuff(monster, 'poison', poisonDartAmount(this.level.index(monster.x, monster.y), this.depth, isChallengeEnabled('stronger_bosses')));
 		} else if (kind === 'wornDart') {
 			//Same dart as poisonDart above, minus the poison, like Java's WornDartTrap.
 			const damage = Math.max(0, Random.normalRange(4, 8) - Random.normalRange(monster.armor[0], monster.armor[1]));

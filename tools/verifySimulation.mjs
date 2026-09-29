@@ -57,7 +57,7 @@ try {
 		'adapters/hungerSimulation', 'simulation/random', 'simulation/combatState', 'simulation/mwlBuffDurations', 'simulation/mwlStatusImmunities', 'simulation/mwlMonsterImmunities', 'simulation/mwlMonsterStateStats', 'simulation/buffs', 'simulation/combat', 'simulation/entityId', 'talentEffects',
 		'adapters/combatSimulation', 'adapters/mwgRandom', 'combat', 'simulation/heroActions', 'adapters/heroActionSimulation', 'adapters/heroActions',
 	'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/warriorAbilities', 'simulation/huntressAbilities', 'simulation/duelistAbilities', 'simulation/mageAbilities', 'simulation/rogueAbilities', 'simulation/ratmogrify', 'talents', 'armorAbilities', 'simulation/tenguAbility', 'simulation/tenguBeam', 'simulation/gooBoss', 'simulation/ratKingBoss', 'simulation/dm300Boss', 'simulation/gnollGeomancer', 'simulation/yogBoss', 'simulation/defenderDamageCurves', 'simulation/preparation', 'simulation/disintegration', 'items/wands', 'items/missiles', 'mechanics/cone', 'dungeonConstants',
-	'simulation/javaBlob', 'simulation/fireSpread', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops', 'simulation/plantTriggers', 'simulation/teleport', 'simulation/teleportAppear', 'simulation/timeBubble', 'simulation/targeting', 'simulation/ripperLeap', 'simulation/succubusBlink', 'simulation/prismatic', 'simulation/mirrorImage', 'simulation/sentryTurn', 'simulation/brews', 'simulation/levelPopulation', 'simulation/smoke', 'simulation/deathBursts', 'simulation/pourAuras', 'simulation/skeletonExplosion', 'simulation/vertigo', 'simulation/ringKnow', 'simulation/actorCollision', 'simulation/wandering', 'simulation/zoomStep', 'simulation/chasmJump', 'simulation/spareWands', 'simulation/clericSpells', 'simulation/shockArc', 'simulation/geyserTrap', 'simulation/cursedWand', 'ui/buffOverlays', 'settings',
+	'simulation/javaBlob', 'simulation/prismaticWandLight', 'simulation/tenguDartTrap', 'simulation/swarmIntelligence', 'simulation/crystalSpire', 'spdLevelGen/barrenLand', 'simulation/fireSpread', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops', 'simulation/plantTriggers', 'simulation/teleport', 'simulation/teleportAppear', 'simulation/timeBubble', 'simulation/targeting', 'simulation/ripperLeap', 'simulation/succubusBlink', 'simulation/prismatic', 'simulation/mirrorImage', 'simulation/sentryTurn', 'simulation/brews', 'simulation/levelPopulation', 'simulation/smoke', 'simulation/deathBursts', 'simulation/pourAuras', 'simulation/skeletonExplosion', 'simulation/vertigo', 'simulation/ringKnow', 'simulation/actorCollision', 'simulation/wandering', 'simulation/zoomStep', 'simulation/chasmJump', 'simulation/spareWands', 'simulation/clericSpells', 'simulation/shockArc', 'simulation/geyserTrap', 'simulation/cursedWand', 'ui/buffOverlays', 'settings',
 	// `actors/monsterSpawn` (plus its `monsters`/`challenges`/i18n chain) for the spawn-profile
 	// checks: the chaos-elemental roll, the rare-alt table, and the unported-mob absences.
 	'monsters', 'challenges', 'i18n/index', 'i18n/portStrings', 'i18n/portMineStrings', 'i18n/languages', 'i18n/spdKeys', 'generated/spdMessages', 'items/artifacts', 'actors/monsterSpawn',
@@ -1632,6 +1632,69 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		}
 		assert.equal(monsterSpawnProfile('dm300', 15, false, false, false, 1).adjustedDef.hp, 300);
 		assert.equal(monsterSpawnProfile('king', 20, false, false, false, 1).adjustedDef.hp, 300);
+	});
+	check('challenge run modifiers: mask, snapshot, score multiplier, R086-R093 pure logic', () => {
+		const c = require('./challenges');
+		//Java masks (Challenges.java MASKS) and NAME_IDS order
+		assert.deepEqual(c.CHALLENGES.map((d) => d.id), ['champion_enemies', 'stronger_bosses', 'no_food', 'no_armor', 'no_healing', 'no_herbalism', 'swarm_intelligence', 'darkness', 'no_scrolls']);
+		assert.equal(c.challengeMask(['no_food', 'no_scrolls', 'stronger_bosses']), 1 + 64 + 256);
+		assert.deepEqual(c.challengesFromMask(3).map((d) => d.id), ['no_food', 'no_armor']);
+		//Rankings.java:225 - 1.25^n rounded to 0.05
+		assert.equal(c.challengeScoreMultiplier(0), 1);
+		assert.equal(c.challengeScoreMultiplier(1), 1.25);
+		assert.equal(c.challengeScoreMultiplier(3), 1.95);
+		assert.equal(c.challengeScoreMultiplier(9), 7.45);
+		//snapshot: without VICTORY the setup selection is dropped; with it the run keeps its own copy
+		c.toggleChallenge('darkness');
+		let snap = c.beginChallengeRun(false);
+		assert.equal(snap.size, 0);
+		assert.equal(c.isChallengeEnabled('darkness'), false);
+		c.toggleChallenge('darkness');
+		snap = c.beginChallengeRun(true);
+		assert.ok(snap.has('darkness') && c.isChallengeEnabled('darkness'));
+		c.toggleChallenge('darkness'); //setup edit must not rewrite the running game
+		assert.ok(c.isChallengeEnabled('darkness'), 'in-run mask is a snapshot');
+		assert.equal(c.setupChallenges().has('darkness'), false);
+		c.restoreRunChallenges(['no_food', 'bogus']);
+		assert.deepEqual(c.runChallengeIds(), ['no_food']);
+		c.restoreRunChallenges([]);
+		//R089 Earth guardian drRoll
+		const { earthGuardianArmorRange } = require('./items/wands');
+		assert.deepEqual(earthGuardianArmorRange(2, false), [2, 9]);
+		assert.deepEqual(earthGuardianArmorRange(2, true), [2, 4]);
+		//R088 Prismatic Light wand Light buff
+		const p = require('./simulation/prismaticWandLight');
+		assert.equal(p.prismaticWandLightDuration(8, false, 3), 0);
+		assert.equal(p.prismaticWandLightDuration(2, true, 3), 5);
+		assert.equal(p.prismaticWandLightDuration(4, false, 3), 25);
+		assert.equal(p.levelViewDistance(5, true, undefined), 2);
+		assert.equal(p.levelViewDistance(5, false, undefined), 8);
+		const buffs = {};
+		p.prolongPrismaticWandLight(buffs, 5, true, undefined, 1);
+		assert.equal(buffs.light, 3);
+		//R092 Tengu cell
+		const t = require('./simulation/tenguDartTrap');
+		assert.equal(t.tenguTrapFill(0.4, false), 0.4);
+		assert.ok(Math.abs(t.tenguTrapFill(0.4, true) - 0.775) < 1e-9 && Math.abs(t.tenguTrapFill(0.9, true) - 0.9) < 1e-9);
+		t.markTenguDartTrap(7);
+		assert.equal(t.poisonDartAmount(7, 10, false), 8);
+		assert.equal(t.poisonDartAmount(7, 10, true), 15);
+		assert.equal(t.poisonDartAmount(8, 10, false), 15);
+		t.resetTenguDartTraps();
+		assert.equal(t.poisonDartAmount(7, 10, false), 15);
+		//R087 generated plants are stripped, well-water sources stay
+		const { stripGeneratedPlants } = require('./spdLevelGen/barrenLand');
+		const paint = { plants: [{ pos: 1, kind: 'sungrass' }, { pos: 2, kind: 'wellWater:awareness' }, { pos: 3, kind: 'dewcatcher' }] };
+		assert.equal(stripGeneratedPlants(paint), 2);
+		assert.deepEqual(paint.plants.map((x) => x.pos), [2]);
+		//R090 swarm intelligence beckon (Mob.java:1151/1194)
+		const { swarmBeckon } = require('./simulation/swarmIntelligence');
+		const mk = (x, o = {}) => ({ x, y: 0, buffs: {}, sleeping: true, ...o });
+		const src = mk(0, { sleeping: false, seesHero: true });
+		const near = mk(5), far = mk(9), para = mk(3, { buffs: { paralysis: 5 } }), hunting = mk(4, { sleeping: false, seesHero: true });
+		const got = swarmBeckon(src, [src, near, far, para, hunting]);
+		assert.deepEqual(got, [near]);
+		assert.equal(near.sleeping, false); assert.equal(near.seesHero, true); assert.equal(far.sleeping, true);
 	});
 	check('Piranha deaths feed the PIRANHAS badge at six kills', () => {
 		//`Piranha.die()` (tag `v3.3.8`): every death counts, any cause.

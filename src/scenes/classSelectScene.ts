@@ -1,6 +1,8 @@
 import { SpdLabel as Label } from '../ui/spdLabel';
 import { Container, FillGradient, Graphics, Rectangle, Sprite, Texture } from 'mwg/two-d/pixi-interop';
-import { Game, Scene2D, theme, Input } from 'mwg';
+import { Game, Scene2D, theme, Input, WindowStack } from 'mwg';
+import { beginChallengeRun, setupChallenges } from '../challenges';
+import { showChallengesWindow, showInfoWindow } from '../ui/portWindows';
 import { t, capitalize } from '../i18n/index';
 import type { SpdSprites } from '../images';
 import { runState } from '../runState';
@@ -26,6 +28,8 @@ export const CLASS_SPLASH: Record<ClassId, keyof SpdSprites> = {
 export class ClassSelectScene extends Scene2D {
 	private badges = loadBadges();
 	private selected: ClassId | null = null;
+	private readonly windows = new WindowStack();
+	private refreshChal: () => void = () => {};
 	private layout: () => void = () => {};
 
 	override create(): void {
@@ -47,6 +51,9 @@ export class ClassSelectScene extends Scene2D {
 			icon: titleIcon(runState.sprites.uiIcons, 'enter', 1), onClick: () => {
 				if (!this.selected) return;
 				runState.pendingClass = this.selected;
+				//`HeroSelectScene.java:237` + `Dungeon.init` (`Dungeon.java:236`): the setup mask is dropped until the
+				//`VICTORY` badge exists, then snapshotted into the run.
+				beginChallengeRun(this.badges.unlocked('victory'));
 				Game.current.switchScene(DungeonScene);
 			} });
 		start.visible = false;
@@ -81,6 +88,19 @@ export class ClassSelectScene extends Scene2D {
 		});
 		const back = new Button({ width: 20, height: 20, icon: titleIcon(runState.sprites.uiIcons, 'exit', 1), onClick: () => Game.current.switchScene(TitleScene) });
 		root.addChild(back);
+		//`HeroSelectScene.java:798-924`: the challenges button. Without the `VICTORY` badge it only explains
+		//`challenges_nowin`; with it, it opens the editable `WndChallenges`. The count beside it is the number of
+		//selected challenges (Java tints the icon instead).
+		const chalCount = new Label({ size: 6, color: theme().color.textHighlight });
+		let chalShown = '';
+		const refreshChalIcon = (): void => { const n = this.badges.unlocked('victory') ? setupChallenges().size : 0; const text = n > 0 ? String(n) : ''; if (text !== chalShown) { chalShown = text; chalCount.setText(text); } };
+		const chal = new Button({ width: 20, height: 20, icon: titleIcon(runState.sprites.uiIcons, 'challenge', 1), onClick: () => {
+			if (this.badges.unlocked('victory')) showChallengesWindow(this.windows, true);
+			else showInfoWindow(this.windows, t('windows.wndchallenges.title'), t('scenes.heroselectscene.challenges_nowin'));
+		} });
+		root.addChild(chal, chalCount);
+		this.stage.addChild(this.windows);
+		this.refreshChal = refreshChalIcon;
 		//Port-original keyboard-navigation accessibility work (ROADMAP.md section 8 - Java has
 		//no such system), continuing `TitleScene`'s model to the class-select screen: a single
 		//focused portrait, moved by the movement actions, drawn with the same visible ring.
@@ -107,6 +127,7 @@ export class ClassSelectScene extends Scene2D {
 			drawFocusRing();
 		};
 		const onAction = (action: string) => {
+		if (!this.windows.isEmpty) { this.windows.handleAction(action); return; }
 			if (action === 'cancel') Game.current.switchScene(TitleScene);
 			if (action === 'up') moveFocus(-1, 0);
 			if (action === 'down') moveFocus(1, 0);
@@ -164,11 +185,16 @@ export class ClassSelectScene extends Scene2D {
 				start.position.set((w - 80) / 2, h - 65);
 			}
 			back.position.set(w - 20, 0);
+			chal.position.set(w - 42, 0);
+			chalCount.position.set(w - 42, 20);
+			this.windows.scale.set(scale);
+			this.windows.setViewport(w, h);
+			refreshChalIcon();
 			drawFocusRing();
 		};
 		this.layout();
 	}
 
-	override update(dt: number): void { runState.audio.update(dt); }
+	override update(dt: number): void { this.windows.update(dt); this.refreshChal(); runState.audio.update(dt); }
 	override resize(_w: number, _h: number): void { this.layout(); }
 }
