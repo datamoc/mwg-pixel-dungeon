@@ -216,7 +216,7 @@ export const coreSpawnTilesMethods = {
 		//1 fps, run `2..7` at 20 fps, attack `13,14,15,0` at 15 fps once per swing, and the death
 		//sequence `8,9,10,11,12,11` at 20 fps holding its last frame. Frame `i` is the cloth row's
 		//`i	h cell, which is `HERO_IDLE_FRAME + i` on the class's own sheet.
-		const sheet = heroSheet(runState.sprites[this.heroClass]);
+		const sheet = heroSheet(runState.sprites[this.hero?.heroDisguiseClass ?? this.heroClass]);
 		const frame = (index: number) => sheet.get(HERO_IDLE_FRAME + index);
 		const sprite = new AnimatedSprite(frame(0));
 		sprite.add('idle', [0, 0, 0, 1, 0, 0, 1, 1].map(frame), { fps: 1 });
@@ -468,7 +468,7 @@ export const coreSpawnTilesMethods = {
 	},
 
 	/** `HeroSprite.updateArmor()` (tag `v3.3.8`) rebuilds every animation from `Hero.tier()`; Java reports ClassArmor as tier 6 even though its copied combat tier remains ordinary, so this port refreshes the visible row whenever stats sync. */
-	refreshHeroArmorSprite(this: DungeonScene): void { const s = this.spriteFor.get(this.hero?.id ?? -1); if (!(s instanceof AnimatedSprite)) return; const base = Math.max(0, Math.min(6, isClassArmorId(this.armorId) ? 6 : this.armorTier)) * 21, sheet = heroSheet(runState.sprites[this.heroClass]), frame = (i: number) => sheet.get(base + i), playing = s.playing; s.add('idle', [0, 0, 0, 1, 0, 0, 1, 1].map(frame), { fps: 1 }).add('run', [2, 3, 4, 5, 6, 7].map(frame), { fps: 20 }).add('attack', [13, 14, 15, 0].map(frame), { fps: 15, loop: false }).add('die', [8, 9, 10, 11, 12, 11].map(frame), { fps: 20, loop: false }).play(playing && s.has(playing) ? playing : 'idle', true); },
+	refreshHeroArmorSprite(this: DungeonScene): void { const s = this.spriteFor.get(this.hero?.id ?? -1); if (!(s instanceof AnimatedSprite)) return; const base = Math.max(0, Math.min(6, isClassArmorId(this.armorId) ? 6 : this.armorTier)) * 21, sheet = heroSheet(runState.sprites[this.hero?.heroDisguiseClass ?? this.heroClass]), frame = (i: number) => sheet.get(base + i), playing = s.playing; s.add('idle', [0, 0, 0, 1, 0, 0, 1, 1].map(frame), { fps: 1 }).add('run', [2, 3, 4, 5, 6, 7].map(frame), { fps: 20 }).add('attack', [13, 14, 15, 0].map(frame), { fps: 15, loop: false }).add('die', [8, 9, 10, 11, 12, 11].map(frame), { fps: 20, loop: false }).play(playing && s.has(playing) ? playing : 'idle', true); },
 
 	/**
 	 * `Hero.java`'s level-up block: `HT = 20 + 5*(lvl-1)`, `attackSkill++`, `defenseSkill++`

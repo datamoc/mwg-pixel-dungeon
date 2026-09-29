@@ -1,37 +1,13 @@
 /**
- * `CursedWand.cursedZap()` (`items/wands/CursedWand.java`, tag `v3.3.8`): a cursed wand zap
- * rolls a weighted tier (`EFFECT_CAT_CHANCES = {60, 30, 9, 1}` for common/uncommon/rare/very
- * rare) then a uniform pick within that tier's `CursedEffect` list.
- *
- * **Scoped port, documented honestly rather than left as a total exclusion:** Common,
- * Uncommon and Rare are modeled at Java's own real 60/30/9/1 weights (`pickCursedTier`, over a
- * `pick(100)` draw - VeryRare's remaining 1% is folded into Rare, preserving Java's Common and
- * Uncommon rates while making the modeled Rare bucket 10%), and a subset of
- * each tier's real effect list. Common: 8 of 8 - `SpawnRegrowth` has a floor-persisted
- * Regrowth blob with Java's spreading, terrain growth and rooting; `RandomAreaEffect` is now modeled with the
- * existing Fire/Freezing/Electricity fields, but its pre-effect `Level.pressCell` on an empty
- * collision cell and `tryForWandProc` callback remain absent. Uncommon: all 8 are modeled - `Explosion`
- * reuses the newly-exported `applyBlastDamage` (`items/bombEffects.ts`, which already had a
- * hero branch) and `LightningBolt` turned out to be almost entirely presentation (every
- * `Lightning()` visual and `ScrollOfRecharging.charge()` are pure particle bursts with zero
- * mechanical effect in `v3.3.8`, both skippable) once read past the sprite calls. Rare: 6 of 8
- * so far - `MassInvuln` (every character gets Invulnerability+Bless, both already-modeled
- * buffs, no new infra needed), `ConeOfColors` (8-radius/90-degree `STOP_SOLID` cone via
- * `mechanics/cone.ts`'s `coneCells`, five already-modeled status/damage primitives - Burning,
- * Frost, Poison, Ooze, Electricity+Paralysis - uniformly picked per affected character, each
- * independently damage-rolled), `SheepPolymorph` (a live, non-hero, non-boss/miniboss,
- * non-NPC target at the bolt's collision cell is silently destroyed - the same no-death/no-loot
- * teardown `destroyAlly` already uses - and replaced with a fresh 10-turn `spawnSheep` at its
- * cell, reusing `SummonSheep`'s own factory), `SummonMonsters` (reuses the existing summoning
- * utility trap; its roster selection and spawn timing are simplified as documented at the call
- * site), and `CurseEquipment` (uses the existing equipped-curse state and affix pools; item
- * selection prefers gear without an affix, while the port uses a uniform choice within that
- * preferred pool), and `InterFloorTeleport` uses the existing floor travel path plus Java's
- * weighted depth selection. The other two need infrastructure this port doesn't have:
- * `Petrify` and `FireBall` are now modeled below; the whole VeryRare tier (folded into Rare's odds above, see the roll
- * note) has its authoritative eight-id catalog represented below, but its scene effects remain
- * **Not ported** until their individual mechanics are implemented. `WondrousResin`'s
- * `positiveOnly` mode is also not ported (no such artifact exists here).
+ * `CursedWand.cursedZap()` (`items/wands/CursedWand.java`, tags `v3.3.8`/`v4.0.0`):
+ * rolls Java's weighted 60/30/9/1 tier and uniformly chooses from that tier's catalog.
+ * Common, Uncommon, Rare and VeryRare keep their distinct weights and catalogs. The VeryRare
+ * planner records Java's eight-effect order; the scene handles all eight. Its three newest
+ * outcomes use the existing Mimic sprite for Golden Mimic, replace the exact firing Wand with a
+ * generated cursed reward for RandomTransmogrify, and apply a temporary cosmetic class-sheet
+ * disguise for HeroShapeShift. Those presentation/model limits are recorded at the dispatch and
+ * in `coverage/rows-items-equipment-and-artifacts.md`. `WondrousResin`'s positiveOnly mode is
+ * unreachable from Wild Magic and remains outside this path.
  */
 export type CursedCommonEffectId =
 	| 'burnAndFreeze'
@@ -87,10 +63,8 @@ export type CursedRareEffectId = 'sheepPolymorph' | 'curseEquipment' | 'interFlo
 export const CURSED_RARE_EFFECT_IDS: readonly CursedRareEffectId[] = ['sheepPolymorph', 'curseEquipment', 'interFloorTeleport', 'summonMonsters', 'fireBall', 'coneOfColors', 'massInvuln', 'petrify'];
 
 /** Java's distinct `VERY_RARE_EFFECTS` catalog (`CursedWand.java`, tag `v4.0.0`; `v3.3.8` had only four).
- * The runtime's one-percent tier dispatches to `castCursedWandVeryRareEffect`, which implements five of
- * these eight (`forestFire`, `abortRetryFail`, `superNova`, `sinkHole`, `gravityChaos`); the remaining
- * three (`spawnGoldenMimic`, `randomTransmogrify`, `heroShapeShift`) are picked and then do nothing.
- * Keeping the authoritative order here prevents the catalog itself from being silently lost. */
+ * The runtime dispatches this one-percent tier to `castCursedWandVeryRareEffect`; keeping the
+ * authoritative order here prevents catalog and scene dispatch from silently diverging. */
 export type CursedVeryRareEffectId = 'forestFire' | 'spawnGoldenMimic' | 'abortRetryFail' | 'randomTransmogrify' | 'heroShapeShift' | 'superNova' | 'sinkHole' | 'gravityChaos';
 export const CURSED_VERY_RARE_EFFECT_IDS: readonly CursedVeryRareEffectId[] = [
 	'forestFire', 'spawnGoldenMimic', 'abortRetryFail', 'randomTransmogrify', 'heroShapeShift', 'superNova', 'sinkHole', 'gravityChaos',

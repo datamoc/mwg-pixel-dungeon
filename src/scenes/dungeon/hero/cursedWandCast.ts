@@ -1,7 +1,7 @@
 import type { DungeonScene } from '../../dungeonScene';
 import { Random, Roguelike } from 'mwg';
 import { BUFF_DURATION, addBuff, buffBlocked, doomDamage, reigniteBuff, type Creature, type Step } from '../../../combat';
-import { CURSED_PLANT_KINDS, CURSED_RANDOM_GAS, cursedForestFireSeeds, cursedInterfloorDepthWeights, pickBurnAndFreeze, pickConeOfColorsStatus, pickCursedCommonEffect, pickCursedEquipmentSlot, pickCursedRandomAreaEffect, pickCursedRareEffect, pickCursedTier, pickCursedUncommonEffect, pickCursedVeryRareEffect } from '../../../simulation/cursedWand';
+import { CURSED_PLANT_KINDS, CURSED_RANDOM_GAS, cursedForestFireSeeds, cursedInterfloorDepthWeights, pickBurnAndFreeze, pickConeOfColorsStatus, pickCursedCommonEffect, pickCursedEquipmentSlot, pickCursedRandomAreaEffect, pickCursedRareEffect, pickCursedTier, pickCursedUncommonEffect, pickCursedVeryRareEffect, cursedGoldenMimicSpawnCell } from '../../../simulation/cursedWand';
 import { isChallengeEnabled } from '../../../challenges';
 import { activateGeyserTrap as activateGeyserTrapFlow } from '../../../simulation/geyserTrap';
 import { applyBlastDamage } from '../../../items/bombEffects';
@@ -15,6 +15,9 @@ import { runState } from '../../../runState';
 import { spawnTrapSpecks } from '../../../ui/effectBursts';
 import { BOSSES, BOSS_KINDS, FLYING_KINDS, IMMOVABLE_KINDS, MINIBOSS_KINDS } from '../../../monsters';
 import { coneCells } from '../../../mechanics/cone';
+import { Cat, randomUsingDefaults } from '../../../items/generator';
+import { generatedInventoryItem } from '../../../items/generatedItems';
+import { groundKindForItem } from '../../../items/itemKinds';
 
 /** `CursedWand.cursedZap()` (`items/wands/CursedWand.java`, tag `v3.3.8`) - moved verbatim from
  * `armorAbilityUse.ts` as the file-size refactor's extraction once `activateWildMagic`'s cursed
@@ -22,8 +25,8 @@ import { coneCells } from '../../../mechanics/cone';
  * `simulation/cursedWand.ts` carries the full scoping rationale for what is and isn't ported. */
 export const cursedWandCastMethods = {
 	/** `ForestFire.effect()` (`CursedWand.java`, tag `v3.3.8`): seed Regrowth 15 on every
-	 * level cell. This is exposed as a scene seam while the remaining VeryRare effects are
-	 * still being wired into the tier dispatcher. Java's positiveOnly fire suppression is not
+	 * level cell. This scene seam is shared by the full VeryRare dispatcher. Java's positiveOnly
+	 * fire suppression is not
 	 * reachable from WildMagic, so this path also seeds the existing Fire field at random free
 	 * destinations only when a caller supplies that mode later. */
 	castCursedWandForestFire(this: DungeonScene): void {
@@ -34,29 +37,60 @@ export const cursedWandCastMethods = {
 	 * spare in `activateWildMagic`'s firing loop in place of a normal `fireWandShot`. `target` is
 	 * the same resolved aim the normal branch computes (occupant, else the original target) and
 	 * may be `undefined`; `cell` is the bolt's own collision cell. */
-	castCursedWandEffect(this: DungeonScene, target: Creature | undefined, cell: Step): void {
+	castCursedWandEffect(this: DungeonScene, target: Creature | undefined, cell: Step, origin: { instanceId: string }): void {
 		const tier = pickCursedTier((bound) => Random.int(bound));
 		if (tier === 'common') this.castCursedWandCommonEffect(target, cell);
 		else if (tier === 'uncommon') this.castCursedWandUncommonEffect(target, cell);
 		else if (tier === 'rare') this.castCursedWandRareEffect(target, cell);
-		else this.castCursedWandVeryRareEffect(cell);
+		else this.castCursedWandVeryRareEffect(cell, origin);
 	},
 
 	/** `CursedWand.cursedZap()`'s VeryRare tier (`CursedWand.java`, tag `v4.0.0`: eight effects;
 	 * `v3.3.8` had only four, without HeroShapeShift/SuperNova/SinkHole/GravityChaos). Ported: `SinkHole`, `GravityChaos`, `SuperNova`,
-	 * `ForestFire` and `AbortRetryFail`. The other three - `SpawnGoldenMimic`, `RandomTransmogrify`
-	 * and `HeroShapeShift` - are picked and then do nothing (see the `PORT_COVERAGE` CursedWand row)
-	 * rather than borrowing another tier's effect. */
-	castCursedWandVeryRareEffect(this: DungeonScene, cell: Step): void {
+	 * All eight outcomes are dispatched. `SpawnGoldenMimic`, `RandomTransmogrify` and `HeroShapeShift` use generated loot, the exact Wild Magic wand instance and a temporary cosmetic class sheet respectively; Golden Mimic uses the existing Mimic visuals because this port has no dedicated golden sheet. */
+	castCursedWandVeryRareEffect(this: DungeonScene, cell: Step, origin: { instanceId: string }): void {
 		//`randomValidVeryRareEffect`: re-roll until `valid()`; SinkHole refuses on boss floors, past depth 25
-		//and off the main branch (`PitfallTrap`'s own gate). Only `RandomTransmogrify` and `HeroShapeShift`
-		//also override `valid()` (3 of the 8 have a gate), and both pass for the hero's own zap: the wand is
-		//carried by the caster, who is the hero.
+		//and off the main branch (`PitfallTrap`'s own gate). `RandomTransmogrify` also requires its
+		//exact origin Wand to remain in the bag; `HeroShapeShift` passes because this caster is the hero.
 		const sinkHoleAllowed = !(this.depth in BOSSES) && this.depth <= 25 && !this.miningBranchActive;
 		let effect;
 		do effect = pickCursedVeryRareEffect((bound) => Random.int(bound));
-		while (effect === 'sinkHole' && !sinkHoleAllowed);
-		if (effect === 'forestFire') {
+		while ((effect === 'sinkHole' && !sinkHoleAllowed)
+			|| (effect === 'randomTransmogrify' && !this.bag.find('wand', origin.instanceId)));
+		if (effect === 'spawnGoldenMimic') {
+			const at = cursedGoldenMimicSpawnCell(cell, !!this.creatureAt(cell.x, cell.y),
+				(x, y) => this.level.inside(x, y) && this.level.passable(x, y),
+				(x, y) => this.creatureAt(x, y) !== null, (bound) => Random.int(bound));
+			if (!at) return;
+			const cat = Random.element([Cat.WEAPON, Cat.ARMOR, Cat.RING, Cat.WAND])!;
+			let reward = randomUsingDefaults(cat);
+			while ((reward.level ?? 0) < 1) reward = randomUsingDefaults(cat);
+			const family = cat === Cat.WEAPON ? 'weapon' : cat === Cat.ARMOR ? 'armor' : cat === Cat.RING ? 'ring' : 'wand';
+			const mimic = this.spawnMonster('mimic', at, false, `${family}|${reward.cls};level:${reward.level}`);
+			mimic.mimicRevealed = false;
+			mimic.maxHp = Math.max(mimic.maxHp + 1, Math.round(mimic.maxHp * 1.33));
+			mimic.hp = mimic.maxHp;
+			mimic.damage = [Math.round(mimic.damage[0] * 1.33), Math.round(mimic.damage[1] * 1.33)];
+			this.revealMimic(mimic);
+		} else if (effect === 'randomTransmogrify') {
+			const categories = [Cat.WEAPON, Cat.ARMOR, Cat.RING, Cat.ARTIFACT] as const;
+			const cat = Random.element(categories)!;
+			let generated = randomUsingDefaults(cat);
+			while (generated.cursed) generated = randomUsingDefaults(cat);
+			generated.level = Math.max(1, generated.level ?? 0);
+			generated.cursed = true;
+			const item = generatedInventoryItem(generated, { newItemInstanceId: (kind) => this.newItemInstanceId(kind) });
+			item.cursed = true; item.cursedKnown = true;
+			this.bag.remove('wand', 1, origin.instanceId);
+			this.spawnGroundItem(groundKindForItem(item, 'food'), this.hero.x, this.hero.y, item);
+			this.say(t('items.wands.cursedwand.transmogrify_wand'), 'warning');
+		} else if (effect === 'heroShapeShift') {
+			const classes = ['warrior', 'mage', 'rogue', 'huntress', 'duelist', 'cleric'].filter((id) => id !== this.heroClass);
+			this.hero.heroDisguiseClass = Random.element(classes) as typeof this.hero.heroDisguiseClass;
+			this.hero.buffs['heroDisguise'] = 1000;
+			this.refreshHeroArmorSprite();
+			this.say(t('items.wands.cursedwand.disguise'), 'warning');
+		} else if (effect === 'forestFire') {
 			this.castCursedWandForestFire();
 			//Java: Fire 10 at `Level.randomDestination(null)` until `Random.Int(5) == 0`; the
 			//port's `randomFreeCell` stands in for randomDestination (it also skips occupied cells).

@@ -14,6 +14,8 @@ writeFileSync(join(output, 'cursedWand.cjs'), ts.transpileModule(readFileSync(so
 const { CURSED_COMMON_EFFECT_IDS, CURSED_RANDOM_AREA_EFFECTS, CURSED_RARE_EFFECT_IDS, CURSED_VERY_RARE_EFFECT_IDS, pickCursedCommonEffect,
 	pickCursedRandomAreaEffect, pickCursedRareEffect, pickCursedVeryRareEffect, pickCursedUncommonEffect, cursedForestFireSeeds, cursedGoldenMimicSpawnCell, pickCursedEquipmentSlot, pickCursedTier } = createRequire(import.meta.url)(join(output, 'cursedWand.cjs'));
 
+const scene = readFileSync(new URL('../src/scenes/dungeon/hero/cursedWandCast.ts', import.meta.url), 'utf8');
+
 const rolls = [];
 for (let roll = 0; roll < 100; roll++) {
 	const tier = pickCursedTier((bound) => {
@@ -27,8 +29,20 @@ assert.deepEqual(rolls.slice(60, 90), Array(30).fill('uncommon'));
 assert.deepEqual(rolls.slice(90, 99), Array(9).fill('rare'));
 assert.deepEqual(rolls.slice(99), ['veryRare']);
 assert.match(readFileSync(new URL('../src/scenes/dungeon/hero/cursedWandCast.ts', import.meta.url), 'utf8'),
-	/else if \(tier === 'rare'\)[\s\S]*?else this\.castCursedWandVeryRareEffect\(cell\);/);
+	/else if \(tier === 'rare'\)[\s\S]*?else this\.castCursedWandVeryRareEffect\(cell, origin\);/);
 console.log('PASS CursedWand keeps Java 60/30/9/1 weights and routes the VeryRare tier to its own handler.');
+assert.match(scene, /effect === 'spawnGoldenMimic'[\s\S]*?Cat\.WAND[\s\S]*?reward\.level \?\? 0\)[\s\S]*?spawnMonster\('mimic'[\s\S]*?revealMimic/);
+assert.match(scene, /effect === 'randomTransmogrify'[\s\S]*?randomUsingDefaults[\s\S]*?this\.bag\.remove\('wand', 1, origin\.instanceId\)[\s\S]*?spawnGroundItem/);
+assert.match(scene, /effect === 'randomTransmogrify' && !this\.bag\.find\('wand', origin\.instanceId\)/);
+assert.match(scene, /effect === 'heroShapeShift'[\s\S]*?heroDisguiseClass[\s\S]*?refreshHeroArmorSprite/);
+const deathLoot = readFileSync(new URL('../src/scenes/dungeon/deathSaveRefresh.ts', import.meta.url), 'utf8');
+assert.match(deathLoot, /const \[itemSpec, rewardLevelText\] = bonusPayload\.split\(';level:'/);
+assert.match(deathLoot, /prize\.level = Number\(rewardLevelText\)/);
+const armorAbility = readFileSync(new URL('../src/scenes/dungeon/hero/armorAbilityUse.ts', import.meta.url), 'utf8');
+assert.match(armorAbility, /castCursedWandEffect\(aim, cell, spare\.entry\)/);
+const turnLoop = readFileSync(new URL('../src/scenes/dungeon/turnLoopAiming.ts', import.meta.url), 'utf8');
+assert.match(turnLoop, /hadHeroDisguise[\s\S]*?delete this\.hero\.heroDisguiseClass[\s\S]*?refreshHeroArmorSprite/);
+
 
 assert.deepEqual(CURSED_COMMON_EFFECT_IDS, ['burnAndFreeze', 'spawnRegrowth', 'randomTeleport', 'randomGas', 'randomAreaEffect', 'bubbles', 'randomWand', 'selfOoze']);
 assert.equal(pickCursedCommonEffect((bound) => { assert.equal(bound, 8); return 4; }), 'randomAreaEffect');
@@ -37,7 +51,6 @@ assert.deepEqual(CURSED_RANDOM_AREA_EFFECTS, ['burningTrap', 'chillingTrap', 'sh
 for (let i = 0; i < 3; i++) {
 	assert.equal(pickCursedRandomAreaEffect((bound) => { assert.equal(bound, 3); return i; }), CURSED_RANDOM_AREA_EFFECTS[i]);
 }
-const scene = readFileSync(new URL('../src/scenes/dungeon/hero/cursedWandCast.ts', import.meta.url), 'utf8');
 assert.match(scene, /castCursedWandForestFire[\s\S]*?cursedForestFireSeeds[\s\S]*?this\.regrowth\.seed/);
 assert.deepEqual(CURSED_RARE_EFFECT_IDS, ['sheepPolymorph', 'curseEquipment', 'interFloorTeleport', 'summonMonsters', 'fireBall', 'coneOfColors', 'massInvuln', 'petrify']);
 for (let i = 0; i < CURSED_RARE_EFFECT_IDS.length; i++) {

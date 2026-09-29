@@ -412,7 +412,8 @@ export const deathSaveRefreshMethods = {
 			if ((creature.kind === 'mimic' || creature.kind === 'crystalMimic') && creature.mimicLoot) {
 				const [bonusSpec, heldGoldText] = creature.mimicLoot.split(';heldGold:', 2);
 				const [bonusPayload, heldItem] = bonusSpec.split(';held:', 2);
-				const [lootFamily, lootClass] = bonusPayload.split('|', 2);
+				const [itemSpec, rewardLevelText] = bonusPayload.split(';level:', 2);
+				const [lootFamily, lootClass] = itemSpec!.split('|', 2);
 				const bonusKind = lootFamily.toLowerCase().includes('missile')
 					? 'stone'
 					: portItemKind(lootFamily);
@@ -422,6 +423,7 @@ export const deathSaveRefreshMethods = {
 					const prize = sourceInventoryItem(lootFamily, lootClass, (kind) => this.newItemInstanceId(kind));
 					if (prize) {
 						prize.cursed = false;
+						if (rewardLevelText !== undefined) prize.level = Number(rewardLevelText);
 						this.spawnGroundItem(bonusKind, creature.x, creature.y, prize);
 					}
 					this.say(t('port.log.drops', { who: capitalize(creature.name), item: t(GROUND_ITEM_KEYS[bonusKind]) }));

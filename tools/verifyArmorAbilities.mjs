@@ -357,7 +357,7 @@ export function verifyArmorAbilities(require, check) {
 		assert.ok(source.includes('wildMagicShots('), 'shots come from the ported selection');
 		assert.ok(source.includes('wildMagicBoostedLevel('), 'shots fire at the Wild-Power-boosted level');
 		assert.ok(source.includes('spendWildMagicShot(state, shotCost)'), 'every shot spends its own partial charge');
-		assert.ok(source.includes('if (spare.entry.cursed) this.castCursedWandEffect(aim, cell);'),
+		assert.ok(source.includes('if (spare.entry.cursed) this.castCursedWandEffect(aim, cell, spare.entry);'),
 			'cursed spares now fire through the cursed effect table instead of sitting out');
 		assert.ok(source.includes('if (Random.int(4) >= conserved) this.spendHeroAction(1);'), 'the turn is free only under a conserved roll');
 	});

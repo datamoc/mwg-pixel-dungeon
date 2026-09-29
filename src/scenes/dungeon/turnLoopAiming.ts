@@ -1748,7 +1748,12 @@ export const turnLoopAimingMethods = {
 				//they deal through `Char.damage()` is scaled by `0.825^level` in real Java.
 				const wasDrowsy = this.hero.buffs['drowsy'] !== undefined;
 				const wasMagicalSleep = this.hero.buffs['magicalSleep'] !== undefined;
+				const hadHeroDisguise = this.hero.buffs['heroDisguise'] !== undefined;
 				const tickedDamage = tickBuffs(this.hero, this.depth);
+				if (hadHeroDisguise && this.hero.buffs['heroDisguise'] === undefined) {
+					delete this.hero.heroDisguiseClass;
+					this.refreshHeroArmorSprite();
+				}
 				//`tickBuffs` (the `simulation/buffs.ts` adapter) knows nothing of `bleedSource` -
 				//once the bleed itself has fully decayed, drop the stale tag so a much later,
 				//unrelated poison/burning death can't misread it as a chasm-fall death.

@@ -1069,10 +1069,10 @@ export const armorAbilityUseMethods = {
 			this.say(t('actors.hero.abilities.armorability.no_target'), 'negative');
 			return false;
 		}
-		const spares: { entry: { wandCur?: number; wandPartial?: number; wandMax?: number; level?: number; cursed?: boolean }; type: WandType }[] = [];
+		const spares: { entry: { wandCur?: number; wandPartial?: number; wandMax?: number; level?: number; cursed?: boolean; instanceId: string }; type: WandType }[] = [];
 		for (const entry of this.bag.items) {
 			if (entry.id !== 'wand' || entry.instanceId === undefined) continue;
-			const spare = entry as typeof entry & { wandCur?: number; wandPartial?: number; wandMax?: number; sourceClass?: string; level?: number };
+			const spare = entry as typeof entry & { wandCur?: number; wandPartial?: number; wandMax?: number; sourceClass?: string; level?: number; instanceId: string };
 			if (spare.wandCur === undefined || spare.wandMax === undefined) continue;
 			const type = wandTypeFromSource(spare.sourceClass);
 			if (!type) continue;
@@ -1100,7 +1100,7 @@ export const armorAbilityUseMethods = {
 			//`CursedWand.cursedZap()` runs regardless of whether anything stands at the
 			//collision cell (several Common effects, e.g. RandomGas/SelfOoze, don't need a
 			//target at all) - only the ordinary zap branch requires a live `aim`.
-			if (spare.entry.cursed) this.castCursedWandEffect(aim, cell);
+			if (spare.entry.cursed) this.castCursedWandEffect(aim, cell, spare.entry);
 			else if (aim) this.fireWandShot(spare.type, wildMagicBoostedLevel(spare.entry.level ?? 0, wildPower, Random.int(2) === 0), aim, 1);
 			spendWildMagicShot(state, shotCost);
 			spare.entry.wandCur = state.cur;

@@ -50,6 +50,8 @@ export interface Creature extends Combatant {
 	 * belong to the hero's bubble only (`Level.pressCell` reads the hero's buff).
 	 */
 	timeBubbleTurns?: number;
+	/** `HeroShapeShift`'s temporary cosmetic class sheet; combat class and stats remain unchanged. */
+	heroDisguiseClass?: 'warrior' | 'mage' | 'rogue' | 'huntress' | 'duelist' | 'cleric';
 	/** Ratmogrify's temporary wrapper: the original kind/stats remain intact while abilities are disabled. */
 	ratmogrifiedTurns?: number;
 	ratmogrifiedPermanent?: boolean;
