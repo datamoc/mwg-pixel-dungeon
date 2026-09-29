@@ -39,10 +39,8 @@ export class ClassSelectScene extends Scene2D {
 		// HeroSelectScene.java: compact hero buttons, splash art, then explicit Start.
 		const root = new Container();
 		this.stage.addChild(root);
-		//The splash JPGs are 800x450 painted art, not pixel art: the framework's global
-		//`TextureSource.defaultOptions.scaleMode = 'nearest'` (`mwg/dist/two-d/Game.js`)
-		//turns their downscale into stripe noise, so these six textures opt back into
-		//LINEAR filtering. They are used nowhere else (see the CLASS_SPLASH users above).
+		//The class splash JPGs are 800x450 painted art, so use linear sampling when they
+		//are scaled to the viewport; the pixel-art atlases keep the framework's nearest mode.
 		for (const key of Object.values(CLASS_SPLASH)) runState.sprites[key].source.scaleMode = 'linear';
 		const background = new Sprite(runState.sprites[CLASS_SPLASH.warrior]);
 		background.tint = 0x2d2f31;
@@ -222,6 +220,12 @@ export class ClassSelectScene extends Scene2D {
 			refreshChalIcon();
 			drawFocusRing();
 		};
+		// HeroSelectScene.create restores GamesInProgress.selectedClass when one exists.
+		// The port keeps that selection in runState.pendingClass between visits.
+		const initialClass = classUnlocked(runState.pendingClass, this.badges)
+			? runState.pendingClass
+			: ids.find((id) => classUnlocked(id, this.badges));
+		if (initialClass) buttons[ids.indexOf(initialClass)]!.onClick.dispatch();
 		this.layout();
 	}
 
