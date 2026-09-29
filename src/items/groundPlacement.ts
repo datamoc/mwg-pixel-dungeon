@@ -12,6 +12,9 @@ export interface GroundPlacementContext {
 	largeFeeling: boolean;
 	upgradeScrollDrops: number;
 	noScrolls: boolean;
+	/** `Challenges.DARKNESS` (Into darkness): `RegularLevel.createItems()` drops a Torch per floor. */
+	darkness: boolean;
+	placeTorch(): void;
 	randomSpawnRoom(): Room;
 	generateItem(): GenItem;
 	materialize(generated: GenItem): ItemPayload;
@@ -67,6 +70,14 @@ export function placeGroundItems(context: GroundPlacementContext): number {
 				heapRoll >= 1 && heapRoll <= 4 ? 'normal' : undefined);
 			break;
 		}
+	}
+
+	//`RegularLevel.createItems()` (`RegularLevel.java:473`, tag `v3.3.8`): under Into darkness one Torch is
+	//dropped on a random drop cell (a second on a LARGE floor) right after the ordinary item loop; the
+	//scene's `placeTorch` also flattens a high-grass cell under it, as Java does.
+	if (context.darkness) {
+		context.placeTorch();
+		if (context.largeFeeling) context.placeTorch();
 	}
 
 	//`Level.create()` distributes three guaranteed ScrollOfUpgrade allocations per five-floor

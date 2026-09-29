@@ -2,6 +2,7 @@ import type { DungeonScene } from '../../dungeonScene';
 import { Random, Roguelike } from 'mwg';
 import { BUFF_DURATION, addBuff, buffBlocked, doomDamage, reigniteBuff, type Creature, type Step } from '../../../combat';
 import { CURSED_PLANT_KINDS, CURSED_RANDOM_GAS, cursedForestFireSeeds, cursedInterfloorDepthWeights, pickBurnAndFreeze, pickConeOfColorsStatus, pickCursedCommonEffect, pickCursedEquipmentSlot, pickCursedRandomAreaEffect, pickCursedRareEffect, pickCursedTier, pickCursedUncommonEffect, pickCursedVeryRareEffect } from '../../../simulation/cursedWand';
+import { isChallengeEnabled } from '../../../challenges';
 import { activateGeyserTrap as activateGeyserTrapFlow } from '../../../simulation/geyserTrap';
 import { applyBlastDamage } from '../../../items/bombEffects';
 import { MWL_BOMB_RULES } from '../../../mwlContent';
@@ -255,7 +256,11 @@ export const cursedWandCastMethods = {
 	/** `CursedWand.cursedZap()`'s Uncommon tier, all eight of Java's real ids
 	 * (`simulation/cursedWand.ts` has the scoping rationale for what each one dropped). */
 	castCursedWandUncommonEffect(this: DungeonScene, target: Creature | undefined, cell: Step): void {
-		const effect = pickCursedUncommonEffect((bound) => Random.int(bound));
+		//`RandomPlant.valid()` (`CursedWand.java:441-451`) is false under Barren land, so `randomValidEffect` re-rolls
+		//past it; the other clauses (alchemy pot, pit, trap) are approximated by the cell checks below.
+		let effect;
+		do effect = pickCursedUncommonEffect((bound) => Random.int(bound));
+		while (effect === 'randomPlant' && isChallengeEnabled('no_herbalism'));
 		if (effect === 'healthTransfer') {
 			//HealthTransfer.effect(): a coin flip picks which side heals and which takes
 			//`scalingDepth()*2` raw damage (half the roll heals, matching Java's `damage/2`);

@@ -18,6 +18,7 @@ import { MOB_KEYS, has, t } from '../../i18n/index';
 import { evasiveArmorBonus, unencumberedSpiritEvasion } from '../../talentEffects';
 import { SpdJavaRandom, spdScramble, spdSeedForDepth } from '../../spdRng';
 import { isPortedDepth, miningBranchFloor, portedFloor, toGameTerrain } from '../../spdLevelGen/gameBridge';
+import { stripGeneratedPlants } from '../../spdLevelGen/barrenLand';
 import { CITY_BOTTOM_DOOR, CITY_TOP_DOOR, HALLS_EXIT_CELL } from '../../spdLevelGen/bossLevels';
 import { hallsCenterPieceLayer, hallsCenterWallLayer } from '../../spdLevelGen/hallsBossVisuals';
 import { cityGroundLayer, cityWallLayer } from '../../spdLevelGen/cityBossVisuals';
@@ -1258,6 +1259,9 @@ export const coreSpawnTilesMethods = {
 			: isPortedDepth(this.depth) ? portedFloor(this.runSeedLong, this.depth, isChallengeEnabled('stronger_bosses')) : null;
 		this.portedFloorActive = ported !== null;
 		this.portedPaint = ported?.paint ?? null;
+		//`Level.plant()` (`Level.java:1038`) places no generated plant under Barren land (GardenRoom, PlantsRoom,
+		//SecretGarden/Larder); the port's paint is built without the run's challenges, so strip them here.
+		if (ported && isChallengeEnabled('no_herbalism')) stripGeneratedPlants(ported.paint);
 		//`HallsBossLevel.seal()` persists in Java's own saved map; this port regenerates paint
 		//from the seed on every visit, so a sealed run re-applies the spent entrance here -
 		//before any tile layer reads the grid - rather than in the trigger below, which only

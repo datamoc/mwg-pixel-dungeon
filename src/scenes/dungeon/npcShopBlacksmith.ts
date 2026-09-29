@@ -17,7 +17,7 @@ import { simulationRandom } from '../../adapters/mwgRandom';
 import { simulationRoguelike } from '../../adapters/mwgRoguelike';
 import { planMonsterPopulation } from '../../simulation/levelPopulation';
 import { interactWithGhost as runGhostInteraction, interactWithImp as runImpInteraction, interactWithRatKing as runRatKingInteraction, interactWithWandmaker as runWandmakerInteraction } from '../../actors/npcs';
-import { groundKindForItem } from '../../items/itemKinds';
+import { groundKindForItem, sourceInventoryItem } from '../../items/itemKinds';
 import { startTransmutationPick } from '../../items/transmutation';
 import { RING_DEFS } from '../../items/ringModifiers';
 import { CLASS_KEYS, RING_KEYS, WAND_KEYS, capitalize, has, language, t } from '../../i18n/index';
@@ -1484,6 +1484,19 @@ export const npcShopBlacksmithMethods = {
 			largeFeeling: this.portedPaint?.feeling === 4,
 			upgradeScrollDrops: this.upgradeScrollDrops,
 			noScrolls: isChallengeEnabled('no_scrolls'),
+			darkness: isChallengeEnabled('darkness'),
+			placeTorch: () => {
+				//`RegularLevel.randomDropCell()`: a random room, a random open unoccupied cell.
+				for (let attempt = 0; attempt < 100; attempt++) {
+					const room = this.randomSpawnRoom();
+					const at = { x: Random.range(room.left, room.right), y: Random.range(room.top, room.bottom) };
+					if (!this.level.passable(at.x, at.y) || this.creatureAt(at.x, at.y) || this.groundItemAt(at.x, at.y)) continue;
+					if ((at.x === this.hero.x && at.y === this.hero.y) || (this.hasStairs && at.x === this.stairs.x && at.y === this.stairs.y)) continue;
+					if (this.level.get(at.x, at.y) === HIGH_GRASS) this.level.set(at.x, at.y, GRASS);
+					this.spawnGroundItem('torch', at.x, at.y, sourceInventoryItem('Torch', undefined, (kind) => this.newItemInstanceId(kind)));
+					return;
+				}
+			},
 			randomSpawnRoom: () => this.randomSpawnRoom(),
 			generateItem: () => generatorRandom(),
 			materialize: (generated) => this.generatedInventoryItem(generated),
@@ -1538,6 +1551,10 @@ export const npcShopBlacksmithMethods = {
 	},
 
 	spawnGroundItem(this: DungeonScene, kind: GroundItemKind, x: number, y: number, item?: GroundItem['item'], chest?: 'normal' | 'locked' | 'crystal', forSale?: boolean): GroundItem | null {
+		//`Level.drop()` (`Level.java:976`): `Challenges.isItemBlocked` is true only for a `Dewdrop` under
+		//Barren land, and the item then becomes a dummy heap - every dew source (HighGrass, Eye, the
+		//Dewcatcher, ...) loses its drop while still consuming its rolls. Callers roll before this call.
+		if (kind === 'dewdrop' && isChallengeEnabled('no_herbalism')) return null;
 		//`Level.drop()`: an item dropped on a chasm cell falls to the floor below instead of resting here
 		//(a mob killed over a chasm, a thrown item that lands in one) - see `fallenItems.ts`.
 		if (this.isChasmCell(x, y) && !this.miningBranchActive && this.depth < 26) {

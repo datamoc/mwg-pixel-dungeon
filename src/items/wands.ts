@@ -128,6 +128,14 @@ export function livingEarthZapRange(depth: number): [number, number] {
 	return [2, 4 + Math.floor(Math.max(1, depth) / 2)];
 }
 
+/** `WandOfLivingEarth.EarthGuardian.drRoll()` (tag `v3.3.8`, `:417-424`): the guardian's own
+ * armor range is `NormalIntRange(wandLevel, 3 + 3*wandLevel)`, or `(wandLevel, 2 + wandLevel)`
+ * under `Challenges.NO_ARMOR` (Faith is my armor; `challenges.no_armor_desc` "Earthen guardian's
+ * defensive power is also significantly reduced"). */
+export function earthGuardianArmorRange(wandLevel: number, noArmorChallenge: boolean): [number, number] {
+	return [wandLevel, noArmorChallenge ? 2 + wandLevel : 3 + 3 * wandLevel];
+}
+
 /** Scene services used by the disintegration wand; targeting remains with the scene. */
 export interface DisintegrationWandScene {
 	level: Parameters<typeof Roguelike.ballistica>[0];
