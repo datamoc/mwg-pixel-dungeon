@@ -1597,6 +1597,7 @@ export const deathSaveRefreshMethods = {
 			sungrassPos: this.sungrassPos,
 			deathlessFuryUsed: this.deathlessFuryUsed,
 			alchemyEnergy: this.alchemyEnergy,
+			cookingHpCount: this.cookingHpCount,
 			weaponAffix: this.weaponAffix,
 			weaponCurseDurability: this.weaponCurseDurability,
 			weaponAugment: this.weaponAugment,

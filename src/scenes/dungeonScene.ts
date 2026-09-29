@@ -686,8 +686,8 @@ export class DungeonScene extends Scene2D {
 
 	/** switches/variables the quest stage conditions read */
 	gameState = new Rpg.GameState();
-	/** `Dungeon.energy`: carried alchemical energy, spent by recipes and persisted with the run. */
-	alchemyEnergy = 0;
+	/** `Dungeon.energy` (spent by recipes) and `LimitedDrops.COOKING_HP.count` (SeedToPotion Healing), both persisted with the run. */
+	alchemyEnergy = 0; cookingHpCount = 0;
 	quests = new Rpg.QuestLog();
 	/** `Ghost.Quest.spawned` / Wandmaker `spawned` - each NPC appears once per run */
 	ghostSpawned = false;

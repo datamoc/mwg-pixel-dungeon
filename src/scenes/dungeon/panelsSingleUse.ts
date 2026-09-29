@@ -100,6 +100,7 @@ export const panelsSingleUseMethods = {
 		this.miningBranchActive = s.miningBranchActive ?? false;
 		this.heroStr = s.str ?? MWL_HERO_BASE_STATS.strength;
 		this.alchemyEnergy = s.alchemyEnergy ?? 0;
+		this.cookingHpCount = s.cookingHpCount ?? 0;
 		this.reclaimedTrap = s.reclaimedTrap ?? null;
 		this.heroAttackSkill = s.attackSkill ?? MWL_HERO_BASE_STATS.attackSkill;
 		this.heroDefenseSkill = s.defenseSkill ?? MWL_HERO_BASE_STATS.defenseSkill;
@@ -1148,6 +1149,10 @@ export const panelsSingleUseMethods = {
 			bag: scene.bag,
 			get alchemyEnergy() { return scene.alchemyEnergy; },
 			set alchemyEnergy(value: number) { scene.alchemyEnergy = value; },
+			get cookingHpCount() { return scene.cookingHpCount; },
+			set cookingHpCount(value: number) { scene.cookingHpCount = value; },
+			onArtifactUsed: () => scene.armEnhancedRingsFromArtifact(),
+			isMagicImmune: () => Boolean(scene.hero.magicImmune),
 			say: this.say.bind(this),
 			openItemPicker: (title, entries, onPick) => this.openItemPicker(title, entries, onPick),
 			itemDisplayName: (id, identified) => this.itemDisplayName(id, identified),

@@ -96,6 +96,9 @@ exports.buffBlocked = () => false;
 	writeFileSync(join(out, 'i18n', 'index.js'),
 		'exports.t = (key, params) => key + (params ? "[" + Object.values(params).join(",") + "]" : "");\n');
 	compile(join(root, 'src/items/alchemy.ts'), 'items/alchemy.js');
+	compile(join(root, 'src/items/alchemyRules.ts'), 'items/alchemyRules.js');
+	compile(join(root, 'src/items/artifactActions.ts'), 'items/artifactActions.js');
+	compile(join(root, 'src/items/cloak.ts'), 'items/cloak.js');
 	compile(join(root, 'src/items/groundPickup.ts'), 'items/groundPickup.js');
 	compile(join(root, 'src/items/fireContent.ts'), 'items/fireContent.js');
 	// The Sandals of Nature's rules are scene-free (only the authored MWL rows feed them), so the
@@ -1302,7 +1305,7 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 	assert.deepEqual(alchemyRecipe('causticBrew')?.ingredients, [{ id: 'potionToxicGas', quantity: 1 }, { id: 'gooBlob', quantity: 1 }]);
 	assert.equal(alchemyRecipe('causticBrew')?.energyCost, 1);
 	const brewBag = new Inventory();
-	brewBag.add({ id: 'potionParalyticGas', quantity: 1, stackable: true });
+	brewBag.add({ id: 'potionParalyticGas', quantity: 1, stackable: true, identified: true });
 	assert.equal(craftAlchemy(brewBag, 'shockingBrew'), true, 'a paralytic gas brews');
 	assert.equal(brewBag.find('shockingBrew')?.quantity, 1, 'one shocking brew');
 	assert.equal(brewBag.find('potionParalyticGas'), undefined, 'and the gas is consumed');
@@ -1340,9 +1343,104 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 	assert.equal(alchemyRecipe('enhanceBombShock'), undefined, 'the ShockBomb recipe is gone with its class');
 	const smokeBag = new Inventory();
 	smokeBag.add({ id: 'bomb', quantity: 1, stackable: true });
-	smokeBag.add({ id: 'potionInvis', quantity: 1, stackable: true });
+	smokeBag.add({ id: 'potionInvis', quantity: 1, stackable: true, identified: true });
 	assert.equal(craftAlchemy(smokeBag, 'enhanceBombSmoke'), true, 'a bomb and an invisibility brew smoke');
 	assert.equal(smokeBag.find('smokeBomb')?.quantity, 1, 'one smoke bomb');
+	// R076-R081 (2026-09-29): toolkit wiring, identified gate, SeedToPotion weights + COOKING_HP,
+	// MeatPie families, scrap table and the spell recipes.
+	{
+		const rules = require('./items/alchemyRules.js');
+		const { openAlchemyRecipes: openPot } = require('./items/alchemy.js');
+		// R081: the eight spell recipes carry Java's inputs/outputs/costs and brew from identified scrolls.
+		const spells = { magicalInfusion: [12, 1], phaseShift: [10, 6], recycle: [12, 12], telekineticGrab: [10, 8], summonElemental: [10, 6], curseInfusion: [6, 4], reclaimTrap: [8, 5], wildEnergy: [4, 5] };
+		for (const [id, [cost, qty]] of Object.entries(spells)) {
+			assert.equal(alchemyRecipe(id)?.energyCost, cost, `${id} cost`);
+			assert.equal(alchemyRecipe(id)?.result.quantity, qty, `${id} output quantity`);
+		}
+		const spellBag = new Inventory();
+		spellBag.add({ id: 'scrollTeleportation', quantity: 1, stackable: true, identified: true });
+		assert.equal(craftAlchemy(spellBag, 'phaseShift'), true, 'teleportation brews phase shift');
+		assert.equal(spellBag.find('phaseShift')?.quantity, 6);
+		const shardBag = new Inventory();
+		shardBag.add({ id: 'scrollRecharging', quantity: 1, stackable: true, identified: true });
+		assert.equal(craftAlchemy(shardBag, 'wildEnergy'), false, 'wild energy needs the metal shard too');
+		shardBag.add({ id: 'metalShard', quantity: 1, stackable: true });
+		assert.equal(craftAlchemy(shardBag, 'wildEnergy'), true);
+		assert.equal(shardBag.find('wildEnergy')?.quantity, 5);
+		const embersBag = new Inventory();
+		embersBag.add({ id: 'embers', quantity: 1, stackable: true, identified: true });
+		assert.equal(craftAlchemy(embersBag, 'summonElemental'), true, 'embers brew summon elemental');
+		// R079: MeatPie slots take the Java class families; a small ration is not `Food` exactly.
+		const pieBag = new Inventory();
+		pieBag.add({ id: 'phantomMeat', quantity: 1, stackable: true });
+		pieBag.add({ id: 'food', quantity: 1, stackable: true });
+		pieBag.add({ id: 'frozenCarpaccio', quantity: 1, stackable: true });
+		assert.equal(craftAlchemy(pieBag, 'meatPie'), true, 'phantom meat + ration + carpaccio bake a pie');
+		const badPie = new Inventory();
+		badPie.add({ id: 'pasty', quantity: 1, stackable: true });
+		badPie.add({ id: 'smallRation', quantity: 1, stackable: true });
+		badPie.add({ id: 'meat', quantity: 1, stackable: true });
+		assert.equal(craftAlchemy(badPie, 'meatPie'), false, 'a small ration is not the plain Food class');
+		// R078: the random branch is weighted (never Strength) and the COOKING_HP limiter re-rolls Healing.
+		const tally = {};
+		for (let n = 0; n < 6000; n++) { const p = rules.randomDefaultPotion(); tally[p] = (tally[p] ?? 0) + 1; }
+		assert.equal(tally.potionStrength, undefined, 'Generator defaultProbs give Strength weight 0');
+		assert.ok(tally.potionHealing > 6000 * 3 / 15 * 0.8 && tally.potionHealing < 6000 * 3 / 15 * 1.2, 'Healing is 3/15');
+		const capped = { count: 10 };
+		for (let n = 0; n < 200; n++) assert.notEqual(rules.rollSeedToPotion(['potionHealing', 'potionHealing', 'potionHealing'], capped), 'potionHealing', 'Random.Int(10) < 10 always re-rolls');
+		assert.equal(capped.count, 10, 'a re-rolled result does not advance the counter');
+		const fresh = { count: 0 };
+		assert.equal(rules.rollSeedToPotion(['potionHealing', 'potionHealing', 'potionHealing'], fresh), 'potionHealing');
+		assert.equal(fresh.count, 1, 'a surviving Healing increments COOKING_HP');
+		// R080: scrap table.
+		assert.equal(alchemyEnergyFor('food', true), 0, 'Food has no energyVal');
+		assert.equal(alchemyEnergyFor('meat', true), 0);
+		assert.equal(alchemyEnergyFor('stoneOfAugmentation', false), 5);
+		assert.equal(alchemyEnergyFor('stoneOfBlast', false), 3);
+		assert.equal(alchemyEnergyFor('seedRotberry', false), 3);
+		assert.equal(alchemyEnergyFor('seedSungrass', false), 2);
+		assert.equal(alchemyEnergyFor('gooBlob', false), 3);
+		assert.equal(alchemyEnergyFor('elixirMight', true), 12);
+		assert.equal(alchemyEnergyFor('elixirHoneyedHealing', true), 8);
+		assert.equal(alchemyEnergyFor('phaseShift', true), 2, '(int)(12*1/6)');
+		assert.equal(alchemyEnergyFor('phaseShift', true, 6), 12);
+		assert.equal(alchemyEnergyFor('telekineticGrab', true), 1, '(int)(10*1/8)');
+		assert.equal(alchemyEnergyFor('curseInfusion', true), 3);
+		assert.equal(alchemyEnergyFor('summonElemental', true), 0, 'no override in Java');
+		// R077: unidentified brew ingredients are refused, and the pot list hides the recipe.
+		const gate = new Inventory();
+		gate.add({ id: 'potionFrost', quantity: 1, stackable: true, identified: false });
+		assert.equal(craftAlchemy(gate, 'blizzardBrew'), false, 'an unknown Frost potion cannot be brewed');
+		assert.equal(rules.canResolveRecipe(gate, alchemyRecipe('blizzardBrew')), false);
+		// R076: a toolkit session pays banked charge first, fires onArtifactUsed, and counts toward affordability.
+		const toolkitBag = new Inventory();
+		toolkitBag.add({ id: 'toolkit', quantity: 1, level: 0, charge: 3 });
+		toolkitBag.add({ id: 'meat', quantity: 1, stackable: true });
+		let armed = 0;
+		const mkPot = (viaToolkit, energy, pick) => {
+			const said = [];
+			return { said, scene: {
+				bag: toolkitBag, alchemyEnergy: energy, viaToolkit, onArtifactUsed: () => { armed++; },
+				say: (line) => said.push(line),
+				openItemPicker: (title, entries, onPick) => { const e = entries.find((x) => pick(x)); if (e) onPick({ id: e.id, instanceId: e.instanceId }); },
+				itemDisplayName: (id) => id, refreshInventoryPanel: () => {},
+			} };
+		};
+		const plain = mkPot(false, 0, (e) => e.instanceId === 'stewedMeat1');
+		openPot(plain.scene);
+		assert.equal(toolkitBag.find('stewedMeat'), undefined, 'a physical pot ignores the toolkit charge');
+		const session = mkPot(true, 0, (e) => e.instanceId === 'stewedMeat1');
+		openPot(session.scene);
+		assert.equal(toolkitBag.find('stewedMeat')?.quantity, 1, 'the toolkit charge paid for the brew');
+		assert.equal(toolkitBag.find('toolkit').charge, 2, 'one charge spent');
+		assert.equal(session.scene.alchemyEnergy, 0, 'no carried energy was needed');
+		assert.equal(armed, 1, 'Talent.onArtifactUsed fires on the toolkit spend');
+		// AC_ENERGIZE: 6 energy per level, choose all.
+		const en = mkPot(false, 13, (e) => e.instanceId === 'toolkit-energize' || (e.instanceId ?? '').startsWith('toolkit-energize-all'));
+		openPot(en.scene);
+		assert.equal(toolkitBag.find('toolkit').level, 2, 'energize_all spends 12 energy for two levels');
+		assert.equal(en.scene.alchemyEnergy, 1);
+	}
 	assert.deepEqual(missileDamageRange('ThrowingStone', 0), [2, 5]);
 	assert.deepEqual(missileDamageRange('ThrowingStone', 3), [5, 8]);
 	assert.deepEqual(missileDamageRange('ThrowingKnife', 3, 2), [7, 14]);

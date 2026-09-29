@@ -630,6 +630,8 @@ export interface SaveShape {
 	hourglassFreeze?: boolean;
 	hourglassTurnsToCost?: number;
 	alchemyEnergy?: number;
+	/** `Dungeon.LimitedDrops.COOKING_HP.count` (R078). */
+	cookingHpCount?: number;
 	heroShield?: number;
 	heroBarrierState?: { layers: { amount: number; decayPerTick?: number }[] };
 	livingEarthArmor?: number;

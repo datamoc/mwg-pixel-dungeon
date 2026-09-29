@@ -2,8 +2,10 @@ import { Random } from 'mwg';
 import { craft, type Recipe } from 'mwg/actors';
 import type { Inventory } from 'mwg/actors';
 import { t } from '../i18n';
-import { MWL_ITEM_NODES, MWL_TABLE_ROWS } from '../mwlContent';
+import { MWL_ITEM_NODES, MWL_TABLE_ROWS, mwlItemEffectValue } from '../mwlContent';
 import { isChallengeEnabled } from '../challenges';
+import { canResolveRecipe, resolvableRecipe, rollSeedToPotion, scrapRatioEnergy, type CookingHpCounter } from './alchemyRules';
+import { consumeToolkitEnergy, energizeToolkit, toolkitAvailableEnergy } from './artifactActions';
 
 /** This port's authored recipes always name one exact item id, never MWG 0.7.7's category or
  * predicate forms, so the ingredient id is narrowed back to a plain `string` from `Ingredient`'s
@@ -48,7 +50,10 @@ export const ALCHEMY_RECIPES: readonly AlchemyRecipe[] = MWL_TABLE_ROWS('alchemy
 		result: { id: String(row.result), quantity: Number(row.resultQuantity), stackable: true },
 	};
 });
-const MWL_ITEM_IDS = new Set(MWL_ITEM_NODES.map((node) => node.attributes.id));
+//`embers` is a real bag item (the Elemental quest's `Embers`, `itemKinds.ts`) that has no `item` node in
+//the MWL catalogue, only a ground-kind row in `item-rules.mwl`; `SummonElemental.Recipe` (R081) needs it as
+//an ingredient, so it is accepted here explicitly rather than by relaxing the check.
+const MWL_ITEM_IDS = new Set([...MWL_ITEM_NODES.map((node) => node.attributes.id), 'embers']);
 for (const recipe of ALCHEMY_RECIPES) {
 	for (const ingredient of recipe.ingredients) {
 		if (!MWL_ITEM_IDS.has(ingredient.id)) {
@@ -120,7 +125,7 @@ function energyKindOf(itemId: string): string | undefined {
 	if (id === 'stone' || id.startsWith('stoneof')) return 'stone';
 	if (id.startsWith('scroll')) return 'scroll';
 	if (id.startsWith('potion')) return 'potion';
-	if (id === 'food' || id === 'meat' || id === 'chargrilledmeat') return 'food';
+	//R080: no `food` kind - `Food` has no `energyVal()` in v3.3.8, so meals scrap for 0 (see the MWL note).
 	return undefined;
 }
 
@@ -136,7 +141,10 @@ const KNOWN_ENERGY = new Map(
 
 /** `Item.energyVal()` for one carried item: an exact authored row wins, then the item's own
  * consumable kind, else zero (Java's `Item.energyVal()` default). */
-export function alchemyEnergyFor(itemId: string, identified: boolean): number {
+export function alchemyEnergyFor(itemId: string, identified: boolean, quantity = 1): number {
+	//Spells whose `energyVal()` is `(int)(base * quantity / OUT_QUANTITY)`: truncated on the quantity.
+	const ratio = scrapRatioEnergy(itemId, quantity);
+	if (ratio !== undefined) return ratio;
 	const exact = ALCHEMY_ENERGY[itemId];
 	if (exact !== undefined) return exact;
 	const kind = energyKindOf(itemId);
@@ -146,10 +154,20 @@ export function alchemyEnergyFor(itemId: string, identified: boolean): number {
 	return base;
 }
 
-/** Resolves an authored recipe through MWG's all-or-nothing inventory transaction. */
+/** Resolves an authored recipe through MWG's all-or-nothing inventory transaction, with every
+ * ingredient turned into a predicate: unidentified potions/scrolls are refused like
+ * `Recipe.SimpleRecipe.testIngredients` does (R077) and `MeatPie`'s slots take their whole Java
+ * class families (R079) - see `alchemyRules.ts`. */
 export function craftAlchemy(inventory: Inventory, id: string): boolean {
 	const recipe = alchemyRecipe(id);
-	return recipe ? craft(inventory, recipe) : false;
+	return recipe ? craft(inventory, resolvableRecipe(recipe)) : false;
+}
+
+/** Whether `craftAlchemy(inventory, id)` would resolve right now (identified gate and `MeatPie`
+ * families included), without touching the bag. */
+export function canCraftAlchemy(inventory: Inventory, id: string): boolean {
+	const recipe = alchemyRecipe(id);
+	return recipe ? canResolveRecipe(inventory, recipe) : false;
 }
 
 /** `Alchemize.Recipe` accepts category instances rather than one concrete seed/runestone.
@@ -187,6 +205,12 @@ export function craftScrollToStone(inventory: Inventory, selected?: AlchemyUnitR
 		: inventory.items.find((item) => item.quantity > 0 && SCROLL_TO_STONE[item.id]);
 	if (!scroll) return false;
 	inventory.remove(scroll.id, 1, scroll.instanceId);
+	//R084: `Scroll.ScrollToStone.brew()` identifies the consumed scroll (`showIdentify(s)` in the alchemy
+	//scene, else `s.identify()`), which makes the whole class known. The port's known-ness is the
+	//per-stack `identified` flag, so every carried stack of that scroll id is marked; when the last unit
+	//was the one consumed there is nothing left to mark (the same per-instance-model limit the exotic
+	//brews document).
+	for (const stack of inventory.items) if (stack.id === scroll.id) stack.identified = true;
 	inventory.add({ id: SCROLL_TO_STONE[scroll.id]!, quantity: 2, stackable: true });
 	return true;
 }
@@ -345,9 +369,11 @@ export function canCraftPotionSeed(inventory: Inventory): boolean {
 }
 
 /** `Potion.SeedToPotion.brew()` consumes three seed units. Two distinct seeds have a 1/4
- * chance and three distinct seeds a 1/2 chance to produce a random regular potion; otherwise
- * the result follows one of the selected seeds. The Java cooking-HP limited-drop counter and
- * placeholder preview are not part of this inventory transaction. */
+ * chance and three distinct seeds a 1/2 chance to produce a random regular potion (weighted like
+ * `Generator.randomUsingDefaults(POTION)`); otherwise the result follows one of the selected
+ * seeds. The Healing result runs through `Dungeon.LimitedDrops.COOKING_HP` (`cooking`, a run-long
+ * counter the scene persists). Java's placeholder preview is not part of this inventory
+ * transaction. */
 export interface CraftedPotionSeed {
 	readonly id: string;
 	readonly identified: boolean;
@@ -356,16 +382,15 @@ export interface CraftedPotionSeed {
 /** Exactly three seed units, explicitly chosen: Java's window adds any three units, so the
  * selection is validated whole (wrong count, a non-seed, or an uncovered unit all fail with
  * nothing consumed) and anything else falls back to the first three eligible units. */
-export function craftPotionSeed(inventory: Inventory, selection?: readonly AlchemyUnitRef[]): CraftedPotionSeed | undefined {
+export function craftPotionSeed(inventory: Inventory, selection?: readonly AlchemyUnitRef[], cooking: CookingHpCounter = { count: 0 }): CraftedPotionSeed | undefined {
 	const units = selection ? selectedSeedUnits(inventory, selection) : seedUnits(inventory);
 	if (units.length < 3) return undefined;
 	for (const unit of units) inventory.remove(unit.id, 1, unit.instanceId);
 	const distinct = new Set(units.map((unit) => unit.potionId)).size;
-	const random = (distinct === 2 && Random.int(0, 4) === 0) || (distinct === 3 && Random.int(0, 2) === 0);
-	const selected = Random.element(units);
-	if (!selected) return undefined;
-	const result = random ? Random.element(Object.values(SEED_TO_POTION)) : selected.potionId;
-	return result ? { id: result, identified: distinct === 1 } : undefined;
+	//R078: the random branch is `Generator.randomUsingDefaults(POTION)` (weighted, never Strength)
+	//and Healing runs through the `COOKING_HP` limiter - both in `rollSeedToPotion`.
+	const result = rollSeedToPotion(units.map((unit) => unit.potionId), cooking);
+	return { id: result, identified: distinct === 1 };
 }
 
 /**
@@ -385,7 +410,81 @@ export interface AlchemyFlowContext {
 	) => void;
 	readonly itemDisplayName: (id: string, identified: boolean) => string;
 	readonly refreshInventoryPanel: () => void;
+	/** `Dungeon.LimitedDrops.COOKING_HP.count` (R078): Healing potions `SeedToPotion` has produced
+	 * this run. Optional so a bare test context brews with a fresh counter. */
+	cookingHpCount?: number;
+	/** `AlchemyScene.assignToolkit(...)` (R076): true only when the pot was opened through the
+	 * Alchemist's Toolkit's own `AC_BREW`. A physical pot leaves it unset - `Hero.java:1059` calls
+	 * `AlchemyScene.clearToolkit()` before opening it - so only a toolkit session counts and pays
+	 * the toolkit's banked charge. */
+	viaToolkit?: boolean;
+	/** `Talent.onArtifactUsed(Dungeon.hero)`, which `AlchemistsToolkit.consumeEnergy` calls on every
+	 * spend (the scene's `armEnhancedRingsFromArtifact`). */
+	readonly onArtifactUsed?: () => void;
+	/** `hero.buff(MagicImmune.class) != null` - the toolkit's own action gate. */
+	readonly isMagicImmune?: () => boolean;
 }
+
+/** `Dungeon.energy + toolkit.availableEnergy()` (`AlchemyScene.java:654-657`): the toolkit's banked
+ * charge only counts in a toolkit session. */
+export function alchemyAvailableEnergy(scene: AlchemyFlowContext): number {
+	return scene.alchemyEnergy + (scene.viaToolkit ? toolkitAvailableEnergy(scene) : 0);
+}
+
+/** `AlchemyScene.combine` payment (`AlchemyScene.java:695-700`): `cost = toolkit.consumeEnergy(cost)`
+ * when a toolkit is assigned - the banked charge is spent first and `Talent.onArtifactUsed` fires -
+ * then the remainder leaves `Dungeon.energy`. */
+function payAlchemyEnergy(scene: AlchemyFlowContext, cost: number): void {
+	let owed = cost;
+	if (scene.viaToolkit && scene.bag.find('toolkit')) {
+		owed = consumeToolkitEnergy(scene, cost);
+		scene.onArtifactUsed?.();
+	}
+	scene.alchemyEnergy -= owed;
+}
+
+function cookingCounter(scene: AlchemyFlowContext): CookingHpCounter {
+	return {
+		get count() { return scene.cookingHpCount ?? 0; },
+		set count(value: number) { scene.cookingHpCount = value; },
+	};
+}
+
+/** Synthetic picker rows of the toolkit's `AC_ENERGIZE` (see `displayName.ts`). */
+export const TOOLKIT_ENERGIZE_ROW = 'toolkit-energize';
+export const TOOLKIT_ENERGIZE_ONE = 'toolkit-energize-1';
+export const TOOLKIT_ENERGIZE_ALL = 'toolkit-energize-all';
+
+/**
+ * `AlchemistsToolkit.execute(AC_ENERGIZE)` (tag `v3.3.8`), reached from the pot picker (the port has
+ * one action per item, so the toolkit's second action lives here): refused while cursed or
+ * MagicImmune, needs 6 energy (`need_energy` log), then offers `energize_1` and - when more than one
+ * level is affordable - `energize_all`. Spending goes through `energizeToolkit`. Java's `WndOptions`
+ * is the picker seam; the drink/puff sounds and `Catalog.countUse` are not ported.
+ */
+export function openToolkitEnergize(scene: AlchemyFlowContext): void {
+	const toolkit = scene.bag.find('toolkit') as (InventoryItemWithLevel | undefined);
+	if (!toolkit || toolkit.cursed || scene.isMagicImmune?.()) return;
+	if (scene.alchemyEnergy < 6) {
+		scene.say(t('items.artifacts.alchemiststoolkit.need_energy'), 'warning');
+		return;
+	}
+	const levelCap = mwlItemEffectValue('toolkit', 'levelCap');
+	const cost = mwlItemEffectValue('toolkit', 'energizeCost');
+	const maxLevels = Math.min(levelCap - (toolkit.level ?? 0), Math.floor(scene.alchemyEnergy / cost));
+	if (maxLevels <= 0) return;
+	const rows = [{ id: 'toolkit', instanceId: TOOLKIT_ENERGIZE_ONE, identified: true, quantity: 1 }];
+	if (maxLevels > 1) rows.push({ id: 'toolkit', instanceId: `${TOOLKIT_ENERGIZE_ALL}:${maxLevels}`, identified: true, quantity: 1 });
+	scene.openItemPicker(t('items.artifacts.alchemiststoolkit.ac_energize'), rows, (pick) => {
+		const all = pick.instanceId?.startsWith(TOOLKIT_ENERGIZE_ALL) ?? false;
+		const spent = energizeToolkit(scene, scene.alchemyEnergy, scene.isMagicImmune?.() ?? false, all ? maxLevels : 1);
+		if (spent <= 0) return;
+		scene.alchemyEnergy -= spent;
+		scene.refreshInventoryPanel();
+	});
+}
+
+type InventoryItemWithLevel = NonNullable<ReturnType<Inventory['find']>> & { level?: number; cursed?: boolean };
 
 /** One explicitly picked carried unit (potionSeed: three seeds; scroll/stone/exotic: one
  *  unit; alchemize: a seed/stone pair) - Java's alchemy window adds specific items, while
@@ -460,28 +559,28 @@ export function pickAlchemyUnits(
 // plain picker path above, only those - exact-id recipes never reach here). Energy is
 // re-checked against the picked units, the selection-aware transaction brews, and the
 // result is announced exactly like the plain path.
-export function completeAlchemyRecipe(scene: AlchemyFlowContext, recipe: AlchemyRecipe, selected: AlchemyIngredientSelection): void {
+export function completeAlchemyRecipe(scene: AlchemyFlowContext, recipe: AlchemyRecipe, selected?: AlchemyIngredientSelection): void {
 	const recipeCost = recipe.energyCost;
-	if (recipeCost > scene.alchemyEnergy) {
+	if (recipeCost > alchemyAvailableEnergy(scene)) {
 		scene.say(t('port.log.alchemy.unavailable'), 'negative');
 		return;
 	}
 	let craftedResult: ReturnType<typeof craftPotionSeed>;
 	let crafted: boolean;
 	if (recipe.id === 'potionSeed') {
-		craftedResult = craftPotionSeed(scene.bag, selected.kind === 'seeds' ? selected.units : undefined);
+		craftedResult = craftPotionSeed(scene.bag, selected?.kind === 'seeds' ? selected.units : undefined, cookingCounter(scene));
 		crafted = craftedResult !== undefined;
 		if (craftedResult) scene.bag.add({ id: craftedResult.id, quantity: 1, stackable: true, identified: craftedResult.identified });
-	} else if (recipe.id === 'scrollToStone') crafted = craftScrollToStone(scene.bag, selected.kind === 'scroll' ? selected.unit : undefined);
-	else if (recipe.id === 'scrollToExotic') crafted = craftScrollToExotic(scene.bag, selected.kind === 'scroll' ? selected.unit : undefined);
-	else if (recipe.id === 'potionToExotic') crafted = craftPotionToExotic(scene.bag, selected.kind === 'scroll' ? selected.unit : undefined);
-	else if (recipe.id === 'alchemize') crafted = craftAlchemize(scene.bag, selected.kind === 'alchemize' ? { seed: selected.seed, stone: selected.stone } : undefined);
+	} else if (recipe.id === 'scrollToStone') crafted = craftScrollToStone(scene.bag, selected?.kind === 'scroll' ? selected.unit : undefined);
+	else if (recipe.id === 'scrollToExotic') crafted = craftScrollToExotic(scene.bag, selected?.kind === 'scroll' ? selected.unit : undefined);
+	else if (recipe.id === 'potionToExotic') crafted = craftPotionToExotic(scene.bag, selected?.kind === 'scroll' ? selected.unit : undefined);
+	else if (recipe.id === 'alchemize') crafted = craftAlchemize(scene.bag, selected?.kind === 'alchemize' ? { seed: selected.seed, stone: selected.stone } : undefined);
 	else crafted = craftAlchemy(scene.bag, recipe.id);
 	if (!crafted) {
 		scene.say(t('port.log.alchemy.unavailable'), 'negative');
 		return;
 	}
-	scene.alchemyEnergy -= recipeCost;
+	payAlchemyEnergy(scene, recipeCost);
 	const resultId = craftedResult?.id ?? recipe.result.id;
 	const resultIdentified = craftedResult?.identified ?? true;
 	scene.say(t('port.log.alchemy.crafted', { item: scene.itemDisplayName(resultId, resultIdentified) }), 'positive');
@@ -489,46 +588,44 @@ export function completeAlchemyRecipe(scene: AlchemyFlowContext, recipe: Alchemy
 }
 
 export function openAlchemyRecipes(scene: AlchemyFlowContext): void {
-	const recipes = ALCHEMY_RECIPES.filter((recipe) => recipe.energyCost <= scene.alchemyEnergy && (
+	const available = alchemyAvailableEnergy(scene);
+	const recipes = ALCHEMY_RECIPES.filter((recipe) => recipe.energyCost <= available && (
 		recipe.id === 'potionSeed' ? canCraftPotionSeed(scene.bag) : recipe.id === 'scrollToStone' ? canCraftScrollToStone(scene.bag) : recipe.id === 'scrollToExotic' ? canCraftScrollToExotic(scene.bag) : recipe.id === 'potionToExotic' ? canCraftPotionToExotic(scene.bag) : recipe.id === 'alchemize'
 			? scene.bag.items.some((item) => item.quantity > 0 && item.id.startsWith('seed'))
 				&& scene.bag.items.some((item) => item.quantity > 0 && item.id.startsWith('stoneOf'))
-			: recipe.ingredients.every((ingredient) => {
-				const item = scene.bag.find(ingredient.id);
-				return (item?.quantity ?? 0) >= ingredient.quantity;
-			})
+			//R077/R079: exact-id recipes go through the same predicates `craftAlchemy` brews with
+			//(identified gate, `MeatPie` families), so the list never offers a brew that would refuse.
+			: canResolveRecipe(scene.bag, recipe)
 	));
-	if (recipes.length === 0) {
+	//`AlchemistsToolkit.actions()`: AC_ENERGIZE is offered while the toolkit is usable (not cursed, not
+	//MagicImmune) and below its level cap; `execute` then needs 6 energy (`need_energy`).
+	const toolkit = scene.bag.find('toolkit') as InventoryItemWithLevel | undefined;
+	const canEnergize = toolkit !== undefined && !toolkit.cursed && !scene.isMagicImmune?.()
+		&& (toolkit.level ?? 0) < mwlItemEffectValue('toolkit', 'levelCap');
+	if (recipes.length === 0 && !canEnergize) {
 		scene.say(t('port.log.alchemy.noingredients'), 'negative');
 		return;
 	}
+	const rows = recipes.map((recipe) => ({ id: recipe.result.id, instanceId: recipe.id, identified: true, quantity: recipe.result.quantity }));
+	if (canEnergize) rows.push({ id: 'toolkit', instanceId: TOOLKIT_ENERGIZE_ROW, identified: true, quantity: 1 });
+	//`AlchemyScene`'s energy line: `Dungeon.energy` plus `+toolkit charge` in a toolkit session.
+	const toolkitCharge = scene.viaToolkit ? `+${toolkitAvailableEnergy(scene)}` : '';
 	scene.openItemPicker(
-		`${t('port.ui.alchemy.title')} [${scene.alchemyEnergy}]`,
-		recipes.map((recipe) => ({ id: recipe.result.id, instanceId: recipe.id, identified: true, quantity: recipe.result.quantity })),
+		`${t('port.ui.alchemy.title')} [${scene.alchemyEnergy}${toolkitCharge}]`,
+		rows,
 		(entry) => {
+			if (entry.instanceId === TOOLKIT_ENERGIZE_ROW) {
+				openToolkitEnergize(scene);
+				return;
+			}
 			const recipe = ALCHEMY_RECIPES.find((candidate) => candidate.id === entry.instanceId);
-		if (recipe && startAlchemyIngredientPick(scene, recipe)) return;
-			const recipeCost = recipe?.energyCost ?? Infinity;
-			if (!recipe || recipeCost > scene.alchemyEnergy) {
+			if (recipe && startAlchemyIngredientPick(scene, recipe)) return;
+			if (!recipe) {
 				scene.say(t('port.log.alchemy.unavailable'), 'negative');
 				return;
 			}
-			const potionSeed = recipe?.id === 'potionSeed' ? craftPotionSeed(scene.bag) : undefined;
-			const craftedResult = recipe?.id === 'potionSeed' ? potionSeed : undefined;
-			if (craftedResult) scene.bag.add({ id: craftedResult.id, quantity: 1, stackable: true, identified: craftedResult.identified });
-			const crafted = recipe?.id === 'potionSeed' ? craftedResult !== undefined : recipe?.id === 'scrollToStone' ? craftScrollToStone(scene.bag)
-				: recipe?.id === 'scrollToExotic' ? craftScrollToExotic(scene.bag)
-				: recipe?.id === 'potionToExotic' ? craftPotionToExotic(scene.bag)
-				: recipe?.id === 'alchemize' ? craftAlchemize(scene.bag) : recipe ? craftAlchemy(scene.bag, recipe.id) : false;
-			if (!crafted) {
-				scene.say(t('port.log.alchemy.unavailable'), 'negative');
-				return;
-			}
-			scene.alchemyEnergy -= recipeCost;
-			const resultId = craftedResult?.id ?? recipe.result.id;
-			const resultIdentified = craftedResult?.identified ?? true;
-			scene.say(t('port.log.alchemy.crafted', { item: scene.itemDisplayName(resultId, resultIdentified) }), 'positive');
-			scene.refreshInventoryPanel();
+			//exact-id recipe: the shared craft tail re-checks the (toolkit-inclusive) energy, brews and pays.
+			completeAlchemyRecipe(scene, recipe);
 		},
 	);
 }
