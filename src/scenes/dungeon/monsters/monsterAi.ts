@@ -266,9 +266,9 @@ export const monsterAiMethods = {
 
 	/** Direct enchant damage: the hero's barrier and Tenacity-style reductions apply, armor does not. */
 	damageFromProc(this: DungeonScene, defender: Creature, amount: number): void {
-		const dealt = defender.isHero ? this.absorbHeroDamage(amount, true) : doomDamage(amount, defender);
-		defender.hp -= dealt;
-		this.showDamage(defender, dealt);
+		//`Char.damage()` via the shared dispatch (magical hero absorb, mob Doom/curves/shields, floater);
+		//`deferKill` keeps this helper's existing "caller decides the kill" contract.
+		this.applyCharacterDamage(defender, amount, { pierceArmor: true, cause: 'foe', skipAura: true, magical: true, deferKill: true });
 	},
 
 	/**
@@ -335,9 +335,9 @@ export const monsterAiMethods = {
 			//Electricity())` directly, and `Char.damage()` subtracts no DR - see `zapHero`'s note.
 			const raw = Random.normalRange(10, 20);
 			if (target.isHero) {
-				const damage = this.absorbHeroDamage(raw);
-				target.hp -= damage;
-				this.showDamage(target, damage);
+				//Hero half of the same `Pylon.act()` `Char.damage()`: the dispatch's hero branch with
+				//`deferKill`, so this tail `kill` is the only one that fires.
+				this.applyCharacterDamage(target, raw, { pierceArmor: true, cause: 'foe', skipAura: true, deferKill: true });
 				if (target.hp <= 0) this.kill(target, 'foe');
 			} else {
 				//Non-hero victims take the shared `Char.damage()` dispatch: Doom, defender overrides, shields, hooks, wake and death.
@@ -644,9 +644,7 @@ export const monsterAiMethods = {
 			if (victim.kind === 'yog') dmg *= 0.5;
 		}
 		if (victim.isHero) {
-			const dealt = this.absorbHeroDamage(dmg, true);
-			victim.hp -= dealt;
-			this.showDamage(victim, dealt);
+			this.applyCharacterDamage(victim, dmg, { pierceArmor: true, cause: 'foe', skipAura: true, magical: true, deferKill: true });
 			if (victim.hp <= 0) this.kill(victim);
 		} else this.applyCharacterDamage(victim, dmg, { pierceArmor: true, cause: 'foe', skipAura: true });
 	},
@@ -811,9 +809,9 @@ export const monsterAiMethods = {
 		}
 		let damage: number;
 		if (victim.isHero) {
-			damage = this.absorbHeroDamage(roll.damage);
-			victim.hp -= damage;
-			this.showDamage(victim, damage);
+			const before = victim.hp;
+			this.applyCharacterDamage(victim, roll.damage, { pierceArmor: true, cause: 'foe', skipAura: true, deferKill: true });
+			damage = before - victim.hp;
 		} else {
 			//Non-hero victims take the shared `Char.damage()` dispatch (armor is already inside `roll.damage`).
 			const before = victim.hp;
@@ -863,9 +861,7 @@ export const monsterAiMethods = {
 				if (!rollHit(monster, this.hero, true)) {
 					this.say(t('port.log.eyegazemisses'), 'negative');
 				} else {
-					const dmg = this.absorbHeroDamage(Random.normalRange(30, 50), true);
-					this.hero.hp -= dmg;
-					this.showDamage(this.hero, dmg);
+					this.applyCharacterDamage(this.hero, Random.normalRange(30, 50), { pierceArmor: true, cause: 'foe', skipAura: true, magical: true, deferKill: true });
 					this.say(t('port.log.eyegaze'), 'negative');
 					if (this.hero.hp <= 0) this.kill(this.hero);
 				}
@@ -922,10 +918,10 @@ export const monsterAiMethods = {
 		}
 		let dmg = Math.max(0, Random.normalRange(damage[0], damage[1]));
 		if (target.isHero) {
-			dmg = this.absorbHeroDamage(dmg, true);
-			target.hp -= dmg;
-			this.showDamage(target, dmg);
-		} else {
+			const before = target.hp;
+			this.applyCharacterDamage(target, dmg, { pierceArmor: true, cause: 'foe', skipAura: true, magical: true, deferKill: true });
+			dmg = before - target.hp;
+			} else {
 			//Non-hero victims take the shared `Char.damage()` dispatch (a magic bolt has no armor step).
 			const before = target.hp;
 			this.applyCharacterDamage(target, dmg, { pierceArmor: true, cause: 'foe', skipAura: true });
@@ -1093,9 +1089,9 @@ export const monsterAiMethods = {
 		//to bolts - and it fired even when no cell was passable at all, where Java waits.
 		const raw = Random.normalRange(2, 10);
 		if (occupant.isHero) {
-			const dmg = this.absorbHeroDamage(raw);
-			this.hero.hp -= dmg;
-			this.showDamage(this.hero, dmg);
+			const before = this.hero.hp;
+			this.applyCharacterDamage(this.hero, raw, { pierceArmor: true, cause: 'foe', skipAura: true, deferKill: true });
+			const dmg = before - this.hero.hp;
 			this.say(t('port.log.necroblockdamagehero', { damage: dmg }), 'negative');
 			if (this.hero.hp <= 0) this.kill(this.hero);
 		} else {

@@ -99,7 +99,7 @@ export function verifyPrismatic(require, check) {
 			"this.triggerMobTrapAt(sheep)",
 			'spawnPrismaticImage(at, Math.floor(pool))',
 			'this.tickPrismaticGuard(turnCost)',
-			'this.enterPrismaticFade(victim, dealt)',
+			'this.fadeMirrorOnDamage(c, damage) || this.enterPrismaticFade(c, damage)',
 			'this.enterPrismaticFade(defender, damage)',
 			'prismaticFade: creature.prismaticFade',
 			'prismaticFade: saved.prismaticFade',

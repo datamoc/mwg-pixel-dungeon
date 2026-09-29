@@ -320,14 +320,13 @@ export const crystalMineMethods = {
 			this.showStatus(this.hero, t('port.log.dodged'), 0xffffff);
 			return;
 		}
-		const dmg = this.absorbHeroDamage(Random.normalRange(5, 10), true);
-		this.hero.hp -= dmg;
-		this.showDamage(this.hero, dmg);
+		//`CrystalWisp.zap()` -> `Char.damage()`: shared dispatch hero branch (magical absorb, HP write,
+		//floater, fatal `kill` with the real kill line via `onHeroDeath`).
+		this.applyCharacterDamage(this.hero, Random.normalRange(5, 10), {
+			pierceArmor: true, cause: 'foe', skipAura: true, magical: true,
+			onHeroDeath: () => this.say(t('port.mob.crystalwisp.beam_kill'), 'negative'),
+		});
 		this.spawnProjectile(wisp, this.hero);
-		if (this.hero.hp <= 0) {
-			this.say(t('port.mob.crystalwisp.beam_kill'), 'negative');
-			this.kill(this.hero);
-		}
 	},
 
 	/**
@@ -472,14 +471,11 @@ export const crystalMineMethods = {
 			const free = (c: number): boolean => { const p = xy(c); return !this.crystalSolid(c) && !this.creatureAt(p.x, p.y); };
 			const movePos = guardian || !(ch.kind && IMMOVABLE_KINDS.has(ch.kind)) ? spikeKnockCell(cell, w, away, free) : cell;
 			if (ch.isHero) {
-				const taken = this.absorbHeroDamage(dmg);
-				this.hero.hp -= taken;
-				this.showDamage(this.hero, taken);
-				if (this.hero.hp <= 0) {
-					this.say(t('actors.char.kill', { 0: spire.name }), 'negative');
-					this.kill(this.hero);
-					return true;
-				}
+				//`CrystalSpire` spike -> `Char.damage()`: shared dispatch hero branch, `onHeroDeath` printing the kill line.
+				if (this.applyCharacterDamage(this.hero, dmg, {
+					pierceArmor: true, cause: 'foe', skipAura: true,
+					onHeroDeath: () => this.say(t('actors.char.kill', { 0: spire.name }), 'negative'),
+				})) return true;
 			} else {
 				this.applyBlastDamage(ch, dmg, true, 'foe');
 			}

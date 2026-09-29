@@ -163,10 +163,10 @@ export const bossLogicMethods = {
 				//`Sheep.damage()` is a no-op (tag `v3.3.8`) - see the blob seam.
 				if (target.allyKind === 'sheep') continue;
 				const raw = 2 + this.depth;
-			const dealt = target.isHero ? this.absorbHeroDamage(raw, true) : doomDamage(raw, target);
-				target.hp -= dealt;
-				this.showDamage(target, dealt);
-				//`ShockerAbility`'s pulse fouls the bosses challenge when it strikes the
+			//`ShockerAbility` pulse -> `ch.damage(dmg, this)`: the shared dispatch (hero magical
+			//absorb / mob Doom + curves + shields, floater). `deferKill` keeps the tail `kill` below.
+			this.applyCharacterDamage(target, raw, { pierceArmor: true, cause: 'foe', skipAura: true, magical: true, deferKill: true });
+//`ShockerAbility`'s pulse fouls the bosses challenge when it strikes the
 				//hero (`Tengu.java`, tag `v3.3.8`).
 				if (target.isHero) this.foulBossChallenge();
 				if (target.hp <= 0) this.kill(target);
@@ -452,10 +452,11 @@ export const bossLogicMethods = {
 			//`CavesBossLevel.PylonEnergy.evolve()` prolongs the tracker onto mob victims.
 			if (!target.isHero) this.markHazardMob(target);
 			const damage = Random.normalRange(6, 12);
-			const dealt = target.isHero ? this.absorbHeroDamage(damage) : doomDamage(damage, target);
-			target.hp -= dealt;
-			this.showDamage(target, dealt);
-			if (target.isHero) this.say(t('port.log.affliction', { damage: dealt }), 'negative');
+			//`PylonEnergy.evolve()` -> `ch.damage(dmg, this)`: shared dispatch; `deferKill` keeps the
+			//tail `kill` (and its `trap`/`foe` cause split) below, so the hero cannot die twice.
+			const hpBefore = target.hp;
+			this.applyCharacterDamage(target, damage, { pierceArmor: true, cause: target.isHero ? 'trap' : 'foe', skipAura: true, deferKill: true });
+			if (target.isHero) this.say(t('port.log.affliction', { damage: hpBefore - target.hp }), 'negative');
 			if (target.hp <= 0) {
 				this.kill(target, target.isHero ? 'trap' : 'foe');
 				if (target.isHero) return true;
@@ -644,12 +645,12 @@ export const bossLogicMethods = {
 				if (!target || target.hp <= 0 || target.kind === 'dm300') continue;
 				let dmg = Random.normalRange(challenge ? 10 : 6, challenge ? 20 : 12);
 				if (target.isHero) {
-					const blocked = this.absorbHeroDamage(dmg);
-					this.hero.hp -= blocked;
-					this.showDamage(this.hero, dmg);
-					if (this.hero.hp <= 0) {
-						this.say(t('port.log.rockfallkill'), 'negative');
-						this.kill(this.hero);
+					//`FallingRockBuff.affectChar` -> `ch.damage(dmg, this)`: shared dispatch, hero branch
+					//(absorb, HP write, floater, fatal `kill`), `onHeroDeath` printing the real kill line.
+					if (this.applyCharacterDamage(this.hero, dmg, {
+						pierceArmor: true, cause: 'foe', skipAura: true,
+						onHeroDeath: () => this.say(t('port.log.rockfallkill'), 'negative'),
+					})) {
 						heroDied = true;
 					} else if (challenge && !buffBlocked(this.hero, 'paralysis')) this.hero.buffs['paralysis'] = 5;
 					else addBuff(this.hero, 'paralysis');
@@ -659,10 +660,14 @@ export const bossLogicMethods = {
 					//`Char.java`'s own "we already reduced it in Char.attack" note). This used to
 					//subtract the target's armor roll, making rocks weaker than Java's against any
 					//armored monster.
-					dmg = doomDamage(dmg, target);
-					target.hp -= dmg;
-					if (this.fadeMirrorOnDamage(target, dmg)) continue;
-					this.showDamage(target, dmg);
+					//Shared dispatch (Doom, curves, shields, mirror/prismatic fade, floater); `deferKill`
+					//keeps the kill-or-paralyse tail below.
+					let faded = false;
+					this.applyCharacterDamage(target, dmg, {
+						pierceArmor: true, cause: 'foe', skipAura: true, deferKill: true,
+						onFade: () => { faded = true; },
+					});
+					if (faded) continue;
 					if (target.hp <= 0) this.kill(target);
 					//Same duration through the shared gate, so STATIC kinds (demonSpawner/rotHeart/
 					//pylon/yog) refuse the challenge-mode paralysis like Java's isImmune.
@@ -729,14 +734,13 @@ export const bossLogicMethods = {
 		}
 		const tick = Math.max(1, Math.floor(monster.deferredDamage * 0.1));
 		this.applyingDeferredDamage = true;
-		const dealt = doomDamage(tick, monster);
-		monster.hp -= dealt;
+		//`Viscosity.DeferedDamage` re-enters `DwarfKing.damage()`: the shared dispatch, whose
+		//`applyingDeferredDamage` gate lets the payout through, feeds the lock's `addTime`
+		//(`lockedFloorBossDamage`) and shows the floater; `deferKill` keeps the tail kill below.
+		this.applyCharacterDamage(monster, tick, { pierceArmor: true, cause: 'foe', skipAura: true, deferKill: true });
 		this.applyingDeferredDamage = false;
-		//`Viscosity.DeferedDamage` re-enters `DwarfKing.damage()`, whose lock `addTime` it feeds.
-		this.lockedFloorBossDamage(monster, dealt, dealt);
 		monster.deferredDamage = Math.max(0, monster.deferredDamage - tick);
-		this.showDamage(monster, dealt);
-		if (monster.hp <= 0) {
+if (monster.hp <= 0) {
 			this.kill(monster);
 			return true;
 		}
@@ -1143,12 +1147,11 @@ export const bossLogicMethods = {
 			//Eye.DeathGaze())` directly (30-50 under Stronger Bosses), and `Char.damage()`
 			//subtracts no DR - see `zapHero`'s note. The armor roll used to come off here, which
 			//made the final boss's beam weaker than Java's against an armored hero.
-			let dmg = Random.normalRange(stronger ? 30 : 20, stronger ? 50 : 30);
-			if (target.isHero) dmg = this.absorbHeroDamage(dmg, true);
-			else dmg = doomDamage(dmg, target);
-			target.hp -= dmg;
-			this.showDamage(target, dmg);
-			if (target.hp <= 0) this.kill(target, 'foe');
+			//`Eye.DeathGaze` source -> `Char.damage()`: the shared dispatch (magical hero absorb,
+			//mob Doom/curves/shields, floater and the fatal `kill`).
+			this.applyCharacterDamage(target, Random.normalRange(stronger ? 30 : 20, stronger ? 50 : 30), {
+				pierceArmor: true, cause: 'foe', skipAura: true, magical: true,
+			});
 		}
 		this.spawnProjectile(yog, this.hero);
 	},

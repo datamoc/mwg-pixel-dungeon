@@ -140,7 +140,8 @@ const { selectRangedTarget, findEnemyAlly, pursueTarget } = require('./simulatio
 		assert.match(death, /shieldOfLightRange\(this\.talentRank\('shield_of_light'\)\)/);
 		assert.match(death, /raw -= this\.subclass\(\) === 'paladin' \? 6 : 2/);
 		assert.match(death, /skeletonBoneEarthrootDamage\(raw, blocked\)/);
-		assert.match(death, /this\.absorbHeroDamage\(damage, false, false, \{ skipEarthroot: true, skipHolyWard: true \}\)/);
+		assert.match(death, /heroAbsorb: \{ skipEarthroot: true, skipHolyWard: true \}/);
+		assert.match(death, /this\.applyCharacterDamage\(target, damage, \{ pierceArmor: true, cause: 'foe', skipAura: true, deferKill: true/);
 		const damageBoundary = readFileSync(new URL('../src/scenes/dungeon/combatResolution.ts', import.meta.url), 'utf8');
 		assert.match(damageBoundary, /skipDefenseHooks: \{ skipEarthroot\?: boolean; skipHolyWard\?: boolean \}/);
 	});
@@ -1703,9 +1704,9 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		const scene = readSceneSource();
 		assert.ok(scene.includes('electricDamageHalved(target.kind, target.elementalType, target.yogFistType)'),
 			'the blob seam halves electricity for every ELECTRIC holder');
-		assert.ok(scene.includes('electricDamageHalved(victim.kind, victim.elementalType, victim.yogFistType)'),
+		assert.ok(scene.includes("wandType === 'lightning' ? 'electric' as const") && scene.includes('sourceElementResisted(damage, options.sourceElement'),
 			'the lightning wand halves for every ELECTRIC holder');
-		assert.ok(scene.includes('electricDamageHalved(hit.kind, hit.elementalType, hit.yogFistType)'),
+		assert.ok(scene.includes("magical: true, sourceElement: 'electric' }"),
 			'the Shocking chain halves per hit');
 	});
 	check('Sentry turrets charge two turns, then gaze every visible turn', () => {

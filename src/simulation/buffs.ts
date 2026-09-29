@@ -171,6 +171,28 @@ export function electricDamageHalved(kind: string | undefined, elementalType: st
 	return false;
 }
 
+/** The elemental source classes `Char.damage()` resolves through `resist(srcClass)` (`Char.java` 912-913,
+ * tag `v3.3.8`): `ICY` resists the `WandOfFrost`/`FrostElemental` classes, `ELECTRIC` the
+ * `WandOfLightning`/`Shocking`/`Electricity`/`ShockingDart`/`ShockElemental` classes and `FIERY`
+ * the `WandOfFireblast`/`FireElemental` classes - each `0.5` with one `Math.round`. */
+export type DamageSourceElement = 'ice' | 'electric' | 'fire';
+
+/** The shared source-class resistance lookup for the scene's `Char.damage()` dispatch
+ * (`applyCharacterDamage`'s `sourceElement` option): one place keyed by the source's element and the
+ * defender's Properties, instead of a per-source predicate at every damage seam. */
+export function sourceElementResisted(
+	damage: number,
+	element: DamageSourceElement,
+	kind: string | undefined,
+	elementalType: string | undefined,
+	yogFistType: string | undefined,
+): number {
+	const halved = element === 'ice' ? icyDamageHalved(kind, elementalType)
+		: element === 'electric' ? electricDamageHalved(kind, elementalType, yogFistType)
+		: fieryDamageHalved(kind, elementalType, yogFistType);
+	return halved ? Math.round(damage * 0.5) : damage;
+}
+
 /** `Buff.buffType.NEGATIVE` for every buff this port grants to a *monster* (checked against
  * each buff's own Java class at tag `v3.3.8`: `Poison`/`Burning`/`Cripple`/`Weakness`/
  * `Vulnerable`/`Doom`/`Paralysis`/`Roots`/`Terror`/`Ooze`/`Charm`/`Degrade`/`Daze`/`Hex` all set

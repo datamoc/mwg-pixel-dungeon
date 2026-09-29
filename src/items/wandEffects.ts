@@ -12,7 +12,8 @@ export interface TransfusionWandContext {
 	level: number;
 	isUndead: (target: Creature) => boolean;
 	grantHeroShield: (amount: number, cap: number) => number;
-	absorbHeroDamage: (amount: number) => number;
+	/** `curUser.damage(selfDamage, this)`: the scene's shared `Char.damage()` dispatch, hero branch (absorb, HP write, fatal `kill`). */
+	damageHero: (amount: number) => void;
 	applyCharacterDamage: (target: Creature, amount: number) => void;
 	showHeal: (target: Creature, amount: number) => void;
 	showDamage: (target: Creature, amount: number) => void;
@@ -36,10 +37,8 @@ export function useTransfusionWand(context: TransfusionWandContext): void {
 		const healing = selfDamage + mwlItemEffectValue('wandTransfusion', 'healingPerLevel') * level;
 		const before = target.hp;
 		target.hp = Math.min(target.maxHp, target.hp + healing);
-		const blocked = context.absorbHeroDamage(selfDamage);
-		hero.hp -= blocked;
 		context.showHeal(target, target.hp - before);
-		if (hero.hp <= 0) context.kill(hero);
+		context.damageHero(selfDamage);
 	} else {
 		context.grantHeroShield(
 			mwlItemEffectValue('wandTransfusion', 'shieldBase')

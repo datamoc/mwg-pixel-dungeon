@@ -2,6 +2,7 @@ import { Random, Roguelike } from 'mwg';
 import { absorbShield, addBuff, BUFF_DURATION, buffBlocked, doomDamage, reigniteBuff, type Creature, type GroundItem, type Step } from '../combat';
 import { isUndeadOrDemonic } from '../monsters';
 import { MWL_BOMB_RULES, mwlItemEffectValue } from '../mwlContent';
+import type { DamageSourceElement } from '../simulation/buffs';
 import { smokeBombSeedPlan } from '../simulation/smoke';
 import { SPECIALTY_BOMB_IDS } from './itemKinds';
 
@@ -69,6 +70,17 @@ export interface CharacterDamageOptions {
 	readonly skipAura?: boolean;
 	/** A magical source: the hero-side `absorbHeroDamage(_, true)` path (skips Earthroot/HolyWard like Java's non-melee sources). */
 	readonly magical?: boolean;
+	/** The caller runs its own `kill()` tail after post-hit work (a wand zap loop's XP/loot flow),
+	 * so the dispatch writes HP and runs every damage hook but leaves the final `kill` to it. */
+	/** `Char.damage()`'s `resist(srcClass)` for an elemental source class (ICY/ELECTRIC/FIERY holders halve it,
+	 * one `Math.round`), applied after Doom exactly where Java does. */
+	readonly sourceElement?: DamageSourceElement;
+	readonly deferKill?: boolean;
+	/** Hero-side `Hero.damage()` pieces the caller already applied (`Skeleton.die()`'s Earthroot/HolyWard folding). */
+	readonly heroAbsorb?: { skipEarthroot?: boolean; skipHolyWard?: boolean };
+	/** Fired when `MirrorImage.damage()` / `PrismaticImage.die()` consumed the hit (the victim
+	 * faded instead of taking ordinary HP damage) so a looping caller can skip its post-hit work. */
+	readonly onFade?: () => void;
 	readonly onHeroDeath?: () => void;
 	readonly onNonWeaponBossDamage?: (target: Creature) => void;
 }

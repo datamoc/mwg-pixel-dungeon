@@ -1411,9 +1411,9 @@ export const armorAbilityUseMethods = {
 					//hero-damage boundary).
 					const selfDamage = Math.min(5 * telefrag, this.hero.hp + this.heroBarrier.total - 1);
 					if (selfDamage > 0) {
-						const dealt = this.absorbHeroDamage(selfDamage);
-						this.hero.hp -= dealt;
-						this.showDamage(this.hero, dealt);
+						//`Telefrag` self-hit -> `Hero.damage()`: shared dispatch hero branch. Capped at `hp - 1`
+						//above, so it cannot kill; `deferKill` makes that explicit.
+						this.applyCharacterDamage(this.hero, selfDamage, { pierceArmor: true, cause: 'foe', skipAura: true, deferKill: true });
 					}
 					this.applyAbilityDamage(occupant, Random.normalRange(10 * telefrag, 15 * telefrag));
 				}

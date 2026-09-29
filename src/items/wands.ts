@@ -140,8 +140,10 @@ export interface DisintegrationWandScene {
 	burnFireTerrain(x: number, y: number): void;
 	talentRank(id: string): number;
 	grantHeroShield(amount: number, cap: number): number;
-	fadeMirrorOnDamage(target: Creature, damage: number): boolean;
-	showDamage(target: Creature, damage: number): void;
+	/** The scene's shared `Char.damage()` dispatch (`applyCharacterDamage`) for an already Doom-scaled roll: it carries the
+	 * `MirrorImage`/`PrismaticImage` fade hooks, the floater and the wake-up; the kill stays with this module's tail.
+	 * Returns true when a mirror/prismatic image faded on the hit (this hit's post-effects are skipped). */
+	applyWandDamage(target: Creature, damage: number): boolean;
 	say(line: string, level?: 'info' | 'positive' | 'negative' | 'warning'): void;
 	kill(target: Creature): void;
 	spendHeroTurn(turnCost: number): void;
@@ -185,10 +187,9 @@ export function useDisintegrationWand(scene: DisintegrationWandScene, target: St
 		const victim = creatures[index];
 		if (!victim || victim.hp <= 0) continue;
 		const damage = doomDamage(Random.normalRange(2 + plan.effectiveLevel, 8 + 4 * plan.effectiveLevel), victim);
-		victim.hp -= damage;
-		if (scene.fadeMirrorOnDamage(victim, damage)) continue;
-		scene.showDamage(victim, damage);
-		victim.sleeping = false;
+		//`WandOfDisintegration.onZap()` -> `ch.damage(dmg, this)`: the shared dispatch, replacing the
+		//hand-rolled `hp -=`, mirror-fade check, floater and wake-up this loop used to carry.
+		if (scene.applyWandDamage(victim, damage)) continue;
 		scene.say(scene.message(victim, damage), 'positive');
 		if (victim.hp <= 0 && !victim.isAlly) scene.kill(victim);
 	}

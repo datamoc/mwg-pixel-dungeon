@@ -448,22 +448,18 @@ export const gnollMineMethods = {
 	gnollRockStrike(this: DungeonScene, target: Creature, killKey: string): boolean {
 		const dmg = Random.normalRange(6, 12);
 		if (target.isHero) {
-			const taken = this.absorbHeroDamage(dmg);
-			this.hero.hp -= taken;
-			this.showDamage(this.hero, taken);
-			if (this.hero.hp <= 0) {
-				this.say(t(killKey), 'negative');
-				this.kill(this.hero);
-				return true;
-			}
+			//Rock hit -> `Char.damage()`: shared dispatch hero branch, `onHeroDeath` printing the kill line.
+			if (this.applyCharacterDamage(this.hero, dmg, {
+				pierceArmor: true, cause: 'foe', skipAura: true,
+				onHeroDeath: () => this.say(t(killKey), 'negative'),
+			})) return true;
 			this.gnollProlongParalysis(this.hero, 3);
 			return false;
 		}
 		if (this.gnollMineInvulnerable(target)) { this.gnollProlongParalysis(target, 3); return false; }
-		const preHp = target.hp;
-		target.hp -= doomDamage(this.gnollMineDamageTaken(target, dmg), target);
-		this.gnollMineAfterDamage(target, preHp);
-		this.showDamage(target, preHp - target.hp);
+		//Shared dispatch: Doom, `gnollMineDamageTaken`, `gnollMineAfterDamage`, floater; `deferKill`
+		//keeps the kill-or-paralyse tail below.
+		this.applyCharacterDamage(target, dmg, { pierceArmor: true, cause: 'foe', skipAura: true, deferKill: true });
 		if (target.hp <= 0) this.kill(target);
 		else this.gnollProlongParalysis(target, target.kind === 'gnollGuard' ? 10 : 3);
 		return false;
