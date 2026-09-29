@@ -4346,6 +4346,32 @@ assert.deepEqual(rechargeCalls.slice(rechargeStart).map((c) => c.target), [recha
 assert.ok(rechargeCalls.slice(rechargeStart).every((c) => c.id === 'recharging'), 'taking recharging itself');
 assert.ok(recharging.said.some((l) => l.includes('port.log.recharging')), 'sounding the shared line');
 assert.deepEqual(recharging.flags.recalled, ['ScrollOfRecharging'], 'arming its Java class');
+//`ScrollOfTeleportation.doRead()` (tag `v3.3.8`): roots clear first, then a free
+//cell relocates the reader with the tele line; with nowhere to go the no-tele
+//line sounds instead (roots still cleared). Both paths pinned through scripted
+//scene seams.
+const teleMoves = [];
+const teleported = scrollReadDrive({
+	items: [{ id: 'scrollTeleportation', quantity: 1, identified: true }],
+	heroBuffs: { roots: 5 },
+	ctx: {
+		randomFreeCell: () => ({ x: 3, y: 3 }),
+		moveTo: (target, dest) => { teleMoves.push([target, dest]); },
+	},
+});
+assert.equal(teleported.result, true, 'teleportation reads');
+assert.equal(teleported.hero.buffs.roots, undefined, 'roots clear first');
+assert.deepEqual(teleMoves.map((m) => m[1]), [{ x: 3, y: 3 }], 'the reader relocates to the free cell');
+assert.equal(teleMoves[0][0], teleported.hero, 'moving the hero itself');
+assert.ok(teleported.said.some((l) => l.includes('items.scrolls.scrollofteleportation.tele')), 'sounding the tele line');
+assert.deepEqual(teleported.flags.recalled, ['ScrollOfTeleportation'], 'arming its Java class');
+const stranded = scrollReadDrive({
+	items: [{ id: 'scrollTeleportation', quantity: 1, identified: true }],
+	heroBuffs: { roots: 5 },
+});
+assert.equal(stranded.result, true, 'no free cell still reads');
+assert.equal(stranded.hero.buffs.roots, undefined, 'roots clear even then');
+assert.ok(stranded.said.some((l) => l.includes('items.scrolls.scrollofteleportation.no_tele')), 'sounding the no-tele line');
 }
 {
 	// A free re-read (RecallInscription's talentChance = 0): the effect runs, but
