@@ -1652,19 +1652,17 @@ export const turnLoopAimingMethods = {
 			this.tickBoomerangReturn();
 			//Viscosity.DeferedDamage.act(): a fresh deferred pool waits one actor turn,
 				//then deals max(1, floor(pool*0.1)) and spends that amount each turn. The
-				//scheduled damage uses the normal shield/HP path but must not be deferred
-				//again by the same glyph.
+				//scheduled damage must not be deferred again by the same glyph, and now
+				//finishes in the shared `Char.damage()` dispatch (absorb/HP/floater/kill).
 				if (this.hero.deferredDamage && this.hero.deferredDamage > 0) {
 					if (this.hero.deferredDamageDelay) this.hero.deferredDamageDelay = false;
 					else {
 						const tick = Math.max(1, Math.floor(this.hero.deferredDamage * 0.1));
 						this.applyingDeferredDamage = true;
-						const blocked = this.absorbHeroDamage(tick);
+						const died = this.applyCharacterDamage(this.hero, tick, { pierceArmor: true, cause: 'poison', magical: false });
 						this.applyingDeferredDamage = false;
-						this.hero.hp -= blocked;
 						this.hero.deferredDamage = Math.max(0, this.hero.deferredDamage - tick);
-						this.showDamage(this.hero, blocked);
-						if (this.hero.hp <= 0) { this.kill(this.hero, 'poison'); return true; }
+						if (died) return true;
 						if (this.hero.deferredDamage <= 0) this.hero.deferredDamageDelay = false;
 					}
 				}
@@ -1772,18 +1770,18 @@ export const turnLoopAimingMethods = {
 				}
 				if (hadAdrenaline !== (this.hero.buffs['adrenalineSurge'] !== undefined)) this.syncHeroFromStats();
 				if (dot > 0) {
-					const blockedDot = this.absorbHeroDamage(dot);
-					this.hero.hp -= blockedDot;
-					this.showDamage(this.hero, dot);
+					//Bleeding.act(): a fatal bleed sourced from the chasm fall books Java's own
+					//`Badges.validateDeathFromFalling()` rather than the generic DoT bucket this
+					//merged tick otherwise defaults every non-burning death to. The dispatch owns
+					//absorb/HP/floater/kill now: its floater reports the post-absorb HP loss where
+					//this site used to show the raw roll, and a fatal tick's log lines land after
+					//the death is booked (Java's own floater is `dmg + shielded`, Char.java 1024 -
+					//ROADMAP R097 tracks that dispatch-wide gap).
+					const bleedingFatal = !burning && this.hero.buffs['bleeding'] !== undefined && this.hero.bleedSource === 'chasm';
+					const cause = burning ? 'fire' : bleedingFatal ? 'falling' : 'poison';
+					const died = this.applyCharacterDamage(this.hero, dot, { pierceArmor: true, cause, magical: false });
 					this.say(t('port.log.affliction', { damage: dot }), 'negative');
-					if (this.hero.hp <= 0) {
-						//Bleeding.act(): a fatal bleed sourced from the chasm fall books Java's own
-						//`Badges.validateDeathFromFalling()` rather than the generic DoT bucket this
-						//merged tick otherwise defaults every non-burning death to.
-						const bleedingFatal = !burning && this.hero.buffs['bleeding'] !== undefined && this.hero.bleedSource === 'chasm';
-						this.kill(this.hero, burning ? 'fire' : bleedingFatal ? 'falling' : 'poison');
-						return true;
-					}
+					if (died) return true;
 				}
 				if (!this.tickCorrosion(this.hero)) return true;
 				// Burning.act() does not advance its inventory counter while TimekeepersHourglass
@@ -1824,13 +1822,10 @@ export const turnLoopAimingMethods = {
 						: this.depth === 5 ? 1 : Random.chance(0.5) ? 1 : 0;
 					const oozeDot = Math.floor(rawOoze * ringElementsMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()));
 					if (oozeDot > 0) {
-						const blockedOoze = this.absorbHeroDamage(oozeDot);
-						this.hero.hp -= blockedOoze;
-						this.showDamage(this.hero, oozeDot);
+						const died = this.applyCharacterDamage(this.hero, oozeDot, { pierceArmor: true, cause: 'poison', magical: false });
 						this.say(t('port.log.affliction', { damage: oozeDot }), 'negative');
-						if (this.hero.hp <= 0) {
+						if (died) {
 							this.say(t('actors.buffs.ooze.ondeath'), 'negative');
-							this.kill(this.hero, 'poison');
 							return true;
 						}
 					}
@@ -1864,14 +1859,11 @@ export const turnLoopAimingMethods = {
 						if (this.ascensionDamageInc >= 1) {
 							const wholePoints = Math.floor(this.ascensionDamageInc);
 							this.ascensionDamageInc -= wholePoints;
-							const blockedAscension = this.absorbHeroDamage(wholePoints);
-							this.hero.hp -= blockedAscension;
-							this.showDamage(this.hero, blockedAscension);
-							if (this.hero.hp <= 0) {
-								this.say(t('actors.buffs.ascensionchallenge.on_kill'), 'negative');
-								this.kill(this.hero, 'poison');
-								return true;
-							}
+							const died = this.applyCharacterDamage(this.hero, wholePoints, {
+								pierceArmor: true, cause: 'poison', magical: false,
+								onHeroDeath: () => this.say(t('actors.buffs.ascensionchallenge.on_kill'), 'negative'),
+							});
+							if (died) return true;
 						}
 					} else this.ascensionDamageInc = 0;
 				}
