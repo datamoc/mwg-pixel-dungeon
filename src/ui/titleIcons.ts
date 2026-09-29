@@ -19,6 +19,8 @@ const REGIONS: Record<string, [x: number, y: number, w: number, h: number]> = {
 	shpx: [119, 0, 16, 16],
 	//`Icons.JOURNAL`: `uvRectBySize(136, 0, 17, 15)`, on the same first row as the entries above.
 	journal: [136, 0, 17, 15],
+	//`Icons.INFO`: `uvRectBySize(16, 32, 14, 14)` in Java's sheet; located in this repacked one with `tools/scratch/icons-match.mjs`.
+	info: [80, 48, 14, 14],
 	prefs: [102, 0, 14, 14],
 	langs: [80, 32, 14, 11],
 	//`WndGame`'s two remaining entries, `Icons.CHALLENGE_COLOR` (Java 144,32,15,12) and `DISPLAY`'s

@@ -151,7 +151,7 @@ import loadingCavesUrl from './assets/loading_caves.png';
 import loadingCityUrl from './assets/loading_city.png';
 import loadingHallsUrl from './assets/loading_halls.png';
 //`Assets.Splashes`: full-screen class-select background art, byte-for-byte from
-//interfaces/splashes/*.jpg. `splash_cleric.jpg` is pulled from tag `v3.3.8` (same reasoning
+//interfaces/splashes/*.jpg at tag `v3.3.8` (the five older ones were replaced 2026-09-29: they were pre-3.3 art). `splash_cleric.jpg` was pulled from tag `v3.3.8` first (same reasoning
 //as `cleric.png` above - this checkout's `HeroClass` predates the Cleric).
 import splashWarriorUrl from './assets/splash_warrior.jpg';
 import splashMageUrl from './assets/splash_mage.jpg';
