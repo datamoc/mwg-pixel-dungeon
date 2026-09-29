@@ -1,7 +1,7 @@
 import type { DungeonScene } from '../dungeonScene';
 import { Actors, Random, Roguelike, TintedSprite } from 'mwg';
 import { PRISON_START_CELLS } from '../../spdLevelGen/bossLevels';
-import { MISSILE_MAX_DURABILITY, missilePickupValid, missileStackId } from '../../items/missiles';
+import { MISSILE_MAX_DURABILITY, missilePickupValid, missileStackId, owePickupTime, pickupDelay } from '../../items/missiles';
 import { appearanceItemFrame } from '../../items/appearanceFrames';
 import { eatFood as eatConsumableFood, quaffPotion as quaffConsumablePotion } from '../../items/consumables';
 import { readScrollFlow, rollUpgradeAffixLoss, type ReadScrollContext } from '../../items/scrollEffects';
@@ -1631,6 +1631,7 @@ export const npcShopBlacksmithMethods = {
 		//`CorpseDust.doPickUp()`: the chill line on first pickup (the spawner bank it arms is
 		//just `dustSpawnPower`, which the per-turn block reads).
 		const hadDust = this.bag.find('corpseDust') !== undefined;
+		const heapItem = item;
 		pickupGroundItemWorkflow({
 			item,
 			depth: this.depth,
@@ -1848,6 +1849,8 @@ export const npcShopBlacksmithMethods = {
 			},
 		});
 		if (!hadDust && this.bag.find('corpseDust')) this.say(t('items.quest.corpsedust.chill'), 'negative');
+		//`Item.doPickUp()`: an ordinary pickup (not a chest opening or a shop-stand purchase) costs `pickupDelay()` turns.
+		if (this.groundItemAt(x, y) !== heapItem && heapItem.chest === undefined && !heapItem.forSale) owePickupTime(pickupDelay(heapItem.item?.sourceClass));
 	},
 
 	/** `Item.collect()`'s capacity gate over the flat bag: owned sub-bags take what their

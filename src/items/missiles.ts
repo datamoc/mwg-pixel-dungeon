@@ -272,6 +272,21 @@ export const MISSILE_MAX_DURABILITY = 100;
  * `ForceCube` 54, `HeavyBoomerang` 44), so a hit drops them at the target's cell instead of pinning
  * them to it as a `PinCushion` stack.
  */
+/**
+ * `Item.pickupDelay()` (`TIME_TO_PICK_UP = 1`, `items/Item.java` 702) - the turns a pickup costs on top of
+ * the step onto the cell (`Item.doPickUp` -> `hero.spendAndNext(pickupDelay())`). `ThrowingClub` and
+ * `ThrowingHammer` override it to 0 ("picked up instantly"); `HeavyBoomerang` is 0 only while circling back,
+ * which this port's boomerang return handles on its own path.
+ */
+export function pickupDelay(sourceClass?: string): number {
+	return sourceClass === 'ThrowingClub' || sourceClass === 'ThrowingHammer' ? 0 : 1;
+}
+
+/** Pickup time earned during the current hero action, charged by the next `spendHeroTurn`. */
+let pickupTimeOwed = 0;
+export function owePickupTime(turns: number): void { pickupTimeOwed += turns; }
+export function takePickupTimeOwed(): number { const owed = pickupTimeOwed; pickupTimeOwed = 0; return owed; }
+
 export const NON_STICKY_MISSILES: ReadonlySet<string> = new Set(['ThrowingStone', 'ThrowingClub', 'ThrowingHammer', 'ForceCube', 'HeavyBoomerang']);
 
 /**

@@ -1,7 +1,7 @@
 import type { DungeonScene } from '../dungeonScene';
 import { Camera, Input, Projectile, Random, Roguelike, TintedSprite, Window, WindowStack } from 'mwg';
 import { dispatchHeroAction } from '../../adapters/heroActions';
-import { MISSILE_MAX_DURABILITY, NON_STICKY_MISSILES, missileAdjacentAccFactor, missileDamageRange, missileFlightArt, type MissileFlightArt } from '../../items/missiles';
+import { MISSILE_MAX_DURABILITY, NON_STICKY_MISSILES, takePickupTimeOwed, missileAdjacentAccFactor, missileDamageRange, missileFlightArt, type MissileFlightArt } from '../../items/missiles';
 import { ALL_BAGS_BADGE, BAG_BADGE, BAG_IDS, HOLSTER_RECHARGE_BASE, NORMAL_RECHARGE_BASE, isBagId, ownsBag } from '../../items/bags';
 import { MOVES } from '../../simulation/heroActions';
 import { dustSpawnerCap, dustSpawnerStep } from '../../simulation/wraith';
@@ -1295,6 +1295,7 @@ export const turnLoopAimingMethods = {
 		//The ascent challenge's own actor tick (`AscensionChallenge.act()`, tag `v3.3.8`),
 		//collapsed to the hero pass: distant enemies are beckoned once per hero action
 		//while the other per-turn challenge effects ride the cost-scaled bindings below.
+		turnCost += takePickupTimeOwed(); //`Item.doPickUp` spends `pickupDelay()` on top of the step
 		this.beckonAscensionEnemies();
 		runHeroTurn({
 			isAlive: () => this.hero.hp > 0,
