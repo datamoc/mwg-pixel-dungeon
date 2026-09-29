@@ -4372,6 +4372,28 @@ const stranded = scrollReadDrive({
 assert.equal(stranded.result, true, 'no free cell still reads');
 assert.equal(stranded.hero.buffs.roots, undefined, 'roots clear even then');
 assert.ok(stranded.said.some((l) => l.includes('items.scrolls.scrollofteleportation.no_tele')), 'sounding the no-tele line');
+//`ScrollOfMirrorImage.doRead()` (tag `v3.3.8`): the authored `imageCount` (2)
+//nearest free neighbours become mirror images; occupied cells are skipped. Both
+//pinned through a scripted spawn seam.
+const mirrorSpawns = [];
+const mirrorRead = scrollReadDrive({
+	items: [{ id: 'scrollMirror', quantity: 1, identified: true }],
+	ctx: { spawnMirrorImage: (at) => { mirrorSpawns.push(at); } },
+});
+assert.equal(mirrorRead.result, true, 'mirror reads');
+assert.equal(mirrorSpawns.length, 2, 'two free neighbours become images');
+assert.ok(mirrorRead.said.some((l) => l.includes('port.log.mirror')), 'sounding the mirror line');
+assert.deepEqual(mirrorRead.flags.recalled, ['ScrollOfMirrorImage'], 'arming its Java class');
+const crowdedSpawns = [];
+const crowded = scrollReadDrive({
+	items: [{ id: 'scrollMirror', quantity: 1, identified: true }],
+	ctx: {
+		creatureAt: () => ({ id: 'rat' }),
+		spawnMirrorImage: (at) => { crowdedSpawns.push(at); },
+	},
+});
+assert.equal(crowded.result, true, 'a ring of occupants still reads');
+assert.equal(crowdedSpawns.length, 0, 'with nowhere to stand, no image spawns');
 }
 {
 	// A free re-read (RecallInscription's talentChance = 0): the effect runs, but
