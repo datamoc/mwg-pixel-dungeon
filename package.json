@@ -31,7 +31,7 @@
     "screenshots:check": "node tools/compareScreenshots.mjs",
     "i18n:verify": "esbuild tools/i18nCheck.ts --bundle --platform=node --format=esm --outfile=tools/scratch/i18nCheck.mjs && node tools/scratch/i18nCheck.mjs",
     "parity:levelgen": "esbuild tools/levelgenParity.ts --bundle --platform=node --format=esm --outfile=tools/scratch/levelgenParity.mjs && node tools/scratch/levelgenParity.mjs",
-    "test:parity": levelgen": "esbuild tools/levelgenParity.ts --bundle --platform=node --format=esm --outfile=tools/scratch/levelgenParity.mjs && node tools/scratch/levelgenParity.mjs",
+    "test:parity": "esbuild tools/levelgenParity.ts --bundle --platform=node --format=esm --outfile=tools/scratch/levelgenParity.mjs && node tools/scratch/levelgenParity.mjs",
     "parity:combat": "esbuild tools/parityCombatTrace.ts --bundle --platform=node --format=esm --outfile=tools/scratch/parityCombatTrace.mjs && node tools/scratch/parityCombatTrace.mjs check",
     "assets": "node tools/extract-spd-assets.mjs",
     "mwg:check": "node tools/check-mwg-version.mjs",
