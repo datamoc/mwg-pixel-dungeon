@@ -4394,6 +4394,26 @@ const crowded = scrollReadDrive({
 });
 assert.equal(crowded.result, true, 'a ring of occupants still reads');
 assert.equal(crowdedSpawns.length, 0, 'with nowhere to stand, no image spawns');
+//`ScrollOfMagicMapping.doRead()` (tag `v3.3.8`): the whole floor reveals, every
+//secret cell is discovered, tiles restitch, and the mapping line sounds. Pinned
+//through scripted fov/secret seams on the 5x5 drive floor.
+const revealed = [];
+const discovered = [];
+let restitched = 0;
+const mappingRead = scrollReadDrive({
+	items: [{ id: 'scrollMapping', quantity: 1, identified: true }],
+	ctx: {
+		fov: { isVisible: () => true, revealAll: () => { revealed.push(true); } },
+		secrets: { isSecret: () => true, discover: (x, y) => { discovered.push([x, y]); } },
+		restitchAllTiles: () => { restitched++; },
+	},
+});
+assert.equal(mappingRead.result, true, 'mapping reads');
+assert.equal(revealed.length, 1, 'the whole floor reveals at once');
+assert.equal(discovered.length, 25, 'every cell of the 5x5 floor is discovered');
+assert.equal(restitched, 1, 'tiles restitch once');
+assert.ok(mappingRead.said.some((l) => l.includes('port.log.mapping')), 'sounding the mapping line');
+assert.deepEqual(mappingRead.flags.recalled, ['ScrollOfMagicMapping'], 'arming its Java class');
 }
 {
 	// A free re-read (RecallInscription's talentChance = 0): the effect runs, but
