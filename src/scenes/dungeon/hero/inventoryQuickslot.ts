@@ -49,7 +49,7 @@ import { useChainsFlow, type ChainsFlowContext } from '../../../items/chains';
 import { hornChargeCap, useHornFlow, type HornFlowContext } from '../../../items/horn';
 import { useArmbandFlow, type ArmbandFlowContext } from '../../../items/armband';
 import { skeletonKeyChargeCap } from '../../../items/skeletonKey';
-import { checkTalismanAwarenessFlow, useTalismanFlow, type TalismanFlowContext } from '../../../items/talisman';
+import { checkTalismanAwarenessFlow, talismanArtifactProcPlan, useTalismanFlow, type TalismanFlowContext } from '../../../items/talisman';
 import { roseChargeCap, roseGhostMaxHp, rosePetalDropCap, rosePetalPickup, rosePetalsNeeded, useRoseFlow, type RoseFlowContext } from '../../../items/rose';
 import { beaconChargeCap, useBeaconFlow, type BeaconFlowContext, type BeaconItem, type BeaconMobView } from '../../../items/beacon';
 import { type WealthDropPlan } from '../../../items/wealthDrops';
@@ -731,6 +731,37 @@ export const inventoryQuickslotMethods = {
 				creatureAt: (x, y) => scene.creatureAt(x, y),
 				markCreatureAware: (creature, duration) => {
 					scene.awareCreatures.set(creature as Creature, Math.max(scene.awareCreatures.get(creature as Creature) ?? 0, duration));
+				},
+				artifactProc: (target) => {
+					const actor = target as Creature;
+					const sunrayRank = scene.talentRank('sunray');
+					const plan = talismanArtifactProcPlan({
+						heroClass: scene.heroClass,
+						heroSubclass: scene.subclass() ?? undefined,
+						heroLevel: scene.progression.level,
+						targetIsAlly: actor.isAlly === true,
+						targetIlluminated: actor.buffs['illuminated'] !== undefined,
+						searingLightRank: scene.talentRank('searing_light'),
+						searingLightCooldown: scene.hero.buffs['searingLightCooldown'] !== undefined,
+						sunrayRank,
+					});
+					if (plan.consumeIlluminated) {
+						//`Artifact.artifactProc()` detaches Illuminated, then calls `target.damage(5+hero.lvl, GuidingLight.INSTANCE)`.
+						delete actor.buffs['illuminated'];
+						const parried = actor.kind === 'greatCrab' && !actor.sleeping && actor.seesHero
+							&& actor.buffs['paralysis'] === undefined;
+						if (parried) scene.say(t('port.log.crabparries'), 'negative');
+						else scene.applyCharacterDamage(actor, plan.illuminatedDamage, {
+							pierceArmor: true, cause: 'foe',
+							onNonWeaponBossDamage: (victim) => scene.disqualifyBossChallenge(victim),
+						});
+					}
+					if (plan.applyIlluminated) addBuff(actor, 'illuminated');
+					if (plan.armSearingLightCooldown) addBuff(scene.hero, 'searingLightCooldown', BUFF_DURATION.searingLightCooldown);
+					//Java rolls only after the damage and Searing Light branches above: Random.Int(20) < 1 + 2*SUNRAY.
+					if (plan.sunrayChance > 0 && Random.int(20) < plan.sunrayChance) {
+						addBuff(actor, 'blindness', plan.sunrayBlindTurns);
+					}
 				},
 				hasGroundItem: (x, y) => scene.groundItemAt(x, y) != null,
 				markHeapAware: (cellIndex, duration) => {

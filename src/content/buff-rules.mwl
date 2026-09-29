@@ -512,6 +512,13 @@
             duration: 50,
           },
           {
+            // `Talent.SearingLightCooldown`: artifact-proc gate (`Buff.affect(..., 20f)`, tag `v3.3.8`).
+            // This internal tracker has no icon or description in Java's BuffIndicator.
+            tag: "row",
+            buff: "searingLightCooldown",
+            duration: 20,
+          },
+          {
             // Port-only marker tracking whether a Wall of Light is currently up
             // (`WallOfLight`'s terrain has no port model - stated at the resolve
             // site; this flag stands in for "a wall is active" so the free

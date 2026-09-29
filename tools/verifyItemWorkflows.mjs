@@ -3908,7 +3908,7 @@ function alchemizeDrive(overrides = {}, pickIndex = 0) {
 }
 }
 	const { talismanMaxDist, talismanScryAngle, talismanScryCost, talismanApplyScryCost, talismanApplyExp,
-		talismanAwarenessDuration, talismanProcFigure, talismanScryGate, applyTalismanPerTurnCharge,
+		talismanAwarenessDuration, talismanProcFigure, talismanArtifactProcPlan, talismanScryGate, applyTalismanPerTurnCharge,
 		talismanChargeCap, talismanLevelCap } = require('./items/talisman.js');
 	// `TalismanOfForesight` (tag `v3.3.8`): the caps, the `maxDist()` pair of bounds, the
 	// distance-scaled cone angle and its cost, the per-turn trickle and the exp curve.
@@ -3949,6 +3949,33 @@ function alchemizeDrive(overrides = {}, pickIndex = 0) {
 	assert.equal(talismanAwarenessDuration(5), 15);
 	assert.equal(talismanProcFigure(0), 3);
 	assert.equal(talismanProcFigure(2), 5);
+	const priestProc = talismanArtifactProcPlan({ heroClass: 'mage', heroSubclass: 'priest', heroLevel: 12,
+		targetIsAlly: false, targetIlluminated: true, searingLightRank: 0, searingLightCooldown: false, sunrayRank: 0 });
+	assert.deepEqual(priestProc, { consumeIlluminated: true, illuminatedDamage: 17, applyIlluminated: false,
+		armSearingLightCooldown: false, sunrayChance: 0, sunrayBlindTurns: 0 }, 'Priest artifacts detonate Illuminated for 5 + hero level');
+	const searingProc = talismanArtifactProcPlan({ heroClass: 'mage', heroLevel: 1, targetIsAlly: false,
+		targetIlluminated: false, searingLightRank: 2, searingLightCooldown: false, sunrayRank: 0 });
+	assert.equal(searingProc.applyIlluminated, true, 'Searing Light lights an eligible target');
+	assert.equal(searingProc.armSearingLightCooldown, true, 'Searing Light arms its shared 20-turn cooldown');
+	const clericProc = talismanArtifactProcPlan({ heroClass: 'cleric', heroLevel: 1, targetIsAlly: false,
+		targetIlluminated: false, searingLightRank: 2, searingLightCooldown: false, sunrayRank: 2 });
+	assert.equal(clericProc.applyIlluminated, false, 'Clerics do not trigger Searing Light');
+	assert.equal(clericProc.sunrayChance, 0, 'Clerics do not trigger Sunray from an artifact');
+	assert.equal(talismanArtifactProcPlan({ heroClass: 'mage', heroLevel: 1, targetIsAlly: false,
+		targetIlluminated: false, searingLightRank: 2, searingLightCooldown: true, sunrayRank: 0 }).applyIlluminated, false,
+	'Searing Light waits out its cooldown');
+	assert.equal(talismanArtifactProcPlan({ heroClass: 'mage', heroLevel: 1, targetIsAlly: true,
+		targetIlluminated: false, searingLightRank: 2, searingLightCooldown: false, sunrayRank: 2 }).sunrayChance, 0,
+	'artifact procs do not blind allies');
+	const sunray1 = talismanArtifactProcPlan({ heroClass: 'mage', heroLevel: 1, targetIsAlly: false,
+		targetIlluminated: false, searingLightRank: 0, searingLightCooldown: false, sunrayRank: 1 });
+	assert.equal(sunray1.sunrayChance, 3,
+	'Sunray rank 1 uses Random.Int(20) < 3 (15%)');
+	assert.equal(sunray1.sunrayBlindTurns, 4);
+	assert.equal(talismanArtifactProcPlan({ heroClass: 'mage', heroLevel: 1, targetIsAlly: false,
+		targetIlluminated: false, searingLightRank: 0, searingLightCooldown: false, sunrayRank: 2 }).sunrayChance, 5,
+	'Sunray rank 2 uses Random.Int(20) < 5 (25%)');
+	assert.equal(require('./simulation/buffs.js').BUFF_DURATION.searingLightCooldown, 20, 'Searing Light cooldown duration comes from MWL');
 	const leveling = { level: 0, exp: 99 };
 	assert.equal(talismanApplyExp(leveling, 1), true, '100 exp levels a +0 talisman');
 	assert.equal(leveling.level, 1);
@@ -3983,7 +4010,7 @@ const { WALL } = require('./dungeonConstants.js');
 function talismanDrive(overrides = {}) {
 	const log = [];
 	const explored = new Set();
-	const flags = { travel: false, refreshed: false, turns: 0, uncloaked: false };
+	const flags = { travel: false, refreshed: false, turns: 0, uncloaked: false, procs: [] };
 	const talisman = { level: 0, charge: 100, partialCharge: 0, exp: 0, ...overrides.talisman };
 	const ctx = {
 		magicImmune: false,
@@ -4000,6 +4027,7 @@ function talismanDrive(overrides = {}) {
 		discoverSecret: () => false,
 		creatureAt: () => null,
 		markCreatureAware: (c, d) => { log.push(`aware:${d}`); },
+		artifactProc: (creature, artifactLevel, chargesUsed) => flags.procs.push({ creature, artifactLevel, chargesUsed }),
 		hasGroundItem: () => false,
 		markHeapAware: (i, d) => { log.push(`heap:${i}:${d}`); },
 		cellIndex: (x, y) => y * 10 + x,
@@ -4038,11 +4066,21 @@ function talismanDrive(overrides = {}) {
 	const cells = d.explored.size;
 	assert.ok(cells >= 10, `a 156-degree cone covers real ground (${cells})`);
 	assert.equal(d.log.filter((l) => l === 'aware:5').length, cells, 'every cell marks its creature');
+	assert.equal(d.flags.procs.length, cells, 'the scry invokes Artifact.artifactProc once for each hostile target');
 	assert.equal(d.log.filter((l) => l.startsWith('heap:')).length, cells, 'every cell marks its heap');
 	assert.equal(d.talisman.level, 1, 'the unseen bonuses level the artifact');
 	assert.equal(d.talisman.exp, 21 * cells - 100, 'mapped + unseen creature + unseen heap, minus the level');
 	assert.ok(d.log.some((l) => l.includes('levelup')), 'the level is announced');
 }
+// The legacy number reaches the hook even though v3.3.8's Artifact.artifactProc ignores both arguments.
+{
+	const target = { isAlly: false, isNPC: false };
+	const d = talismanDrive({ ctx: { creatureAt: (x, y) => x === 1 && y === 0 ? target : null } });
+	useTalismanFlow(d.ctx);
+	d.ctx.aimOpts.onConfirm({ x: 3, y: 0 });
+	assert.deepEqual(d.flags.procs, [{ creature: target, artifactLevel: 0, chargesUsed: 6 }], 'distance 3 passes (int)(3 + dist*1.08) once');
+}
+
 // Refusals: aiming at his own cell spends nothing; cursed/low/AntiMagic never reach the aimer.
 {
 	const own = talismanDrive();

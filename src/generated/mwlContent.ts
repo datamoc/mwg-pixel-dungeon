@@ -9018,13 +9018,27 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
+								"buff": "searingLightCooldown",
+								"duration": "20"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 517,
+								"column": 13
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
 								"buff": "lightWallActive",
 								"duration": "20"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
-								"line": 521,
+								"line": 528,
 								"column": 13
 							},
 							"gettext": []

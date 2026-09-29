@@ -74,6 +74,7 @@ export const BUFF_DURATION_DATA = {
   "auraProtection": 20,
   "smiteTracker": 1,
   "guidingPriestCooldown": 50,
+  "searingLightCooldown": 20,
   "lightWallActive": 20
 } as const;
 export const NEGATIVE_BUFF_DATA = [

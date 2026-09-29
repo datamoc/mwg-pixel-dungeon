@@ -131,12 +131,51 @@ export function talismanAwarenessDuration(level: number): number {
 }
 
 /** The figure Java's scry hands to `Artifact.artifactProc`, `(int)(3 + dist*1.08f)`. That method
- *  reads neither of its two numeric arguments at `v3.3.8`: it only runs the three talent procs
- *  (Priest's GuidingLight detonation, Cleric's SearingLight, Huntress's Sunray), so this number is
+	*  reads neither of its two numeric arguments at `v3.3.8`: it only runs the three talent procs
+	*  (Priest's GuidingLight detonation, non-Cleric SearingLight, non-Cleric Sunray), so this number is
  *  cited for completeness rather than applied - see `item-rules.mwl`'s own note. */
 export function talismanProcFigure(distance: number): number {
 	return Math.trunc(mwlItemEffectValue('talisman', 'procBase')
 		+ Math.fround(distance * mwlItemEffectValue('talisman', 'procPerTile')));
+}
+
+/**
+ * `Artifact.artifactProc()` (`Artifact.java`, tag `v3.3.8`): its numeric artifact-level
+ * and charges-used arguments are unused. The real branches consume a Priest's existing
+ * Illuminated mark for `5 + heroLevel` damage, arm Searing Light's mark/cooldown on a
+ * non-Cleric hero, and give non-Cleric Sunray users a 3/20 or 5/20 chance to blind for
+ * four turns. Keep the plan pure so the talent gates and probability boundary are pinned.
+ */
+export function talismanArtifactProcPlan(input: {
+	heroClass: string;
+	heroSubclass?: string;
+	heroLevel: number;
+	targetIsAlly: boolean;
+	targetIlluminated: boolean;
+	searingLightRank: number;
+	searingLightCooldown: boolean;
+	sunrayRank: number;
+}): {
+	consumeIlluminated: boolean;
+	illuminatedDamage: number;
+	applyIlluminated: boolean;
+	armSearingLightCooldown: boolean;
+	sunrayChance: number;
+	sunrayBlindTurns: number;
+} {
+	const consumeIlluminated = input.heroSubclass === 'priest' && input.targetIlluminated;
+	const searingLight = !input.targetIsAlly && input.heroClass !== 'cleric'
+		&& input.searingLightRank > 0 && !input.searingLightCooldown;
+	const sunrayChance = !input.targetIsAlly && input.heroClass !== 'cleric' && input.sunrayRank > 0
+		? 1 + 2 * input.sunrayRank : 0;
+	return {
+		consumeIlluminated,
+		illuminatedDamage: consumeIlluminated ? 5 + input.heroLevel : 0,
+		applyIlluminated: searingLight,
+		armSearingLightCooldown: searingLight,
+		sunrayChance,
+		sunrayBlindTurns: sunrayChance > 0 ? 4 : 0,
+	};
 }
 
 /**
@@ -202,6 +241,7 @@ export interface TalismanFlowContext {
 	discoverSecret(x: number, y: number): boolean;
 	creatureAt(x: number, y: number): TalismanScryCreature | null;
 	markCreatureAware(creature: TalismanScryCreature, duration: number): void;
+	artifactProc(creature: TalismanScryCreature, artifactLevel: number, chargesUsed: number): void;
 	hasGroundItem(x: number, y: number): boolean;
 	markHeapAware(cellIndex: number, duration: number): void;
 	cellIndex(x: number, y: number): number;
@@ -305,6 +345,9 @@ export function confirmTalismanScryFlow(ctx: TalismanFlowContext, cell: { x: num
 		if (occupant && !occupant.isHero && (occupant.isAlly || !occupant.isNPC)) {
 			ctx.markCreatureAware(occupant, duration);
 			if (!ctx.isCellVisible(x, y)) earnedExp += mwlItemEffectValue('talisman', 'expUnseen');
+			//The Java cone calls `Artifact.artifactProc(ch, visiblyUpgraded(), (int)(3 + dist*1.08f))`
+			//for each eligible target. Both numeric parameters are intentionally unused by that hook.
+			if (!occupant.isAlly && !occupant.isNPC) ctx.artifactProc(occupant, level, talismanProcFigure(distance));
 		}
 		//`HeapAwareness`: the same mark for a heap, keyed by cell. Java awards its 10 only for a
 		//heap it has never seen (`!h.seen`); this port's heaps carry no such flag, so the cell's
