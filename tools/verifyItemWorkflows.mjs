@@ -4332,6 +4332,20 @@ assert.equal(ragingGuardian.sleeping, true, 'a sleeping guardian ignores the bec
 assert.deepEqual(rageCalls.slice(rageStart).map((c) => c.target), [raging, ragingGuardian], 'amok itself is enemies-only, guardian included');
 assert.ok(rageCalls.slice(rageStart).every((c) => c.id === 'amok'), 'taking amok itself');
 //(read, line, and recall already pinned on the registry drive above; this drive adds targeting.)
+//`ScrollOfRecharging.doRead()` (tag `v3.3.8`): the `Recharging` buff lands on the
+//reader with the shared recharging line. Only the buff call itself is pinned
+//through the stub's observation calls; the 30-turn duration lives in the
+//scene-side `BUFF_DURATION` table, out of this drive's reach.
+const { addCalls: rechargeCalls } = require('./combat.js');
+const rechargeStart = rechargeCalls.length;
+const recharging = scrollReadDrive({
+	items: [{ id: 'scrollRecharging', quantity: 1, identified: true }],
+});
+assert.equal(recharging.result, true, 'recharging reads');
+assert.deepEqual(rechargeCalls.slice(rechargeStart).map((c) => c.target), [recharging.hero], 'recharging lands on the reader');
+assert.ok(rechargeCalls.slice(rechargeStart).every((c) => c.id === 'recharging'), 'taking recharging itself');
+assert.ok(recharging.said.some((l) => l.includes('port.log.recharging')), 'sounding the shared line');
+assert.deepEqual(recharging.flags.recalled, ['ScrollOfRecharging'], 'arming its Java class');
 }
 {
 	// A free re-read (RecallInscription's talentChance = 0): the effect runs, but
