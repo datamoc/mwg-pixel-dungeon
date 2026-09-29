@@ -116,6 +116,8 @@ export function showChoiceWindow(
 	windows.push(window);
 }
 
+/** Row pitch of the challenge list: nine rows + title + description + close must fit a 779px-high canvas at the window scale (the old 24 pushed the last row into the close button). */
+const ROW_PITCH = 19;
 /**
  * `WndChallenges(checked, editable)` (tag `v3.3.8`): `editable` is the hero-select setup screen
  * (`HeroSelectScene.java:798-924`), whose selection persists between runs like `SPDSettings.challenges()`;
@@ -125,14 +127,14 @@ export function showChoiceWindow(
  */
 export function showChallengesWindow(windows: WindowStack, editable = true): void {
 	const width = windowWidth(250);
-	const window = new Window({ width, height: CHALLENGES.length * 24 + 52, title: t('windows.wndchallenges.title'), anchor: 'center', blocker: true });
+	const window = new Window({ width, height: CHALLENGES.length * ROW_PITCH + 84, title: t('windows.wndchallenges.title'), anchor: 'center', blocker: true });
 	const description = new Label({ size: 6, wrapWidth: width - 16, color: theme().color.textDim });
-	description.position.set(0, CHALLENGES.length * 24 + 2);
+	description.position.set(0, CHALLENGES.length * ROW_PITCH + 2);
 	window.content.addChild(description);
 	CHALLENGES.forEach((def, index) => {
 		const button = new Button({
 			width: window.contentWidth,
-			height: 21,
+			height: ROW_PITCH - 3,
 			text: `${(editable ? setupChallenges() : challenges()).has(def.id) ? '✓ ' : ''}${challengeLabel(def)}`,
 			onClick: () => {
 				if (!editable) { description.setText(challengeDescription(def)); return; }
@@ -141,7 +143,7 @@ export function showChallengesWindow(windows: WindowStack, editable = true): voi
 				showChallengesWindow(windows, editable);
 			},
 		});
-		button.position.set(0, index * 24);
+		button.position.set(0, index * ROW_PITCH);
 		button.on('pointerover', () => description.setText(challengeDescription(def)));
 		button.on('pointertap', () => description.setText(challengeDescription(def)));
 		window.content.addChild(button);
