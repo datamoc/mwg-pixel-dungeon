@@ -4414,6 +4414,46 @@ assert.equal(discovered.length, 25, 'every cell of the 5x5 floor is discovered')
 assert.equal(restitched, 1, 'tiles restitch once');
 assert.ok(mappingRead.said.some((l) => l.includes('port.log.mapping')), 'sounding the mapping line');
 assert.deepEqual(mappingRead.flags.recalled, ['ScrollOfMagicMapping'], 'arming its Java class');
+//`ScrollOfPrismaticImage.doRead()` (tag `v3.3.8`): a hurt image heals to HT with
+//the heal readout and loses its fade counter; with no live image the latent
+//guard is granted at full charge instead (a fading image at 0 HP still counts
+//as live, an unfaded one does not). No log line on any path. Pinned through
+//scripted heal/guard seams.
+const healedShown = [];
+const guardsGranted = [];
+const hurtImage = { isHero: false, isNPC: false, isAlly: true, allyKind: 'prismatic', hp: 3, maxHp: 10, prismaticFade: 2, buffs: {}, x: 1, y: 1 };
+const prismaticRead = scrollReadDrive({
+	items: [{ id: 'scrollPrismatic', quantity: 1, identified: true }],
+	creatures: [hurtImage],
+	ctx: {
+		showHeal: (target, amount) => { healedShown.push([target, amount]); },
+		grantPrismaticGuard: (maxHp) => { guardsGranted.push(maxHp); },
+	},
+});
+assert.equal(prismaticRead.result, true, 'prismatic reads');
+assert.equal(hurtImage.hp, 10, 'the hurt image heals to HT');
+assert.equal(hurtImage.prismaticFade, undefined, 'losing its fade counter');
+assert.deepEqual(healedShown.map((h) => h[1]), [7], 'reading out the restored amount');
+assert.equal(guardsGranted.length, 0, 'a live image means no guard');
+assert.deepEqual(prismaticRead.flags.recalled, ['ScrollOfPrismaticImage'], 'arming its Java class');
+const fadingImage = { isHero: false, isNPC: false, isAlly: true, allyKind: 'prismatic', hp: 0, maxHp: 10, prismaticFade: 1, buffs: {}, x: 1, y: 1 };
+const goneImage = { isHero: false, isNPC: false, isAlly: true, allyKind: 'prismatic', hp: 0, maxHp: 10, buffs: {}, x: 2, y: 2 };
+const fadingGuards = [];
+const fadingRead = scrollReadDrive({
+	items: [{ id: 'scrollPrismatic', quantity: 1, identified: true }],
+	creatures: [fadingImage, goneImage],
+	ctx: { grantPrismaticGuard: (maxHp) => { fadingGuards.push(maxHp); } },
+});
+assert.equal(fadingImage.hp, 10, 'a fading image at 0 HP is rescued to full');
+assert.equal(fadingGuards.length, 0, 'it still counts as live, so no guard');
+const lonelyGuards = [];
+const lonelyRead = scrollReadDrive({
+	items: [{ id: 'scrollPrismatic', quantity: 1, identified: true }],
+	ctx: { grantPrismaticGuard: (maxHp) => { lonelyGuards.push(maxHp); } },
+});
+assert.equal(lonelyRead.result, true, 'with no image the read still succeeds');
+assert.equal(lonelyGuards.length, 1, 'granting the latent guard once');
+assert.ok(Number.isFinite(lonelyGuards[0]) && lonelyGuards[0] > 0, 'at a positive full charge');
 }
 {
 	// A free re-read (RecallInscription's talentChance = 0): the effect runs, but
