@@ -67,6 +67,10 @@
           { tag: "row", kind: "featherFall", energy: 12 },
           //`MagicalInfusion.energyVal()` = 12*q (`items/spells/MagicalInfusion.java:125`).
           { tag: "row", kind: "magicalInfusion", energy: 12 },
+          //`UnstableBrew`/`UnstableSpell.energyVal()` = 8*q (`UnstableBrew.java:131`, `UnstableSpell.java:128`);
+          //neither item is ported yet, the rows wait for them.
+          { tag: "row", kind: "unstableBrew", energy: 8 },
+          { tag: "row", kind: "unstableSpell", energy: 8 },
           {
             //`Brew.energyVal()`: every brew scraps for 12 (AquaBrew scales by
             //quantity over its 8-unit recipe, which has no port recipe yet).

@@ -163,6 +163,13 @@ export function craftAlchemy(inventory: Inventory, id: string): boolean {
 	return recipe ? craft(inventory, resolvableRecipe(recipe)) : false;
 }
 
+/** Whether `craftAlchemy(inventory, id)` would resolve right now (identified gate and `MeatPie`
+ * families included), without touching the bag. */
+export function canCraftAlchemy(inventory: Inventory, id: string): boolean {
+	const recipe = alchemyRecipe(id);
+	return recipe ? canResolveRecipe(inventory, recipe) : false;
+}
+
 /** `Alchemize.Recipe` accepts category instances rather than one concrete seed/runestone.
  * Keep that wildcard transaction at the item boundary because MWG's generic `craft()`
  * intentionally matches exact ids. An explicit selection names the two units (the seed and
@@ -198,6 +205,12 @@ export function craftScrollToStone(inventory: Inventory, selected?: AlchemyUnitR
 		: inventory.items.find((item) => item.quantity > 0 && SCROLL_TO_STONE[item.id]);
 	if (!scroll) return false;
 	inventory.remove(scroll.id, 1, scroll.instanceId);
+	//R084: `Scroll.ScrollToStone.brew()` identifies the consumed scroll (`showIdentify(s)` in the alchemy
+	//scene, else `s.identify()`), which makes the whole class known. The port's known-ness is the
+	//per-stack `identified` flag, so every carried stack of that scroll id is marked; when the last unit
+	//was the one consumed there is nothing left to mark (the same per-instance-model limit the exotic
+	//brews document).
+	for (const stack of inventory.items) if (stack.id === scroll.id) stack.identified = true;
 	inventory.add({ id: SCROLL_TO_STONE[scroll.id]!, quantity: 2, stackable: true });
 	return true;
 }

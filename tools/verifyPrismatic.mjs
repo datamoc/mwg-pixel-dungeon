@@ -124,7 +124,7 @@ export function verifyPrismatic(require, check) {
 		// (file-size refactor, behavior-identical): its two exotic call sites are
 		// pinned here now, against the moved module instead of the scene.
 		assert.ok(alchemy.includes('scrollExoticResult(item.id) !== undefined'), 'the exotic picker eligibility moved with the flow');
-		assert.ok(alchemy.includes('craftScrollToExotic(scene.bag)'), 'the exotic craft moved with the flow');
+		assert.ok(alchemy.includes('craftScrollToExotic(scene.bag, selected?.kind'), 'the exotic craft moved with the flow');
 		const transmute = readFileSync(new URL('../src/items/transmutation.ts', import.meta.url), 'utf8');
 		assert.ok(transmute.includes("if (target.id === 'scrollPrismatic')"), 'the exotic transmutes to its regular counterpart');
 	});
