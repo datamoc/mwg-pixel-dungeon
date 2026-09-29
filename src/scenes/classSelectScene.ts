@@ -1,6 +1,8 @@
 import { SpdLabel as Label } from '../ui/spdLabel';
 import { Container, FillGradient, Graphics, Rectangle, Sprite, Texture } from 'mwg/two-d/pixi-interop';
-import { Game, Scene2D, theme, Input } from 'mwg';
+import { Game, Scene2D, theme, Input, WindowStack } from 'mwg';
+import { markedText } from '../ui/markedText';
+import { createHeroInfoWindow } from '../ui/heroInfoWindow';
 import { t, capitalize } from '../i18n/index';
 import type { SpdSprites } from '../images';
 import { runState } from '../runState';
@@ -27,6 +29,7 @@ export class ClassSelectScene extends Scene2D {
 	private badges = loadBadges();
 	private selected: ClassId | null = null;
 	private layout: () => void = () => {};
+	private readonly windows = new WindowStack();
 
 	override create(): void {
 		// HeroSelectScene.java: compact hero buttons, splash art, then explicit Start.
@@ -40,9 +43,21 @@ export class ClassSelectScene extends Scene2D {
 		heading.anchor.set(0.5, 0);
 		const name = new Label({ size: 9, color: theme().color.textHighlight });
 		name.anchor.set(0.5, 0);
-		const description = new Label({ size: 6, align: 'center', wrapWidth: 100 });
-		description.anchor.set(0.5, 0);
-		root.addChild(heading, name, description);
+		//`HeroSelectScene.heroDesc`: `cl.shortDesc()` with SPD's `_highlight_` markup, centred under the name.
+		const description = new Container();
+		const setDescription = (markup: string): void => {
+			description.removeChildren().forEach((child) => child.destroy({ children: true }));
+			description.addChild(markedText(markup, { size: 6, maxWidth: 100, align: 'center' }));
+		};
+		//`infoButton`: `Icons.INFO`, right of the class name, opens `WndHeroInfo` for the selected class.
+		const info = new Container();
+		info.addChild(titleIcon(runState.sprites.uiIcons, 'info', 1));
+		info.eventMode = 'static';
+		info.cursor = 'pointer';
+		info.hitArea = new Rectangle(-3, -3, 20, 21);
+		info.visible = false;
+		info.on('pointertap', () => { if (this.selected) this.windows.push(createHeroInfoWindow(this.selected, (window) => this.windows.push(window))); });
+		root.addChild(heading, name, description, info);
 		const start = new Button({ width: 80, height: 21, text: capitalize(t('scenes.heroselectscene.start')),
 			icon: titleIcon(runState.sprites.uiIcons, 'enter', 1), onClick: () => {
 				if (!this.selected) return;
@@ -63,14 +78,15 @@ export class ClassSelectScene extends Scene2D {
 				if (!classUnlocked(id, this.badges)) {
 					name.setText(capitalize(t(CLASSES[id].nameKey)));
 					const hintKey = CLASS_UNLOCK_HINT[id];
-					description.setText(t('port.ui.locked', { hint: hintKey ? t(hintKey) : '' }));
+					setDescription(t('port.ui.locked', { hint: hintKey ? t(hintKey) : '' }));
+					info.visible = false;
 				} else {
 					this.selected = id;
 					background.texture = runState.sprites[CLASS_SPLASH[id]];
 					background.tint = 0xffffff;
 					name.setText(capitalize(t(CLASSES[id].nameKey)));
-					// The port's short class summary substitutes for Java's full WndHeroInfo.
-					description.setText(t(CLASSES[id].blurbKey));
+					setDescription(t(`actors.hero.heroclass.${id}_desc_short`));
+					info.visible = true;
 					start.visible = true;
 					portraits.forEach((p, i) => { p.tint = ids[i] === id ? 0xffffff : classUnlocked(ids[i], this.badges) ? 0x999999 : 0x191919; });
 				}
@@ -79,6 +95,7 @@ export class ClassSelectScene extends Scene2D {
 			root.addChild(button);
 			return button;
 		});
+		this.stage.addChild(this.windows);
 		const back = new Button({ width: 20, height: 20, icon: titleIcon(runState.sprites.uiIcons, 'exit', 1), onClick: () => Game.current.switchScene(TitleScene) });
 		root.addChild(back);
 		//Port-original keyboard-navigation accessibility work (ROADMAP.md section 8 - Java has
@@ -88,13 +105,16 @@ export class ClassSelectScene extends Scene2D {
 		//*already-selected* portrait it starts the run instead of re-selecting it, so a
 		//keyboard player never needs to reach the separate on-screen Start button.
 		let focusedIndex = 0;
+		//The ring is this port's keyboard aid (Java has none), so it stays hidden until a key moves it.
+		let ringShown = false;
 		const buttonBounds: { x: number; y: number; w: number; h: number }[] = ids.map(() => ({ x: 0, y: 0, w: 0, h: 0 }));
 		const focusRing = new Graphics();
 		focusRing.eventMode = 'none';
 		root.addChild(focusRing);
 		const drawFocusRing = () => {
 			const b = buttonBounds[focusedIndex]!;
-			focusRing.clear().rect(b.x - 2, b.y - 2, b.w + 4, b.h + 4).stroke({ width: 2, color: 0xffffff, alpha: 0.9 });
+			focusRing.clear();
+			if (ringShown) focusRing.rect(b.x - 2, b.y - 2, b.w + 4, b.h + 4).stroke({ width: 2, color: 0xffffff, alpha: 0.9 });
 		};
 		let focusCols = 3;
 		const moveFocus = (dRow: number, dCol: number): void => {
@@ -107,6 +127,8 @@ export class ClassSelectScene extends Scene2D {
 			drawFocusRing();
 		};
 		const onAction = (action: string) => {
+			if (!this.windows.isEmpty) { this.windows.handleAction(action); return; }
+			if (['up', 'down', 'left', 'right', 'confirm'].includes(action)) { ringShown = true; drawFocusRing(); }
 			if (action === 'cancel') Game.current.switchScene(TitleScene);
 			if (action === 'up') moveFocus(-1, 0);
 			if (action === 'down') moveFocus(1, 0);
@@ -147,8 +169,11 @@ export class ClassSelectScene extends Scene2D {
 					b.position.set(Math.round((leftArea - 107) / 2 + (i % 3) * 36), Math.round(heading.y + heading.height + spacing + Math.floor(i / 3) * (bh + 1)));
 					buttonBounds[i] = { x: b.x, y: b.y, w: 35, h: bh };
 				});
-				name.position.set(leftArea / 2, buttons[5].y + bh + 5);
-				description.position.set(leftArea / 2, name.y + name.height + 5);
+				//`heroName.setPos(insets.left + (leftPortion - heroName.width() - 20) / 2, ..)`: the name and its 20px info button centre together.
+				name.anchor.set(0, 0);
+				name.position.set(Math.round((leftArea - name.width - 20) / 2), buttons[5].y + bh + 5);
+				info.position.set(Math.round(name.x + name.width + 3), Math.round(name.y + (name.height - 14) / 2));
+				description.position.set(Math.round(leftArea / 2 - 50), name.y + name.height + 5);
 				start.position.set(Math.round((leftArea - 80) / 2), heading.y + uiHeight - 21);
 			} else {
 				const bw = Math.min(35, w / ids.length);
@@ -159,16 +184,20 @@ export class ClassSelectScene extends Scene2D {
 					buttonBounds[i] = { x: b.x, y: b.y, w: bw, h: 24 };
 				});
 				heading.position.set(w / 2, h - 24 - heading.height - 4);
-				name.position.set(w / 2, h - 115);
-				description.position.set(w / 2, h - 100);
+				name.anchor.set(0, 0);
+				name.position.set(Math.round((w - name.width - 20) / 2), h - 115);
+				info.position.set(Math.round(name.x + name.width + 3), Math.round(name.y + (name.height - 14) / 2));
+				description.position.set(Math.round(w / 2 - 50), h - 100);
 				start.position.set((w - 80) / 2, h - 65);
 			}
 			back.position.set(w - 20, 0);
+			this.windows.scale.set(scale);
+			this.windows.setViewport(w, h);
 			drawFocusRing();
 		};
 		this.layout();
 	}
 
-	override update(dt: number): void { runState.audio.update(dt); }
+	override update(dt: number): void { this.windows.update(dt); runState.audio.update(dt); }
 	override resize(_w: number, _h: number): void { this.layout(); }
 }
