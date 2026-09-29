@@ -178,10 +178,11 @@ export function useFeatherFallFlow(ctx: FeatherFallContext, instanceId?: string)
 	ctx.spendTurn();
 }
 
-/** `WildEnergy.affectTarget()` (tag `v3.3.8`): refund one wand charge, grant the
- * Recharging buff, bank four turns of every artifact hook at once, and extend the recharge
- * timer - the scene comment this moves carried a stale "no recharge clock" clause from
- * before `ArtifactRecharge` was ported; the body it describes always did both halves. */
+/** `WildEnergy.affectTarget()` (tag `v3.3.8`): this port refunds one selected-wand charge,
+ * grants the Recharging buff, banks four turns of every artifact hook, and extends the artifact
+ * timer. Java additionally calls `ScrollOfRecharging.charge(hero)` and
+ * `hero.belongings.charge(1f)`, which charge every active `Wand.Charger`; this shared-wand model
+ * does not represent that per-wand charge grant yet (open under ROADMAP R043). */
 export function useWildEnergyFlow(ctx: WildEnergyContext, instanceId?: string): void {
 	if (!ctx.hasSpell('wildEnergy', instanceId)) return;
 	ctx.consumeSpell('wildEnergy', instanceId);
@@ -192,8 +193,7 @@ export function useWildEnergyFlow(ctx: WildEnergyContext, instanceId?: string): 
 	//and leaves the timer running for the same hooks to be handed `min(1, left)` on later turns.
 	ctx.rechargeArtifacts(4);
 	ctx.extendRechargeTurns(wildEnergyRechargeTurns());
-	// Java logs nothing on this cast (WildEnergy.affectTarget is sound and sprite only);
-	// the recharge buff and the refunded wand charge are the feedback, so no line here either.
+	// Java logs nothing on this cast (WildEnergy.affectTarget is sound and sprite only), so no line here.
 	ctx.spendTurn();
 }
 

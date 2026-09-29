@@ -13,6 +13,7 @@ import { ringArcanaMultiplier, ringForceBonus, ringTenacityMultiplier } from '..
 import { HOLY_WARD_BLOCK, HOLY_WEAPON_BONUS, auraProcBonus, auraProtectedDamage, satiatedShieldAmount, searingLightBonus, shieldOfLightRange, trinityBodyGlyphActive } from '../../simulation/clericSpells';
 import { capitalize, has, t } from '../../i18n/index';
 import { assassinReachBonus, empoweredStrikeBonus, farsightMultiplier, shieldBatteryGain, weaponRechargingDamage } from '../../talentEffects';
+import { weaponRechargeWindow } from '../../items/artifactRecharge';
 import { runState } from '../../runState';
 import { isChallengeEnabled } from '../../challenges';
 import { combinedLethalityTest, exposeWeaknessDuration, feignedRetreatHaste } from '../../simulation/duelistAbilities';
@@ -100,11 +101,13 @@ export const attackSeamMethods = {
 		//while a Recharging-class buff is held - a melee damage multiplier, never the
 		//per-hit wand-charge refund this used to be (that shape had no Java basis at all;
 		//charges still refund through MysticalCharge/ExcessCharge/SoulSiphon below, which are
-		//real). `ArtifactRecharge` counts too in Java; no such buff exists here yet. Gate
+		//real). `ArtifactRecharge` counts too in Java (`Hero.damageRoll()`, v3.3.8); the port's
+		//scene timer represents that buff and must open the same talent multiplier window.
 		//note, read before "fixing": both tags gate the Java line on `heroClass != DUELIST`
 		//- unsatisfiable alongside class-locked talents, so the port follows the evident
 		//intent (the talent-holding class) rather than the literal gate.
-		if (attacker === this.hero && this.talentRank('weapon_recharging') > 0 && this.hero.buffs['recharging']) {
+		if (attacker === this.hero && this.talentRank('weapon_recharging') > 0
+			&& weaponRechargeWindow(this.hero.buffs['recharging'] !== undefined, this.artifactRechargeTurns)) {
 			damage = weaponRechargingDamage(damage, this.talentRank('weapon_recharging'));
 		}
 		//RingOfForce.armedDamageBonus(): flat +level on any armed (non-missile) melee hit -

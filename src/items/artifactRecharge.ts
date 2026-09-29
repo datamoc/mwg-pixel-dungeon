@@ -90,6 +90,11 @@ export function wildEnergyRechargeTurns(): number {
 	return mwlItemEffectValue('artifactRecharge', 'wildEnergyTurns');
 }
 
+/** `Hero.damageRoll()` treats either Recharging buff as the Duelist's Weapon Recharging window. */
+export function weaponRechargeWindow(recharging: boolean, artifactRechargeTurns: number): boolean {
+	return recharging || artifactRechargeTurns > 0;
+}
+
 /**
  * The generic `partialCharge += rate*amount` bank, which every `'charge'` entry above shares:
  * whole units onto the integer `charge`, and at the cap either zeroing `partialCharge` (the

@@ -4181,7 +4181,7 @@ function talismanDrive(overrides = {}) {
 	const doubleBomb = planWealthDrops({ triesToDrop: 0, dropsToEquip: 5 }, 1, 1, 1, scripted([0.95, 0, 4, 7]));
 	assert.deepEqual(doubleBomb.plans, [{ kind: 'doubleBomb' }]);
 	assert.deepEqual(doubleBomb.trackers, { triesToDrop: 6, dropsToEquip: 4 });
-	const { artifactRechargeEffect, bankArtifactCharge, chaliceRechargeHeal, roseRechargeGhostHeal } = require('./items/artifactRecharge.js');
+	const { artifactRechargeEffect, bankArtifactCharge, chaliceRechargeHeal, roseRechargeGhostHeal, weaponRechargeWindow } = require('./items/artifactRecharge.js');
 	// `ArtifactRecharge.chargeArtifacts()` (tag `v3.3.8`): every artifact's own `charge()` override,
 	// with its rate and its guard set. Java's base `Artifact.charge()` is a no-op, so anything not
 	// in the table must be too.
@@ -4193,6 +4193,9 @@ function talismanDrive(overrides = {}) {
 	assert.deepEqual(artifactRechargeEffect('chains'), { kind: 'charge', rate: 0.5, capZeroesPartial: false, guards: 'cursedAndImmune' });
 	assert.equal(artifactRechargeEffect('hourglass').kind, 'none', 'the Hourglass never overrides charge()');
 	assert.equal(artifactRechargeEffect('not-an-artifact').kind, 'none');
+	assert.equal(weaponRechargeWindow(false, 0), false, 'no recharge buff means no Weapon Recharging window');
+	assert.equal(weaponRechargeWindow(true, 0), true, 'wand Recharging opens Weapon Recharging');
+	assert.equal(weaponRechargeWindow(false, 1), true, 'ArtifactRecharge also opens Weapon Recharging (Hero.damageRoll, v3.3.8)');
 	// The bank: whole units onto the integer charge, and the cap's two behaviours (Beacon/Chains/
 	// Toolkit keep the fraction they had banked; everything else zeroes it).
 	const banking = { charge: 0, partialCharge: 0 };
