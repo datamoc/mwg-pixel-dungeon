@@ -340,10 +340,8 @@ export const monsterAiMethods = {
 				this.showDamage(target, damage);
 				if (target.hp <= 0) this.kill(target, 'foe');
 			} else {
-				const damage = doomDamage(raw, target);
-				target.hp -= damage;
-				this.showDamage(target, damage);
-				if (target.hp <= 0) this.kill(target, 'foe');
+				//Non-hero victims take the shared `Char.damage()` dispatch: Doom, defender overrides, shields, hooks, wake and death.
+				this.applyCharacterDamage(target, raw, { pierceArmor: true, cause: 'foe', skipAura: true });
 			}
 		}
 		monster.pylonTargetNeighbor = (cursor + 1) % 8;
@@ -645,10 +643,12 @@ export const monsterAiMethods = {
 			dmg *= 0.5;
 			if (victim.kind === 'yog') dmg *= 0.5;
 		}
-		const dealt = victim.isHero ? this.absorbHeroDamage(dmg, true) : doomDamage(dmg, victim);
-		victim.hp -= dealt;
-		this.showDamage(victim, dealt);
-		if (victim.hp <= 0) this.kill(victim);
+		if (victim.isHero) {
+			const dealt = this.absorbHeroDamage(dmg, true);
+			victim.hp -= dealt;
+			this.showDamage(victim, dealt);
+			if (victim.hp <= 0) this.kill(victim);
+		} else this.applyCharacterDamage(victim, dmg, { pierceArmor: true, cause: 'foe', skipAura: true });
 	},
 
 	/** `RipperDemon.Hunting.act()`'s leap trigger (`RipperDemon.java`, tag `v3.3.8`): off
@@ -809,9 +809,17 @@ export const monsterAiMethods = {
 			this.say(t(victim.isHero ? 'port.log.misshero' : 'port.log.miss', { subject, object }), 'negative');
 			return;
 		}
-		const damage = victim.isHero ? this.absorbHeroDamage(roll.damage) : doomDamage(roll.damage, victim);
-		victim.hp -= damage;
-		this.showDamage(victim, damage);
+		let damage: number;
+		if (victim.isHero) {
+			damage = this.absorbHeroDamage(roll.damage);
+			victim.hp -= damage;
+			this.showDamage(victim, damage);
+		} else {
+			//Non-hero victims take the shared `Char.damage()` dispatch (armor is already inside `roll.damage`).
+			const before = victim.hp;
+			this.applyCharacterDamage(victim, roll.damage, { pierceArmor: true, cause: 'foe', skipAura: true });
+			damage = before - Math.max(0, victim.hp);
+		}
 		victim.sleeping = false;
 		this.sprite(victim).setColorAdd(1, 1, 1);
 		runState.audio.cue('hit', 0.6);
@@ -913,10 +921,16 @@ export const monsterAiMethods = {
 			return;
 		}
 		let dmg = Math.max(0, Random.normalRange(damage[0], damage[1]));
-		if (target.isHero) dmg = this.absorbHeroDamage(dmg, true);
-		else dmg = doomDamage(dmg, target);
-		target.hp -= dmg;
-		this.showDamage(target, dmg);
+		if (target.isHero) {
+			dmg = this.absorbHeroDamage(dmg, true);
+			target.hp -= dmg;
+			this.showDamage(target, dmg);
+		} else {
+			//Non-hero victims take the shared `Char.damage()` dispatch (a magic bolt has no armor step).
+			const before = target.hp;
+			this.applyCharacterDamage(target, dmg, { pierceArmor: true, cause: 'foe', skipAura: true });
+			dmg = before - Math.max(0, target.hp);
+		}
 		this.sprite(target).setColorAdd(0.6, 0.7, 1);
 		this.say(t('port.log.bolthits', { who: capitalize(monster.name), damage: dmg }), 'negative');
 		if (!shaman) this.spawnProjectile(monster, target);
@@ -1086,13 +1100,12 @@ export const monsterAiMethods = {
 			if (this.hero.hp <= 0) this.kill(this.hero);
 		} else {
 			//A monster blocker takes its own Char.damage hit; the hero's shield pool must not
-			//absorb damage that never targeted the hero. This compact seam omits monster DR but
-			//still applies the shared Doom multiplier.
-			const damage = doomDamage(raw, occupant);
-			occupant.hp -= damage;
-			this.showDamage(occupant, damage);
+			//absorb damage that never targeted the hero. It omits monster DR (the block hit is a
+			//flat roll) and runs the shared `Char.damage()` dispatch for everything else.
+			const before = occupant.hp;
+			this.applyCharacterDamage(occupant, raw, { pierceArmor: true, cause: 'foe', skipAura: true });
+			const damage = before - Math.max(0, occupant.hp);
 			this.say(t('port.log.necroblockdamage', { who: capitalize(occupant.name), damage }), 'warning');
-			if (occupant.hp <= 0) this.kill(occupant);
 		}
 	},
 
