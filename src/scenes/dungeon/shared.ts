@@ -402,8 +402,6 @@ export const APPEARANCE_TABLES: Record<string, Actors.AppearanceTable> = {
 /** flattened run state for mwg/core's SaveSystem (plain JSON, not the live object graph) */
 export interface SaveShape {
 	runSeed: number;
-	/** `Dungeon.challenges` (`Dungeon.java` 236/742): the challenge ids in force for this run. Absent in older saves. */
-	challenges?: string[];
 	runSeedLong?: string;
 	seededRun?: boolean;
 	depth: number;
@@ -553,6 +551,8 @@ export interface SaveShape {
 	appearances?: { assigned: [string, [string, string][]][] };
 	switches: [string, boolean][];
 	ascensionChallengeActive?: boolean;
+	/** `Dungeon.challenges` (`Dungeon.java:742,861`): the run's challenge ids; absent in older saves. */
+	challengeIds?: string[];
 	questStages: [string, number][];
 	equippedRing?: EquippedRing | null;
 	ringHtBonus?: number;

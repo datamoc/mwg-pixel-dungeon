@@ -1,4 +1,5 @@
 import { Roguelike, Random } from 'mwg';
+import { isChallengeEnabled } from '../challenges';
 import { buffBlocked, doomDamage, fieryResistedDamage, type Creature, type Step } from '../combat';
 import { coneCells } from '../mechanics/cone';
 import { FLOOR, GRASS, HIGH_GRASS } from '../dungeonConstants';
@@ -320,6 +321,9 @@ export function useRegrowthWand(context: RegrowthWandContext): void {
 	const plant = (cell: Step, kind: string): void => {
 		const index = context.cellIndex(cell.x, cell.y);
 		if (context.hasPortedFeature(index) || context.hasManualPlant(index)) return;
+		//`Level.plant()` (`Level.java:1038`): under Barren land the grass is still laid but the plant is not
+		//(`WandOfRegrowth.java:167,173`); the rolls that chose it above are already spent, as in Java.
+		if (isChallengeEnabled('no_herbalism')) return;
 		context.placePlant(index, kind);
 	};
 	if (remaining.length > 0 && Random.float() > context.furrowedChance && Random.int(0, 6) < charges) {

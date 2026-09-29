@@ -7,7 +7,7 @@ import { MOVES } from '../../simulation/heroActions';
 import { dustSpawnerCap, dustSpawnerStep } from '../../simulation/wraith';
 import { runHeroTurn } from '../../adapters/gameSimulation';
 import { usePreparationBlink, type PreparationBlinkContext } from '../../simulation/preparation';
-import { confirmDisintegrationWand, livingEarthZapRange, prismaticWandLightDuration, useDisintegrationWand, wandChargesPerCast, wandDamageRange, wandTargetRange, type DisintegrationWandScene, type WandType } from '../../items/wands';
+import { confirmDisintegrationWand, livingEarthZapRange, useDisintegrationWand, wandChargesPerCast, wandDamageRange, wandTargetRange, type DisintegrationWandScene, type WandType } from '../../items/wands';
 import { ringElementsMultiplier, ringEnergyMultiplier, ringSharpshootingBonus } from '../../items/ringModifiers';
 import { has, t } from '../../i18n/index';
 import { onZoomChanged, screenShake, setZoomOffset, zoomForOffset, zoomOffset } from '../../settings';
@@ -16,7 +16,7 @@ import { directTomeCharge, findHolyTome } from '../../items/holyTome';
 import { tomeChargeCap, tomeTickRate } from '../../simulation/clericSpells';
 import { advanceWellFed, HUNGRY, STARVING } from '../../simulation/hunger';
 import { addLockedFloorTime, lockedFloorBossTime, regenOn, regenerationDelay, removeLockedFloorTime, tickLockedFloor, tickRegeneration } from '../../simulation/regeneration';
-import { isChallengeEnabled } from '../../challenges';
+import { isChallengeEnabled } from '../../challenges'; import { prolongPrismaticWandLight } from '../../simulation/prismaticWandLight';
 import { ARMOR_CHARGE_MAX, ARMOR_CHARGE_PER_TURN } from '../../armorAbilities';
 import { CLASSES } from '../../classes';
 import { drawAimPreview } from '../../ui/aimOverlay';
@@ -91,7 +91,7 @@ export const turnLoopAimingMethods = {
 		//`isHero: true` while ordinary monsters omit every false-valued flag), so
 		//`'isHero' in target` is false for every mob and every zap aimed at one
 		//would fizzle with an empty victim list.
-		const targetCreature: Creature | null = typeof (target as Creature).hp === 'number' ? (target as Creature) : null;
+		const targetCreature: Creature | null = typeof (target as Creature).hp === 'number' ? (target as Creature) : null; if (wandType === 'prismaticLight') prolongPrismaticWandLight(this.hero.buffs, this.depth, isChallengeEnabled('darkness'), this.depth === 25 ? this.creatures.find((c) => c.kind === 'yog' && c.hp > 0)?.yogPhase : undefined, zapLevel); //`WandOfPrismaticLight.onZap()`: Light before the `findChar` branch
 		//GreatCrab.damage negates wand bolts from a seen hero - kept verbatim
 		//`GreatCrab.damage()` (tag v3.3.8): `enemySeen && state != SLEEPING && paralysed == 0
 		//&& src instanceof Wand && enemy == Dungeon.hero && enemy.invisible == 0`. This port\u2019s
@@ -120,7 +120,6 @@ export const turnLoopAimingMethods = {
 			x2: (target.x + 0.5) * TILE, y2: (target.y + 0.5) * TILE,
 			timeLeft: 0.5, duration: 0.5, color: this.wandZapTrailColor(wandType),
 		});
-		if (wandType === 'prismaticLight' && (isChallengeEnabled('darkness') || this.depth === 25 || this.depth === 26)) addBuff(this.hero, 'light', prismaticWandLightDuration(zapLevel, isChallengeEnabled('darkness')));
 		//WandOfMagicMissile.onZap calls ch.damage() directly in Java - never a hit
 		//roll. Fireblast and Lightning use their real level-0/level-scaling rolls too.
 		//Fireblast is now Java's whole area routine (`useFireblastWand`: the cone, the fire

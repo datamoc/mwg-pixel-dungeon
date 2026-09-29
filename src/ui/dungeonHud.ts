@@ -2,6 +2,8 @@ import { Container, Rectangle, Sprite, Texture } from 'mwg/two-d/pixi-interop';
 import { Label } from 'mwg';
 import { APP_VERSION, runState } from '../runState';
 import { hudZoom } from './interfaceMode';
+import { activeChallengeCount } from '../challenges';
+import { titleIcon } from './titleIcons';
 
 export interface DungeonHudState {
 	place: string;
@@ -34,8 +36,10 @@ export class DungeonHud extends Container {
 	private readonly keys = new Container();
 	private readonly depthText: Label;
 	private readonly depthIcon: Sprite;
+	private readonly chal = new Container();
+	private readonly chalText: Label;
 
-	constructor(onMenu: () => void, onJournal: () => void) {
+	constructor(onMenu: () => void, onJournal: () => void, onChallenges: () => void = () => {}) {
 		super();
 		const pane = runState.sprites.uiMenuPane;
 		const buttons = runState.sprites.uiMenuButton;
@@ -76,6 +80,20 @@ export class DungeonHud extends Container {
 		this.depthText = new Label({ text: '1', size: 6, color: TEXT_COLOR, resolution: 8, roundPixels: true });
 		this.art.addChild(icon, this.depthText);
 		this.depthIcon = icon;
+
+		//`MenuPane.java:121-138`: with challenges active, a count icon (`Icons.CHAL_COUNT`) and the number `activeChallenges()`
+		//sit beside the depth icon; tapping opens the read-only `WndChallenges`. This port has no `CHAL_COUNT` art, so the
+		//`CHALLENGE` icon at half size stands in (`PORT_COVERAGE.md`).
+		const chalIcon = titleIcon(runState.sprites.uiIcons, 'challenge', 0.5);
+		this.chalText = new Label({ text: '', size: 6, color: 0xcacfc2, resolution: 8, roundPixels: true });
+		this.chalText.position.set(0, 9);
+		this.chal.addChild(chalIcon, this.chalText);
+		this.chal.position.set(depthX - 14, 8);
+		this.chal.eventMode = 'static';
+		this.chal.cursor = 'pointer';
+		this.chal.visible = false;
+		this.chal.on('pointertap', onChallenges);
+		this.art.addChild(this.chal);
 	}
 
 	/** `onPointerDown` brightens the button image to 1.5x; a tap runs `onClick`. */
@@ -91,6 +109,9 @@ export class DungeonHud extends Container {
 	}
 
 	update(state: DungeonHudState): void {
+		const count = activeChallengeCount();
+		this.chal.visible = count > 0;
+		if (count > 0) this.chalText.setText(String(count));
 		this.depthText.setText(String(state.depth));
 		this.depthText.position.set(this.depthIcon.x + (6 - this.depthText.width) / 2, this.depthIcon.y + 7);
 		this.keys.removeChildren().forEach((child) => child.destroy({ children: true }));

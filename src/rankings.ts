@@ -1,5 +1,5 @@
 import { RunHistory } from 'mwg';
-import { challenges } from './challenges';
+import { activeChallengeCount, challengeMask, challengeScoreMultiplier } from './challenges';
 
 /**
  * Small persistent run history behind `RankingsScene`. This deliberately stores completed runs
@@ -23,20 +23,13 @@ export interface RunRecord {
 	level: number;
 	gold: number;
 	score: number;
+	/** the run's `Dungeon.challenges` int mask (`Rankings.java:308,344`), 0 when none. */
+	challenges?: number;
 }
 
 /** `RankingsScene`'s score: depth dominates, then level, then gold. */
 export function runScore(depth: number, level: number, gold: number): number {
 	return depth * 1_000 + level * 100 + gold;
-}
-
-/**
- * `Rankings.java` 225-226 (tag `v3.3.8`): `Statistics.chalMultiplier = 1.25^activeChallenges`, rounded to the
- * nearest 0.05, multiplied into the total score. Simplified: applied to this port's own `runScore`, not to
- * Java's progress/treasure/explore/boss/quest sum (that breakdown has no counterpart here).
- */
-export function challengeMultiplier(active: number): number {
-	return Math.round(Math.pow(1.25, active) * 20) / 20;
 }
 
 const history = new RunHistory<RunRecord>({ namespace: 'spd-on-mwg.rankings.v1', limit: 20 });
@@ -56,9 +49,12 @@ export function rankings(): RunRecord[] {
 
 export function recordRun(record: Omit<RunRecord, 'score'>): void {
 	try {
+		//`Rankings.calculateScore()` (`Rankings.java:225-231`): the score is scaled by `1.25^active`, rounded to 0.05.
+		const mask = challengeMask();
 		history.record({
 			...record,
-			score: runScore(record.depth, record.level, record.gold),
+			score: Math.round(runScore(record.depth, record.level, record.gold) * challengeScoreMultiplier(activeChallengeCount())),
+			...(mask !== 0 ? { challenges: mask } : {}),
 		});
 	} catch {
 		//Private browsing/storage denial should not prevent a run ending normally.

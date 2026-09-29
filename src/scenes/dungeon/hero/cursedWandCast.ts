@@ -2,6 +2,7 @@ import type { DungeonScene } from '../../dungeonScene';
 import { Random, Roguelike } from 'mwg';
 import { BUFF_DURATION, addBuff, buffBlocked, doomDamage, reigniteBuff, type Creature, type Step } from '../../../combat';
 import { CURSED_PLANT_KINDS, CURSED_RANDOM_GAS, cursedForestFireSeeds, cursedInterfloorDepthWeights, pickBurnAndFreeze, pickConeOfColorsStatus, pickCursedCommonEffect, pickCursedEquipmentSlot, pickCursedRandomAreaEffect, pickCursedRareEffect, pickCursedTier, pickCursedUncommonEffect, pickCursedVeryRareEffect } from '../../../simulation/cursedWand';
+import { isChallengeEnabled } from '../../../challenges';
 import { activateGeyserTrap as activateGeyserTrapFlow } from '../../../simulation/geyserTrap';
 import { applyBlastDamage } from '../../../items/bombEffects';
 import { MWL_BOMB_RULES } from '../../../mwlContent';

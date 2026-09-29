@@ -17,7 +17,7 @@ import { simulationRandom } from '../../adapters/mwgRandom';
 import { simulationRoguelike } from '../../adapters/mwgRoguelike';
 import { planMonsterPopulation } from '../../simulation/levelPopulation';
 import { interactWithGhost as runGhostInteraction, interactWithImp as runImpInteraction, interactWithRatKing as runRatKingInteraction, interactWithWandmaker as runWandmakerInteraction } from '../../actors/npcs';
-import { groundKindForItem } from '../../items/itemKinds';
+import { groundKindForItem, sourceInventoryItem } from '../../items/itemKinds';
 import { startTransmutationPick } from '../../items/transmutation';
 import { RING_DEFS } from '../../items/ringModifiers';
 import { CLASS_KEYS, RING_KEYS, WAND_KEYS, capitalize, has, language, t } from '../../i18n/index';
@@ -1813,12 +1813,7 @@ export const npcShopBlacksmithMethods = {
 				//already enforced that half). The real win only fires at the depth-1 surface exit
 				//(`SewerLevel.activateTransition`'s `LevelTransition.Type.SURFACE` branch) - see
 				//`tryAscendStairs`. PORT_COVERAGE.md: "Post-victory ascent".
-				this.awardBadge('amulet');
-				//`Badges.validateChampion(Challenges.activeChallenges())` (Badges.java 1150-1169, tag `v3.3.8`), called from
-				//the same `Amulet.showAmuletScene` afterCreate as `validateVictory`: 1/3/6+ active challenges unlock
-				//CHAMPION_1/2/3, each tier also unlocking the lower ones. No-op with no challenge active.
-				{ const active = challenges().size; for (const [n, need] of [[1, 1], [2, 3], [3, 6]] as const) if (active >= need) this.awardBadge(`champion_${n}`); }
-				this.say(t('scenes.amuletscene.text'), 'positive');
+				this.awardBadge('amulet'); this.awardChampionBadges(); this.say(t('scenes.amuletscene.text'), 'positive');
 				return true;
 			},
 			pickupRing: () => {
