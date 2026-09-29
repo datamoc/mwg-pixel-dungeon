@@ -35,7 +35,7 @@ import { beaconPassiveRecharge, chainsPassiveRecharge, hourglassPassiveRecharge 
 import { beaconChargeCap } from '../../items/beacon';
 import type { ChainsItem } from '../../items/chains';
 import { TILE, WATER } from '../../dungeonConstants';
-import { BUFF_DURATION, addBuff, buffBlocked, doomDamage, electricDamageHalved, icyDamageHalved, rollHit, tickBuffs, type Creature, type Step } from '../../combat';
+import { BUFF_DURATION, addBuff, buffBlocked, electricDamageHalved, icyDamageHalved, rollHit, tickBuffs, type Creature, type Step } from '../../combat';
 import { NEGATIVE_BUFFS, corruptionImmune, tickMonsterTurnEnd, type BuffId } from '../../simulation/buffs';
 import { corruptingPower, corruptionResistance, resolveCorruptionZap } from '../../simulation/wandCorruption';
 import { MONSTERS, BOSSES, isUndeadOrDemonic, type AnyMonsterId } from '../../monsters';
@@ -665,18 +665,15 @@ export const turnLoopAimingMethods = {
 				this.empoweredZapBonus = 0;
 			}
 		} else {
-			//SpiritBow.damageRoll: a normal hit roll, but the base damage is scaled by
-			//distance (min(3, 1.2 * 1.125^(distance-1))) before armor is subtracted.
-			//`MissileWeapon.accuracyFactor()` covers the bow too - `SpiritBow` inherits it,
-			//so the adjacent `0.5 + 0.25*POINT_BLANK` / distance `1.5` factor applies here
-			//(the sniperSpecial + DAMAGE-augment infinite clause has no bow-augment system
-			//to read, so the plain factor always applies). Point Blank is accuracy-only in
-			//Java: the `1 + 0.2*rank` damage bonus this branch used to add at close range
-			//never existed (it appears exactly once in Java, in `adjacentAccFactor`).
+			//SpiritBow.damageRoll scales the base by distance (min(3, 1.2 * 1.125^(distance-1)))
+			//before armor; `MissileWeapon.accuracyFactor()` covers the bow too (`SpiritBow`
+			//inherits it: adjacent `0.5 + 0.25*POINT_BLANK`, distance `1.5`, and the sniperSpecial
+			//+ DAMAGE-augment infinite clause has no bow-augment system here so the plain factor
+			//always applies). Point Blank is accuracy-only in Java: the `1 + 0.2*rank` damage
+			//bonus this branch used to add at close range never existed (one Java site: `adjacentAccFactor`).
 			//`SpiritBow.speedMultiplier()` while Nature's Power is up (tag `v3.3.8`): the bow
-			//gains `(8 + GROWING_POWER)/24` speed additively. Turn costs spend through the
-			//shared `spendTurn` port below, so the shot stashes its divisor for that port to
-			//consume - sniper specials are exempt in Java, but none exist here, so no gate.
+			//gains `(8 + GROWING_POWER)/24` speed additively, stashed as this shot's turn-cost
+			//divisor for the shared `spendTurn` port below (no sniper-special gate: none exist).
 			if (this.naturesPowerTurns > 0) {
 				this.pendingBowNpDivisor = 1 + (8 + this.talentRank('growing_power')) / 24;
 			}
@@ -691,27 +688,30 @@ export const turnLoopAimingMethods = {
 				const distance = Roguelike.chebyshevDistance(this.hero, target);
 				const multiplier = Math.min(3, 1.2 * Math.pow(1.125, distance - 1));
 				//SpiritBow.min()/max(): RingOfSharpshooting's bonus is asymmetric here - +bonus on
-				//the low end, +2*bonus on the high end (unlike MissileWeapon's identical +bonus
-				//on both bounds above).
+				//the low end, +2*bonus on the high end (MissileWeapon adds the same to both above).
 				const sharpshooting = ringSharpshootingBonus(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
 				const base = Random.normalRange(special.damage[0] + sharpshooting, special.damage[1] + 2 * sharpshooting);
 				const dr = Random.normalRange(target.armor[0], target.armor[1]);
 				const momentum = projectileMomentumBonus(this.subclass(), this.talentRank('projectile_momentum'), this.projectileMomentumReady);
-				const damage = doomDamage(Math.max(0, Math.round(base * multiplier * (this.subclass() === 'sniper' ? 1.15 : 1)) - dr) + momentum, target);
+				const damage = Math.max(0, Math.round(base * multiplier * (this.subclass() === 'sniper' ? 1.15 : 1)) - dr) + momentum;
 				this.projectileMomentumReady = false;
-				target.hp -= damage;
-				this.showDamage(target, damage);
-				this.sprite(target).setColorAdd(1, 1, 1);
+				//Every hit lands in the shared `Char.damage()` dispatch: Java's `Hero.shoot` runs
+				//`attack()`, which rolls DR itself (`Char.java` 386, subtracted at 493) and applies
+				//the aura there (465-469; `damage()`'s own clause skips a `Char` source - "we already
+				//reduced it in Char.attack"), so `pierceArmor` keeps the caller's DR roll and no
+				//`skipAura` runs each step once. Gained over the old `doomDamage`/`hp -=`/`showDamage`
+				//tail: gates, Doom, curves, Viscosity, barriers, shields, floater, wake and death;
+				//`attack()`-side steps (`defenseProc`, mirror fade) still run nowhere on this path.
+				this.applyCharacterDamage(target, damage, { pierceArmor: true, cause: 'foe', magical: false });
+				if (target.hp > 0) this.sprite(target).setColorAdd(1, 1, 1);
 				this.say(t('port.log.shoot', { target: target.name, damage }), 'positive');
 				if (this.talentRank('followup_strike') > 0) { this.followupTarget = target; this.followupDamage = this.talentRank('followup_strike') === 1 ? 2 : 3; }
 				//`Talent.SEER_SHOT` procs from bow shots the same way (`procSeerShot`).
 				this.procSeerShot(target.x, target.y);
 				if (target.hp <= 0) {
-					//SpiritBow kills are missile-weapon kills (`cause instanceof Weapon`), so
-					//Lethal Haste triggers here just like at the melee/throw kill site above;
-					//wand-zap kills never do (the Wand is not a Weapon - see `lethalHasteOnKill`).
+					//SpiritBow kills are missile-weapon kills (`cause instanceof Weapon`): Lethal Haste
+					//fires after the dispatch's kill, like the melee/throw site (wands: not a Weapon).
 					this.lethalHasteOnKill();
-					this.kill(target);
 				}
 			}
 		}
