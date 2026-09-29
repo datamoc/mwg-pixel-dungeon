@@ -123,6 +123,15 @@ export function itemDisplayName(scene: ItemDisplayContext, id: string, identifie
 	//picker rows all share the real `beacon` id (so its own icon/frame render correctly), and
 	//distinguish themselves only by these synthetic instance ids - the same trick
 	//`openAlchemyRecipes`'s `toolkit-energize` row already uses for the toolkit.
+	//`AlchemistsToolkit.actions()`/`execute(AC_ENERGIZE)`'s labels (R076), on the same synthetic-id
+	//trick: the ENERGIZE row of the pot picker, then its `energize_1` / `energize_all` options
+	//(`energize_all:<levels>` carries the level count, the cost is 6 per level).
+	if (id === 'toolkit' && instanceId === 'toolkit-energize') return t('items.artifacts.alchemiststoolkit.ac_energize');
+	if (id === 'toolkit' && instanceId === 'toolkit-energize-1') return t('items.artifacts.alchemiststoolkit.energize_1');
+	if (id === 'toolkit' && instanceId?.startsWith('toolkit-energize-all:')) {
+		const levels = Number(instanceId.split(':')[1]);
+		return t('items.artifacts.alchemiststoolkit.energize_all', { '0': 6 * levels, '1': levels });
+	}
 	if (id === 'beacon' && instanceId === 'beacon-zap') return t('items.artifacts.lloydsbeacon.ac_zap');
 	if (id === 'beacon' && instanceId === 'beacon-set') return t('items.artifacts.lloydsbeacon.ac_set');
 	if (id === 'beacon' && instanceId === 'beacon-return') return t('items.artifacts.lloydsbeacon.ac_return');

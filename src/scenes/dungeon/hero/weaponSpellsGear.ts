@@ -26,6 +26,7 @@ import { WAND_KEYS } from '../../../i18n/spdKeys';
 import { showChoiceWindow, showConfirmWindow } from '../../../ui/portWindows';
 import { useChalice as useArtifactChalice, useCloak as useArtifactCloak, useHourglass as useArtifactHourglass, useKingsCrown as useArtifactKingsCrown, type ArtifactActionContext } from '../../../items/artifactActions';
 import { applyScrollEffect } from '../../../items/scrollEffects';
+import { openAlchemyRecipes } from '../../../items/alchemy';
 import { useReturningBeaconFlow } from '../../../items/beacon';
 import { useCurseInfusionFlow, useFeatherFallFlow, useMagicalInfusionFlow, usePhaseShiftFlow, useReclaimTrapFlow, useRecycleFlow, useTelekineticGrabFlow, useWildEnergyFlow, type CastBase, type CurseInfusionContext, type FeatherFallContext, type InfusionBase, type PhaseShiftContext, type ReclaimTrapContext, type RecycleContext, type TargetedSpellAim, type TelekineticGrabContext, type WildEnergyContext } from '../../../items/spells';
 import { equipArmor as equipInventoryArmor, equipRing as equipInventoryRing, equipWeapon as equipInventoryWeapon, type GearEquipmentContext, type RingEquipmentContext } from '../../../items/equipment';
@@ -1113,6 +1114,13 @@ export const weaponSpellsGearMethods = {
 			//`UnstableSpellbook.doReadEffect()`'s real effect application, shared with the
 			//Arcane Catalyst's own direct `applyScrollEffect` call - see `useSpellbook`.
 			castScrollEffect: (id) => applyScrollEffect(id, this.scrollEffectsContext()),
+			//`AlchemistsToolkit.execute(AC_BREW)` (R076): `AlchemyScene.assignToolkit(this)` then the
+			//alchemy scene - a toolkit session, so the banked charge counts and pays (`viaToolkit`).
+			openAlchemyPot: () => {
+				const flow = this.alchemyFlowContext();
+				flow.viaToolkit = true;
+				openAlchemyRecipes(flow);
+			},
 		};
 	},
 

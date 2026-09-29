@@ -40,11 +40,33 @@
             kind: "potionShrouding",
             energy: 10,
           },
-          {
-            tag: "row",
-            kind: "food",
-            energy: 6,
-          },
+          //R080 (2026-09-29): the port's former `food` row (6) is gone - `Food` has no `energyVal()`
+          //override in v3.3.8 (`items/food/Food.java` only defines `value()`), so it falls back to
+          //`Item.energyVal()` = 0 and Java cannot scrap food for energy. The exact-id rows below
+          //win over the kind rows above, one per class whose `energyVal()` differs from its base.
+          //Seeds: `Plant.Seed` 2*q, `Rotberry.Seed`/`Starflower.Seed` 3*q (`plants/Rotberry.java:80`,
+          //`Starflower.java:72`).
+          { tag: "row", kind: "seedRotberry", energy: 3 },
+          { tag: "row", kind: "seedStarflower", energy: 3 },
+          //`StoneOfAugmentation`/`StoneOfEnchantment.energyVal()` = 5*q (base `Runestone` is 3*q).
+          { tag: "row", kind: "stoneOfAugmentation", energy: 5 },
+          { tag: "row", kind: "stoneOfEnchantment", energy: 5 },
+          //`GooBlob`/`MetalShard.energyVal()` = 3*q (`items/quest/GooBlob.java:51`, `MetalShard.java:51`).
+          { tag: "row", kind: "gooBlob", energy: 3 },
+          { tag: "row", kind: "metalShard", energy: 3 },
+          //`Elixir.energyVal()` = 12*q (`items/potions/elixirs/Elixir.java:43`); `ElixirOfHoneyedHealing`
+          //overrides it with a flat 8 (`ElixirOfHoneyedHealing.java:78`). `featherFall` is an
+          //`ElixirOfFeatherFall` at v3.3.8 (see R083), hence the Elixir value.
+          { tag: "row", kind: "elixirArcaneArmor", energy: 12 },
+          { tag: "row", kind: "elixirAquaticRejuvenation", energy: 12 },
+          { tag: "row", kind: "elixirDragonsBlood", energy: 12 },
+          { tag: "row", kind: "elixirIcyTouch", energy: 12 },
+          { tag: "row", kind: "elixirMight", energy: 12 },
+          { tag: "row", kind: "elixirToxicEssence", energy: 12 },
+          { tag: "row", kind: "elixirHoneyedHealing", energy: 8 },
+          { tag: "row", kind: "featherFall", energy: 12 },
+          //`MagicalInfusion.energyVal()` = 12*q (`items/spells/MagicalInfusion.java:125`).
+          { tag: "row", kind: "magicalInfusion", energy: 12 },
           {
             //`Brew.energyVal()`: every brew scraps for 12 (AquaBrew scales by
             //quantity over its 8-unit recipe, which has no port recipe yet).
@@ -78,6 +100,23 @@
           { tag: "row", item: "potionExperience", energy: 10 },
           { tag: "row", item: "scrollUpgrade", energy: 10 },
           { tag: "row", item: "scrollTransmutation", energy: 10 },
+        ],
+      },
+      {
+        //Spells whose `energyVal()` is `(int)(base * (quantity / (float) Recipe.OUT_QUANTITY))`
+        //(tag v3.3.8): the per-unit value is fractional, so the port evaluates it on the scrapped
+        //quantity like Java does (one unit: truncated). `SummonElemental` has no override (0).
+        tag: "table",
+        id: "alchemyScrapRatio",
+        columns: "item:string|base:number|outQuantity:number",
+        children: [
+          { tag: "row", item: "phaseShift", base: 12, outQuantity: 6 },
+          { tag: "row", item: "recycle", base: 12, outQuantity: 12 },
+          { tag: "row", item: "telekineticGrab", base: 10, outQuantity: 8 },
+          { tag: "row", item: "curseInfusion", base: 12, outQuantity: 4 },
+          { tag: "row", item: "reclaimTrap", base: 12, outQuantity: 5 },
+          { tag: "row", item: "wildEnergy", base: 12, outQuantity: 5 },
+          { tag: "row", item: "beaconOfReturning", base: 12, outQuantity: 5 },
         ],
       },
       {
@@ -117,6 +156,81 @@
             result: "meatPie",
             resultQuantity: 1,
             energyCost: 6,
+          },
+          //R081 (2026-09-29): the spell recipes, `Recipe.SimpleRecipe`s at tag v3.3.8 (inputs, quantities,
+          //cost and `OUT_QUANTITY` read from each class). BeaconOfReturning (ScrollOfPassage, an exotic
+          //scroll with no port item) is the one Java spell recipe still absent - see coverage.
+          {
+            //`MagicalInfusion.Recipe (MagicalInfusion.java:128)`
+            tag: "row",
+            id: "magicalInfusion",
+            ingredients: "scrollUpgrade:1",
+            result: "magicalInfusion",
+            resultQuantity: 1,
+            energyCost: 12,
+          },
+          {
+            //`PhaseShift.Recipe (PhaseShift.java:79)`
+            tag: "row",
+            id: "phaseShift",
+            ingredients: "scrollTeleportation:1",
+            result: "phaseShift",
+            resultQuantity: 6,
+            energyCost: 10,
+          },
+          {
+            //`Recycle.Recipe (Recycle.java:105)`
+            tag: "row",
+            id: "recycle",
+            ingredients: "scrollTransmutation:1",
+            result: "recycle",
+            resultQuantity: 12,
+            energyCost: 12,
+          },
+          {
+            //`TelekineticGrab.Recipe (TelekineticGrab.java:150)`
+            tag: "row",
+            id: "telekineticGrab",
+            ingredients: "liquidMetal:10",
+            result: "telekineticGrab",
+            resultQuantity: 8,
+            energyCost: 10,
+          },
+          {
+            //`SummonElemental.Recipe (SummonElemental.java:232)`
+            tag: "row",
+            id: "summonElemental",
+            ingredients: "embers:1",
+            result: "summonElemental",
+            resultQuantity: 6,
+            energyCost: 10,
+          },
+          {
+            //`CurseInfusion.Recipe (CurseInfusion.java:109)`
+            tag: "row",
+            id: "curseInfusion",
+            ingredients: "scrollCleanse:1,metalShard:1",
+            result: "curseInfusion",
+            resultQuantity: 4,
+            energyCost: 6,
+          },
+          {
+            //`ReclaimTrap.Recipe (ReclaimTrap.java:174)`
+            tag: "row",
+            id: "reclaimTrap",
+            ingredients: "scrollMapping:1,metalShard:1",
+            result: "reclaimTrap",
+            resultQuantity: 5,
+            energyCost: 8,
+          },
+          {
+            //`WildEnergy.Recipe (WildEnergy.java:84)`
+            tag: "row",
+            id: "wildEnergy",
+            ingredients: "scrollRecharging:1,metalShard:1",
+            result: "wildEnergy",
+            resultQuantity: 5,
+            energyCost: 4,
           },
           {
             tag: "row",
