@@ -1040,7 +1040,7 @@ export function verifyArmorAbilities(require, check) {
 		assert.ok(warp, 'warpToBeacon still exists');
 		assert.match(warp[0], /Math\.min\(5 \* telefrag, this\.hero\.hp \+ this\.heroBarrier\.total - 1\)/,
 			'the clamp must stay Java\'s own `Math.min(heroDmg, heroHP-1)`');
-		assert.match(warp[0], /if \(selfDamage > 0\) this\.applyCharacterDamage\(this\.hero, selfDamage, \{ pierceArmor: true, cause: \'foe\', magical: true \}\)/,
+		assert.match(warp[0], /if \(selfDamage > 0\) \{[^}]*this\.applyCharacterDamage\(this\.hero, selfDamage, \{ pierceArmor: true, cause: \'foe\', magical: true, skipAura: true, deferKill: true \}\)/,
 			'the self-hit must finish through the shared dispatch with Java\'s RESISTS magic flag');
 		assert.ok(!/this\.hero\.hp -=/.test(warp[0]),
 			'no hand-rolled hero HP write may remain in the telefrag');

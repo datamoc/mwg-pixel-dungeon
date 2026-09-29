@@ -92,9 +92,9 @@ export const deathSaveRefreshMethods = {
 				Random.normalRange(target.armor[0], target.armor[1]),
 				Random.normalRange(target.armor[0], target.armor[1]));
 			if (target.isHero) {
-				const dealt = this.absorbHeroDamage(damage, false, false, { skipEarthroot: true, skipHolyWard: true });
-				target.hp -= dealt;
-				this.showDamage(target, dealt);
+				//`Skeleton.die()` -> `Char.damage()`: the shared dispatch hero branch with the Earthroot/HolyWard
+				//folding already done above (`heroAbsorb`); `deferKill` keeps the `heroKilled` tail below.
+				this.applyCharacterDamage(target, damage, { pierceArmor: true, cause: 'foe', skipAura: true, deferKill: true, heroAbsorb: { skipEarthroot: true, skipHolyWard: true } });
 				if (target.hp <= 0) {
 					this.kill(target, 'foe');
 					heroKilled = true;
@@ -978,11 +978,11 @@ export const deathSaveRefreshMethods = {
 				//hero validates the enemy-magic death badge in Java; this port's death
 				//causes have no magic bucket (electric kills already land in `foe`), so
 				//both land there too - stated, not silent.
-				let dealt = Random.normalRange(10, 20);
-				if (target.isHero) dealt = this.absorbHeroDamage(dealt, true);
-				else dealt = doomDamage(dealt, target);
-				target.hp -= dealt;
-				this.showDamage(target, dealt);
+				//`Char.damage()` through the shared dispatch (magical hero absorb, mob Doom/curves/shields, floater);
+				//`deferKill` keeps the tail `kill` below. The log shows the HP actually lost.
+				const hpBefore = target.hp;
+				this.applyCharacterDamage(target, Random.normalRange(10, 20), { pierceArmor: true, cause: 'foe', skipAura: true, magical: true, deferKill: true });
+				const dealt = hpBefore - target.hp;
 				if (type === 'bright') addBuff(target, 'daze');
 				this.say(t('port.log.bolthits', { who: capitalize(fist.name), damage: dealt }), 'negative');
 				if (target.hp <= 0) this.kill(target);
