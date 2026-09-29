@@ -5926,6 +5926,17 @@ const { wanderBlocked, isPatrolTargetValid, randomPatrolDestination } = require(
 	assert.equal(examineTileOutcome({ ...examineBase, cityName: 'c.d', cityDesc: 'c.e' }).text, 'c.d. c.e', 'city ground visuals compose name and desc');
 	assert.equal(examineTileOutcome({ ...examineBase, cityDesc: '' }).text, 'levels.level.floor_name', 'the empty-desc suppression says the floor name');
 	assert.equal(examineTileOutcome({ ...examineBase, cityName: undefined, cityDesc: 'c.e' }).text, 'levels.level.floor_name', 'an undescribed city cell without suppression falls through to the coarse kind');
+	const { useSpellbook } = require('./items/artifactActions.js');
+	const spellbook = { id: 'spellbook', instanceId: 'sb1', quantity: 1, charge: 2, level: 0 };
+	const spellbookCalls = [];
+	useSpellbook({
+		bag: { items: [spellbook], find: (id, instanceId) => id === 'spellbook' && instanceId === 'sb1' ? spellbook : undefined },
+		hero: { buffs: { blindness: 4 } },
+		say: (line, level) => spellbookCalls.push({ line, level }),
+		castScrollEffect: () => { spellbookCalls.push('cast'); return true; },
+	}, 'sb1');
+	assert.equal(spellbook.charge, 2, 'a blinded hero cannot spend a Spellbook read charge');
+	assert.deepEqual(spellbookCalls, [{ line: 'items.artifacts.unstablespellbook.blinded', level: 'negative' }], 'the Java blinded refusal is shown without casting');
 	console.log('PASS item-instance separation, enhancement transfer, upgrade policy, appearance restore, missile dust pickup, the Unstable delegate list, rings.mwl-derived ring formulas, items.mwl-derived weapon/armor tiers, Generator.java deck parity, monster/hero/buff Java parity, per-monster status immunities, the Sandals of Nature seed/charge economy, the Talisman of Foresight scry formulas, the Dried Rose ghost/petal economy, the Ring of Wealth bonus-drop counters, the generated shop shelf, and the ArtifactRecharge table, and weapon/armor/missile STR requirements, and ceremonial-candle aimed placement, and the shared food/horn meal-talent effects, and the tile-examine name/description decision');
 } finally {
 	rmSync(out, { recursive: true, force: true });

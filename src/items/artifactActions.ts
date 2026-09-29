@@ -470,13 +470,11 @@ export function spellbookChargeCap(level: number): number {
 	return Math.floor(level * mwlItemEffectValue('spellbook', 'chargeCapPerLevel')) + mwlItemEffectValue('spellbook', 'chargeCapBase');
 }
 
-/** `UnstableSpellbook.execute(AC_READ)`/`doReadEffect()` (tag `v3.3.8`): spends one charge and
- * applies a freshly drawn regular scroll's real effect through the same `applyScrollEffect` seam
- * the Arcane Catalyst already uses (`scene.castScrollEffect`). Real Java's `blinded` gate
- * (`hero.buff(Blindness.class)`) has no equivalent here - this port has no `Blindness`
- * buff/mechanic at all (see the Bandit-steal comment in `dungeonScene.ts` for the same gap
- * elsewhere), so reading is never blocked by it - **Not ported**, not silently dropped. The real
- * "empowered" branch (a `WndOptions` choice to read the drawn scroll's *exotic* counterpart once
+/** `UnstableSpellbook.execute(AC_READ)`/`doReadEffect()` (tag `v3.3.8`): a blinded hero is refused
+ * with the book's `blinded` line before charge is spent; otherwise the action spends one charge
+ * and applies a freshly drawn regular scroll's real effect through the same `applyScrollEffect`
+ * seam the Arcane Catalyst already uses (`scene.castScrollEffect`). The real "empowered" branch
+ * (a `WndOptions` choice to read the drawn scroll's *exotic* counterpart once
  * its regular class has already graduated out of the queue) is **Not ported**: this port's item
  * catalogue has no `ExoticScroll` classes at all (the same gap `randomAlchemicalPotion`/
  * `randomArcaneScroll` already document for the two catalysts), so every read always applies the
@@ -490,6 +488,10 @@ export function useSpellbook(scene: ArtifactActionContext, instanceId?: string):
 	if (!book || scene.hero.magicImmune) return;
 	const level = book.level ?? 0;
 	const charge = book.charge ?? spellbookChargeCap(level);
+	if (scene.hero.buffs['blindness'] !== undefined) {
+		scene.say(t('items.artifacts.unstablespellbook.blinded'), 'negative');
+		return;
+	}
 	if (charge <= 0) { scene.say(t('items.artifacts.unstablespellbook.no_charge'), 'negative'); return; }
 	book.charge = charge - 1;
 	const scrollId = randomSpellbookScroll();
