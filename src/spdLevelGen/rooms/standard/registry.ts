@@ -1,12 +1,14 @@
 /**
- * `StandardRoom.rooms` - the real 26-entry class-order list from `StandardRoom.java`'s static
- * initializer, used by `regularLevel.ts`'s `Random.chances(chances[depth])` roll to pick a
- * concrete class by index. Only the 20 indices reachable in Sewers depths 1-4, Prison depths
- * 6-9, and Caves depths 11-14 (per PORT_COVERAGE.md's census) map to a real `StandardRoomKind`;
- * the rest are `undefined` - they
- * can never be selected there (a zero-weight `Random.chances` index is never returned - see
- * `regularLevel.ts`'s STANDARD_ROOM_CHANCES comment), so `initRooms()` throws defensively if one
- * ever is (table/registry mismatch, not a real Java code path for this port's scope).
+ * Standard room class order for the `standardRoomChances()` roll: this port's
+ * 26-entry MWL order, adapted from `StandardRoom.java`'s 35-entry static initializer.
+ * The 9 classes this port never rolls (WaterBridge, the three RegionDeco rooms,
+ * ChasmBridge, CircleWall, LibraryHall, LibraryRing, rolled Ritual) have no column;
+ * see R097. Only the 20 indices reachable in Sewers depths 1-4, Prison depths 6-9,
+ * and Caves depths 11-14 (per PORT_COVERAGE.md's census) map to a real
+ * `StandardRoomKind`; the rest are `undefined` - they can never be selected there
+ * (a zero-weight `Random.chances` index is never returned - see `regularLevel.ts`'s
+ * STANDARD_ROOM_CHANCES comment), so `initRooms()` throws defensively if one ever
+ * is (table/registry mismatch, not a real Java code path for this port's scope).
  */
 import type { StandardRoomKind } from '../../room';
 import { PaintLevel } from '../../paintLevel';

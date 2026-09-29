@@ -31,7 +31,7 @@ export function verifyArmorAbilities(require, check) {
 	//`HeroClass.armorAbilities()`, in its own order.
 	check('every class offers its three real armor abilities, in Java order', () => {
 		assert.deepEqual(ARMOR_ABILITIES.warrior, ['heroicleap', 'shockwave', 'endure']);
-		assert.deepEqual(ARMOR_ABILITIES.mage, ['elementalblast', 'warpbeacon', 'wildmagic']);
+		assert.deepEqual(ARMOR_ABILITIES.mage, ['elementalblast', 'wildmagic', 'warpbeacon']);
 		assert.deepEqual(ARMOR_ABILITIES.rogue, ['smokebomb', 'deathmark', 'shadowclone']);
 		assert.deepEqual(ARMOR_ABILITIES.huntress, ['spectralblades', 'naturespower', 'spirithawk']);
 		assert.deepEqual(ARMOR_ABILITIES.duelist, ['challenge', 'elementalstrike', 'feint']);
@@ -166,7 +166,7 @@ export function verifyArmorAbilities(require, check) {
 		assert.deepEqual(armorAbilitiesFor('warrior'), ['heroicleap', 'shockwave', 'endure']);
 		assert.deepEqual(armorAbilitiesFor('rogue'), ['smokebomb', 'deathmark', 'shadowclone']);
 		assert.deepEqual(armorAbilitiesFor('huntress'), ['spectralblades', 'naturespower', 'spirithawk']);
-		assert.deepEqual(armorAbilitiesFor('mage'), ['elementalblast', 'warpbeacon', 'wildmagic']);
+		assert.deepEqual(armorAbilitiesFor('mage'), ['elementalblast', 'wildmagic', 'warpbeacon']);
 		assert.deepEqual(armorAbilitiesFor('cleric'), ['ascendedform', 'trinity', 'powerofmany']);
 	check('ElementalBlast erupts the imbued class down the roomiest cardinal', () => {
 		//`ElementalBlast.activate()` (tag `v3.3.8`): the scene half is Pixi-bound, so

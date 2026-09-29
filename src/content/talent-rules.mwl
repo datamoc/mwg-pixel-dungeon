@@ -127,14 +127,9 @@
             targeting: "none",
             talents: "blast_radius,elemental_power,reactive_barrier",
           },
-          {
-            tag: "row",
-            id: "warpbeacon",
-            class: "mage",
-            charge: 35,
-            targeting: "beacon",
-            talents: "telefrag,remote_beacon,longrange_warp",
-          },
+          //`HeroClass.armorAbilities()` (tag v3.3.8, HeroClass.java:284) orders the
+          //mage abilities ElementalBlast, WildMagic, WarpBeacon; WildMagic sits
+          //second here for the same reason.
           {
             tag: "row",
             id: "wildmagic",
@@ -142,6 +137,14 @@
             charge: 25,
             targeting: "cell",
             talents: "wild_power,fire_everything,conserved_magic",
+          },
+          {
+            tag: "row",
+            id: "warpbeacon",
+            class: "mage",
+            charge: 35,
+            targeting: "beacon",
+            talents: "telefrag,remote_beacon,longrange_warp",
           },
           {
             tag: "row",

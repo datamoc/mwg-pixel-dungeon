@@ -24,11 +24,18 @@
  * Run with `npm run parity:levelgen -- --java-dump <path>` (defaults to the harness
  * task's output next to the Java checkout when `--spd-root` points at it). Regenerate
  * the Java side with `:desktop:runHarness` in the SPD checkout first.
+ *
+ * `checkConnectionRooms()` below runs on every invocation, with or without a dump:
+ * R095 regression pins for the depths-11+ connection-room bands the walk never covers.
+ * Without `--java-dump` the tool runs just those self-checks and exits 0 (so the
+ * `test:parity` gate needs no Java side); with a dump it continues into the walk.
  */
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { portedFloor, primeRunState, resetPortedRun } from '../src/spdLevelGen/gameBridge';
-import { setTraceDrawLog, setTraceStackWindow, traceStacks } from '../src/spdRng';
+import { setTraceDrawLog, setTraceStackWindow, traceStacks, SpdRandom } from '../src/spdRng';
+import { MWL_TABLE_ROWS } from '../src/mwlContent';
+import { createConnectionRoom } from '../src/spdLevelGen/connectionRoom';
 
 interface JavaBlock {
 	seed: string;
@@ -79,11 +86,93 @@ const CHAR_BY_TERRAIN: Record<number, string> = {
 
 const FEELING_NAMES = ['CHASM', 'WATER', 'GRASS', 'DARK', 'LARGE', 'TRAPS', 'SECRETS'];
 
+/**
+ * R095 regression pins for `ConnectionRoom.createRoom()`'s class-selection table
+ * (`ConnectionRoom.chances[]`, tag `v3.3.8`). The MWL table once stopped at depth 10,
+ * so Caves/City/Halls rolled Sewers odds; the differential walk above covers depths 1-9
+ * only, leaving the deeper bands with no check at all. These invariants need no Java
+ * side and run on every invocation below: exact anchor data, plus zero-weight absence
+ * over 300 seeded rolls per depth. A zero-weight class can never be picked by the
+ * cumulative-sum roll, so every absence is deterministic, not statistical - and the
+ * single-class rows (depths 5, 21) must yield tunnel every time. Band literals are
+ * Java's own rows, checked against `ConnectionRoom.java`, not derived from this port's
+ * lookup: 1-4 forbid perimeter, 6-10 allow only perimeter/walkway, 11-15 forbid bridge
+ * and perimeter, 16-20 forbid tunnel and bridge, 22-26 forbid perimeter.
+ */
+const CONNECTION_ANCHORS: Record<number, number[]> = {
+	1: [20, 1, 0, 2, 2, 1], 2: [20, 1, 0, 2, 2, 1], 3: [20, 1, 0, 2, 2, 1],
+	4: [20, 1, 0, 2, 2, 1], 5: [20, 0, 0, 0, 0, 0],
+	6: [0, 0, 22, 3, 0, 0], 7: [0, 0, 22, 3, 0, 0], 8: [0, 0, 22, 3, 0, 0],
+	9: [0, 0, 22, 3, 0, 0], 10: [0, 0, 22, 3, 0, 0],
+	11: [12, 0, 0, 5, 5, 3], 16: [0, 0, 18, 3, 3, 1],
+	21: [20, 0, 0, 0, 0, 0], 22: [15, 4, 0, 2, 3, 2],
+};
+// Depths with only one possible class: every roll must yield it.
+const SINGLE_CLASS_DEPTHS: Record<number, string> = { 5: 'tunnel', 21: 'tunnel' };
+// Depths with forbidden classes: no roll may yield one. Literals, see above.
+const FORBIDDEN_BY_DEPTH: Record<number, string[]> = {
+	1: ['perimeter'], 2: ['perimeter'], 3: ['perimeter'], 4: ['perimeter'],
+	6: ['tunnel', 'bridge', 'ringTunnel', 'ringBridge'],
+	7: ['tunnel', 'bridge', 'ringTunnel', 'ringBridge'],
+	8: ['tunnel', 'bridge', 'ringTunnel', 'ringBridge'],
+	9: ['tunnel', 'bridge', 'ringTunnel', 'ringBridge'],
+	10: ['tunnel', 'bridge', 'ringTunnel', 'ringBridge'],
+	11: ['bridge', 'perimeter'], 12: ['bridge', 'perimeter'], 13: ['bridge', 'perimeter'],
+	14: ['bridge', 'perimeter'], 15: ['bridge', 'perimeter'],
+	16: ['tunnel', 'bridge'], 17: ['tunnel', 'bridge'], 18: ['tunnel', 'bridge'],
+	19: ['tunnel', 'bridge'], 20: ['tunnel', 'bridge'],
+	22: ['perimeter'], 23: ['perimeter'], 24: ['perimeter'],
+	25: ['perimeter'], 26: ['perimeter'],
+};
+const ROLLS_PER_DEPTH = 300;
+
+function checkConnectionRooms(): string[] {
+	const failures: string[] = [];
+	const toNums = (v: unknown): number[] => Array.isArray(v) ? v.map(Number) : String(v).split(',').map(Number);
+	const rows = MWL_TABLE_ROWS('connectionRoomChanceRows', 'depth');
+	if (rows.length !== Object.keys(CONNECTION_ANCHORS).length) {
+		failures.push(`connectionRoomChanceRows has ${rows.length} rows, expected ${Object.keys(CONNECTION_ANCHORS).length}`);
+	}
+	for (const row of rows) {
+		const depth = Number(row.depth);
+		const want = CONNECTION_ANCHORS[depth];
+		const got = toNums(row.chances);
+		if (!want || got.length !== want.length || !got.every((w, i) => w === want[i])) {
+			failures.push(`depth ${depth}: chances ${JSON.stringify(got)}, want ${JSON.stringify(want)}`);
+		}
+	}
+	SpdRandom.pushGenerator(0xc011ec7n);
+	try {
+		for (let depth = 1; depth <= 26; depth++) {
+			const seen = new Set<string>();
+			for (let i = 0; i < ROLLS_PER_DEPTH; i++) {
+				seen.add(createConnectionRoom(depth, false).connectionKind ?? 'none');
+			}
+			const only = SINGLE_CLASS_DEPTHS[depth];
+			if (only && (seen.size !== 1 || !seen.has(only))) {
+				failures.push(`depth ${depth}: rolled ${[...seen].join(',')}, want only ${only}`);
+			}
+			for (const kind of FORBIDDEN_BY_DEPTH[depth] ?? []) {
+				if (seen.has(kind)) failures.push(`depth ${depth}: rolled forbidden ${kind}`);
+			}
+		}
+	} finally {
+		SpdRandom.popGenerator();
+	}
+	return failures;
+}
+
 function main(): void {
+	const roomFailures = checkConnectionRooms();
+	if (roomFailures.length > 0) {
+		for (const failure of roomFailures) console.error(`connectionRooms: ${failure}`);
+		process.exit(1);
+	}
+	console.log(`connectionRooms: ${Object.keys(CONNECTION_ANCHORS).length + 26} checks passed`);
 	const dumpArg = process.argv.indexOf('--java-dump');
 	if (dumpArg < 0 || !process.argv[dumpArg + 1] || process.argv[dumpArg + 1]!.startsWith('--')) {
-		console.error('usage: levelgenParity --java-dump <levelgen_java_dump.txt>');
-		process.exit(2);
+		console.log('no --java-dump given: self-checks only, differential walk skipped');
+		return;
 	}
 	const java = parseJavaDump(readFileSync(process.argv[dumpArg + 1]!, 'utf8'));
 	const writeArg = process.argv.indexOf('--write-ts');

@@ -172,11 +172,14 @@ export const deathSaveRefreshMethods = {
 			return;
 		}
 		//`PrismaticImage.die()`'s non-chasm branch as a backstop for every lethal seam
-		//that funnels through here (blasts, traps, abilities, DoTs): a fading-capable
+		//that funnels through here (blasts, traps, abilities, DoTs, wand zaps): a fading-capable
 		//image at 0 HP starts its 5-turn fade instead of dying. The hit's own damage
-		//number was already shown by the calling seam; `attack()` and the zap loop
-		//intercept earlier with the floater because their post-kill flow assumes the
-		//target is gone (XP/loot) or never kills allies at all. Chasm deaths bypass:
+		//number was already shown by the calling seam; `attack()` still intercepts
+		//earlier with the floater because its post-kill flow assumes the target is gone
+		//(XP/loot), while the wand-zap loop - which used to intercept for the same
+		//reasons plus its never-kill-allies guard - now routes through
+		//`applyCharacterDamage` like every other direct seam and relies on this
+		//backstop. Chasm deaths bypass:
 		//no mob-chasm kill path exists in this port (chasms only move the hero down),
 		//so any future one must tear the actor down directly (`destroyAlly`), exactly
 		//like Java's `cause == Chasm.class` carve-out.
