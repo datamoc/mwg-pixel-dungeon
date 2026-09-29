@@ -81,12 +81,13 @@ B9's coord tasks are T159 (residuals, re-filed after T18-T21 were cancelled as d
 ## B8. Analysis matrices for the remaining families
 
 - [ ] Continue producing the section 22A/22B analysis matrix for the remaining monster/item/buff families before migrating
-  each one's code, per SPD-ADR-010. 47 matrices exist (monsters and the named item families are covered).
+  each one's code, per SPD-ADR-010. 55 matrices now exist (all inventoried families below are covered; see the T62 progress note).
+  - **Progress 2026-09-29, remaining families all matrixed (T62):** `garbage/MONSTER_ANALYSIS_TALENT_RULES.md` (`Talent.java`, all 160 enum entries vs the offered/hooked port ids), `garbage/MONSTER_ANALYSIS_CLASSES.md` (hero kits), `garbage/MONSTER_ANALYSIS_SPELLS_ALCHEMICAL.md` (all 14 `items/spells/*.java`, no port CAST path), `garbage/MONSTER_ANALYSIS_LEVELGEN_ROOMS_GENERATOR.md` plus `garbage/MONSTER_ANALYSIS_DUNGEON_ROSTERS.md` (room/level generation), `garbage/MONSTER_ANALYSIS_BUFF_RULES_NON_DOT.md`, and `garbage/MONSTER_ANALYSIS_ARTIFACTS_TWO.md`. New findings from these matrices belong in `ROADMAP.md` as R items for their holders; the box itself is ready for the T62 owner to close (move to `CLOSED.md`).
   - **Progress 2026-09-29, forty-sixth and forty-seventh matrices:** `garbage/MONSTER_ANALYSIS_ALCHEMY_RECIPES.md` (55 rows: 20 match, 8 differ, 27 missing; the
     Alchemist's Toolkit helpers have no caller, the identified-ingredient gate is absent, `SeedToPotion`'s random branch is uniform, and v3.3.8 ships
     `ElixirOfFeatherFall`, not a spell) and `garbage/MONSTER_ANALYSIS_CHALLENGES_MODES.md` (108 rows: 73 match, 8 differ, 21 missing, 6 unverified; no way to
     enable a challenge, Barren land/Into darkness only partly done, no score multiplier or CHAMPION badges) - findings registered as `ROADMAP.md` R076-R094.
-    Still to do: `talent-rules`, `classes`, room/level generation, the non-DoT `buff-rules`, a second artifacts matrix and the generic Spell results.
+    Still to do: nothing from that list - all of it is matrixed (see the T62 note above); left are the residuals paragraph below and any new R items the latest matrices yield.
   - **Progress 2026-09-26, forty-fifth matrix:** `garbage/MONSTER_ANALYSIS_MOB_LOOT.md` walks all 31 `monsterLoot` rows
     plus the seven drops the port keeps outside the table against tag `v3.3.8`'s `loot`/`lootChance` fields and
     `createLoot()` overrides: every chance matches Java's literal, and the two rows that do not reproduce Java's
