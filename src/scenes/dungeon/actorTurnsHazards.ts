@@ -607,10 +607,12 @@ export const actorTurnsHazardsMethods = {
 			findTeleportCell: () => this.randomFreeCell(this.hero),
 			cancelTravel: () => { this.travelTarget = null; },
 			returnToPreviousFloor: () => {
-				//Dungeon.interfloorTeleportAllowed (Dungeon.java, tag v3.3.8):
-				//locked/boss floors, the mining branch and a carried Amulet refuse the
-				//return; the Warden then takes Fadeleaf's ordinary teleport branch.
-				if (this.depth <= 1 || this.depth in BOSSES || this.miningBranchActive || this.bag.find('amulet')) return false;
+				//Dungeon.interfloorTeleportAllowed (Dungeon.java 433-438, tag v3.3.8): a *locked* level
+				//(`Level.locked`, i.e. a live boss seal - `floorLocked()`) or a carried Amulet refuses the
+				//return, not merely being on a boss depth: before the fight starts and after the boss is
+				//dead the floor is free (R047). The mining branch is this port's own extra refusal.
+				//The Warden then takes Fadeleaf's ordinary teleport branch.
+				if (this.depth <= 1 || this.floorLocked() || this.miningBranchActive || this.bag.find('amulet')) return false;
 				this.disarmTimeBubblePresses();
 				this.depth = Math.max(1, this.depth - 1);
 				//Java returnPos = -2 means the target floor's regular exit, not the
