@@ -8,7 +8,7 @@ import { PORT_MINE_STRINGS } from './portMineStrings';
  * quests it simplified, its own hints, and the handful of names SPD's message files in this
  * checkout do not carry.
  *
- * English and French are human-written. Every other catalogue here is a machine translation,
+ * English and French are human-written, as are the Spanish badge descriptions (marked below). Every other catalogue here is a machine translation,
  * explicitly marked `MT` below and in `PORT_TRANSLATION_ORIGIN`: each is a complete first draft,
  * not native-speaker work. `PORT_STRINGS` at the foot of this file is the authoritative list of
  * which languages have one - an SPD language missing from it still falls back to English for
@@ -2143,6 +2143,40 @@ export const PORT_STRINGS_DE: Record<string, string> = {
  */
 
 export const PORT_STRINGS_ES: Record<string, string> = {
+	// HUMAN: Spanish badge descriptions, hand-written 2026-09-29. Game terms follow
+	// SPD's own ES catalogue (Goo/Tengu/DM-300/Yog-Dzewa kept, "Rey de los Enanos",
+	// "Amuleto de Yendor", "pergamino de mejora", "ataques sorpresa", "armas
+	// arrojadizas", and SPD's bag names). The rest of this catalogue is MT.
+	'port.badges.boss1.description': 'Derrotar a Goo',
+	'port.badges.boss2.description': 'Derrotar a Tengu',
+	'port.badges.boss3.description': 'Derrotar a DM-300',
+	'port.badges.boss4.description': 'Derrotar al Rey de los Enanos',
+	'port.badges.victory.description': 'Escapar con el Amuleto',
+	'port.badges.boss_challenge_1.description': 'Derrotar a Goo solo con armas',
+	'port.badges.boss_challenge_2.description': 'Derrotar a Tengu solo con armas',
+	'port.badges.boss_challenge_3.description': 'Derrotar a DM-300 solo con armas',
+	'port.badges.boss_challenge_4.description': 'Derrotar al Rey de los Enanos solo con armas',
+	'port.badges.boss_challenge_5.description': 'Derrotar a Yog-Dzewa solo con armas',
+	'port.badges.enemy_hazards.description': '10 bajas con ayuda de peligros',
+	'port.badges.piranhas.description': 'Derrotar a 6 pirañas',
+	'port.badges.bag_velvet.description': 'Poseer la bolsa de terciopelo',
+	'port.badges.bag_holder.description': 'Poseer el contenedor de pergaminos',
+	'port.badges.bag_bandolier.description': 'Poseer la bandolera de pociones',
+	'port.badges.bag_holster.description': 'Poseer el contenedor mágico',
+	'port.badges.bags_all.description': 'Poseer las cuatro bolsas',
+	'port.badges.unlock_mage.description': 'Usar un pergamino de mejora',
+	'port.badges.unlock_rogue.description': 'Realizar 10 ataques sorpresa',
+	'port.badges.unlock_huntress.description': 'Realizar 10 ataques con armas arrojadizas',
+	'port.badges.unlock_duelist.description': 'Mejorar un arma a +2',
+	'port.badges.death_trap.description': 'Morir por una trampa',
+	'port.badges.death_fire.description': 'Morir en el fuego',
+	'port.badges.death_poison.description': 'Morir envenenado',
+	'port.badges.death_hunger.description': 'Morir de hambre',
+	'port.badges.death_falling.description': 'Morir por una caída',
+	'port.badges.death_foe.description': 'Morir a manos de un enemigo',
+	'port.badges.happy_end.description': 'Subir a la superficie con el Amuleto de Yendor',
+	'port.badges.happy_end_remains.description': 'Subir a la superficie con el objeto distintivo de un héroe caído',
+	'port.badges.pacifist_ascent.description': 'Subir a la superficie con el Amuleto de Yendor sin reducir nunca la severidad de su maldición',
 	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
 	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
 	// markers are carried as `{0}`, the token `buffInfo()` fills.
