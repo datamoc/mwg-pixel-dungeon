@@ -29,7 +29,7 @@ import { Terrain } from '../../spdLevelGen/paintLevel';
 import { foregroundGrassFrame } from '../../spdLevelGen/visualWalls';
 import { Feeling } from '../../spdLevelGen/regularPainter';
 import { runState } from '../../runState';
-import { isChallengeEnabled, isItemBlocked } from '../../challenges';
+import { challenges, isChallengeEnabled, isItemBlocked } from '../../challenges';
 import { CLASSES } from '../../classes';
 import { showChoiceWindow, showConfirmWindow, showInfoWindow } from '../../ui/portWindows';
 import { confirmBlacksmithCashout, confirmBlacksmithSmith, openBlacksmithWindow, type BlacksmithWindowContext } from '../../ui/blacksmithWindow';
@@ -1812,7 +1812,12 @@ export const npcShopBlacksmithMethods = {
 				//already enforced that half). The real win only fires at the depth-1 surface exit
 				//(`SewerLevel.activateTransition`'s `LevelTransition.Type.SURFACE` branch) - see
 				//`tryAscendStairs`. PORT_COVERAGE.md: "Post-victory ascent".
-				this.awardBadge('amulet'); this.say(t('scenes.amuletscene.text'), 'positive');
+				this.awardBadge('amulet');
+				//`Badges.validateChampion(Challenges.activeChallenges())` (Badges.java 1150-1169, tag `v3.3.8`), called from
+				//the same `Amulet.showAmuletScene` afterCreate as `validateVictory`: 1/3/6+ active challenges unlock
+				//CHAMPION_1/2/3, each tier also unlocking the lower ones. No-op with no challenge active.
+				{ const active = challenges().size; for (const [n, need] of [[1, 1], [2, 3], [3, 6]] as const) if (active >= need) this.awardBadge(`champion_${n}`); }
+				this.say(t('scenes.amuletscene.text'), 'positive');
 				return true;
 			},
 			pickupRing: () => {

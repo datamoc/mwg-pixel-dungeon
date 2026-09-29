@@ -7869,6 +7869,57 @@ export const gameData = {
 								"column": 13
 							},
 							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "champion_1",
+								"counter": "champion_1",
+								"target": "1",
+								"description": "Beat the game with 1 or more challenges enabled",
+								"icon": "111"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+								"line": 252,
+								"column": 13
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "champion_2",
+								"counter": "champion_2",
+								"target": "1",
+								"description": "Beat the game with 3 or more challenges enabled",
+								"icon": "126"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+								"line": 260,
+								"column": 13
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "champion_3",
+								"counter": "champion_3",
+								"target": "1",
+								"description": "Beat the game with 6 or more challenges enabled",
+								"icon": "127"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+								"line": 268,
+								"column": 13
+							},
+							"gettext": []
 						}
 					],
 					"location": {

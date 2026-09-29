@@ -19,6 +19,9 @@ export const BADGE_DEFS: { id: string; counter: string; target: number; descript
 
 /** `Badges` stores the English source description; the badge window resolves its display text by this key. */
 export function badgeDescriptionKey(id: string): string {
+	//`CHAMPION_1..3` are real SPD badges with real, already-translated text (`misc.properties`'
+	//`badges$badge.champion_N.desc`), so they borrow SPD's key instead of a port-authored one.
+	if (id.startsWith('champion_')) return `badges$badge.${id}.desc`;
 	return `port.badges.${id}.description`;
 }
 
