@@ -1686,7 +1686,7 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		const blasts = readFileSync(new URL('../src/scenes/dungeon/panelsSingleUse.ts', import.meta.url), 'utf8');
 		const environment = readFileSync(new URL('../src/scenes/dungeon/environmentFireTraps.ts', import.meta.url), 'utf8');
 		assert.ok(blasts.includes("const phantomDirect = c.kind === 'phantomPiranha'"), 'blast seams halve direct phantom damage');
-		assert.ok(environment.includes("const phantomDirect = target.kind === 'phantomPiranha'"), 'environment seams halve direct phantom damage');
+		assert.ok(environment.includes('this.applyCharacterDamage(target, damage, {'), 'environment seams reach the shared dispatch, where direct phantom damage is halved');
 	});
 	check('HolyWard gates beneficial armor glyphs and refreshes derived state', () => {
 		const scene = readSceneSource();

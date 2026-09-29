@@ -331,8 +331,14 @@ export function verifyArmorAbilities(require, check) {
 		assert.match(allyTurns, /if \(returningFast\) this\.pendingMonsterTurnCost = 0\.5;/,
 			'the twice-speed return advances the scheduler at half the normal turn cost');
 		const traps = readFileSync(new URL('../src/scenes/dungeon/environmentFireTraps.ts', import.meta.url), 'utf8');
-		assert.ok(traps.includes('absorbCreatureShields(target, damage, this.ascendedTurns > 0)'), 'blob and trap damage drains ally shields');
-		assert.ok(traps.includes('absorbCreatureShields(monster, doomDamage(damage, monster), this.ascendedTurns > 0)'), 'mob-triggered traps apply Doom before draining ally shields');
+		const dispatch = readFileSync(new URL('../src/scenes/dungeon/panelsSingleUse.ts', import.meta.url), 'utf8');
+		//Since T63 every environmental tail - blob, trap blast and the mob trap
+		//branches - reaches these two steps through the shared `applyCharacterDamage`
+		//dispatch instead of hand-rolling them.
+		assert.ok(traps.includes('this.applyCharacterDamage(target, damage, {'), 'blob and trap damage routes through the shared dispatch');
+		assert.ok(dispatch.includes('damage = absorbCreatureShields(c, damage, this.ascendedTurns > 0);'), 'blob and trap damage drains ally shields at the dispatch');
+		assert.ok(dispatch.indexOf('damage = doomDamage(damage, c);') < dispatch.indexOf('damage = absorbCreatureShields(c, damage, this.ascendedTurns > 0);'), 'Doom applies before the shield drain');
+		assert.ok(!traps.includes('doomDamage('), 'no hand-rolled Doom roll is left in the traps file; the mob tails leave it to the dispatch');
 	});
 		assert.deepEqual(armorAbilitiesFor('duelist'), ['challenge', 'elementalstrike', 'feint']);
 		assert.equal(ARMOR_CHARGE_MAX, 100);

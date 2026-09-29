@@ -81,10 +81,13 @@ for (const [file, hook] of [
 	['../src/scenes/dungeon/deathSaveRefresh.ts', 'this.lockedFloorBossDamage(king, chip, 0);'],
 	['../src/scenes/dungeon/turnLoopAiming.ts', 'for (; this.regeneration.lockCarry >= 1; this.regeneration.lockCarry--)'],
 ]) assert.ok(read(file).includes(hook), `lock hook wired in ${file}: ${hook.slice(0, 40)}`);
-//The blob seam now routes through the shared `applyCharacterDamage` dispatch (which
-//feeds the lock at panelsSingleUse.ts, pinned above), so environmentFireTraps keeps
-//only the trap-blast seam's own hand-rolled copy of this line.
-assert.equal((read('../src/scenes/dungeon/environmentFireTraps.ts').match(/target\.hp -= damage; this\.lockedFloorBossDamage\(target, damage, preHp - target\.hp\);/g) ?? []).length, 1, 'trap-blast seam feeds the lock; the blob seam does it via the dispatch');
+//Since T63 every environmental seam - blob, trap blast and the four mob trap
+//branches - routes through the shared `applyCharacterDamage` dispatch (which feeds
+//the lock at panelsSingleUse.ts, pinned above), so the traps file hand-rolls no
+//non-hero HP write at all: what remains is only the hero halves.
+const remainingTrapWrites = read('../src/scenes/dungeon/environmentFireTraps.ts').match(/.*\.hp -= .*/g) ?? [];
+assert.ok(remainingTrapWrites.length > 0 && remainingTrapWrites.every((line) => line.includes('this.hero.hp')),
+	`every remaining direct HP write in the traps file is a hero half, not a mob tail: ${remainingTrapWrites.join(' | ')}`);
 
 //`items/artifactPassiveRecharge.ts` against chainsRecharge/beaconRecharge/hourglassRecharge.act(),
 //with `mwlItemEffectValue` answered from the authored `item-rules.mwl` rows themselves.

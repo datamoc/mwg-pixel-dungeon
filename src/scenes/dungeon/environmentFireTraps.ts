@@ -38,14 +38,13 @@ import { burnFireContents as burnFireContentsEffect } from '../../items/fireCont
 import { nearestVisibleEnemy as nearestVisibleEnemyFlow } from '../../simulation/targeting';
 import { getCurse } from '../../items/itemCurses';
 import { Cat, randomUsingDefaults, removeArtifactClass } from '../../items/generator';
-import { absorbCreatureShields } from '../../simulation/allyShields';
 import { ignoresCrystalGuardianBeckon } from '../../simulation/crystalSpire';
 import { mwlItemEffectValue } from '../../mwlContent';
 import { applySandalsNaturalismCharge, sandalsNaturalismLevel } from '../../items/sandals';
 import { regrowthMethods } from './regrowth';
 import { DOOR, DOOR_CLOSED, EMBERS, FLOOR, GRASS, HIGH_GRASS, TILE, TRAP, WALL, WATER, modeledTrapTable, sewerTrapTable, type TrapKind } from '../../dungeonConstants';
 import { regionForDepth, type Region } from '../../genericDungeon';
-import { absorbShield, addBuff, applyElementalBacklash, buffBlocked, doomDamage, electricDamageHalved, explosiveTrapBounds, grimTrapDamage, icyBuffImmune, reigniteBuff, rollDamage, setBleeding, type Creature, type GroundItem, type Step } from '../../combat';
+import { addBuff, applyElementalBacklash, buffBlocked, electricDamageHalved, explosiveTrapBounds, grimTrapDamage, icyBuffImmune, reigniteBuff, rollDamage, setBleeding, type Creature, type GroundItem, type Step } from '../../combat';
 import { applyChillFreeze } from '../../simulation/buffs';
 import { BLOB_IMMUNE_KINDS, BOSSES, FLYING_KINDS, IMMOVABLE_KINDS, INORGANIC_KINDS, MONSTERS, UNDEAD_KINDS, mobRosterForDepth, type AnyMonsterId, type MonsterId } from '../../monsters';
 import { ETERNAL_FIRE_BURN, wardTexture, type BonesShape } from './shared';
@@ -1601,13 +1600,21 @@ export const environmentFireTrapsMethods = {
 					this.showDamage(this.hero, damage);
 					if (this.hero.hp <= 0) this.say(t('levels.traps.rockfalltrap.ondeath'), 'negative');
 				} else {
-					damage = absorbCreatureShields(ch, doomDamage(damage, ch), this.ascendedTurns > 0);
-					ch.hp -= damage;
-					this.showDamage(ch, damage);
+					//Mob tail through the shared `Char.damage()` dispatch (T63): aura,
+					//Doom, defender curves, Viscosity, barriers, shield pools, hooks,
+					//wake and the `trap` death bucket live there now, with the
+					//invulnerability gates this loop never had (NPC, sheep, dormant
+					//pylon, mine cells). Java's caller already rolled `drRoll()`
+					//(`RockfallTrap.java` 103), hence `pierceArmor`; the dispatch
+					//kills at 0 HP with the same cause the tail kill used.
+					this.applyCharacterDamage(ch, damage, {
+						pierceArmor: true,
+						cause: 'trap',
+						onNonWeaponBossDamage: (boss) => this.disqualifyBossChallenge(boss),
+					});
 				}
 				//`Paralysis.DURATION` is 10 in Java; the port's table default of 3 is for its other call sites.
 				addBuff(ch, 'paralysis', 10);
-				if (!ch.isHero && ch.hp <= 0) this.kill(ch, 'trap');
 			}
 		} else if (kind === 'pitfall') {
 			//`PitfallTrap.activate()`: refuses on boss floors, past depth 25 and off the main branch;
@@ -2020,32 +2027,45 @@ export const environmentFireTrapsMethods = {
 			}
 		} else if (kind === 'poisonDart') {
 			const damage = Math.max(0, Random.normalRange(4, 8) - Random.normalRange(monster.armor[0], monster.armor[1]));
-			const dealt = absorbCreatureShields(monster, doomDamage(damage, monster), this.ascendedTurns > 0);
-			monster.hp -= dealt;
-			this.showDamage(monster, dealt);
+			//`Char.damage()` through the shared dispatch (T63): Java's caller already
+			//rolled `drRoll()` (`PoisonDartTrap.java` 137), and aura/Doom/shields/hooks
+			//plus the `trap` death bucket live there now.
+			this.applyCharacterDamage(monster, damage, {
+				pierceArmor: true,
+				cause: 'trap',
+				onNonWeaponBossDamage: (boss) => this.disqualifyBossChallenge(boss),
+			});
 			//`reigniteBuff` keeps the max-duration semantics and routes through the shared
 			//immunity gate, so INORGANIC kinds refuse the dart's poison like Java's isImmune.
 			reigniteBuff(monster, 'poison', 8 + Math.round((2 * this.depth) / 3));
 		} else if (kind === 'wornDart') {
 			//Same dart as poisonDart above, minus the poison, like Java's WornDartTrap.
 			const damage = Math.max(0, Random.normalRange(4, 8) - Random.normalRange(monster.armor[0], monster.armor[1]));
-			const dealt = absorbCreatureShields(monster, doomDamage(damage, monster), this.ascendedTurns > 0);
-			monster.hp -= dealt;
-			this.showDamage(monster, dealt);
+			//`Char.damage()` through the shared dispatch (`WornDartTrap.java` 115 rolls
+			//the `drRoll()` at the caller, hence `pierceArmor`).
+			this.applyCharacterDamage(monster, damage, {
+				pierceArmor: true,
+				cause: 'trap',
+				onNonWeaponBossDamage: (boss) => this.disqualifyBossChallenge(boss),
+			});
 		} else if (kind === 'grim') {
 			//`GrimTrap` is one of `AntiMagic.RESISTS`' listed source classes (see the hero branch
 			//above) - an AntiMagic champion caught on one takes none of its damage, though the
-			//trap still triggers and spends itself normally (`Char.damage()` only zeroes the
-			//damage itself, matching the shared tail below). This mob-side branch was missing
-			//that gate, unlike its hero-side twin.
+			//trap still triggers and spends itself normally (`Char.damage()` zeroes the damage
+			//for RESISTS-listed source classes; the shared dispatch keys on the target, never
+			//on a source class, so this port keeps that gate here at the call site).
 			//The mix is `round(HT/2 + HP/2)` with NO armor subtraction - Java's
 			//`damage()` has no DR, so the old `drRoll` cut was invented (and the old
 			//quarter-max mix with it).
 			if (!monster.magicImmune) {
 				const damage = grimTrapDamage(monster.hp, monster.maxHp);
-				const dealt = absorbCreatureShields(monster, doomDamage(damage, monster), this.ascendedTurns > 0);
-				monster.hp -= dealt;
-				this.showDamage(monster, dealt);
+				//Aura, Doom, the shield pools, the hooks and the `trap` death bucket all
+				//ride the shared dispatch; only the source-class gate above stays put.
+				this.applyCharacterDamage(monster, damage, {
+					pierceArmor: true,
+					cause: 'trap',
+					onNonWeaponBossDamage: (boss) => this.disqualifyBossChallenge(boss),
+				});
 			}
 		} else if (kind === 'shockingTrap') {
 			for (const [dx, dy] of [[0, 0], ...Roguelike.neighbourOffsets(8)] as const) {
@@ -2070,20 +2090,36 @@ export const environmentFireTrapsMethods = {
 			//fire seeding.
 			const damage = Math.max(0, Random.normalRange(...explosiveTrapBounds(this.depth))
 				- Random.normalRange(monster.armor[0], monster.armor[1]));
-			const dealt = absorbCreatureShields(monster, doomDamage(damage, monster), this.ascendedTurns > 0);
-			monster.hp -= dealt;
-			this.showDamage(monster, dealt);
+			//`Char.damage()` through the shared dispatch, in the same death bucket the
+			//old tail kill used (`fire` for `explosive`, `trap` for the rest).
+			this.applyCharacterDamage(monster, damage, {
+				pierceArmor: true,
+				cause: kind === 'explosive' ? 'fire' : 'trap',
+				onNonWeaponBossDamage: (boss) => this.disqualifyBossChallenge(boss),
+			});
 			this.applyTrapBlast(monster.x, monster.y);
 		}
 		//Every trap kind modelled for mobs is a Java `HazardAssistTracker` producer:
 		//gas/burning/explosive/shocking mark NEIGHBOURS9, StormTrap marked its distance-2
 		//flood cell-by-cell above, Grim/PoisonDart/WornDart only ever aim at one target.
+		//Deviation from Java's own order: `GrimTrap.java` 92, `PoisonDartTrap.java` 106,
+		//`WornDartTrap.java` 92, `RockfallTrap.java` 100 and `ExplosiveTrap.java` 44 all
+		//prolong the tracker BEFORE damaging, so an immediately-lethal trap kill still
+		//carries it into `die()` and counts for `ENEMY_HAZARDS`. This port marks after the
+		//branch and `markHazardMob` refuses `hp <= 0`, and T63's dispatch kills inside the
+		//damage call, so a kill landing in this same trigger is never credited (non-lethal
+		//and later kills still count; unchanged by T63 - the old order refused the same
+		//way). Open `ROADMAP.md` R075.
 		if (kind === 'grim' || kind === 'poisonDart' || kind === 'wornDart') this.markHazardMob(monster);
 		else if (kind !== 'stormTrap' && !isUnmarkedTrap(kind)) this.markHazardArea(monster.x, monster.y);
 		monster.sleeping = false;
 		//Same reusable-trap rule as the hero path: a gateway never spends itself.
 		if (kind !== 'gateway') this.spentTrapCells.add(cell);
-		if (monster.hp <= 0) this.kill(monster, kind === 'burning' || kind === 'explosive' ? 'fire' : 'trap');
+		//Every branch that can take the monster to 0 HP now kills it inside the shared
+		//dispatch, in the same bucket this tail used to pick (`fire` for explosive,
+		//`trap` for the rest) - rockfall included, whose mob loop dispatches too; the
+		//gas/burning/shocking/storm branches deal no instant damage, so nothing can
+		//leave the monster at 0 HP here.
 		if (fallAfter && this.hero.hp > 0) this.pitfallDrop();
 	},
 
@@ -2094,34 +2130,24 @@ export const environmentFireTrapsMethods = {
 		for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
 			const target = this.creatureAt(x + dx, y + dy);
 			if (!target || target.isHero || target.hp <= 0) continue;
-			if (target.kind === 'yog' && this.yogShielded(target)) continue;
-			if (target.kind === 'yogFist' && this.guardFist(target)) continue;
 			let damage = Math.max(0, Random.normalRange(...explosiveTrapBounds(this.depth)));
 			damage = Math.max(0, damage - Random.normalRange(target.armor[0], target.armor[1]));
-			damage = this.auraProtectedDamage(target, damage);
-			damage = doomDamage(damage, target);
-			//DKBarrier absorbs on every Java `Char.damage()` path, not just attacks and bomb blasts.
-			if (target.kind === 'king' && (target.kingShield ?? 0) > 0) {
-				const absorbed = absorbShield(target.kingShield ?? 0, damage);
-				target.kingShield = absorbed.shield;
-				damage = absorbed.damage;
-			}
-			damage = absorbCreatureShields(target, damage, this.ascendedTurns > 0);
-			// Java's PhantomPiranha.damage() also halves source-less trap blast damage and relocates survivors.
-			const phantomDirect = target.kind === 'phantomPiranha'; if (phantomDirect) damage = this.phantomPiranhaDamage(target, damage);
-			const preHp = target.hp;
-			target.hp -= damage; this.lockedFloorBossDamage(target, damage, preHp - target.hp);
-			if (phantomDirect && target.hp > 0) this.phantomPiranhaTeleport(target);
-			if (target.kind === 'yog' && target.hp > 0) this.yogDamageHook(target, preHp);
-			if (target.kind === 'king' && target.hp > 0 && (target.kingPhase ?? 1) === 1) {
-				const taken = Math.max(0, preHp - target.hp);
-				target.kingSummonCd = (target.kingSummonCd ?? 0) - taken / 8;
-				target.kingAbilityCd = (target.kingAbilityCd ?? 0) - taken / 8;
-			}
-			if (target.kind === 'king' && target.hp > 0) this.kingDamageHook(target);
-			this.showDamage(target, damage);
-			target.sleeping = false;
-			if (target.hp <= 0) this.kill(target, 'fire');
+			//Java rolls `dmg -= drRoll()` at the caller and then calls `ch.damage(dmg, this)`,
+			//so the armor cut stays here while the shared dispatch runs the rest of
+			//`Char.damage()` for this source-less blast: aura, Doom, defender curves,
+			//Viscosity, the DK/DM300 barriers, PhantomPiranha's halve-and-relocate, the
+			//shield pools, the Tengu/Yog/King and mine hooks, the locked-floor credit, the
+			//wake and the `fire` death bucket - plus the invulnerability gates this loop
+			//used to hand-roll (yog shield, guarded fist) beside ones it never had
+			//(spectator freeze, dormant pylon, NPC, sheep). The yog/fist refusals are
+			//`isInvulnerable()` checks inside `Char.damage()` (`YogDzewa.isInvulnerable()`,
+			//bossLogic.ts), so in Java the caller's two rolls happen first and the damage
+			//is discarded after - the same order this dispatch keeps.
+			this.applyCharacterDamage(target, damage, {
+				pierceArmor: true,
+				cause: 'fire',
+				onNonWeaponBossDamage: (boss) => this.disqualifyBossChallenge(boss),
+			});
 		}
 	},
 
