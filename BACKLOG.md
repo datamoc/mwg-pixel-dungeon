@@ -81,7 +81,12 @@ B9's coord tasks are T159 (residuals, re-filed after T18-T21 were cancelled as d
 ## B8. Analysis matrices for the remaining families
 
 - [ ] Continue producing the section 22A/22B analysis matrix for the remaining monster/item/buff families before migrating
-  each one's code, per SPD-ADR-010. 45 matrices exist (monsters and the named item families are covered).
+  each one's code, per SPD-ADR-010. 47 matrices exist (monsters and the named item families are covered).
+  - **Progress 2026-09-29, forty-sixth and forty-seventh matrices:** `garbage/MONSTER_ANALYSIS_ALCHEMY_RECIPES.md` (55 rows: 20 match, 8 differ, 27 missing; the
+    Alchemist's Toolkit helpers have no caller, the identified-ingredient gate is absent, `SeedToPotion`'s random branch is uniform, and v3.3.8 ships
+    `ElixirOfFeatherFall`, not a spell) and `garbage/MONSTER_ANALYSIS_CHALLENGES_MODES.md` (108 rows: 73 match, 8 differ, 21 missing, 6 unverified; no way to
+    enable a challenge, Barren land/Into darkness only partly done, no score multiplier or CHAMPION badges) - findings registered as `ROADMAP.md` R076-R094.
+    Still to do: `talent-rules`, `classes`, room/level generation, the non-DoT `buff-rules`, a second artifacts matrix and the generic Spell results.
   - **Progress 2026-09-26, forty-fifth matrix:** `garbage/MONSTER_ANALYSIS_MOB_LOOT.md` walks all 31 `monsterLoot` rows
     plus the seven drops the port keeps outside the table against tag `v3.3.8`'s `loot`/`lootChance` fields and
     `createLoot()` overrides: every chance matches Java's literal, and the two rows that do not reproduce Java's
