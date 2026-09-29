@@ -1194,9 +1194,10 @@ export const turnLoopAimingMethods = {
 			if ((hit.isHero || hit.isAlly) && (attacker.isHero || attacker.isAlly)) continue;
 			//`Char.Property.ELECTRIC` (`Char.java`, tag `v3.3.8`): the arc's source class
 			//is `Shocking`, so every holder takes the `Math.round` half of the chain hit.
-			const rawDealt = electricDamageHalved(hit.kind, hit.elementalType, hit.yogFistType) ? Math.round(arcDamage / 2) : arcDamage;
+			//(the shared dispatch's `sourceElement: 'electric'` now carries the `resist(srcClass)` halving)
+			const rawDealt = arcDamage;
 			//`Char.damage()` seam: hero magical absorb, or Doom, defender overrides, shields, hooks, wake and death.
-			this.applyCharacterDamage(hit, rawDealt, { pierceArmor: true, cause: 'foe', skipAura: true, magical: true });
+			this.applyCharacterDamage(hit, rawDealt, { pierceArmor: true, cause: 'foe', skipAura: true, magical: true, sourceElement: 'electric' });
 		}
 	},
 

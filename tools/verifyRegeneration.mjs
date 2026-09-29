@@ -76,7 +76,7 @@ for (const [file, hook] of [
 	['../src/items/bombEffects.ts', 'context.onBossDamageTaken?.(target, damage, previousHp - target.hp);'],
 	['../src/scenes/dungeon/bosses/bossLogic.ts', 'onWaterHeal: (healInc) => this.lockedFloorGooHeal(healInc),'],
 	['../src/scenes/dungeon/bosses/bossLogic.ts', "const dmgTaken = Math.max(0, preHp - yog.hp);\n\t\tthis.creditLockedFloor('yog', dmgTaken, dmgTaken);"],
-	['../src/scenes/dungeon/bosses/bossLogic.ts', 'this.lockedFloorBossDamage(monster, dealt, dealt);'],
+	['../src/scenes/dungeon/bosses/bossLogic.ts', "this.applyCharacterDamage(monster, tick, { pierceArmor: true, cause: 'foe', skipAura: true, deferKill: true });"],
 	['../src/scenes/dungeon/monsters/monsterAi.ts', "this.creditLockedFloor('tengu', preHp - tengu.hp, preHp - tengu.hp);\n\t\tif ((tengu.tenguPhase"],
 	['../src/scenes/dungeon/deathSaveRefresh.ts', 'this.lockedFloorBossDamage(king, chip, 0);'],
 	['../src/scenes/dungeon/turnLoopAiming.ts', 'for (; this.regeneration.lockCarry >= 1; this.regeneration.lockCarry--)'],
@@ -86,8 +86,8 @@ for (const [file, hook] of [
 //the lock at panelsSingleUse.ts, pinned above), so the traps file hand-rolls no
 //non-hero HP write at all: what remains is only the hero halves.
 const remainingTrapWrites = read('../src/scenes/dungeon/environmentFireTraps.ts').match(/.*\.hp -= .*/g) ?? [];
-assert.ok(remainingTrapWrites.length > 0 && remainingTrapWrites.every((line) => line.includes('this.hero.hp')),
-	`every remaining direct HP write in the traps file is a hero half, not a mob tail: ${remainingTrapWrites.join(' | ')}`);
+assert.ok(remainingTrapWrites.every((line) => line.includes('this.hero.hp')),
+	`T63 batch 5 moved the hero halves onto the dispatch too; any direct HP write left in the traps file is a hero half, never a mob tail: ${remainingTrapWrites.join(' | ')}`);
 
 //`items/artifactPassiveRecharge.ts` against chainsRecharge/beaconRecharge/hourglassRecharge.act(),
 //with `mwlItemEffectValue` answered from the authored `item-rules.mwl` rows themselves.

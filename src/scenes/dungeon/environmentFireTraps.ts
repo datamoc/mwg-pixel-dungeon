@@ -504,7 +504,7 @@ export const environmentFireTrapsMethods = {
 			level,
 			isUndead: (victim) => victim.kind !== undefined && UNDEAD_KINDS.has(victim.kind),
 			grantHeroShield: (amount, cap) => this.grantHeroShield(amount, cap),
-			absorbHeroDamage: (amount) => this.absorbHeroDamage(amount),
+			damageHero: (amount) => { this.applyCharacterDamage(this.hero, amount, { pierceArmor: true, cause: 'foe', skipAura: true }); },
 			applyCharacterDamage: (victim, amount) => this.applyCharacterDamage(victim, amount, {
 				pierceArmor: true, cause: 'foe', skipAura: true,
 				onNonWeaponBossDamage: (creature) => this.disqualifyBossChallenge(creature),
@@ -1482,9 +1482,11 @@ export const environmentFireTrapsMethods = {
 			//depth-scaled poison. The old roll skipped armor entirely, which is why darts
 			//hit the early cloth hero so hard.
 			let damage = Math.max(0, Random.normalRange(4, 8) - Random.normalRange(this.hero.armor[0], this.hero.armor[1]));
-			damage = this.absorbHeroDamage(damage);
-			this.hero.hp -= damage;
-			this.showDamage(this.hero, damage);
+			//Hero half of `PoisonDartTrap` -> `Char.damage()`: shared dispatch (absorb, HP write, floater);
+			//`deferKill` leaves the one tail `kill` below, so the hero cannot die twice.
+			const dartBefore = this.hero.hp;
+			this.applyCharacterDamage(this.hero, damage, { pierceArmor: true, cause: 'trap', skipAura: true, deferKill: true });
+			damage = dartBefore - this.hero.hp;
 			this.say(t('port.log.trap.poisondart', { damage }), 'negative');
 			addBuff(this.hero, 'poison');
 			const poisonAmount = kind === 'tenguDart'
@@ -1496,9 +1498,9 @@ export const environmentFireTrapsMethods = {
 			//sibling: the same 4-8-minus-armor dart with no poison, and the only trap
 			//depth 1 knows (SewerLevel.trapClasses()).
 			let damage = Math.max(0, Random.normalRange(4, 8) - Random.normalRange(this.hero.armor[0], this.hero.armor[1]));
-			damage = this.absorbHeroDamage(damage);
-			this.hero.hp -= damage;
-			this.showDamage(this.hero, damage);
+			const wornBefore = this.hero.hp;
+			this.applyCharacterDamage(this.hero, damage, { pierceArmor: true, cause: 'trap', skipAura: true, deferKill: true });
+			damage = wornBefore - this.hero.hp;
 			this.say(t('port.log.trap.worndart', { damage }), 'negative');
 		} else if (kind === 'grim') {
 			//`GrimTrap`: `round(HT/2 + HP/2)` - half max plus half CURRENT, not half
@@ -1508,9 +1510,9 @@ export const environmentFireTrapsMethods = {
 			//subtracts no armor (Java's `damage()` has no DR either) and applies the
 			//AntiMagic `drRoll()` reduction for listed magical sources.
 			let damage = Math.min(Math.round(this.hero.maxHp * 0.9), grimTrapDamage(this.hero.hp, this.hero.maxHp));
-			damage = this.absorbHeroDamage(damage, true);
-			this.hero.hp -= damage;
-			this.showDamage(this.hero, damage);
+			const grimBefore = this.hero.hp;
+			this.applyCharacterDamage(this.hero, damage, { pierceArmor: true, cause: 'trap', skipAura: true, magical: true, deferKill: true });
+			damage = grimBefore - this.hero.hp;
 			this.say(t('port.log.trap.grim', { damage }), 'negative');
 		} else if (isUtilityTrap(kind)) {
 			this.activateUtilityTrap(kind, x, y);
@@ -1544,9 +1546,9 @@ export const environmentFireTrapsMethods = {
 			//and the fire 3 set the stepper burning for free.
 			//Java's dmg -= ch.drRoll() (Bomb.explode()): the old roll skipped armor.
 			let damage = Math.max(0, Random.normalRange(...explosiveTrapBounds(this.depth)) - Random.normalRange(this.hero.armor[0], this.hero.armor[1]));
-			damage = this.absorbHeroDamage(damage);
-			this.hero.hp -= damage;
-			this.showDamage(this.hero, damage);
+			const blastBefore = this.hero.hp;
+			this.applyCharacterDamage(this.hero, damage, { pierceArmor: true, cause: 'fire', skipAura: true, deferKill: true });
+			damage = blastBefore - this.hero.hp;
 			this.applyTrapBlast(x, y);
 			this.say(t('port.log.trap.explosive', { damage }), 'negative');
 		}
@@ -1624,10 +1626,12 @@ export const environmentFireTrapsMethods = {
 				// Challenge.SpectatorFreeze keeps Java's damage/armor rolls but blocks HP damage.
 				if (ch.buffs['spectatorFreeze'] !== undefined) { /* no HP damage */
 				} else if (ch.isHero) {
-					damage = this.absorbHeroDamage(damage);
-					this.hero.hp -= damage;
-					this.showDamage(this.hero, damage);
-					if (this.hero.hp <= 0) this.say(t('levels.traps.rockfalltrap.ondeath'), 'negative');
+					//Rockfall hero half: shared dispatch hero branch; `onHeroDeath` prints the real line just before the
+					//fatal `kill` (with the `trap` bucket), so no tail kill runs here.
+					this.applyCharacterDamage(this.hero, damage, {
+						pierceArmor: true, cause: 'trap', skipAura: true,
+						onHeroDeath: () => this.say(t('levels.traps.rockfalltrap.ondeath'), 'negative'),
+					});
 				} else {
 					//Mob tail through the shared `Char.damage()` dispatch (T63): aura,
 					//Doom, defender curves, Viscosity, barriers, shield pools, hooks,

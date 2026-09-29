@@ -1417,7 +1417,11 @@ export const armorAbilityUseMethods = {
 					//sits in Java's `AntiMagic.RESISTS` (Char.java), so the hero's AntiMagic glyph `drRoll`
 					//applies, as it does in Java.
 					const selfDamage = Math.min(5 * telefrag, this.hero.hp + this.heroBarrier.total - 1);
-					if (selfDamage > 0) this.applyCharacterDamage(this.hero, selfDamage, { pierceArmor: true, cause: 'foe', magical: true });
+					if (selfDamage > 0) {
+						//`Telefrag` self-hit -> `Hero.damage()`: shared dispatch hero branch. Capped at `hp - 1`
+						//above, so it cannot kill; `deferKill` makes that explicit.
+						this.applyCharacterDamage(this.hero, selfDamage, { pierceArmor: true, cause: 'foe', magical: true, skipAura: true, deferKill: true });
+					}
 					this.applyAbilityDamage(occupant, Random.normalRange(10 * telefrag, 15 * telefrag));
 				}
 				//Java pushes the occupant to a random free neighbour from a shuffled candidate list.

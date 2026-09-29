@@ -16,6 +16,7 @@ import { MISSILE_MAX_DURABILITY } from '../../items/missiles';
 import { cureHeroBuffs } from '../../items/potionEffects';
 import { aimBombFlow, useBomb as useItemBomb, type BombAimContext } from '../../items/bombs';
 import { detonateBomb, type BombEffectsContext, type CharacterDamageOptions } from '../../items/bombEffects';
+import { sourceElementResisted } from '../../simulation/buffs';
 import { isBagId } from '../../items/bags';
 import { isResurrectKeepCandidate, partitionResurrectKeeps } from '../../items/resurrect';
 import { useStoneOfAggression as useItemStoneOfAggression, useStoneOfAugmentation as useItemStoneOfAugmentation, useStoneOfBlast as useItemStoneOfBlast, useStoneOfBlink as useItemStoneOfBlink, useStoneOfClairvoyance as useItemStoneOfClairvoyance, useStoneOfDeepSleep as useItemStoneOfDeepSleep, useStoneOfEnchantment as useItemStoneOfEnchantment, useStoneOfFear as useItemStoneOfFear, useStoneOfFlock as useItemStoneOfFlock, useStoneOfShock as useItemStoneOfShock } from '../../items/stones';
@@ -1500,10 +1501,10 @@ export const panelsSingleUseMethods = {
 	applyCharacterDamage(this: DungeonScene, c: Creature, rawDamage: number, options: CharacterDamageOptions): boolean {
 		let damage = rawDamage;
 		if (c.isHero) {
-			damage = this.absorbHeroDamage(damage, options.magical === true);
+			damage = this.absorbHeroDamage(damage, options.magical === true, false, options.heroAbsorb);
 			this.hero.hp -= damage;
 			this.showDamage(this.hero, damage);
-			if (this.hero.hp <= 0) {
+			if (this.hero.hp <= 0 && !options.deferKill) {
 				options.onHeroDeath?.();
 				this.kill(this.hero, options.cause);
 				return true;
@@ -1539,6 +1540,9 @@ export const panelsSingleUseMethods = {
 		//This shared blast/bomb/ability path models Char.damage() for non-hero targets;
 		//apply Doom after Aura and before the target-specific curve and shields.
 		if (!options.skipDoom) damage = doomDamage(damage, c);
+				//`Char.damage()`'s `damage *= resist(srcClass)` (`Char.java`, tag `v3.3.8`) - ICY/ELECTRIC/FIERY
+				//holders halve their opposing source classes, right after Doom and before the one `Math.round`.
+				if (options.sourceElement) damage = sourceElementResisted(damage, options.sourceElement, c.kind, c.elementalType, c.yogFistType);
 		//Every defender-side `damage()` override (`Pylon` 14+/15, `Eye` /4 while charging,
 		//`DemonSpawner` 19+/20, `Slime`/`CausticSlime` 4+/5) is part of `Char.damage()`, so it
 		//applies to *any* source that reaches a mob through `damage()` - including a bomb blast
@@ -1580,6 +1584,14 @@ export const panelsSingleUseMethods = {
 		const preHp = c.hp;
 		c.hp -= damage;
 		if (phantomDirect && c.hp > 0) this.phantomPiranhaTeleport(c);
+		//`MirrorImage.damage()` fades on the first positive hit and `PrismaticImage.die()` starts its
+		//healable fade (tag `v3.3.8`): both are defender `damage()` behaviours, so they belong in
+		//the shared dispatch rather than at each caller (the wand zap loop used to be the only one
+		//that ran them on a direct hit).
+		if (this.fadeMirrorOnDamage(c, damage) || this.enterPrismaticFade(c, damage)) {
+			options.onFade?.();
+			return false;
+		}
 		this.lockedFloorBossDamage(c, damage, preHp - c.hp);
 		if (c.kind === 'tengu') this.clampTenguBracket(c, preHp);
 		this.gnollMineAfterDamage(c, preHp);
@@ -1594,7 +1606,7 @@ export const panelsSingleUseMethods = {
 		if (c.kind === 'king' && c.hp > 0) this.kingDamageHook(c);
 		this.showDamage(c, damage);
 		c.sleeping = false;
-		if (c.hp <= 0) this.kill(c, options.cause);
+		if (c.hp <= 0) { if (!options.deferKill) this.kill(c, options.cause); }
 		else if (c.kind === 'tengu') this.tenguBracketJump(c, preHp);
 		return false;
 	},
