@@ -379,8 +379,13 @@ export const combatResolutionMethods = {
 		//`Hero.damageRoll()` gates this on `wep instanceof MissileWeapon`, which this port already
 		//expresses the same way every other hero-only bonus here does: `attacker === this.hero`
 		//is only true for the real bump-attack call site, never `useSpecial`'s throw/shoot/zap
-		//branches (those pass a shallow copy of the hero, not the hero itself).
-		if (attacker === this.hero) damage += ringForceBonus(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
+		//branches (those pass a shallow copy of the hero, not the hero itself). Monk abilities
+		//temporarily carry Java's `UnarmedAbilityTracker`; `RingOfForce.fightingUnarmed()` then
+		//does not add the armed bonus (`RingOfForce.java:257-274`, `Hero.java:663-676`, v3.3.8).
+		//Java's alternate `RingOfForce.damageRoll()` branch for a genuinely missing weapon
+		//(`Hero.java:663-676`, `RingOfForce.java:82-129`) is unreachable here: `startingWeapon`
+		//is always present and there is no empty-handed equipment state.
+		if (attacker === this.hero && !this.monk.unarmedAttack) damage += ringForceBonus(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
 		//`Unstable.proc()`/`Kinetic.proc()`: an Unstable weapon delegates every swing to one
 		//`Random.element` draw over `UNSTABLE_DELEGATES` (Java's `Random.oneOf(randomEnchants)`
 		//minus the documented exclusions). The pick is stashed so `heroOnHit`'s post-damage

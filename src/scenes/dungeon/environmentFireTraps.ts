@@ -46,7 +46,7 @@ import { applySandalsNaturalismCharge, sandalsNaturalismLevel } from '../../item
 import { regrowthMethods } from './regrowth';
 import { DOOR, DOOR_CLOSED, EMBERS, FLOOR, GRASS, HIGH_GRASS, TILE, TRAP, WALL, WATER, modeledTrapTable, sewerTrapTable, type TrapKind } from '../../dungeonConstants';
 import { regionForDepth, type Region } from '../../genericDungeon';
-import { addBuff, applyElementalBacklash, buffBlocked, electricDamageHalved, explosiveTrapBounds, grimTrapDamage, icyBuffImmune, reigniteBuff, rollDamage, setBleeding, type Creature, type GroundItem, type Step } from '../../combat';
+import { addBuff, applyElementalBacklash, buffBlocked, electricDamageHalved, explosiveTrapBounds, grimTrapDamage, icyBuffImmune, reigniteBuff, resistedBuffDuration, rollDamage, setBleeding, type Creature, type GroundItem, type Step } from '../../combat';
 import { applyChillFreeze } from '../../simulation/buffs';
 import { BLOB_IMMUNE_KINDS, BOSSES, FLYING_KINDS, IMMOVABLE_KINDS, INORGANIC_KINDS, MONSTERS, UNDEAD_KINDS, mobRosterForDepth, type AnyMonsterId, type MonsterId } from '../../monsters';
 import { ETERNAL_FIRE_BURN, wardTexture, type BonesShape } from './shared';
@@ -1158,7 +1158,7 @@ export const environmentFireTrapsMethods = {
 			//`Elemental.add()`'s hate-listed chill likewise backslashes instead of
 			//attaching (tag `v3.3.8`) - the shared helper refuses, damages, and presents.
 			applyChill: (target) => { if (applyElementalBacklash(target, 'chill') === 0 && !target.isNPC
-				&& !icyBuffImmune(target.kind, target.elementalType, 'chill')) target.buffs = applyChillFreeze(target.buffs).buffs; },
+				&& !icyBuffImmune(target.kind, target.elementalType, 'chill')) target.buffs = applyChillFreeze(target.buffs, 3, resistedBuffDuration(target, 'chill', 1)).buffs; },
 			freezeHeapCell: (x, y) => this.freezeHeapAt(x, y),
 			clearCell: (blob, x, y) => (this[blob] as Blob).clear(x, y),
 			clearFireCell: (x, y) => this.fire.clear(x, y),
@@ -1176,7 +1176,9 @@ export const environmentFireTrapsMethods = {
 				if (target.allyKind === 'prismatic') return;
 				//`MirrorImage` is immune to `CorrosiveGas` (same source).
 				if (target.allyKind === 'mirror') return;
-				target.corrosionTurns = Math.max(target.corrosionTurns ?? 0, 2);
+				//`CorrosiveGas` applies `Corrosion`, whose duration Java scales by `Char.resist(Corrosion.class)`;
+				//the shared duration hook carries RingOfElements for the hero, while preserving this port's max clock.
+				target.corrosionTurns = Math.max(target.corrosionTurns ?? 0, resistedBuffDuration(target, 'corrosion', 2));
 				target.corrosionDamage = Math.max(target.corrosionDamage ?? 0, strength);
 			},
 			corrosiveStrength: () => this.corrosiveGasStrength,

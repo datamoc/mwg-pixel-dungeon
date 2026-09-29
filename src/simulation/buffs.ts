@@ -256,14 +256,18 @@ export function reigniteBuff(previous: Readonly<BuffState>, id: BuffId, duration
  * after two contacts where Java needs sustained exposure. Keeping this transition pure
  * prevents potion, trap, and elemental callers from disagreeing about whether the
  * impact freezes immediately or on the next hit. Water-cell callers pass 5.
+ * The optional `resistanceMultiplier` is the target's `Char.resist(Chill.class)` fraction
+ * for the impacted turn and the resulting Frost/Paralysis timers; Java's
+ * `Freezing.freeze()` (`Freezing.java` and `Buff.affect/prolong`, tag `v3.3.8`) scales
+ * these clocks before applying them.
  */
-export function applyChillFreeze(previous: Readonly<BuffState>, turnsToAdd = 3): { buffs: BuffState; frozen: boolean } {
-	const total = Math.min(BUFF_DURATION.chill, (previous.chill ?? 0) + turnsToAdd);
+export function applyChillFreeze(previous: Readonly<BuffState>, turnsToAdd = 3, resistanceMultiplier = 1): { buffs: BuffState; frozen: boolean } {
+	const total = Math.min(BUFF_DURATION.chill, (previous.chill ?? 0) + turnsToAdd * resistanceMultiplier);
 	if (total >= BUFF_DURATION.chill) {
 		const buffs = { ...previous };
 		delete buffs.chill;
-		buffs.frost = BUFF_DURATION.frost;
-		buffs.paralysis = Math.max(buffs.paralysis ?? 0, BUFF_DURATION.frost);
+		buffs.frost = BUFF_DURATION.frost * resistanceMultiplier;
+		buffs.paralysis = Math.max(buffs.paralysis ?? 0, BUFF_DURATION.frost * resistanceMultiplier);
 		return { buffs, frozen: true };
 	}
 	return { buffs: { ...previous, chill: total }, frozen: false };

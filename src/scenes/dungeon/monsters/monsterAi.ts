@@ -30,7 +30,7 @@ import { CIRCLE8_OFFSETS, fleeStep as fleeStepFlow, isPatrolTargetValid as isPat
 import { canRipperLeap, chooseRipperBounceEnd, predictRipperLeapTarget, ripperLeapCooldown } from '../../../simulation/ripperLeap';
 import { chooseSuccubusBlinkCell, shouldSuccubusBlink, succubusBlinkCooldown } from '../../../simulation/succubusBlink';
 import { DOOR, DOOR_CLOSED, FLOOR, GAME_KIND_CODES, SOLID, TILE, WALL, WATER } from '../../../dungeonConstants';
-import { NEGATIVE_BUFFS, addBuff, applyElementalBacklash, buffBlocked, doomDamage, icyBuffImmune, reigniteBuff, rollDamage, rollHit, setBleeding, type BuffId, type Creature, type GroundItem, type Step } from '../../../combat';
+import { NEGATIVE_BUFFS, addBuff, applyElementalBacklash, buffBlocked, doomDamage, icyBuffImmune, reigniteBuff, resistedBuffDuration, rollDamage, rollHit, setBleeding, type BuffId, type Creature, type GroundItem, type Step } from '../../../combat';
 import { applyChillFreeze } from '../../../simulation/buffs';
 import { IMMOVABLE_KINDS, liveStats } from '../../../monsters';
 import { TENGU_CIRCLE8 } from '../shared';
@@ -1140,7 +1140,7 @@ export const monsterAiMethods = {
 		else if (type === 'frost') {
 			//`Elemental.add()`'s hate-listed chill backslashes instead of attaching
 			//(tag `v3.3.8`) - a fire-typed target takes the backlash, never the chill.
-			if (applyElementalBacklash(target, 'chill') === 0 && !icyBuffImmune(target.kind, target.elementalType, 'chill')) target.buffs = applyChillFreeze(target.buffs).buffs;
+			if (applyElementalBacklash(target, 'chill') === 0 && !icyBuffImmune(target.kind, target.elementalType, 'chill')) target.buffs = applyChillFreeze(target.buffs, 3, resistedBuffDuration(target, 'chill', 1)).buffs;
 		} else if (type === 'shock') addBuff(target, 'daze');
 		else addBuff(target, Random.element(['burning', 'chill', 'cripple', 'daze'] as const) ?? 'daze');
 		return true;

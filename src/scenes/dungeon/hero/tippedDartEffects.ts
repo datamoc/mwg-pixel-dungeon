@@ -1,6 +1,6 @@
 import type { DungeonScene } from '../../dungeonScene';
 import { Random } from 'mwg';
-import { BUFF_DURATION, NEGATIVE_BUFFS, addBuff, doomDamage, reigniteBuff, type BuffId, type Creature } from '../../../combat';
+import { BUFF_DURATION, NEGATIVE_BUFFS, addBuff, doomDamage, reigniteBuff, resistedBuffDuration, type BuffId, type Creature } from '../../../combat';
 import { TILE, WATER } from '../../../dungeonConstants';
 import { cureHeroBuffs } from '../../../items/potionEffects';
 import { isUndeadOrDemonic } from '../../../monsters';
@@ -66,10 +66,10 @@ export const tippedDartEffectsMethods = {
 				//miniboss - duration turns at the given per-turn damage, not a flat
 				//3-turn, `4 + depth/2`-damage clock.
 				if (target.boss === true || target.miniboss === true) {
-					target.corrosionTurns = 5;
+					target.corrosionTurns = resistedBuffDuration(target, 'corrosion', 5);
 					target.corrosionDamage = Math.floor(this.depth / 3);
 				} else {
-					target.corrosionTurns = 10;
+					target.corrosionTurns = resistedBuffDuration(target, 'corrosion', 10);
 					target.corrosionDamage = this.depth;
 				}
 				break;

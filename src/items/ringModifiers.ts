@@ -1,5 +1,6 @@
 import { Actors } from 'mwg';
 import { MWL_RING_ITEMS } from '../mwlContent';
+import type { BuffId } from '../simulation/buffs';
 
 /** The subset of a stored/bag ring's shape these pure multiplier functions need. */
 export interface EquippedRing {
@@ -251,6 +252,23 @@ export function ringWealthBonus(ring: EquippedRing | null, magicImmune = false, 
  * equipped (or the equipped ring is another type). */
 export function ringElementsMultiplier(ring: EquippedRing | null, magicImmune = false, spirit: EquippedRing | null = null): number {
 	return RING_DEFS.elements!.at(combinedStatBonusLevel(ring, spirit, 'elements', magicImmune));
+}
+
+/** Status classes in `RingOfElements.RESISTS` that this port represents as timed buffs.
+ * Java's `Buff.affect`/`append`/`prolong` multiply their time by `Char.resist(buffClass)`;
+ * blobs and direct-damage effects are handled at their own damage readers instead. */
+const RING_ELEMENTS_TIMED_BUFFS: ReadonlySet<BuffId | 'corrosion'> = new Set([
+	'burning', 'chill', 'frost', 'ooze', 'paralysis', 'poison', 'corrosion',
+	'magicalSleep', 'charm', 'weakness', 'vulnerable', 'hex', 'degrade',
+]);
+
+export function ringElementsBuffDurationMultiplier(
+	effect: BuffId | 'corrosion',
+	ring: EquippedRing | null,
+	magicImmune = false,
+	spirit: EquippedRing | null = null,
+): number {
+	return RING_ELEMENTS_TIMED_BUFFS.has(effect) ? ringElementsMultiplier(ring, magicImmune, spirit) : 1;
 }
 
 /** `RingOfFuror.attackSpeedMultiplier()`: `pow(1.09051, bonusLevel)`. Real Java multiplies

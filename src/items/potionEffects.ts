@@ -1,6 +1,6 @@
 import { Roguelike } from 'mwg';
 import { isChallengeEnabled } from '../challenges';
-import { addBuff, applyElementalBacklash, buffBlocked, icyBuffImmune, reigniteBuff, type BuffId, type Creature } from '../combat';
+import { addBuff, applyElementalBacklash, buffBlocked, icyBuffImmune, reigniteBuff, resistedBuffDuration, type BuffId, type Creature } from '../combat';
 import { applyChillFreeze } from '../simulation/buffs';
 import { brewNeighbourSeedPlan, SHROUDING_FOG_VOLUME } from '../simulation/brews';
 import { WALL } from '../dungeonConstants';
@@ -254,7 +254,9 @@ export function shatterPotionAt(scene: PotionEffectsContext, id: string, cx: num
 				delete target.buffs['burning'];
 				//`Elemental.add()`'s hate-listed chill backslashes instead of attaching - a fire-typed target takes the backlash.
 				if (target === scene.hero || (applyElementalBacklash(target, 'chill') === 0
-					&& !icyBuffImmune(target.kind, target.elementalType, 'chill'))) target.buffs = applyChillFreeze(target.buffs).buffs;
+					&& !icyBuffImmune(target.kind, target.elementalType, 'chill'))) target.buffs = applyChillFreeze(
+					target.buffs, 3, resistedBuffDuration(target, 'chill', 1),
+				).buffs;
 				if (target.hp <= 0) scene.kill(target);
 			}
 			return;

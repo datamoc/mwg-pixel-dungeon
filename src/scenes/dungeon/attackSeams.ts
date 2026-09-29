@@ -111,8 +111,12 @@ export const attackSeamMethods = {
 		//`Hero.damageRoll()` gates this on `wep instanceof MissileWeapon`, which this port already
 		//expresses the same way every other hero-only bonus here does: `attacker === this.hero`
 		//is only true for the real bump-attack call site, never `useSpecial`'s throw/shoot/zap
-		//branches (those pass a shallow copy of the hero, not the hero itself).
-		if (attacker === this.hero) damage += ringForceBonus(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
+		//branches (those pass a shallow copy of the hero, not the hero itself). The Monk's
+		//temporary `UnarmedAbilityTracker` suppresses this armed bonus in Java; see the same
+		//gate in `combatResolution.ts` and `RingOfForce.java:257-274` (v3.3.8). The no-weapon
+		//`RingOfForce.damageRoll()` branch is unreachable because `startingWeapon` is always
+		//present here (`Hero.java:663-676`, `RingOfForce.java:82-129`).
+		if (attacker === this.hero && !this.monk.unarmedAttack) damage += ringForceBonus(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
 		return damage;
 	},
 

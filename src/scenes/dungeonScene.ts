@@ -1157,7 +1157,7 @@ export class DungeonScene extends Scene2D {
 	cleaveFreeTurns = 0;
 	guardTurns = 0;
 	//`Combo` (Gladiator, `hero/comboMoves.ts`): once-per-session flags, clock start, Parry window, finisher-swing latch; `monk`: `MonkEnergy` (Duelist Monk, `hero/monkAbilities.ts`): energy, cap latch, Flurry cooldown, Combined Energy window, Meditate timers
-	monk = { energy: 0, deferCap: false, flurryLocked: false, combinedTurns: 0, combinedMonk: false, combinedWep: false, resistTurns: 0, resistFresh: false, rechargeIn: 0 };
+	monk = { energy: 0, deferCap: false, flurryLocked: false, combinedTurns: 0, combinedMonk: false, combinedWep: false, resistTurns: 0, resistFresh: false, rechargeIn: 0, unarmedAttack: false };
 	comboClobberUsed = false; comboParryUsed = false; comboInitialTime = 0; comboParryTurns = 0; comboParryLanded = false; comboSuppressHit = false;
 	swordDanceTurns = 0;
 	defensiveStanceTurns = 0;

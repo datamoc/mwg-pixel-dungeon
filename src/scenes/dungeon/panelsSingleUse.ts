@@ -25,7 +25,7 @@ import { applyDefenderDamageCurves } from '../../simulation/defenderDamageCurves
 import { absorbCreatureShields } from '../../simulation/allyShields';
 import { rollGeneratedAffix } from '../../items/itemKinds';
 import { ENCHANT_TABLE, GLYPH_TABLE } from '../../items/itemAffixes';
-import { ringBonusLevel, ringDef, ringFurorMultiplier, ringHasteMultiplier, type EquippedRing } from '../../items/ringModifiers';
+import { ringBonusLevel, ringDef, ringElementsBuffDurationMultiplier, ringFurorMultiplier, ringHasteMultiplier, type EquippedRing } from '../../items/ringModifiers';
 import { capitalize, has, t, titleCase } from '../../i18n/index';
 import { SPD_STATUS_COLOR } from '../../ui/spdTheme';
 import { GameLog } from '../../ui/gameLog';
@@ -62,7 +62,7 @@ import { useAlchemizeFlow, useStylusFlow, type AlchemizeContext, type StylusCont
 import { useStoneById as routeStoneAction, type StoneActionContext } from '../../items/stoneActions';
 import { setWandmakerQuestType, setWandmakerQuestWands, wandmakerQuestType } from '../../spdLevelGen/wandmaker';
 import { ITEM_FRAME, WATER } from '../../dungeonConstants';
-import { BUFF_DURATION, absorbShield, addBuff, doomDamage, setAnnounceBuff, setAttachBacklash, type BuffId, type Creature, type GroundItem, type Step } from '../../combat';
+import { BUFF_DURATION, absorbShield, addBuff, doomDamage, setAnnounceBuff, setAttachBacklash, setBuffDurationModifier, type BuffId, type Creature, type GroundItem, type Step } from '../../combat';
 import { BOSSES } from '../../monsters';
 import { APPEARANCE_TABLES, AUGMENT_OPTIONS, BLACKSMITH_QUEST, IMP_QUEST, SAD_GHOST_QUEST, SPD_LEVEL_CURVE, SUBCLASS_OPTIONS, SUBCLASS_TRACK, WANDMAKER_QUEST } from './shared';
 
@@ -495,6 +495,14 @@ export const panelsSingleUseMethods = {
 
 		//see announceBuff's comment: the live scene is what turns a landed buff into text
 		setAnnounceBuff((creature, id) => this.showStatus(creature, id, SPD_STATUS_COLOR.warning));
+		//`Buff.affect`/`append`/`prolong` multiply timed effects by `Char.resist(buffClass)`
+		//(`Buff.java:168-193`, tag `v3.3.8`), including RingOfElements' 0.825^bonus factor.
+		//This port keeps buff durations as turns-left values on each creature, so apply the ring's
+		//factor at the shared attach boundary for represented resisted classes; only the
+		//hero can wear a ring here, while mob-specific duration resistances remain unmodelled.
+		setBuffDurationModifier((creature, effect, duration) => creature.isHero
+			? duration * ringElementsBuffDurationMultiplier(effect, this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing())
+			: duration);
 		//see attachBacklash's comment: the live scene is what turns attach-time backlash
 		//damage into a number and a death - `Elemental.add()`'s hate-listed opposite-
 		//element attaches (tag `v3.3.8`) deal `NormalIntRange(HT/2, HT*3/5)` instead.

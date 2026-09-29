@@ -7,7 +7,7 @@ import type { MultiTurnBeamSave } from 'mwg/roguelike';
 import type { GroundItemKind } from './dungeonConstants';
 import type { Combatant, Step } from './simulation/combatState';
 import type { BuffId } from './simulation/buffs';
-import { NEGATIVE_BUFFS, doomDamage, elementalBacklashApplies, fieryDamageHalved, fieryElementalSourceDamage, fieryResistedDamage, icyBuffImmune, monsterBuffImmune } from './simulation/buffs';
+import { BUFF_DURATION, NEGATIVE_BUFFS, doomDamage, elementalBacklashApplies, fieryDamageHalved, fieryElementalSourceDamage, fieryResistedDamage, icyBuffImmune, monsterBuffImmune } from './simulation/buffs';
 import { nextEntityId } from './simulation/entityId';
 import { createCombatAdapter } from './adapters/combatSimulation';
 import { simulationRandom } from './adapters/mwgRandom';
@@ -471,6 +471,25 @@ export function setAnnounceBuff(hook: ((c: Creature, id: BuffId) => void) | null
 	announceBuff = hook;
 }
 
+/** Shared timed-buff resistance boundary. Java's `Buff.append`/`affect`/`prolong`
+ * scale duration through `Char.resist(buffClass)` before attaching or extending it;
+ * this port stores a turns-left number instead of scheduling each buff as an Actor,
+ * so the live scene supplies the matching factor here for effects it models. */
+export type TimedResistanceEffect = BuffId | 'corrosion';
+export let buffDurationModifier: ((c: Creature, effect: TimedResistanceEffect, duration: number) => number) | null = null;
+
+export function setBuffDurationModifier(
+	hook: ((c: Creature, effect: TimedResistanceEffect, duration: number) => number) | null,
+): void {
+	buffDurationModifier = hook;
+}
+
+/** Apply source-class duration resistance at the shared buff boundary, or return the
+ * requested duration unchanged when no live scene hook is installed. */
+export function resistedBuffDuration(c: Creature, effect: TimedResistanceEffect, duration: number): number {
+	return buffDurationModifier?.(c, effect, duration) ?? duration;
+}
+
 /**
  * Where attach-time backlash damage lands. `addBuff`/`reigniteBuff` are module-level
  * with dozens of scene call sites, none of which could show the damage or run the
@@ -615,7 +634,7 @@ export function addBuff(c: Creature, id: BuffId, duration?: number): void {
 	//`Elemental.add()`'s hate-listed attaches never land - they backlash instead.
 	if (applyElementalBacklash(c, id) > 0) return;
 	if (buffBlocked(c, id)) return;
-	const event = combat.addBuff(c, id, duration);
+	const event = combat.addBuff(c, id, resistedBuffDuration(c, id, duration ?? BUFF_DURATION[id]));
 	//`Mob.add(Amok)` switches the mob directly to HUNTING (tag `v3.3.8`), without going through
 	//`Mob.Sleeping.awaken()`. A visible CrystalGuardian can therefore wake from ScrollOfRage's
 	//Amok after its `beckon()` override correctly did nothing; keep the port's sleeping flag in step.
@@ -631,7 +650,7 @@ export function reigniteBuff(c: Creature, id: BuffId, duration?: number): void {
 	//so a frost elemental standing in flames takes the backlash, never the buff.
 	if (applyElementalBacklash(c, id) > 0) return;
 	if (buffBlocked(c, id)) return;
-	const event = combat.reigniteBuff(c, id, duration);
+	const event = combat.reigniteBuff(c, id, resistedBuffDuration(c, id, duration ?? BUFF_DURATION[id]));
 	if (event.fresh && announceBuff && ANNOUNCED_BUFFS.has(id)) announceBuff(c, id);
 }
 

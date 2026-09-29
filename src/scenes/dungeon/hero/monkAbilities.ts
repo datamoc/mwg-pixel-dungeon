@@ -172,7 +172,11 @@ export const monkAbilitiesMethods = {
 		const savedArmor = enemy.armor;
 		const savedAffix = this.weaponAffix;
 		const savedPrecise = this.preciseAssaultReady;
+		const savedUnarmedAttack = this.monk.unarmedAttack;
 		this.hero.damage = monkUnarmedRange(this.hero.str ?? this.heroStr);
+		//`RingOfForce.fightingUnarmed()` disables the armed bonus while Java's
+		//`UnarmedAbilityTracker` is attached (`RingOfForce.java:257-274`, v3.3.8).
+		this.monk.unarmedAttack = true;
 		enemy.armor = [0, 0];
 		if (!keepEnchant) this.weaponAffix = null;
 		this.preciseAssaultReady = false;
@@ -182,6 +186,7 @@ export const monkAbilitiesMethods = {
 			return this.attack(this.hero, enemy, 1, multiplier);
 		} finally {
 			this.hero.damage = savedDamage;
+			this.monk.unarmedAttack = savedUnarmedAttack;
 			enemy.armor = savedArmor;
 			this.weaponAffix = savedAffix;
 			this.preciseAssaultReady = savedPrecise;
