@@ -60,7 +60,9 @@ export interface BombEffectsContext {
 /** Call-specific parts of `Char.damage()` that are not properties of the target itself. */
 export interface CharacterDamageOptions {
 	readonly pierceArmor: boolean;
-	readonly cause: 'foe' | 'fire';
+	/** Mirrors `kill()`'s cause union (`deathSaveRefresh.ts`) so non-attack sources -
+	 * blobs and traps next - can name their death badge exactly like `attack()` can. */
+	readonly cause: 'foe' | 'fire' | 'trap' | 'poison' | 'hunger' | 'falling';
 	/** A source policy that already applied `Doom` before this shared dispatch. */
 	readonly skipDoom?: boolean;
 	/** Direct `Char.damage()` paths bypass `Char.attack()`'s Aura reduction (`Char.java:465-469`). */
@@ -87,6 +89,10 @@ export function applyBlastDamage(target: Creature, amount: number, pierceArmor: 
 	if (target.allyKind === 'sheep') return false;
 	//`SentryRoom$Sentry.damage()` (tag `v3.3.8`) is likewise a no-op.
 	if (target.kind === 'sentry') return false;
+	//Every NPC's `damage(int, Object)` is a no-op - "do nothing" (tag `v3.3.8`).
+	//The scene dispatch (`applyCharacterDamage`) carries this gate for live callers;
+	//this headless compatibility half needs its own copy, exactly like the two above.
+	if (target.isNPC) return false;
 	//`Challenge.SpectatorFreeze` makes `Char.isInvulnerable()` true for every damage
 	//source (tag `v3.3.8`), not only melee attacks. Keep the bomb's damage roll above
 	//this seam, then discard the HP change just as Java's `Char.damage()` does.

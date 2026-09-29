@@ -1747,7 +1747,8 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		const combat = readFileSync(new URL('../src/combat.ts', import.meta.url), 'utf8');
 		assert.ok(combat.includes("if (c.kind === 'sentry') return true;"), 'sentries refuse buffs');
 		const scene = readSceneSource();
-		assert.ok(scene.includes("if (target.kind === 'sentry') return true;"), 'blob seams spare sentries');
+		//the blob closure's sentry no-op moved into the shared dispatch it routes through
+		assert.ok(scene.includes("if (c.allyKind === 'sheep' || c.kind === 'sentry') return false;"), 'blob seams spare sentries');
 		assert.ok(scene.includes('elemental.evasion = 5 * regionScale;'), 'newborns scale evasion by region');
 		assert.ok(scene.includes('elemental.maxHp = 15 * regionScale;'), 'newborns scale HT by region');
 	});

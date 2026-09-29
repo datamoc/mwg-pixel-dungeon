@@ -139,7 +139,9 @@ export function verifyPrismatic(require, check) {
 			'spawnSheep: (at) => this.spawnSheep(at, 8)',
 			"if (target.allyKind === 'mirror') return;",
 			"|| target.allyKind === 'mirror'",
-			"if (target.allyKind === 'sheep') return true;",
+			//the blob closure's sheep/sentry no-op moved into the shared
+			//`applyCharacterDamage` dispatch that every blob seam now routes through
+			"if (c.allyKind === 'sheep' || c.kind === 'sentry') return false;",
 			"if (target.allyKind === 'sheep') continue;",
 		]) assert.ok(source.includes(site), `the scene must still contain: ${site}`);
 		const combat = readFileSync(new URL('../src/combat.ts', import.meta.url), 'utf8');

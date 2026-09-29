@@ -1182,63 +1182,43 @@ export const environmentFireTrapsMethods = {
 				|| (target.kind === 'yogFist' && this.guardFist(target)),
 			isBlobImmune: (target) => target.buffs.blobImmunity !== undefined || target.buffs.spectatorFreeze !== undefined || (target.kind !== undefined && BLOB_IMMUNE_KINDS.has(target.kind as AnyMonsterId)),
 			applyDamage: (target, damage, cause = 'poison') => {
-				damage = this.auraProtectedDamage(target, damage);
-				if (target.isHero) {
-					const blocked = this.absorbHeroDamage(damage, false, true);
-					this.hero.hp -= blocked;
-					this.showDamage(this.hero, damage);
-					if (this.hero.hp <= 0) {
-						//Electric kills have no death-badge bucket here (the port's four death
-						//causes predate the blob), so they land in the default 'foe' bucket -
-						//but the player-facing line is Java's own `ondeath`, said here like the
-						//ooze/bomb kill sites do.
-						this.kill(this.hero, cause === 'electricity' ? 'foe' : 'poison');
-						if (cause === 'electricity') this.say(t('actors.blobs.electricity.ondeath'), 'negative');
-						return false;
+				//`AuraOfProtection` first, then `Char.Property.ELECTRIC`'s half with
+				//`Math.round` (`Char.java`: the aura sits at the top of `damage()` for
+				//non-`Char` sources, `resist(srcClass)` halves later) - Java halves the
+				//already-aura-reduced value, so both stay here at the caller instead of
+				//inside the shared dispatch below, which would halve before it reduces.
+				//Heroes never hold `ELECTRIC` and take their aura inside `absorbHeroDamage`.
+				if (!target.isHero) {
+					damage = this.auraProtectedDamage(target, damage);
+					if (cause === 'electricity' && electricDamageHalved(target.kind, target.elementalType, target.yogFistType)) {
+						damage = Math.round(damage / 2);
 					}
-					return true;
 				}
-				damage = doomDamage(damage, target);
-				//DKBarrier absorbs on every `Char.damage()` path - same block as the
-				//attack tail (see the trap-blast seam's own copy).
-				if (target.kind === 'king' && (target.kingShield ?? 0) > 0) {
-					const absorbed = absorbShield(target.kingShield ?? 0, damage);
-					target.kingShield = absorbed.shield;
-					damage = absorbed.damage;
-				}
-				damage = absorbCreatureShields(target, damage, this.ascendedTurns > 0);
-				//`Sheep.damage()` (tag `v3.3.8`) is a no-op: no blob seam can damage sheep.
-				if (target.allyKind === 'sheep') return true;
-				//`SentryRoom$Sentry.damage()` (tag `v3.3.8`) is likewise a no-op.
-				if (target.kind === 'sentry') return true;
-				//Every NPC's `damage(int, Object)` is a no-op - "do nothing" (tag
-				//`v3.3.8`): `RatKing`, `Shopkeeper`, `Ghost`, `Wandmaker`,
-				//`Blacksmith` and `Imp` (plus the `ImpShopkeeper` subclass, which
-				//inherits `Shopkeeper`'s). No blob seam - toxic gas, electricity,
-				//or anything else routed here - can damage an NPC, the same shape
-				//as the sheep/sentry gates just above.
-				if (target.isNPC) return true;
-				//`Char.Property.ELECTRIC` (`Char.java`, tag `v3.3.8`) halves `Electricity`
-				//damage with `Math.round` on every holder: the shock elemental, DM100,
-				//the Pylon and BrightFist.
-				if (cause === 'electricity' && !target.isHero
-					&& electricDamageHalved(target.kind, target.elementalType, target.yogFistType)) damage = Math.round(damage / 2);
-				// Java's PhantomPiranha.damage() halves and relocates source-less blob damage; use random water.
-				const phantomDirect = target.kind === 'phantomPiranha'; if (phantomDirect) damage = this.phantomPiranhaDamage(target, damage);
-				const preHp = target.hp;
-				target.hp -= damage; this.lockedFloorBossDamage(target, damage, preHp - target.hp);
-				if (phantomDirect && target.hp > 0) this.phantomPiranhaTeleport(target);
-				if (this.fadeMirrorOnDamage(target, damage)) return true;
-				if (target.kind === 'yog' && target.hp > 0) this.yogDamageHook(target, preHp);
-				if (target.kind === 'king' && target.hp > 0 && (target.kingPhase ?? 1) === 1) {
-					const taken = Math.max(0, preHp - target.hp);
-					target.kingSummonCd = (target.kingSummonCd ?? 0) - taken / 8;
-					target.kingAbilityCd = (target.kingAbilityCd ?? 0) - taken / 8;
-				}
-				if (target.kind === 'king' && target.hp > 0) this.kingDamageHook(target);
-				this.showDamage(target, damage);
-				if (target.hp <= 0) this.kill(target);
-				return true;
+				//The shared `Char.damage()` dispatch carries what this closure used to
+				//hand-roll: the invulnerability gates (SpectatorFreeze, Yog shields,
+				//dormant Pylon, mine immunities), defender `damage()` curves, Viscosity
+				//defer, the DM300 barrier, the death hooks, the wake and the kill - all
+				//source-independent in Java, so blob damage gets them too (the old copy
+				//skipped every one of them). Gas and electricity roll no `DR` - Java blob
+				//sources call `Char.damage()` directly, never `drRoll()` - hence
+				//`pierceArmor`; the caller-side aura above is the `skipAura`.
+				const heroDied = this.applyCharacterDamage(target, damage, {
+					pierceArmor: true,
+					skipAura: !target.isHero,
+					//Electric kills have no death-badge bucket here (the port's four death
+					//causes predate the blob), so they land in the default 'foe' bucket -
+					//but the player-facing line is Java's own `ondeath`, said here like the
+					//ooze/bomb kill sites do.
+					cause: cause === 'electricity' ? 'foe' : 'poison',
+					onHeroDeath: cause === 'electricity'
+						? () => this.say(t('actors.blobs.electricity.ondeath'), 'negative')
+						: undefined,
+					//Blob damage is not a plain weapon hit, so it clears the badge like
+					//every other non-weapon boss damage (`DwarfKing.damage()`459-467).
+					onNonWeaponBossDamage: (boss) => this.disqualifyBossChallenge(boss),
+				});
+				//The blob caller's contract: `false` means the hero died - stop processing.
+				return !heroDied;
 			},
 		});
 	},

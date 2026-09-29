@@ -370,8 +370,12 @@ export function verifyCombat(require, check) {
 		const mob = base({ isNPC: false });
 		facade.addBuff(mob, 'poison');
 		assert.notEqual(mob.buffs.poison, undefined, 'a non-NPC must still take buffs');
-		assert.ok(trapSource.includes('if (target.isNPC) return true;'),
-			'the blob applyDamage seam must skip NPCs like the sheep/sentry gates');
+		assert.ok(blastSource.includes('if (c.isNPC) return false;'),
+			'the shared Char.damage dispatch must skip NPCs like the sheep/sentry gates');
+		assert.ok(bombSource.includes('if (target.isNPC) return false;'),
+			'the headless blast fallback carries its own NPC gate beside sheep/sentry');
+		assert.ok(trapSource.includes('this.applyCharacterDamage(target, damage, {'),
+			'the blob applyDamage closure must route through that dispatch (it carries the NPC gate)');
 		assert.ok(trapSource.includes("applyElementalBacklash(target, 'chill') === 0 && !target.isNPC"),
 			'the blob chill writer bypasses buffBlocked, so it needs its own NPC gate');
 		assert.ok(trapSource.includes('if (target.isNPC) return;'),

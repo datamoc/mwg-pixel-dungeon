@@ -1485,6 +1485,12 @@ export const panelsSingleUseMethods = {
 		//`Sheep.damage()` and `SentryRoom$Sentry.damage()` (tag `v3.3.8`) are no-ops for
 		//every source, not just bombs.
 		if (c.allyKind === 'sheep' || c.kind === 'sentry') return false;
+		//Every NPC's `damage(int, Object)` is a no-op - "do nothing" (tag `v3.3.8`):
+		//`RatKing`, `Shopkeeper`, `Ghost`, `Wandmaker`, `Blacksmith` and `Imp` (plus
+		//`ImpShopkeeper`, which inherits `Shopkeeper`'s). No source routed through this
+		//dispatch - blast, blob or otherwise - can damage an NPC, the same shape as
+		//the sheep/sentry gates just above.
+		if (c.isNPC) return false;
 		//`Challenge.SpectatorFreeze` makes `Char.isInvulnerable()` true for every
 		//damage source (tag `v3.3.8`). Bombs, Stone of Blast and the other blast
 		//callers all converge here, so preserve their roll but discard HP damage.

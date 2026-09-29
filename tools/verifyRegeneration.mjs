@@ -81,7 +81,10 @@ for (const [file, hook] of [
 	['../src/scenes/dungeon/deathSaveRefresh.ts', 'this.lockedFloorBossDamage(king, chip, 0);'],
 	['../src/scenes/dungeon/turnLoopAiming.ts', 'for (; this.regeneration.lockCarry >= 1; this.regeneration.lockCarry--)'],
 ]) assert.ok(read(file).includes(hook), `lock hook wired in ${file}: ${hook.slice(0, 40)}`);
-assert.equal((read('../src/scenes/dungeon/environmentFireTraps.ts').match(/target\.hp -= damage; this\.lockedFloorBossDamage\(target, damage, preHp - target\.hp\);/g) ?? []).length, 2, 'blob + trap-blast seams feed the lock');
+//The blob seam now routes through the shared `applyCharacterDamage` dispatch (which
+//feeds the lock at panelsSingleUse.ts, pinned above), so environmentFireTraps keeps
+//only the trap-blast seam's own hand-rolled copy of this line.
+assert.equal((read('../src/scenes/dungeon/environmentFireTraps.ts').match(/target\.hp -= damage; this\.lockedFloorBossDamage\(target, damage, preHp - target\.hp\);/g) ?? []).length, 1, 'trap-blast seam feeds the lock; the blob seam does it via the dispatch');
 
 //`items/artifactPassiveRecharge.ts` against chainsRecharge/beaconRecharge/hourglassRecharge.act(),
 //with `mwlItemEffectValue` answered from the authored `item-rules.mwl` rows themselves.
