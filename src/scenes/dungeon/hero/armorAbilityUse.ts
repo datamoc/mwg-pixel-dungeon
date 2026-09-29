@@ -863,17 +863,9 @@ export const armorAbilityUseMethods = {
 			if (creature.isNPC || creature.hp <= 0 || !blast.has(this.level.index(creature.x, creature.y))) continue;
 			let damage = Math.max(0, Random.normalRange(4 + this.depth, 12 + 3 * this.depth)
 				- Random.normalRange(creature.armor[0], creature.armor[1]));
-			if (creature.isHero) {
-				damage = this.absorbHeroDamage(damage);
-				creature.hp -= damage;
-				this.showDamage(creature, damage);
-				if (creature.hp <= 0) this.kill(creature);
-			} else {
-				creature.hp -= damage;
-				this.showDamage(creature, damage);
-				creature.sleeping = false;
-				if (creature.hp <= 0) this.kill(creature);
-			}
+			//`Char.damage()` seam (armor already subtracted above): hero shields and death, or the mob
+			//path's Aura, Doom, defender overrides, shields, hooks, wake and death.
+			this.applyCharacterDamage(creature, damage, { pierceArmor: true, cause: 'foe' });
 		}
 	},
 
@@ -992,11 +984,8 @@ export const armorAbilityUseMethods = {
 				if (mob.kind !== undefined && UNDEAD_KINDS.has(mob.kind)) {
 					let dmg = Math.max(0, elementalBlastUndeadDamage(Random.normalRange(15, 25), multi)
 						- Random.normalRange(mob.armor[0], mob.armor[1]));
-					mob.hp -= dmg;
-					this.showDamage(mob, dmg);
-					mob.sleeping = false;
+					this.applyCharacterDamage(mob, dmg, { pierceArmor: true, cause: 'foe', skipAura: true });
 					if (dmg > 0) charsHit += 1;
-					if (mob.hp <= 0) this.kill(mob);
 				} else {
 					addBuff(mob, 'charm', elementalBlastCharmDuration(multi));
 					this.charmTargets.set(mob.id, this.hero.id);
@@ -1012,11 +1001,9 @@ export const armorAbilityUseMethods = {
 			//`absorbHeroDamage` split is needed - every victim here is a foe.
 			let dmg = Math.max(0, elementalBlastDamage(Random.normalRange(15, 25), multi, factor)
 				- Random.normalRange(mob.armor[0], mob.armor[1]));
-			mob.hp -= dmg;
-			this.showDamage(mob, dmg);
-			mob.sleeping = false;
+			this.applyCharacterDamage(mob, dmg, { pierceArmor: true, cause: 'foe', skipAura: true });
 			if (dmg > 0) charsHit += 1;
-			if (mob.hp <= 0) { this.kill(mob); continue; }
+			if (mob.hp <= 0) continue;
 			if (wandType === 'blastWave') {
 				//`throwChar`'s straight path, away from the hero: the port's forced-movement
 				//seam (collision damage stays simplified, like the wand's own push).

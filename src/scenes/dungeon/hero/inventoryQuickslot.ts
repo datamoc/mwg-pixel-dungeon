@@ -906,16 +906,13 @@ export const inventoryQuickslotMethods = {
 				const parried = victim.kind === 'greatCrab' && !victim.sleeping && victim.seesHero
 					&& victim.buffs['paralysis'] === undefined;
 				if (parried) this.say(t('port.log.crabparries'), 'negative');
-				else {
-					const dealt = doomDamage(damage, victim);
-					victim.hp -= dealt;
-					this.showDamage(victim, dealt);
-				}
+				//`Char.damage()` seam: Doom, defender overrides, shields, hooks, wake and death.
+				else this.applyCharacterDamage(victim, damage, { pierceArmor: true, cause: 'foe', skipAura: true });
 				victim.sleeping = false;
 				if (victim.hp > 0) {
 					addBuff(victim, 'illuminated');
 					addBuff(victim, 'wasIlluminated');
-				} else if (!victim.isAlly) this.kill(victim);
+				}
 			} else {
 				this.trampleHighGrass(cell.x, cell.y);
 				this.portedFeatures.interact(this.level.index(cell.x, cell.y), this);
@@ -1162,11 +1159,7 @@ export const inventoryQuickslotMethods = {
 				const parried = victim.kind === 'greatCrab' && !victim.sleeping && victim.seesHero
 					&& victim.buffs['paralysis'] === undefined;
 				if (parried) this.say(t('port.log.crabparries'), 'negative');
-				else {
-					const dealt = doomDamage(damage, victim);
-					victim.hp -= dealt;
-					this.showDamage(victim, dealt);
-				}
+				else this.applyCharacterDamage(victim, damage, { pierceArmor: true, cause: 'foe', skipAura: true });
 				victim.sleeping = false;
 				if (victim.hp > 0) {
 					const blindFor = sunrayBlindDuration(rank);
@@ -1178,7 +1171,7 @@ export const inventoryQuickslotMethods = {
 						addBuff(victim, 'sunrayRecent', blindFor);
 						addBuff(victim, 'sunrayUsed');
 					}
-				} else if (!victim.isAlly) this.kill(victim);
+				}
 			}
 			if (this.hero.buffs['invisibility']) delete this.hero.buffs['invisibility'];
 			this.actionSpentTurn = true;

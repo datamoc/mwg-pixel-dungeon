@@ -307,17 +307,14 @@ export const clericSpellFlowsMethods = {
 			return;
 		}
 		const [min, max] = smiteBonusDamage(this.progression.level);
-		const damage = doomDamage(isUndeadOrDemonic(target.kind) ? max : Random.normalRange(min, max), target);
+		const damage = isUndeadOrDemonic(target.kind) ? max : Random.normalRange(min, max);
 		if (damage > 0) this.disqualifyBossChallenge(target);
 		const parried = target.kind === 'greatCrab' && !target.sleeping && target.seesHero
 			&& target.buffs['paralysis'] === undefined;
 		if (parried) this.say(t('port.log.crabparries'), 'negative');
-		else {
-			target.hp -= damage;
-			this.showDamage(target, damage);
-		}
+		//`Char.damage()` seam: Doom, defender overrides, shields, hooks, wake and death.
+		else this.applyCharacterDamage(target, damage, { pierceArmor: true, cause: 'foe', skipAura: true });
 		target.sleeping = false;
-		if (target.hp <= 0 && !target.isAlly) this.kill(target);
 		if (this.hero.buffs['invisibility']) delete this.hero.buffs['invisibility'];
 		this.actionSpentTurn = true;
 		this.spendHeroTurn(1);

@@ -67,6 +67,8 @@ export interface CharacterDamageOptions {
 	readonly skipDoom?: boolean;
 	/** Direct `Char.damage()` paths bypass `Char.attack()`'s Aura reduction (`Char.java:465-469`). */
 	readonly skipAura?: boolean;
+	/** A magical source: the hero-side `absorbHeroDamage(_, true)` path (skips Earthroot/HolyWard like Java's non-melee sources). */
+	readonly magical?: boolean;
 	readonly onHeroDeath?: () => void;
 	readonly onNonWeaponBossDamage?: (target: Creature) => void;
 }

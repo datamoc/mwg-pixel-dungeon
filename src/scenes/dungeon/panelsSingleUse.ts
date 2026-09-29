@@ -1472,7 +1472,7 @@ export const panelsSingleUseMethods = {
 	applyCharacterDamage(this: DungeonScene, c: Creature, rawDamage: number, options: CharacterDamageOptions): boolean {
 		let damage = rawDamage;
 		if (c.isHero) {
-			damage = this.absorbHeroDamage(damage);
+			damage = this.absorbHeroDamage(damage, options.magical === true);
 			this.hero.hp -= damage;
 			this.showDamage(this.hero, damage);
 			if (this.hero.hp <= 0) {

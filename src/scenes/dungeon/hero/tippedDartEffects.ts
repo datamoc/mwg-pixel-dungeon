@@ -81,10 +81,8 @@ export const tippedDartEffectsMethods = {
 				//25% of max HP on undead only. No allied undead exists in the roster,
 				//so the ally/enemy bless halves collapse into one non-undead branch.
 				if (isUndeadOrDemonic(target.kind)) {
-					const smite = doomDamage(Random.normalRange(10 + Math.floor(this.depth / 3), 20 + Math.floor(this.depth / 3)), target);
-					target.hp -= smite;
-					this.showDamage(target, smite);
-					if (target.hp <= 0) this.kill(target);
+					//`Char.damage()` seam: Doom, defender overrides, shields, hooks and death all run there.
+					this.applyCharacterDamage(target, Random.normalRange(10 + Math.floor(this.depth / 3), 20 + Math.floor(this.depth / 3)), { pierceArmor: true, cause: 'foe', skipAura: true });
 				} else addBuff(target, 'bless', BUFF_DURATION.bless);
 				break;
 			case 'stormvine':
@@ -93,10 +91,7 @@ export const tippedDartEffectsMethods = {
 				//status at all - the old daze-3 with no damage was invented. (The
 				//lightning-arc presentation has no seam here.)
 				{
-					const shock = doomDamage(Random.normalRange(5 + Math.floor(this.depth / 4), 10 + Math.floor(this.depth / 4)), target);
-					target.hp -= shock;
-					this.showDamage(target, shock);
-					if (target.hp <= 0) this.kill(target);
+					this.applyCharacterDamage(target, Random.normalRange(5 + Math.floor(this.depth / 4), 10 + Math.floor(this.depth / 4)), { pierceArmor: true, cause: 'foe', skipAura: true });
 				}
 				break;
 			case 'sungrass':

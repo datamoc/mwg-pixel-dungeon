@@ -504,17 +504,8 @@ export const cursedWandCastMethods = {
 				if (victim && victim.hp > 0) {
 					reigniteBuff(victim, 'burning');
 					const damage = Math.max(0, Random.normalRange(5 + this.depth, 10 + 2 * this.depth));
-					if (victim.isHero) {
-						const applied = this.absorbHeroDamage(damage, true);
-						victim.hp -= applied;
-						this.showDamage(victim, applied);
-						if (victim.hp <= 0) this.kill(victim, 'fire');
-					} else {
-						const applied = doomDamage(damage, victim);
-						victim.hp -= applied;
-						this.showDamage(victim, applied);
-						if (victim.hp <= 0) this.kill(victim, 'fire');
-					}
+					//`Char.damage()` seam: hero shields/magical absorb, or the mob path's Doom, overrides, shields, hooks and death.
+					this.applyCharacterDamage(victim, damage, { pierceArmor: true, cause: 'fire', skipAura: true, magical: true });
 				}
 				if (this.isFireFlammableTerrain(x, y)) this.fire.seed(x, y, 4);
 			}
@@ -543,18 +534,8 @@ export const cursedWandCastMethods = {
 			if (!victim || victim.hp <= 0) continue;
 			const dmg = Math.max(0, Random.normalRange(5 + this.depth, 10 + this.depth * 2));
 			const dealDamage = (): boolean => {
-				if (victim.isHero) {
-					const applied = this.absorbHeroDamage(dmg);
-					this.hero.hp -= applied;
-					this.showDamage(this.hero, applied);
-					if (this.hero.hp <= 0) { this.kill(this.hero, 'foe'); return false; }
-				} else {
-					const dealt = doomDamage(dmg, victim);
-					victim.hp -= dealt;
-					this.showDamage(victim, dealt);
-					if (victim.hp <= 0) { this.kill(victim, 'foe'); return false; }
-				}
-				return true;
+				this.applyCharacterDamage(victim, dmg, { pierceArmor: true, cause: 'foe', skipAura: true });
+				return victim.hp > 0;
 			};
 			const status = pickConeOfColorsStatus((bound) => Random.int(bound));
 			if (status === 'burning') {
