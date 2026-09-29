@@ -45,7 +45,7 @@ import { ignoresCrystalGuardianBeckon } from '../../simulation/crystalSpire';
 import { markRingTypesKnown } from '../../simulation/ringKnow';
 import { isWandType, setStaffImbue } from '../../items/wands';
 import { CLASSES } from '../../classes';
-import { showChoiceWindow } from '../../ui/portWindows';
+import { showChallengesWindow, showChoiceWindow } from '../../ui/portWindows';
 import { useBrewFlow, type BrewFlowContext } from '../../simulation/brews';
 import { useHoneypotFlow, type HoneypotFlowContext } from '../../items/honeypot';
 import { useAnkhFlow, type AnkhContext } from '../../items/selfUse';
@@ -91,7 +91,7 @@ export const panelsSingleUseMethods = {
 		for (const [depth, entries] of s.fallenItems ?? []) fallenStore.set(depth, entries);
 		resetPortedRun();
 		//`Dungeon.loadGame`: the run keeps the challenges it started with, not whatever the setup screen says now.
-		if (s.challenges) restoreRunChallenges(s.challenges);
+		restoreRunChallenges(s.challengeIds);
 		this.runSeedLong = s.runSeedLong ? BigInt(s.runSeedLong) : BigInt(s.runSeed ?? this.runSeed);
 		this.runSeed = Number(this.runSeedLong % 4294967296n) >>> 0;
 		this.runSeedLabel = s.runSeedLong ?? String(this.runSeed);
@@ -465,7 +465,7 @@ export const panelsSingleUseMethods = {
 		this.stage.addChild(this.statusPane);
 		//GameScene.java's compact top-right chrome is separate from StatusPane: it carries the
 		//version, floor label, carried key counters and the entry point for WndGame.
-		this.dungeonHud = new DungeonHud(() => this.onAction('gameMenu'), () => this.openJournal());
+		this.dungeonHud = new DungeonHud(() => this.onAction('gameMenu'), () => this.openJournal(), () => showChallengesWindow(this.gameWindows, false));
 		this.stage.addChild(this.dungeonHud);
 		this.statusPane.on('pointertap', () => {
 			//InfoWindow is a spent Window after close, so create a fresh instance for each opening.

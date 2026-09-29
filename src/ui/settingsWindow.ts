@@ -43,10 +43,10 @@ import {
  * persistence-only, each said so at its setting. The port-original `- zoom +`
  * stepper stays at the Display tab's foot (this port's camera has one fixed base
  * zoom where Java's is screen-derived - see `settings.ts`), and the old
- * single-window's Challenges button and version row are gone (Java's challenge entry is the hero-select screen's editable window, victory-gated, with a
- * read-only in-run window - this port has no hero-select entry; its menu entry appears only
- * while a challenge is already selected (gameMenu.ts) and stays editable mid-run, unlike Java's
- * read-only one - and shows the version on the title screen instead).
+ * single-window's Challenges button and version row are gone (Java's editable
+ * challenges window is on the hero-select screen, which this port now has too -
+ * `classSelectScene.ts`; the in-game menu only opens the read-only one, and the
+ * version is on the title screen instead).
  */
 
 // `WndSettings`: portrait 122, landscape 223, two columns past 200, 21px sliders,

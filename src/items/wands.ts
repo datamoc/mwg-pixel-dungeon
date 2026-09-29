@@ -118,11 +118,6 @@ export function wandDamageRange(type: WandType, level: number): [number, number]
 	return [rule.minBase + rule.minPerLevel * safeLevel, rule.maxBase + rule.maxPerLevel * safeLevel];
 }
 
-/** `WandOfPrismaticLight.onZap()` (`items/wands/WandOfPrismaticLight.java:73-76`): Light lasts `2+level` under DARKNESS and `10+5*level` otherwise. The caller gates this on base Level.viewDistance < 6, using DARKNESS/Halls/final depth ids because `viewRadius()` includes Light itself. */
-export function prismaticWandLightDuration(level: number, darknessChallenged: boolean): number {
-	return darknessChallenged ? 2 + level : 10 + 5 * level;
-}
-
 /** `WandOfLivingEarth.damageRoll()`: `NormalIntRange(2, 4 + scalingDepth()/2)` - the
  * only wand roll that scales with depth instead of wand level, so it cannot live in the
  * level-parameterized MWL damage table (which carries no livingEarth row). `depth` is the
@@ -131,6 +126,14 @@ export function prismaticWandLightDuration(level: number, darknessChallenged: bo
  * wand (the port's standing NormalIntRange simplification). */
 export function livingEarthZapRange(depth: number): [number, number] {
 	return [2, 4 + Math.floor(Math.max(1, depth) / 2)];
+}
+
+/** `WandOfLivingEarth.EarthGuardian.drRoll()` (tag `v3.3.8`, `:417-424`): the guardian's own
+ * armor range is `NormalIntRange(wandLevel, 3 + 3*wandLevel)`, or `(wandLevel, 2 + wandLevel)`
+ * under `Challenges.NO_ARMOR` (Faith is my armor; `challenges.no_armor_desc` "Earthen guardian's
+ * defensive power is also significantly reduced"). */
+export function earthGuardianArmorRange(wandLevel: number, noArmorChallenge: boolean): [number, number] {
+	return [wandLevel, noArmorChallenge ? 2 + wandLevel : 3 + 3 * wandLevel];
 }
 
 /** Scene services used by the disintegration wand; targeting remains with the scene. */

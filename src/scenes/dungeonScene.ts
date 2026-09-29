@@ -148,7 +148,7 @@ import { Feeling } from '../spdLevelGen/regularPainter';
 import { WallDecorationLayer, WaterEmberLayer, WellRippleLayer } from '../ui/wallDecorations';
 import { runState, LANGUAGE_KEY } from '../runState';
 import { recordRun } from '../rankings';
-import { beginRunChallenges, isChallengeEnabled } from '../challenges';
+import { isChallengeEnabled } from '../challenges';
 import { HUNGRY, STARVING } from '../simulation/hunger';
 import { CLASS_TALENTS, armorTalentDefinitions, subclassTalentDefinitions, TALENT_TIERS, type TalentDefinition } from '../talents';
 import {
@@ -1474,7 +1474,6 @@ export class DungeonScene extends Scene2D {
 	interlevel: { root: Container; backdrop: TilingSprite; elapsed: number; duration: number; curtain: Graphics; message: Label } | null = null;
 
 	override create(): void {
-		beginRunChallenges(); //`Dungeon.init()` snapshots `SPDSettings.challenges()` into the run
 		this.heroClass = runState.pendingClass;
 		// Hoisted ahead of buildInterface() (below): its refreshInventoryPanel() call reads
 		// this.heroStats.base('gold') synchronously, before makeHero() - where this used to be

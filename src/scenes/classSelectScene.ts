@@ -11,7 +11,7 @@ import { loadBadges, classUnlocked } from '../badges';
 import { SpdButton as Button, menuScale } from '../ui/spdButton';
 import { titleIcon } from '../ui/titleIcons';
 import { showChallengesWindow, showInfoWindow } from '../ui/portWindows';
-import { endRunChallenges } from '../challenges';
+import { beginChallengeRun, endChallengeRun, setupChallenges } from '../challenges';
 import { TitleScene } from './titleScene';
 import { DungeonScene } from './dungeonScene';
 
@@ -30,11 +30,12 @@ export const CLASS_SPLASH: Record<ClassId, keyof SpdSprites> = {
 export class ClassSelectScene extends Scene2D {
 	private badges = loadBadges();
 	private selected: ClassId | null = null;
-	private layout: () => void = () => {};
 	private readonly windows = new WindowStack();
+	private refreshChal: () => void = () => {};
+	private layout: () => void = () => {};
 
 	override create(): void {
-		endRunChallenges(); //back on the setup screen: the selection is editable again
+		endChallengeRun(); //back on the setup screen: the selection is editable again
 		// HeroSelectScene.java: compact hero buttons, splash art, then explicit Start.
 		const root = new Container();
 		this.stage.addChild(root);
@@ -61,19 +62,13 @@ export class ClassSelectScene extends Scene2D {
 		info.visible = false;
 		info.on('pointertap', () => { if (this.selected) this.windows.push(createHeroInfoWindow(this.selected, (window) => this.windows.push(window))); });
 		root.addChild(heading, name, description, info);
-		//`HeroSelectScene.btnChallenges`: opens the editable `WndChallenges` once the game has been won
-		//(`Badges.isUnlocked(Badge.VICTORY)`), else the `challenges_nowin` explanation. The run
-		//snapshots the selection when it starts (`beginRunChallenges`).
-		const challengesButton = new Button({ width: 20, height: 20, icon: titleIcon(runState.sprites.uiIcons, 'challenge', 1),
-			onClick: () => {
-				if (this.badges.unlocked('victory')) showChallengesWindow(this.windows, true);
-				else showInfoWindow(this.windows, t('windows.wndgame.challenges'), t('scenes.heroselectscene.challenges_nowin'));
-			} });
-		root.addChild(challengesButton);
 		const start = new Button({ width: 80, height: 21, text: capitalize(t('scenes.heroselectscene.start')),
 			icon: titleIcon(runState.sprites.uiIcons, 'enter', 1), onClick: () => {
 				if (!this.selected) return;
 				runState.pendingClass = this.selected;
+				//`HeroSelectScene.java:237` + `Dungeon.init` (`Dungeon.java:236`): the setup mask is dropped until the
+				//`VICTORY` badge exists, then snapshotted into the run.
+				beginChallengeRun(this.badges.unlocked('victory'));
 				Game.current.switchScene(DungeonScene);
 			} });
 		start.visible = false;
@@ -107,9 +102,21 @@ export class ClassSelectScene extends Scene2D {
 			root.addChild(button);
 			return button;
 		});
-		this.stage.addChild(this.windows);
 		const back = new Button({ width: 20, height: 20, icon: titleIcon(runState.sprites.uiIcons, 'exit', 1), onClick: () => Game.current.switchScene(TitleScene) });
 		root.addChild(back);
+		//`HeroSelectScene.java:798-924`: the challenges button. Without the `VICTORY` badge it only explains
+		//`challenges_nowin`; with it, it opens the editable `WndChallenges`. The count beside it is the number of
+		//selected challenges (Java tints the icon instead).
+		const chalCount = new Label({ size: 6, color: theme().color.textHighlight });
+		let chalShown = '';
+		const refreshChalIcon = (): void => { const n = this.badges.unlocked('victory') ? setupChallenges().size : 0; const text = n > 0 ? String(n) : ''; if (text !== chalShown) { chalShown = text; chalCount.setText(text); } };
+		const chal = new Button({ width: 20, height: 20, icon: titleIcon(runState.sprites.uiIcons, 'challenge', 1), onClick: () => {
+			if (this.badges.unlocked('victory')) showChallengesWindow(this.windows, true);
+			else showInfoWindow(this.windows, t('windows.wndchallenges.title'), t('scenes.heroselectscene.challenges_nowin'));
+		} });
+		root.addChild(chal, chalCount);
+		this.stage.addChild(this.windows);
+		this.refreshChal = refreshChalIcon;
 		//Port-original keyboard-navigation accessibility work (ROADMAP.md section 8 - Java has
 		//no such system), continuing `TitleScene`'s model to the class-select screen: a single
 		//focused portrait, moved by the movement actions, drawn with the same visible ring.
@@ -203,14 +210,16 @@ export class ClassSelectScene extends Scene2D {
 				start.position.set((w - 80) / 2, h - 65);
 			}
 			back.position.set(w - 20, 0);
-			challengesButton.position.set(0, 0);
+			chal.position.set(w - 42, 0);
+			chalCount.position.set(w - 42, 20);
 			this.windows.scale.set(scale);
 			this.windows.setViewport(w, h);
+			refreshChalIcon();
 			drawFocusRing();
 		};
 		this.layout();
 	}
 
-	override update(dt: number): void { this.windows.update(dt); runState.audio.update(dt); }
+	override update(dt: number): void { this.windows.update(dt); this.refreshChal(); runState.audio.update(dt); }
 	override resize(_w: number, _h: number): void { this.layout(); }
 }

@@ -41,6 +41,7 @@ import { NEGATIVE_BUFFS, addBuff, doomDamage, reigniteBuff, rollHit, setAscensio
 import { BOSSES, IMMOVABLE_KINDS } from '../../monsters';
 import { ignoresCrystalGuardianBeckon } from '../../simulation/crystalSpire';
 import { beckonSwarmIntelligence } from './swarmIntelligence';
+import { earthGuardianArmorRange } from '../../items/wands';
 
 /** `Mob.intelligentAlly` (tag `v3.3.8`) is set by `DirectableAlly` subclasses - the Dried
  * Rose's `GhostHero`, `HawkAlly`, `PowerOfMany.LightAlly`, `ShadowClone.ShadowAlly` - and by
@@ -1997,13 +1998,7 @@ export const actorTurnsHazardsMethods = {
 		guardian.accuracy = 2 * guardian.earthGuardianDefense + 5;
 		guardian.evasion = guardian.earthGuardianDefense;
 		guardian.damage = [2, 4 + Math.floor(this.depth / 2)];
-		//Java's WandOfLivingEarth.upgradeStat3()/EarthGuardian.description() also
-		//show this range in upgrade/character-info UI; this port has neither window.
-		//WandOfLivingEarth.EarthGuardian.drRoll() (tag v3.3.8) caps Faith is my
-		//armor's guardian defense at lvl..2+lvl; ordinary runs use lvl..3+3*lvl.
-		guardian.armor = isChallengeEnabled('no_armor')
-			? [guardian.earthGuardianWandLevel, 2 + guardian.earthGuardianWandLevel]
-			: [guardian.earthGuardianWandLevel, 3 + 3 * guardian.earthGuardianWandLevel];
+		guardian.armor = earthGuardianArmorRange(guardian.earthGuardianWandLevel, isChallengeEnabled('no_armor'));
 		this.livingEarthArmor = 0;
 		this.say(t('port.log.wandlivingearth'), 'positive');
 	},

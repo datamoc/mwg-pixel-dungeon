@@ -1,5 +1,6 @@
 import type { DungeonScene } from '../../dungeonScene';
 import { Game, Random, Roguelike } from 'mwg';
+import { activeChallengeCount } from '../../../challenges';
 import { effectiveInterfaceSize, hudZoom } from '../../../ui/interfaceMode';
 import { exoticRecycleAlternatives } from '../../../items/alchemy';
 import { HOLSTER_RECHARGE_BASE, NORMAL_RECHARGE_BASE, ownsBag } from '../../../items/bags';
@@ -1504,6 +1505,13 @@ export const weaponSpellsGearMethods = {
 			newlyIdentified = true;
 		}
 		if (newlyIdentified) this.procIdentifyTalents();
+	},
+
+	/** `Badges.validateChampion(Challenges.activeChallenges())` (`Badges.java:1153-1170`, called from `Amulet.java:112`): with 1/3/6 or
+	 * more challenges, victory unlocks `CHAMPION_1`, then also `_2`, then also `_3`. */
+	awardChampionBadges(this: DungeonScene): void {
+		const n = activeChallengeCount();
+		for (const [need, id] of [[1, 'champion_1'], [3, 'champion_2'], [6, 'champion_3']] as const) if (n >= need) this.awardBadge(id);
 	},
 
 	/**

@@ -28,7 +28,7 @@ export function verifyCombat(require, check) {
 	});
 	check('Darkness places floor Torches and Prismatic Light grants self illumination', () => {
 		assert.match(groundPlacementSource, /if \(context\.darknessChallenge\)[\s\S]*?context\.largeFeeling \? 2 : 1[\s\S]*?context\.placeTorch\(x, y\)/);
-		assert.match(wandAimingSource, /wandType === 'prismaticLight' && \(isChallengeEnabled\('darkness'\) \|\| this\.depth === 25 \|\| this\.depth === 26\)[\s\S]*?addBuff\(this\.hero, 'light', prismaticWandLightDuration/);
+		assert.match(wandAimingSource, /wandType === 'prismaticLight'\) prolongPrismaticWandLight\(this\.hero\.buffs, this\.depth, isChallengeEnabled\('darkness'\)/);
 	});
 	check('lethal trap kills are hazard-marked before damage and Rockfall uses its full area', () => {
 		const mobTrapSource = trapSource.split('triggerMobTrapAt(this: DungeonScene, monster: Creature): void {')[1]?.split('applyTrapBlast(this: DungeonScene')[0];
