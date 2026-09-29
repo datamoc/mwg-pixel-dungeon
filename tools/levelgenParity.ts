@@ -27,6 +27,8 @@
  *
  * `checkConnectionRooms()` below runs on every invocation, with or without a dump:
  * R095 regression pins for the depths-11+ connection-room bands the walk never covers.
+ * Without `--java-dump` the tool runs just those self-checks and exits 0 (so the
+ * `test:parity` gate needs no Java side); with a dump it continues into the walk.
  */
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -169,8 +171,8 @@ function main(): void {
 	console.log(`connectionRooms: ${Object.keys(CONNECTION_ANCHORS).length + 26} checks passed`);
 	const dumpArg = process.argv.indexOf('--java-dump');
 	if (dumpArg < 0 || !process.argv[dumpArg + 1] || process.argv[dumpArg + 1]!.startsWith('--')) {
-		console.error('usage: levelgenParity --java-dump <levelgen_java_dump.txt>');
-		process.exit(2);
+		console.log('no --java-dump given: self-checks only, differential walk skipped');
+		return;
 	}
 	const java = parseJavaDump(readFileSync(process.argv[dumpArg + 1]!, 'utf8'));
 	const writeArg = process.argv.indexOf('--write-ts');
