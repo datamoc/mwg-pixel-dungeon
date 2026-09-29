@@ -8,7 +8,7 @@ import { PORT_MINE_STRINGS } from './portMineStrings';
  * quests it simplified, its own hints, and the handful of names SPD's message files in this
  * checkout do not carry.
  *
- * English and French are human-written, as are the Spanish badge descriptions (marked below). Every other catalogue here is a machine translation,
+ * English and French are human-written, as are the Spanish and German badge descriptions (marked below). Every other catalogue here is a machine translation,
  * explicitly marked `MT` below and in `PORT_TRANSLATION_ORIGIN`: each is a complete first draft,
  * not native-speaker work. `PORT_STRINGS` at the foot of this file is the authoritative list of
  * which languages have one - an SPD language missing from it still falls back to English for
@@ -1487,6 +1487,41 @@ export const PORT_STRINGS_FR: Record<string, string> = {
  */
 
 export const PORT_STRINGS_DE: Record<string, string> = {
+	// HUMAN: German badge descriptions, hand-written 2026-09-29. Game terms follow
+	// SPD's own DE catalogue ("Schleim", "König der Zwerge", "Amulett von Yendor",
+	// "Schriftrolle der Verbesserung", "Überraschungsangriffe", "Wurfwaffen", and
+	// SPD's bag names); achievement mood is SPD DE's imperative. The rest of this
+	// catalogue is MT.
+	'port.badges.boss1.description': 'Besiege Schleim',
+	'port.badges.boss2.description': 'Besiege Tengu',
+	'port.badges.boss3.description': 'Besiege DM-300',
+	'port.badges.boss4.description': 'Besiege den König der Zwerge',
+	'port.badges.victory.description': 'Entkomme mit dem Amulett',
+	'port.badges.boss_challenge_1.description': 'Besiege Schleim nur mit Waffen',
+	'port.badges.boss_challenge_2.description': 'Besiege Tengu nur mit Waffen',
+	'port.badges.boss_challenge_3.description': 'Besiege DM-300 nur mit Waffen',
+	'port.badges.boss_challenge_4.description': 'Besiege den König der Zwerge nur mit Waffen',
+	'port.badges.boss_challenge_5.description': 'Besiege Yog-Dzewa nur mit Waffen',
+	'port.badges.enemy_hazards.description': 'Töte 10 Gegner mithilfe von Gefahren',
+	'port.badges.piranhas.description': 'Besiege 6 Riesenpiranhas',
+	'port.badges.bag_velvet.description': 'Besitze den Samtbeutel',
+	'port.badges.bag_holder.description': 'Besitze die Schriftrollen-Rolle',
+	'port.badges.bag_bandolier.description': 'Besitze das Trank-Bandelier',
+	'port.badges.bag_holster.description': 'Besitze das Magische Holster',
+	'port.badges.bags_all.description': 'Besitze alle vier Taschen',
+	'port.badges.unlock_mage.description': 'Benutze eine Schriftrolle der Verbesserung',
+	'port.badges.unlock_rogue.description': 'Führe 10 Überraschungsangriffe aus',
+	'port.badges.unlock_huntress.description': 'Führe 10 Angriffe mit Wurfwaffen aus',
+	'port.badges.unlock_duelist.description': 'Verbessere eine Waffe auf +2',
+	'port.badges.death_trap.description': 'Tod durch eine Falle',
+	'port.badges.death_fire.description': 'Tod durch Feuer',
+	'port.badges.death_poison.description': 'Tod durch Gift',
+	'port.badges.death_hunger.description': 'Tod durch Hunger',
+	'port.badges.death_falling.description': 'Tod durch einen Sturz',
+	'port.badges.death_foe.description': 'Von einem Feind erschlagen',
+	'port.badges.happy_end.description': 'Bringe das Amulett von Yendor an die Oberfläche',
+	'port.badges.happy_end_remains.description': 'Bringe den persönlichen Gegenstand eines gefallenen Helden an die Oberfläche',
+	'port.badges.pacifist_ascent.description': 'Bringe das Amulett von Yendor an die Oberfläche, ohne jemals die Schwere seines Fluchs zu mindern',
 	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
 	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
 	// markers are carried as `{0}`, the token `buffInfo()` fills.
