@@ -123,6 +123,8 @@ import uiToolbarUrl from './assets/ui_toolbar.png';
 import uiChromeUrl from './assets/ui_chrome.png';
 import uiMenuPaneUrl from './assets/ui_menu_pane.png';
 import uiMenuButtonUrl from './assets/ui_menu_button.png';
+import uiTalentIconsUrl from './assets/ui_talent_icons.png';
+import uiTalentButtonUrl from './assets/ui_talent_button.png';
 import uiStatusPaneUrl from './assets/ui_status_pane.png';
 import uiBuffsUrl from './assets/ui_buffs.png';
 //`SPDSettings.interfaceSize()`'s large variant: `BuffIcon`'s own `Assets.Interfaces.BUFFS_LARGE`,
@@ -211,6 +213,8 @@ const MWL_ASSET_URLS: Readonly<Record<string, string>> = {
 	'assets/ui_chrome.png': uiChromeUrl,
 	'assets/ui_menu_pane.png': uiMenuPaneUrl,
 	'assets/ui_menu_button.png': uiMenuButtonUrl,
+	'assets/ui_talent_icons.png': uiTalentIconsUrl,
+	'assets/ui_talent_button.png': uiTalentButtonUrl,
 	'assets/ui_icons.png': uiIconsUrl,
 	'assets/ui_large_buffs.png': uiLargeBuffsUrl,
 	'assets/ui_status_pane.png': uiStatusPaneUrl,
@@ -412,6 +416,9 @@ export interface SpdSprites {
 	/** `interfaces/menu_pane.png` / `menu_button.png` (`MenuPane`, v3.3.8, byte-for-byte). */
 	uiMenuPane: Texture;
 	uiMenuButton: Texture;
+	/** `interfaces/talent_icons.png` (16x16 cells) and `talent_button.png` (`TalentIcon`/`TalentButton`, v3.3.8, byte-for-byte). */
+	uiTalentIcons: Texture;
+	uiTalentButton: Texture;
 	/** `interfaces/status_pane.png` - the hero pane frame and its HP/EXP bar fills */
 	uiStatusPane: Texture;
 	/** `interfaces/buffs.png` - 7x7 buff icons, indexed by `BuffIndicator`'s constants */
@@ -611,6 +618,8 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		uiChrome,
 		uiMenuPane,
 		uiMenuButton,
+		uiTalentIcons,
+		uiTalentButton,
 		uiStatusPane,
 		uiBuffs,
 		uiLargeBuffs,
@@ -729,6 +738,8 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		loadImage(uiChromeUrl),
 		loadImage(uiMenuPaneUrl),
 		loadImage(uiMenuButtonUrl),
+		loadImage(uiTalentIconsUrl),
+		loadImage(uiTalentButtonUrl),
 		loadImage(uiStatusPaneUrl),
 		loadImage(uiBuffsUrl),
 		loadImage(uiLargeBuffsUrl),
@@ -850,6 +861,8 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		uiChrome: Texture.from(uiChrome),
 		uiMenuPane: Texture.from(uiMenuPane),
 		uiMenuButton: Texture.from(uiMenuButton),
+		uiTalentIcons: Texture.from(uiTalentIcons),
+		uiTalentButton: Texture.from(uiTalentButton),
 		uiStatusPane: Texture.from(uiStatusPane),
 		uiBuffs: Texture.from(uiBuffs),
 		uiLargeBuffs: Texture.from(uiLargeBuffs),
