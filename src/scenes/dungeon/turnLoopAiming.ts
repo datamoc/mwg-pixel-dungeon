@@ -185,8 +185,13 @@ export const turnLoopAimingMethods = {
 						? Random.normalRange(...wandDamageRange('frost', zapLevel))
 						: Random.normalRange(...wandDamageRange('magicMissile', zapLevel));
 			const frostBlocked = wandType === 'frost' && victim.buffs['frost'] !== undefined;
-			let damage = Math.round(raw * lightningMultiplier)
-				+ (victim === targetCreature ? enragedCatalystBonus(this.subclass(), this.talentRank('enraged_catalyst'), this.hero.hp, this.hero.maxHp) + this.wandBonusDamage : 0);
+			let damage = Math.round(raw * lightningMultiplier);
+			//`WandOfCorruption.onZap()`/`WandOfCorrosion.onZap()` (tag `v3.3.8`) are `void`:
+			//no direct damage at all, so their zero `raw` stays zero - the flat zap bonuses
+			//must not manufacture damage Java never rolls (they could kill a convert early).
+			if (wandType !== 'corruption' && wandType !== 'corrosion' && victim === targetCreature) {
+				damage += enragedCatalystBonus(this.subclass(), this.talentRank('enraged_catalyst'), this.hero.hp, this.hero.maxHp) + this.wandBonusDamage;
+			}
 			if (wandType === 'lightning' && victim === this.hero) damage = Math.round(damage * 0.5);
 		//`Char.Property.ELECTRIC` (`Char.java`, tag `v3.3.8`) resists the
 		//`WandOfLightning` class: `Char.damage()` halves with `Math.round` on
@@ -246,20 +251,25 @@ export const turnLoopAimingMethods = {
 				this.showHeal(victim, Math.max(0, raw));
 			} else {
 				//`DwarfKing.damage()` 459-467: any `Wand` except `WandOfLightning` clears the
-				//boss-challenge flag. Lightning keeps it (Java's explicit exception).
+				//boss-challenge flag. Lightning keeps it (Java's explicit exception). Stays
+				//caller-side: the dispatch has no source-class input to fire
+				//`onNonWeaponBossDamage`, which would wrongly clear the flag for lightning too.
 				if (wandType !== 'lightning' && damage > 0) this.disqualifyBossChallenge(victim);
-				const dealt = victim.isHero ? this.absorbHeroDamage(damage, true) : doomDamage(damage, victim);
-				victim.hp -= dealt;
+				//`MirrorImage.damage()` fades on the first positive damage event regardless of
+				//lethality - event-based, so ahead of the dispatch like the fireblast prelude.
+				if (this.fadeMirrorOnDamage(victim, damage)) continue;
+				//Every hit finishes in the shared `Char.damage()` dispatch: hero half via
+				//`absorbHeroDamage(_, magical)`, else Aura, Doom, curves, shields, HP, hooks,
+				//wake and death - no `skipAura`: Java's zap src is the wand itself, a non-`Char`,
+				//so `damage()`'s aura clause runs (a no-op on foes, a real ally reduction).
+				//`pierceArmor` because no wand roll subtracts DR - the rolls above are
+				//`damage()`'s source-class resistances; the prismatic fade is `kill()`'s backstop.
+				this.applyCharacterDamage(victim, damage, {
+					pierceArmor: true, cause: 'foe', magical: true,
+				});
 				//`WandOfLightning.onZap()` (tag `v3.3.8`): the burst shakes
 				//(`2, 0.3f`) for every affected char that is the hero.
 				if (victim.isHero && wandType === 'lightning') this.shakeScreen(2, 0.3);
-				if (this.fadeMirrorOnDamage(victim, damage)) continue;
-				//Allies are never `kill()`ed on this seam (`!victim.isAlly` below),
-				//so a lethally-zapped image must enter its fade here, not at the
-				//kill backstop - otherwise it would linger at 0 HP and keep acting.
-				if (this.enterPrismaticFade(victim, dealt)) continue;
-				this.showDamage(victim, dealt);
-				victim.sleeping = false;
 			}
 			if (wandType === 'livingEarth' && !livingEarthGuardian) {
 				//WandOfLivingEarth.onZap() adds the successful damage roll to
@@ -339,11 +349,17 @@ export const turnLoopAimingMethods = {
 				addBuff(victim, 'chill');
 				victim.buffs.chill = Math.max(victim.buffs.chill ?? 0, (this.level.get(victim.x, victim.y) === WATER ? 4 : 2) + zapLevel);
 			}
-			if (wandType === 'prismaticLight' && Random.int(0, 5 + zapLevel) >= 3) addBuff(victim, 'daze');
-			this.sprite(victim).setColorAdd(0.6, 0.7, 1);
+			//The dispatch wrote HP and finished death - or `kill()`'s fade backstop - before
+			//these FX ran, so they need a living victim (a destroyed one has no sprite
+			//mapping). Observable result unchanged: `kill()` zeroes colorAdd on the corpse
+			//and a daze died with its victim. The `say` lines stay ungated: Java logs hits.
+			if (wandType === 'prismaticLight' && victim.hp > 0 && Random.int(0, 5 + zapLevel) >= 3) addBuff(victim, 'daze');
+			if (victim.hp > 0) this.sprite(victim).setColorAdd(0.6, 0.7, 1);
 			if (wandType === 'corrosion') this.say(t('port.log.wandcorrosion', { target: victim.name }), 'positive');
 			else if (wandType !== 'corruption') this.say(t('port.log.wandhits', { target: victim.name, damage }), 'positive');
-			if (victim.hp <= 0 && !victim.isAlly) this.kill(victim);
+			//The old `hp <= 0 && !isAlly` kill backstop is gone: the dispatch kills at 0 HP
+			//with its own cause, `kill()`'s prismatic backstop covers a fading image, and
+			//Java kills any lethal hit - a non-prismatic ally no longer lingers at 0 HP.
 		}
 		}
 		return true;
@@ -1018,9 +1034,8 @@ export const turnLoopAimingMethods = {
 			talentRank: this.talentRank.bind(this),
 			grantHeroShield: this.grantHeroShield.bind(this),
 			fadeMirrorOnDamage: this.fadeMirrorOnDamage.bind(this),
-			showDamage: this.showDamage.bind(this),
+			applyCharacterDamage: this.applyCharacterDamage.bind(this),
 			say: this.say.bind(this),
-			kill: this.kill.bind(this),
 			spendHeroTurn: this.spendHeroTurn.bind(this),
 			getAttackTurnCostMod: this.getAttackTurnCostMod.bind(this),
 			message: (victim, damage) => t('port.log.wandhits', { target: victim.name, damage }),
