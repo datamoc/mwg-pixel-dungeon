@@ -181,6 +181,23 @@ const { selectRangedTarget, findEnemyAlly, pursueTarget } = require('./simulatio
 		}
 		assert.ok(quickslot.includes('else scene.triggerEmptyPlantAt(cell.x, cell.y)'), 'an empty root dispatches the null-Char path');
 	});
+	check('Utility traps mark HazardAssistTracker at each Java activate() scope (R007/R075)', () => {
+		//Scene-seam source pin (the suite's convention): the blanket 3x3 mark is skipped for the kinds that
+		//mark themselves inside `activateUtilityTrap`, and each of those call sites exists.
+		const traps = readFileSync(new URL('../src/scenes/dungeon/environmentFireTraps.ts', import.meta.url), 'utf8');
+		const unmarked = /const UNMARKED_TRAPS[^\n]*\[([^\]]*)\]/.exec(traps)[1];
+		for (const kind of ['frost', 'rockfall', 'ooze', 'flock', 'gripping', 'teleportation', 'warping', 'alarm', 'summoning', 'pitfall']) {
+			assert.ok(unmarked.includes(`'${kind}'`), `${kind} is not blanket-marked`);
+		}
+		assert.ok(!unmarked.includes("'chilling'"), 'chilling keeps the 3x3 mark (Java loops NEIGHBOURS9)');
+		for (const marker of ['if (floodMob) this.markHazardMob(floodMob)', 'if (wasHunting) this.markHazardMob(ch)', 'if (occupant) { this.markHazardMob(occupant); continue; }']) {
+			assert.ok(traps.includes(marker), `in-activation mark present: ${marker}`);
+		}
+		assert.ok(/heap\.chest \|\| heap\.forSale\) continue;[\s\S]{0,700}spawnTrapSpecks\(this\.effectLayer, this\.effectBursts, x, y, 'light'\)/.test(traps), 'teleportation relocates plain heaps and bursts LIGHT at the trap cell');
+		assert.ok(/addBuff\(ch, 'ooze'\);\s*\n\s*this\.markHazardMob\(ch\);/.test(traps), 'ooze marks non-flying mobs');
+		assert.ok(/this\.markHazardMob\(ch\);\s*\n\s*let damage = Math\.max\(0, Random\.normalRange\(5 \+ this\.depth/.test(traps), 'rockfall marks before the hit');
+		assert.ok(/reigniteBuff\(c, 'cripple'\);\s*\n\s*\/\/[^\n]*\n\s*this\.markHazardMob\(c\);/.test(traps), 'gripping marks the non-flying mob stepper');
+	});
 	check('Health well satiates like Java instead of force-feeding hunger', () => {
 		//`WaterOfHealth.affectHero()` (tag `v3.3.8`) runs `buff(Hunger).satisfy(STARVING)`,
 		//i.e. hunger minus 450 floored at zero - never a jump toward HUNGRY.
