@@ -4160,3 +4160,31 @@ Register items extracted from PORT_COVERAGE on 2026-09-26 and closed since; the 
 - [x] **R082** _(Decide the fate of the other missing recipes with a coverage row each)_ **Documented 2026-09-29:** `coverage/rows-items-consumables-and-crafting.md` now has a separate Not ported row for ArcaneResin, LiquidMetal, Blandfruit CookFruit (linked to R008), UnstableBrew, UnstableSpell, AquaBrew, each of the seven remaining elixirs, TrinketCatalyst, Trinket.UpgradeTrinket, and the eleven missing potion and scroll exotic mappings, with source citations and Java inputs, outputs and costs.
 - [x] **R094** _(Documentation: wrong challenge claims)_ **Resolved 2026-09-29:** corrected R052 to state that Barren Land blocks Dewdrops while the bonus-drop path still lacks the filter; removed the obsolete `no_healing` catalyst reroll claim and unused challenge import; clarified that the coverage row highlights 18 boss-only effects while the combined Stronger Bosses/Badder bosses matrix audits 48 sites, and scoped Darkness to the visibility-radius effect with missing floor torch and Prismatic Light effects linked to R088. `src/ui/settingsWindow.ts` already accurately states that Java's editable entry is on hero select and this port's menu entry appears only for an already-selected challenge, so no edit was needed there. The challenge matrix's remaining `_desc` leads are research questions, not claims tracked by this correction item.
 - [x] **R095** _(ConnectionRoom chances for depths 11+)_ **Fixed 2026-09-29:** `connectionRoomChanceRows` stopped at depth 10 and `createConnectionRoom()` fell back to the depth-1 Sewers row, so Caves/City/Halls rolled Sewers odds. Added Java's exact anchor rows 11 (`12,0,0,5,5,3`), 16 (`0,0,18,3,3,1`), 21 (`20,0,0,0,0,0`, Java's `chances[21] = chances[5]`) and 22 (`15,4,0,2,3,2`) (`ConnectionRoom.java`, tag `v3.3.8`) with nearest-row-at-or-below lookup; rows 1-10 were already byte-exact. Fixture-safe (`levelgenParity` walks depths 1-9). Audit: `garbage/MONSTER_ANALYSIS_LEVELGEN_ROOMS_GENERATOR.md` (forty-eighth matrix); coverage in `coverage/rows-terrain-traps-and-levelgen.md`.
+
+## B8 closed 2026-09-29 (T62)
+
+Every family named in the section below is matrixed (55 matrices under `garbage/`); the three code residuals it listed are now open items `ROADMAP.md` R100 (sticky filter), R101 (FishingSpear Piranha guarantee) and R102 (`pickupDelay()`), and the FUNGI actors are already `ROADMAP.md` R014. Section as it stood when closed:
+
+## B8. Analysis matrices for the remaining families
+
+- [x] Continue producing the section 22A/22B analysis matrix for the remaining monster/item/buff families before migrating
+  each one's code, per SPD-ADR-010. 55 matrices now exist (all inventoried families below are covered; see the T62 progress note).
+  - **Progress 2026-09-29, remaining families all matrixed (T62):** `garbage/MONSTER_ANALYSIS_TALENT_RULES.md` (`Talent.java`, all 160 enum entries vs the offered/hooked port ids), `garbage/MONSTER_ANALYSIS_CLASSES.md` (hero kits), `garbage/MONSTER_ANALYSIS_SPELLS_ALCHEMICAL.md` (all 14 `items/spells/*.java`, no port CAST path), `garbage/MONSTER_ANALYSIS_LEVELGEN_ROOMS_GENERATOR.md` plus `garbage/MONSTER_ANALYSIS_DUNGEON_ROSTERS.md` (room/level generation), `garbage/MONSTER_ANALYSIS_BUFF_RULES_NON_DOT.md`, and `garbage/MONSTER_ANALYSIS_ARTIFACTS_TWO.md`. New findings from these matrices belong in `ROADMAP.md` as R items for their holders; the box itself is ready for the T62 owner to close (move to `CLOSED.md`).
+  - **Progress 2026-09-29, forty-sixth and forty-seventh matrices:** `garbage/MONSTER_ANALYSIS_ALCHEMY_RECIPES.md` (55 rows: 20 match, 8 differ, 27 missing; the
+    Alchemist's Toolkit helpers have no caller, the identified-ingredient gate is absent, `SeedToPotion`'s random branch is uniform, and v3.3.8 ships
+    `ElixirOfFeatherFall`, not a spell) and `garbage/MONSTER_ANALYSIS_CHALLENGES_MODES.md` (108 rows: 73 match, 8 differ, 21 missing, 6 unverified; no way to
+    enable a challenge, Barren land/Into darkness only partly done, no score multiplier or CHAMPION badges) - findings registered as `ROADMAP.md` R076-R094.
+    Still to do: nothing from that list - all of it is matrixed (see the T62 note above); left are the residuals paragraph below and any new R items the latest matrices yield.
+  - **Progress 2026-09-26, forty-fifth matrix:** `garbage/MONSTER_ANALYSIS_MOB_LOOT.md` walks all 31 `monsterLoot` rows
+    plus the seven drops the port keeps outside the table against tag `v3.3.8`'s `loot`/`lootChance` fields and
+    `createLoot()` overrides: every chance matches Java's literal, and the two rows that do not reproduce Java's
+    behaviour (`gnollTrickster`'s `Category.MISSILE` drop and the Evil Eye's 2/1/1 dew-seed-stone roll) are registered
+    as `ROADMAP.md` R073.
+  - Remaining families (inventoried 2026-09-25): `talent-rules`, `challenges`, `classes` (hero kits), `alchemy`
+    recipes, room and level generation (`room-rules`, `generator-decks`/`generator-tables`, `dungeon-rules`),
+    the non-DoT half of `buff-rules`, a second artifacts matrix (only `ARTIFACTS_ONE` exists), and the generic
+    Spell/alchemy-result spells.
+  - Residuals recorded open by earlier matrices: the stick/drop split in `turnLoopAiming.ts` has no `sticky` filter (stone,
+    club, hammer and force cube stick where Java drops them, and Warriors always drop); `FishingSpear.proc()`'s Piranha
+    `HP/2` guarantee has no hook; `pickupDelay()` is not modelled. The two FUNGI actors are what the Blacksmith mine-roster
+    pin still leaves unported.

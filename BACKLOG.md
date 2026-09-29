@@ -10,6 +10,7 @@ incremental refactor, matrix production). Open items that used to sit in `PORT_C
 `ROADMAP.md`'s "Open coverage items" register, not here.
 
 B1 (the parity harness) closed 2026-09-26 (T55): `tools/parity/` (`npm run parity:java`), history in `CLOSED.md`. B2 (RNG call order for level/item/monster/quest generation) closed 2026-09-26 (T56) and moved to `CLOSED.md`. Its coord task T56 was closed the same day.
+B8 (the analysis matrices) closed 2026-09-29 (T62): 55 matrices exist, every inventoried family is covered, and its three code residuals moved to `ROADMAP.md` R100-R102; its section is in `CLOSED.md`.
 B9's coord tasks are T159 (residuals, re-filed after T18-T21 were cancelled as duplicates of T46-T48); the register check is T160.
 
 ## B3. Verify loot, quest outcomes, boss transitions and save/load state
@@ -77,30 +78,6 @@ B9's coord tasks are T159 (residuals, re-filed after T18-T21 were cancelled as d
   vehicle for adopting `SimulationRuntime` (B6). **Complexity: L.**
   - Remaining: whatever of the attack tail is not yet in `simulation/` (the hit/damage roll pair, the defender-side
     `damage()` overrides and the executes are extracted; see the log for the current seam list).
-
-## B8. Analysis matrices for the remaining families
-
-- [ ] Continue producing the section 22A/22B analysis matrix for the remaining monster/item/buff families before migrating
-  each one's code, per SPD-ADR-010. 55 matrices now exist (all inventoried families below are covered; see the T62 progress note).
-  - **Progress 2026-09-29, remaining families all matrixed (T62):** `garbage/MONSTER_ANALYSIS_TALENT_RULES.md` (`Talent.java`, all 160 enum entries vs the offered/hooked port ids), `garbage/MONSTER_ANALYSIS_CLASSES.md` (hero kits), `garbage/MONSTER_ANALYSIS_SPELLS_ALCHEMICAL.md` (all 14 `items/spells/*.java`, no port CAST path), `garbage/MONSTER_ANALYSIS_LEVELGEN_ROOMS_GENERATOR.md` plus `garbage/MONSTER_ANALYSIS_DUNGEON_ROSTERS.md` (room/level generation), `garbage/MONSTER_ANALYSIS_BUFF_RULES_NON_DOT.md`, and `garbage/MONSTER_ANALYSIS_ARTIFACTS_TWO.md`. New findings from these matrices belong in `ROADMAP.md` as R items for their holders; the box itself is ready for the T62 owner to close (move to `CLOSED.md`).
-  - **Progress 2026-09-29, forty-sixth and forty-seventh matrices:** `garbage/MONSTER_ANALYSIS_ALCHEMY_RECIPES.md` (55 rows: 20 match, 8 differ, 27 missing; the
-    Alchemist's Toolkit helpers have no caller, the identified-ingredient gate is absent, `SeedToPotion`'s random branch is uniform, and v3.3.8 ships
-    `ElixirOfFeatherFall`, not a spell) and `garbage/MONSTER_ANALYSIS_CHALLENGES_MODES.md` (108 rows: 73 match, 8 differ, 21 missing, 6 unverified; no way to
-    enable a challenge, Barren land/Into darkness only partly done, no score multiplier or CHAMPION badges) - findings registered as `ROADMAP.md` R076-R094.
-    Still to do: nothing from that list - all of it is matrixed (see the T62 note above); left are the residuals paragraph below and any new R items the latest matrices yield.
-  - **Progress 2026-09-26, forty-fifth matrix:** `garbage/MONSTER_ANALYSIS_MOB_LOOT.md` walks all 31 `monsterLoot` rows
-    plus the seven drops the port keeps outside the table against tag `v3.3.8`'s `loot`/`lootChance` fields and
-    `createLoot()` overrides: every chance matches Java's literal, and the two rows that do not reproduce Java's
-    behaviour (`gnollTrickster`'s `Category.MISSILE` drop and the Evil Eye's 2/1/1 dew-seed-stone roll) are registered
-    as `ROADMAP.md` R073.
-  - Remaining families (inventoried 2026-09-25): `talent-rules`, `challenges`, `classes` (hero kits), `alchemy`
-    recipes, room and level generation (`room-rules`, `generator-decks`/`generator-tables`, `dungeon-rules`),
-    the non-DoT half of `buff-rules`, a second artifacts matrix (only `ARTIFACTS_ONE` exists), and the generic
-    Spell/alchemy-result spells.
-  - Residuals recorded open by earlier matrices: the stick/drop split in `turnLoopAiming.ts` has no `sticky` filter (stone,
-    club, hammer and force cube stick where Java drops them, and Warriors always drop); `FishingSpear.proc()`'s Piranha
-    `HP/2` guarantee has no hook; `pickupDelay()` is not modelled. The two FUNGI actors are what the Blacksmith mine-roster
-    pin still leaves unported.
 
 ## B9. Armor-ability residuals
 
