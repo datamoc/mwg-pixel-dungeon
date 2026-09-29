@@ -26,7 +26,7 @@ import { imbueStaffLevel, setStaffImbue, staffImbueFor, wandTypeFromSource } fro
 import { WAND_KEYS } from '../../../i18n/spdKeys';
 import { showChoiceWindow, showConfirmWindow } from '../../../ui/portWindows';
 import { useChalice as useArtifactChalice, useCloak as useArtifactCloak, useHourglass as useArtifactHourglass, useKingsCrown as useArtifactKingsCrown, type ArtifactActionContext } from '../../../items/artifactActions';
-import { applyScrollEffect } from '../../../items/scrollEffects';
+import { applyScrollEffect, readScrollFlow } from '../../../items/scrollEffects';
 import { openAlchemyRecipes } from '../../../items/alchemy';
 import { useReturningBeaconFlow } from '../../../items/beacon';
 import { useCurseInfusionFlow, useFeatherFallFlow, useMagicalInfusionFlow, usePhaseShiftFlow, useReclaimTrapFlow, useRecycleFlow, useTelekineticGrabFlow, useWildEnergyFlow, type CastBase, type CurseInfusionContext, type FeatherFallContext, type InfusionBase, type PhaseShiftContext, type ReclaimTrapContext, type RecycleContext, type TargetedSpellAim, type TelekineticGrabContext, type WildEnergyContext } from '../../../items/spells';
@@ -1117,7 +1117,11 @@ export const weaponSpellsGearMethods = {
 			killHero: (cause) => this.kill(this.hero, cause),
 			//`UnstableSpellbook.doReadEffect()`'s real effect application, shared with the
 			//Arcane Catalyst's own direct `applyScrollEffect` call - see `useSpellbook`.
-			castScrollEffect: (id) => applyScrollEffect(id, this.scrollEffectsContext()),
+			//Identify and Remove Curse live in `readScrollFlow` (they need the bag), not in `applyScrollEffect`, so those
+			//two draws take the same free re-read `RecallInscription` uses (`freeRecast`: nothing consumed, no talent procs,
+			//`Scroll.doRead()` with `talentChance = 0`); before this they spent the charge and did nothing (R045).
+			castScrollEffect: (id) => applyScrollEffect(id, this.scrollEffectsContext())
+				|| ((id === 'scrollIdentify' || id === 'scrollCleanse') && readScrollFlow(this.readScrollContext(), { freeRecast: true, forceItemId: id })),
 			//`AlchemistsToolkit.execute(AC_BREW)` (R076): `AlchemyScene.assignToolkit(this)` then the
 			//alchemy scene - a toolkit session, so the banked charge counts and pays (`viaToolkit`).
 			openAlchemyPot: () => {
