@@ -36,9 +36,22 @@ const ITEMS = [
 const catalogue = (locale) => spdMessages[locale] ?? spdMessages.en;
 
 const expect = (cond, message) => { if (!cond) throw new Error(`R068 FAIL: ${message}`); };
+const settle = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default async (game) => {
 	await game.startGame();
+	// startGame returns once the dungeon scene exists, but its run-start InterlevelScene
+	// curtain (coreSpawnTiles.showInterlevel: Java's fadeTime x2, input blocked while up,
+	// dark backdrop over everything) can still be showing - poll it away so the
+	// screenshots show the picker itself rather than the "Descente" loading overlay, and
+	// so every tap lands on a settled screen.
+	const curtainDeadline = Date.now() + 10000;
+	let curtain = true;
+	while (curtain && Date.now() < curtainDeadline) {
+		await settle(200);
+		curtain = await game.eval(`(() => { const s = window.__MWG__.currentScene; return !!(s && s['interlevel']); })()`);
+	}
+	expect(!curtain, 'InterlevelScene curtain never cleared after startGame');
 
 	// --- phase 1: open the picker over three synthetic bag entries -------------------
 	const opened = await game.eval(`(() => {
@@ -224,13 +237,25 @@ export default async (game) => {
 		s.openItemPicker('R068 check', ${JSON.stringify(ITEMS.map(({ id, quantity }) => ({ id, quantity, identified: true })))}, (entry) => { window.__r068.picked = entry; });
 		return s.itemPickerOpen === true;
 	})()`);
+	// The confirm/back taps in phase 3 land on a window opened back in phase 1 (long
+	// settled); this one is tapped right after a fresh open, so give its first layout
+	// pass a beat before trusting text bounds as a tap target.
+	await settle(400);
 	await game.tapText(buttons.cancel);
 	const afterCancel = await game.eval(`(() => {
 		const s = window.__MWG__.currentScene;
-		return { picked: window.__r068.picked, open: s.itemPickerOpen === true };
+		const visible = [];
+		const walk = (node) => {
+			if (node.visible === false) return;
+			if (typeof node.text === 'string' && node.text.length > 0) visible.push(node.text);
+			for (const child of node.children ?? []) walk(child);
+		};
+		if (s.itemPickerWindow) walk(s.itemPickerWindow);
+		return { picked: window.__r068.picked, open: s.itemPickerOpen === true, visible };
 	})()`);
+	console.log('state after Cancel tap:', JSON.stringify(afterCancel));
 	expect(afterCancel.picked === 'phase4-open', `Cancel must not run the pick callback, got ${JSON.stringify(afterCancel.picked)}`);
-	expect(!afterCancel.open, 'window still open after Cancel');
+	expect(!afterCancel.open, `window still open after Cancel: ${JSON.stringify(afterCancel)}`);
 
 	const errors = await game.consoleErrors();
 	expect(errors.length === 0, `console errors: ${errors.join(' | ')}`);
