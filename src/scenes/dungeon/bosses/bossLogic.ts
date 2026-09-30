@@ -6,7 +6,8 @@ import { takeGooTurn as runGooTurn } from '../../../simulation/gooBoss';
 import { runVertigoStep } from '../../../adapters/gameSimulation';
 import { planRatKingWave, ratKingP1Summon, type RatKingAddKind, type RatKingWavePlan } from '../../../simulation/ratKingBoss';
 import { chooseDM300Ability, dm300VentPath, planDM300Knockback, planDM300Rockfall } from '../../../simulation/dm300Boss';
-import { kingLosingYell, kingPhase2Entry, kingPhase2Threshold, kingPhase3Entry } from '../../../simulation/dwarfKingPhase';import { aimYogDeathGaze } from '../../../simulation/yogBoss';
+import { kingLosingYell, kingPhase2Entry, kingPhase2Threshold, kingPhase3Entry } from '../../../simulation/dwarfKingPhase';
+import { aimYogDeathGaze, fistHalfHpCrossed, yogPhase4Floor, yogPhaseAdvance, yogPhaseThreshold } from '../../../simulation/yogBoss';
 import { preparationLevel } from '../../../simulation/preparation';
 import { isOpenSpace } from '../../../simulation/crystalSpire';
 import { CLASS_KEYS, has, t, titleCase } from '../../../i18n/index';
@@ -1202,12 +1203,12 @@ if (monster.hp <= 0) {
 		//`YogDzewa.damage()` returns before the phase logic while dormant or fist-guarded;
 		//the HP itself still applied above, exactly like `super.damage()` running first.
 		if ((yog.yogPhase ?? 1) === 0) return;
-		const step = 0.3 * yog.maxHp;
 		const phase = yog.yogPhase ?? 1;
+		const threshold = yogPhaseThreshold(phase, yog.maxHp);
 		if (phase < 4) {
-			yog.hp = Math.max(yog.hp, yog.maxHp - step * phase);
+			yog.hp = Math.max(yog.hp, threshold);
 		} else if (phase === 4) {
-			yog.hp = Math.max(yog.hp, step / 3);
+			yog.hp = Math.max(yog.hp, yogPhase4Floor(yog.maxHp));
 		}
 		//`YogDzewa.damage()` (tag `v3.3.8`): the taken damage is measured AFTER the
 		//clamp above (`int dmgTaken = preHP - HP`), and accelerates both cooldowns
@@ -1218,7 +1219,7 @@ if (monster.hp <= 0) {
 			yog.yogSummonCd = (yog.yogSummonCd ?? Random.normalRange(10, 15)) - dmgTaken / 10;
 			yog.yogBeamCd = (yog.yogBeamCd ?? Random.normalRange(10, 15)) - dmgTaken / 10;
 		}
-		if (phase < 4 && yog.hp <= yog.maxHp - step * phase) {
+		if (yogPhaseAdvance(phase, yog.hp, yog.maxHp)) {
 			yog.yogPhase = phase + 1;
 			this.say(t('actors.mobs.yogdzewa.darkness'), 'negative');
 			this.summonFist(yog);
@@ -1369,7 +1370,7 @@ if (monster.hp <= 0) {
 	brightDarkHalfHp(this: DungeonScene, defender: Creature, preHp: number): void {
 		const type = defender.kind === 'yogFist' ? defender.yogFistType : undefined;
 		if ((type !== 'bright' && type !== 'dark') || defender.hp <= 0) return;
-		if (preHp <= defender.maxHp / 2 || defender.hp > defender.maxHp / 2) return;
+		if (!fistHalfHpCrossed(preHp, defender.hp, defender.maxHp)) return;
 		defender.hp = defender.maxHp / 2;
 		if (type === 'bright' && !buffBlocked(this.hero, 'daze')) this.hero.buffs['daze'] = Math.max(this.hero.buffs['daze'] ?? 0, 15);
 		this.teleportFistAway(defender);

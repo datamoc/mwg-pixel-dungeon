@@ -142,3 +142,43 @@ export function chooseYogSpawnCell(context: YogSpawnContext): YogSpawnCell | nul
 	}
 	return null;
 }
+
+/**
+ * Yog phase-decision predicates - the pure decision half of `YogDzewa.damage()`'s phase
+ * branches (actors/mobs/YogDzewa.java 388-420, tag `v3.3.8`) and the Bright/Dark fist half-HP
+ * edges (actors/mobs/YogFist.java 528-540 and 598-610). Extracted from `yogDamageHook` and
+ * `brightDarkHalfHp` so the parity kit (BACKLOG B3, boss transitions) checks the *same*
+ * predicates the game runs rather than a second copy of them. Behavior-identical: the same
+ * comparisons in the same order.
+ *
+ * Java combines the phase line from HT with the flat 300 (`HT - 300*phase`, phase < 4) and
+ * floors phase 4 at 100; the port scales Yog down (see `aimYogDeathGaze`) and expresses the
+ * step as 0.3 of the live max - identical at Java's fixed 1000 HT (lines at 700/400/100,
+ * phase-4 floor at 100). The advance fires at `HP <= HT - 300*phase` for phase < 4; both
+ * sides return before the phase logic at phase 0 and behind a live fist.
+ */
+
+/** Phase HP step: Java's flat 300 as a fraction of the live max. */
+export function yogPhaseStep(maxHp: number): number {
+	return 0.3 * maxHp;
+}
+
+/** Phase line for phases 1-3: `HT - 300*phase`. */
+export function yogPhaseThreshold(phase: number, maxHp: number): number {
+	return maxHp - yogPhaseStep(maxHp) * phase;
+}
+
+/** Phase-4 floor: Java's flat 100. */
+export function yogPhase4Floor(maxHp: number): number {
+	return yogPhaseStep(maxHp) / 3;
+}
+
+/** Phase advance: past dormancy, below phase 4, HP at or under the phase line. */
+export function yogPhaseAdvance(phase: number, hp: number, maxHp: number): boolean {
+	return phase >= 1 && phase < 4 && hp <= yogPhaseThreshold(phase, maxHp);
+}
+
+/** Bright/Dark fist half-HP edge: crossing HT/2 from above, clamped back to HT/2. */
+export function fistHalfHpCrossed(preHp: number, hp: number, maxHp: number): boolean {
+	return preHp > maxHp / 2 && hp <= maxHp / 2;
+}
