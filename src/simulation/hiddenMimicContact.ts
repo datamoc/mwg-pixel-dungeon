@@ -29,7 +29,7 @@ export function planHiddenMimicContact(input: HiddenMimicContactInput): HiddenMi
 	if (!hidden || reveal === 'none') {
 		return { reveal: 'none', revealWhen: 'none', counterattack: false, cancelHeroAttack: false, counterDamage: 0 };
 	}
-	const heroBump = input.attackerIsHero && input.attackMode !== 'throw' && input.adjacent;
+	const heroBump = input.attackerIsHero && input.attackMode !== 'throw' && input.attackMode !== 'shoot' && input.adjacent;
 	const counterattack = heroBump && !input.invisible && !input.timeStopped;
 	return {
 		reveal,

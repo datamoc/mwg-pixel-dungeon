@@ -24,7 +24,7 @@ import { CLASSES } from '../../classes';
 import { drawAimPreview } from '../../ui/aimOverlay';
 import { drawTravelPreview } from '../../ui/travelOverlay';
 import { emitToxicImbueGas } from '../../simulation/environmentalBlobs';
-import { tickSungrassHealth } from '../../simulation/plantPools';
+import { absorbEarthrootArmor, tickSungrassHealth } from '../../simulation/plantPools';
 import { rechargeSpareWand } from '../../simulation/spareWands';
 import { spendTimeBubbleTurn } from '../../simulation/timeBubble';
 import { getCurse } from '../../items/itemCurses';
@@ -688,17 +688,34 @@ export const turnLoopAimingMethods = {
 				const base = Random.normalRange(special.damage[0] + sharpshooting, special.damage[1] + 2 * sharpshooting);
 				const dr = Random.normalRange(target.armor[0], target.armor[1]);
 				const momentum = projectileMomentumBonus(this.subclass(), this.talentRank('projectile_momentum'), this.projectileMomentumReady);
-				const damage = Math.max(0, Math.round(base * multiplier * (this.subclass() === 'sniper' ? 1.15 : 1)) - dr) + momentum;
+				let preArmorDamage = Math.round(base * multiplier * (this.subclass() === 'sniper' ? 1.15 : 1));
+				//Java's `Char.attack()` calls `defender.defenseProc()` before subtracting `drRoll()`.
+				//Earthroot's armor pool therefore absorbs the scaled bow hit before target armor,
+				//rather than being skipped as it was on this direct-shot path.
+				if (target.earthrootArmorLevel !== undefined) {
+					const absorbed = absorbEarthrootArmor(target.earthrootArmorLevel, preArmorDamage,
+						this.earthrootBlocking(), this.level.index(target.x, target.y) !== target.earthrootArmorPos);
+					if (absorbed.level === null) {
+						delete target.earthrootArmorLevel;
+						delete target.earthrootArmorPos;
+					} else target.earthrootArmorLevel = absorbed.level;
+					preArmorDamage = absorbed.damage;
+				}
+				const damage = Math.max(0, preArmorDamage - dr) + momentum;
 				this.projectileMomentumReady = false;
-				//Every hit lands in the shared `Char.damage()` dispatch: Java's `Hero.shoot` runs
-				//`attack()`, which rolls DR itself (`Char.java` 386, subtracted at 493) and applies
-				//the aura there (465-469; `damage()`'s own clause skips a `Char` source - "we already
-				//reduced it in Char.attack"), so `pierceArmor` keeps the caller's DR roll and no
-				//`skipAura` runs each step once. Gained over the old `doomDamage`/`hp -=`/`showDamage`
-				//tail: gates, Doom, curves, Viscosity, barriers, shields, floater, wake and death;
-				//`attack()`-side steps (`defenseProc`, mirror fade) still run nowhere on this path.
-				// Hero.shoot() passes SpiritBow through Belongings.attackingWeapon().
-				// A landed arrow against DwarfKing clears the no-weapon challenge.
+				//`Mob.defenseProc()` aggros the hit mob and stores the attacker's position even
+				//when the shooter is outside its sight radius. `Mimic.defenseProc()` reveals a
+				//disguised target on any landed hit; an adjacent bow shot must still count as a
+				//shot, never the special melee-bump counterattack.
+				if (!target.isHero && !target.isNPC && !target.isAlly && !target.fleeing) {
+					target.lastSeen = { x: this.hero.x, y: this.hero.y };
+				}
+				if (target.kind === 'mimic' && target.mimicRevealed === false) this.revealMimic(target);
+				if (target.kind === 'crystalMimic' && !target.mimicRevealed) this.revealCrystalMimic(target);
+				//`applyCharacterDamage()` retains the `Char.damage()` boundary, including this
+				//port's first-positive-hit MirrorImage fade and target-specific damage behavior.
+				//`Hero.shoot()` passes its SpiritBow through `Belongings.attackingWeapon()`;
+				//a landed arrow against DwarfKing therefore clears the no-weapon challenge.
 				if (weaponHitDisqualifiesDwarfKingChallenge(target.kind, 'shoot', this.weaponId,
 					this.equippedRing?.id === 'ring_force')) this.disqualifyBossChallenge(target);
 				this.applyCharacterDamage(target, damage, { pierceArmor: true, cause: 'foe', magical: false });
