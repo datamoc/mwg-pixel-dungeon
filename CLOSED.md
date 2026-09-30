@@ -4255,3 +4255,7 @@ Every family named in the section below is matrixed (55 matrices under `garbage/
 # R053. Stone of Aggression duration and damage
 
 - [x] **R053** _(StoneOfAggression mark duration and half-damage rule)_ **Closed 2026-10-01:** the spawned miniboss flags, 20/5-turn mark durations, and the pre-armor half-damage/Yog quarter-damage rules are implemented. The existing combat verification pins the damage gates and rounding; coverage records the prior browser check and the visual fade simplification.
+
+# R014. Blacksmith mine roster
+
+- [x] **R014** _(Blacksmith Crystal mine roster / FungalCore)_ **Closed 2026-10-01:** Java assigns fresh Blacksmith quest types 1 and 2 only; the source explicitly says FUNGI cannot roll. The port covers both reachable Crystal and Gnoll mine rosters. See `coverage/rows-monsters-and-quests.md`.
