@@ -4227,3 +4227,7 @@ Every family named in the section below is matrixed (55 matrices under `garbage/
 # R080. Alchemical scrap energy
 
 - [x] **R080** _(Correct the scrap energy table)_ **Closed 2026-10-01:** browser Alchemize flows banked 3 energy from a Rotberry seed and 12 from an Elixir of Might; the workflow suite pins the rest of the table and spell scaling. See `coverage/rows-items-consumables-and-crafting.md`.
+
+# R081. Spell alchemy recipes
+
+- [x] **R081** _(Make the spell recipes craftable)_ **Closed 2026-10-01:** the conversion created `scrollPassage`, and all nine spell recipes crafted in the browser with the expected ingredient use, output quantities and energy costs. The Passage scroll's reading effect stays separately Not ported. See `coverage/rows-items-consumables-and-crafting.md`.
