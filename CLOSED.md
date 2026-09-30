@@ -4243,3 +4243,7 @@ Every family named in the section below is matrixed (55 matrices under `garbage/
 # R085. Alchemy recipe manifest
 
 - [x] **R085** _(Fix `alchemyRecipeManifest`)_ **Closed 2026-10-01:** production import validation ran on startup and the toolkit recipe picker opened with no browser console errors. Typecheck, build and item workflow verification passed.
+
+# R099. Explicit depth monster roster
+
+- [x] **R099** _(`monsterRosterFallback` region ladder)_ **Closed 2026-10-01:** the roster verifier passed for depths 1–26 and boss-floor sharing; live depth 1 spawned Rat and Snake and rendered without browser console errors.
