@@ -811,6 +811,16 @@ export const combatResolutionMethods: Record<string, any> = {
 			damage = fieryElementalSourceDamage(damage, attacker.kind, attacker.elementalType,
 				defender.kind, defender.elementalType, defender.yogFistType);
 			damage = doomDamage(damage, defender);
+			//`Char.defenseProc()`'s ShieldOfLight half on the ally side (tag
+			//`v3.3.8`): the Priest's cast tracks the powered ally too for one
+			//turn less (3f), and a hit on it from the tracked enemy loses the
+			//same `NormalIntRange(min, 2*min)` (`min = 1 + points`), clamped at
+			//zero. Mirrors the hero-side cut above: attack path only, ahead of
+			//the pools, where Java's pre-armor `defenseProc` sits.
+			if (damage > 0 && defender.buffs['shieldOfLight'] !== undefined && defender.shieldOfLightTarget === attacker.id) {
+				const [shieldMin, shieldMax] = shieldOfLightRange(this.talentRank('shield_of_light'));
+				damage = Math.max(0, damage - Random.normalRange(shieldMin, shieldMax));
+			}
 		}
 		//DKBarrier: the P2 shield pool absorbs before HP (no per-turn regen here - the
 		//`incShield` half of `DKBarrior.act()` has no modeled trigger to hang it on).

@@ -14,6 +14,7 @@ import { has, t } from '../../i18n/index';
 import { onZoomChanged, screenShake, setZoomOffset, zoomForOffset, zoomOffset } from '../../settings';
 import { EMPOWERING_SCROLLS_BONUS, arcaneVisionDuration, canImproviseProjectile, enragedCatalystBonus, ironStomachReduction, lightReadingWandMult, monasticVigorShield, preservationChance, projectileMomentumBonus } from '../../talentEffects';
 import { directTomeCharge, findHolyTome } from '../../items/holyTome';
+import { talismanArtifactProcPlan } from '../../items/talisman';
 import { tomeChargeCap, tomeTickRate } from '../../simulation/clericSpells';
 import { advanceToolkitWarmup } from '../../simulation/toolkitWarmup';
 import { advanceWellFed, HUNGRY, STARVING } from '../../simulation/hunger';
@@ -271,6 +272,43 @@ export const turnLoopAimingMethods = {
 				//`WandOfLightning.onZap()` (tag `v3.3.8`): the burst shakes
 				//(`2, 0.3f`) for every affected char that is the hero.
 				if (victim.isHero && wandType === 'lightning') this.shakeScreen(2, 0.3);
+			}
+			//`Wand.onZap()`'s shared talent tail (tag `v3.3.8`), the same three
+			//branches `Artifact.artifactProc()` runs: a Priest detonates an
+			//existing Illuminated mark for `lvl+5`, then a non-Cleric with Searing
+			//Light illuminates a non-ally victim (arming the 20-turn cooldown) and
+			//a non-Cleric with Sunray blinds it 15/25% for 4 turns. The pure gates
+			//live in `talismanArtifactProcPlan` (pinned with the scry path) - the
+			//wand damage (`lvl+5`) commutes with the artifact figure (`5+lvl`), so
+			//the one plan serves both. Java keys the ally gate on alignment (the
+			//hero is `ALLY`), hence the explicit `isHero` alongside `isAlly` here.
+			//The corpse gate is this port's: Java procs the dying target too,
+			//observably a no-op once `kill()` has run.
+			if (victim.hp > 0) {
+				const zapPlan = talismanArtifactProcPlan({
+					heroClass: this.heroClass,
+					heroSubclass: this.subclass() ?? undefined,
+					heroLevel: this.progression.level,
+					targetIsAlly: victim.isAlly === true || victim.isHero === true,
+					targetIlluminated: victim.buffs['illuminated'] !== undefined,
+					searingLightRank: this.talentRank('searing_light'),
+					searingLightCooldown: this.hero.buffs['searingLightCooldown'] !== undefined,
+					sunrayRank: this.talentRank('sunray'),
+				});
+				if (zapPlan.consumeIlluminated) {
+					delete victim.buffs['illuminated'];
+					this.applyCharacterDamage(victim, zapPlan.illuminatedDamage, {
+						pierceArmor: true, cause: 'foe',
+						onNonWeaponBossDamage: (v) => this.disqualifyBossChallenge(v),
+					});
+				}
+				if (victim.hp > 0) {
+					if (zapPlan.applyIlluminated) addBuff(victim, 'illuminated');
+					if (zapPlan.armSearingLightCooldown) addBuff(this.hero, 'searingLightCooldown', BUFF_DURATION.searingLightCooldown);
+					if (zapPlan.sunrayChance > 0 && Random.int(20) < zapPlan.sunrayChance) {
+						addBuff(victim, 'blindness', zapPlan.sunrayBlindTurns);
+					}
+				}
 			}
 			if (wandType === 'livingEarth' && !livingEarthGuardian) {
 				//WandOfLivingEarth.onZap() adds the successful damage roll to

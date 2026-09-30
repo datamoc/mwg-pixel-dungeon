@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
  * type-check plus browser verification instead.
  */
 export function verifyClericSpells(require, check) {
-	const { tomeChargeCap, tomeCastGate, spendTomeCharge, TOME_SPELL_COST, holyIntuitionCost, SHIELD_OF_LIGHT_COST, satiatedShieldAmount, searingLightBonus, shieldOfLightRange, SHIELD_OF_LIGHT_TURNS, recallTrackerDuration, recallInscriptionCost, sunrayDamage, sunrayBlindDuration, SUNRAY_COST, DIVINE_SENSE_COST, divineSenseRange, BLESS_COST, blessSelfDurations, blessOtherDurations, enlighteningMealCharge, CLEANSE_COST, cleanseImmunityTurns, cleanseShield, JUDGEMENT_COST, judgementDamageBase, DIVINE_INTERVENTION_COST, divineInterventionShield, divineInterventionExtension, flashCost, flashRange, BEAMING_RAY_COST, BEAMING_RAY_BOOST_TURNS, beamingRayRange, beamingRayBoostFactor, auraDamageFactor, auraProtectedDamage, auraProcBonus, holyWeaponBonus, holyWardBlock } = require('./simulation/clericSpells');
+	const { tomeChargeCap, tomeCastGate, spendTomeCharge, TOME_SPELL_COST, holyIntuitionCost, SHIELD_OF_LIGHT_COST, satiatedShieldAmount, searingLightBonus, shieldOfLightRange, SHIELD_OF_LIGHT_TURNS, recallTrackerDuration, recallInscriptionCost, sunrayDamage, sunrayBlindDuration, SUNRAY_COST, DIVINE_SENSE_COST, divineSenseRange, BLESS_COST, blessSelfDurations, blessOtherDurations, enlighteningMealCharge, CLEANSE_COST, cleanseImmunityTurns, cleanseShield, JUDGEMENT_COST, judgementDamageBase, DIVINE_INTERVENTION_COST, divineInterventionShield, divineInterventionExtension, flashCost, flashRange, BEAMING_RAY_COST, BEAMING_RAY_BOOST_TURNS, beamingRayRange, beamingRayBoostFactor, auraDamageFactor, auraProtectedDamage, auraProcBonus, holyWeaponBonus, holyWardBlock, HOLY_LANCE_COST, holyLanceDamage, PRAYER_COST, prayerExtension, HALLOWED_GROUND_COST, hallowedGroundSide, HALLOWED_GROUND_HEAL } = require('./simulation/clericSpells');
 	const { BUFF_DURATION } = require('./simulation/buffs');
 
 	check('the tome cap is min(level+3, 10)', () => {
@@ -127,6 +127,46 @@ export function verifyClericSpells(require, check) {
 			'startingWeapon resolves its class from the hero class');
 		assert.match(names, /startClass === 'cudgel' \? 'port\.name\.cudgel' : WEAPON_NAME_BY_CLASS\[startClass\]/,
 			'the cudgel falls back to its own port name key');
+	});
+
+	check('tier-4 talent spells cost and scale like Java (R029-b)', () => {
+		assert.equal(HOLY_LANCE_COST, 4);
+		assert.deepEqual(holyLanceDamage(1), [30, 55]);
+		assert.equal(PRAYER_COST, 1);
+		assert.equal(prayerExtension(1), 3);
+		assert.equal(prayerExtension(3), 5);
+		assert.equal(HALLOWED_GROUND_COST, 2);
+		assert.equal(hallowedGroundSide(1), 3);
+		assert.equal(hallowedGroundSide(3), 7);
+		assert.equal(HALLOWED_GROUND_HEAL, 15);
+		const flows = readFileSync(new URL('../src/scenes/dungeon/hero/clericSpellFlows.ts', import.meta.url), 'utf8');
+		assert.match(flows, /resolveHolyLance[\s\S]*?this\.subclass\(\) !== 'priest'/,
+			'holy lance is priest-gated');
+		assert.match(flows, /resolvePrayer[\s\S]*?this\.subclass\(\) !== 'priest'/,
+			'mnemonic prayer is priest-gated');
+	});
+
+	check('wand zaps run the shared priest/searing/sunray tail (R029-b)', () => {
+		const aiming = readFileSync(new URL('../src/scenes/dungeon/turnLoopAiming.ts', import.meta.url), 'utf8');
+		assert.match(aiming, /talismanArtifactProcPlan\(\{/,
+			'fireWandShot plans each victim through the shared proc gates');
+		assert.match(aiming, /targetIsAlly: victim\.isAlly === true \|\| victim\.isHero === true/,
+			'the zap tail keys the ally gate on alignment like Java');
+		assert.match(aiming, /zapPlan\.armSearingLightCooldown/,
+			'the zap tail arms the searing cooldown');
+		assert.match(aiming, /zapPlan\.sunrayChance > 0 && Random\.int\(20\) < zapPlan\.sunrayChance/,
+			'the zap tail rolls the 15/25% sunray blind');
+	});
+
+	check('shield of light illuminates and tracks the powered ally for 3 turns (R029-b)', () => {
+		const quickslot = readFileSync(new URL('../src/scenes/dungeon/hero/inventoryQuickslot.ts', import.meta.url), 'utf8');
+		assert.match(quickslot, /resolveShieldOfLight[\s\S]*?if \(this\.subclass\(\) === 'priest'\)/,
+			'the priest branch runs on a priest cast');
+		assert.match(quickslot, /addBuff\(shieldAlly, 'shieldOfLight', SHIELD_OF_LIGHT_TURNS - 1\)/,
+			'the powered ally tracks for one turn less');
+		const combat = readFileSync(new URL('../src/scenes/dungeon/combatResolution.ts', import.meta.url), 'utf8');
+		assert.match(combat, /defender\.buffs\['shieldOfLight'\] !== undefined && defender\.shieldOfLightTarget === attacker\.id/,
+			'the tracked-enemy cut also runs on the ally side');
 	});
 
 	check('imbued gear reads through the real ench_name/glyph_name keys (R029)', () => {

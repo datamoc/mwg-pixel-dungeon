@@ -1134,6 +1134,19 @@ export const inventoryQuickslotMethods = {
 			}
 				addBuff(this.hero, 'shieldOfLight', SHIELD_OF_LIGHT_TURNS);
 				this.hero.shieldOfLightTarget = target.id;
+				if (this.subclass() === 'priest') {
+					//`ShieldOfLight.onTargetSelected()`'s Priest half (tag `v3.3.8`):
+					//the target is illuminated, and the powered ally tracks it too for
+					//one turn less (3f). The port's powered-ally signal is the
+					//`powerOfMany` buff - the same read the BeamingRay cast uses, since
+					//Java's explicit `LifeLinkSpellBuff` gate has no port buff to key on.
+					addBuff(target, 'illuminated');
+					const shieldAlly = this.poweredAlly();
+					if (shieldAlly !== undefined) {
+						addBuff(shieldAlly, 'shieldOfLight', SHIELD_OF_LIGHT_TURNS - 1);
+						shieldAlly.shieldOfLightTarget = target.id;
+					}
+				}
 				if (this.hero.buffs['invisibility']) delete this.hero.buffs['invisibility'];
 				this.consumeSatiatedSpells();
 				this.spendTomeForCast(tome, SHIELD_OF_LIGHT_COST, 'shieldOfLight');
