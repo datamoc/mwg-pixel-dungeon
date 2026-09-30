@@ -443,6 +443,8 @@ export interface GroundItem extends Step {
 	tippedSeed?: string;
 	/** Concrete inventory payload; absent only for legacy scripted/cosmetic drops. */
 	item?: { id: string; quantity: number; level?: number; tier?: number; sandBags?: number; charges?: number; warmUpDelay?: number; affix?: string; cursed?: boolean; cursedKnown?: boolean; identified?: boolean; instanceId?: string; sourceClass?: string; depth?: number;
+		/** Ring of Wealth bonus tier retained for its item-detail label. */
+		wealthDropTier?: 1 | 2 | 3 | 4;
 		usesLeftToIdentify?: number; availableUsesToIdentify?: number; durability?: number; maxDurability?: number; seal?: boolean;
 		/** A carried missile stack's own set id (see `src/missiles.ts`) - the legend half of its
 		 * `instanceId`, on the payload because that is what a picked-up heap carries into the bag. */

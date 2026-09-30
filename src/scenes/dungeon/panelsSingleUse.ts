@@ -378,6 +378,7 @@ export const panelsSingleUseMethods = {
 				if (source?.ghostArmor !== undefined) gearState.ghostArmor = source.ghostArmor;
 				if (source?.sandBags !== undefined) (item as typeof item & { sandBags?: number }).sandBags = source.sandBags;
 				if (source?.charges !== undefined) (item as typeof item & { charges?: number }).charges = source.charges;
+				if (source?.wealthDropTier !== undefined) (item as typeof item & { wealthDropTier?: 1 | 2 | 3 | 4 }).wealthDropTier = source.wealthDropTier;
 				if (source?.wandCur !== undefined) (item as typeof item & { wandCur?: number }).wandCur = source.wandCur;
 				if (source?.wandPartial !== undefined) (item as typeof item & { wandPartial?: number }).wandPartial = source.wandPartial;
 				if (source?.wandMax !== undefined) (item as typeof item & { wandMax?: number }).wandMax = source.wandMax;

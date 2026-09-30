@@ -30,7 +30,7 @@ import { staffImbueFor } from '../../items/wands';
 import { Banner } from '../../ui/banner';
 import { bruteLootArmor, randomArmor, randomMissile, randomUsingDefaults, randomUsingDefaultsAnyCategory, Cat, type GenItem } from '../../items/generator';
 import { generatedInventoryItem } from '../../items/generatedItems';
-import { initialiseWealthTrackers, planWealthDrops, wealthDropFlareColor, wealthEquipBonus, type WealthTrackers } from '../../items/wealthDrops';
+import { initialiseWealthTrackers, planWealthDrops, wealthDropFlareColor, wealthEquipBonus, type WealthDropTier, type WealthTrackers } from '../../items/wealthDrops';
 import { spawnFlare } from '../../ui/effectBursts';
 import { wandmakerQuestType, wandmakerQuestWands } from '../../spdLevelGen/wandmaker';
 import { FLOOR, SOLID, TILE, WALL, WATER, WATERSKIN_MAX } from '../../dungeonConstants';
@@ -915,6 +915,8 @@ export const deathSaveRefreshMethods = {
 				//Mob.java:971). The port uses its shared flare burst at the defeated mob's cell;
 				//the framework sprite-specific radius/timing is not represented by this effect API.
 				const tier = tiers[i] ?? ((drop.item?.level ?? 0) >= 2 ? 4 : 3);
+				// Java exposes this bonus tier only through its transient flare; keep it on the item so it remains inspectable after pickup.
+				if (drop.item) drop.item.wealthDropTier = tier;
 				spawnFlare(this.effectLayer, this.effectBursts, creature.x, creature.y, wealthDropFlareColor(tier));
 			}
 		},
@@ -1533,7 +1535,7 @@ export const deathSaveRefreshMethods = {
 			armorHardened: this.armorHardened,
 			armorCursed: this.armorCursed,
 			armorCursedKnown: this.armorCursedKnown,
-			bag: this.bag.items.map((i) => ({ id: i.id, quantity: i.quantity, instanceId: i.instanceId, identified: i.identified, level: i.level, tier: (i as typeof i & { tier?: number }).tier, sourceClass: (i as typeof i & { sourceClass?: string }).sourceClass, sandBags: (i as typeof i & { sandBags?: number }).sandBags, charges: (i as typeof i & { charges?: number }).charges, affix: i.affix, cursed: i.cursed, curseInfusionBonus: (i as typeof i & { curseInfusionBonus?: boolean }).curseInfusionBonus,
+			bag: this.bag.items.map((i) => ({ id: i.id, quantity: i.quantity, instanceId: i.instanceId, identified: i.identified, level: i.level, tier: (i as typeof i & { tier?: number }).tier, wealthDropTier: (i as typeof i & { wealthDropTier?: WealthDropTier }).wealthDropTier, sourceClass: (i as typeof i & { sourceClass?: string }).sourceClass, sandBags: (i as typeof i & { sandBags?: number }).sandBags, charges: (i as typeof i & { charges?: number }).charges, affix: i.affix, cursed: i.cursed, curseInfusionBonus: (i as typeof i & { curseInfusionBonus?: boolean }).curseInfusionBonus,
 				wandCur: (i as typeof i & { wandCur?: number }).wandCur, wandPartial: (i as typeof i & { wandPartial?: number }).wandPartial, wandMax: (i as typeof i & { wandMax?: number }).wandMax,
 				returnDepth: (i as typeof i & { returnDepth?: number }).returnDepth, returnBranch: (i as typeof i & { returnBranch?: number }).returnBranch,
 				returnPos: (i as typeof i & { returnPos?: number }).returnPos, returnX: (i as typeof i & { returnX?: number }).returnX, returnY: (i as typeof i & { returnY?: number }).returnY,
@@ -1552,6 +1554,7 @@ export const deathSaveRefreshMethods = {
 				instanceId: item.instanceId,
 				sandBags: (item as typeof item & { sandBags?: number }).sandBags,
 				charges: (item as typeof item & { charges?: number }).charges,
+				wealthDropTier: (item as typeof item & { wealthDropTier?: WealthDropTier }).wealthDropTier,
 			wandCur: (item as typeof item & { wandCur?: number }).wandCur,
 			wandPartial: (item as typeof item & { wandPartial?: number }).wandPartial,
 			wandMax: (item as typeof item & { wandMax?: number }).wandMax,

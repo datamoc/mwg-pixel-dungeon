@@ -19,7 +19,7 @@ const ARTIFACT_SLOT_IDS = new Set([...getAllArtifactIds(), 'holyTome']);
 
 interface InventoryItem {
 	id: string; quantity?: number; instanceId?: string; level?: number; identified?: boolean;
-	cursed?: boolean; sourceClass?: string;
+	cursed?: boolean; sourceClass?: string; wealthDropTier?: 1 | 2 | 3 | 4;
 }
 
 export interface InventoryPanelContext {

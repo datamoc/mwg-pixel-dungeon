@@ -25,6 +25,7 @@ export interface InventoryEntry {
 	quantity: number;
 	description?: string;
 	level?: number;
+	wealthDropTier?: 1 | 2 | 3 | 4;
 	identified?: boolean;
 	cursed?: boolean;
 	equipped?: boolean;
@@ -288,18 +289,26 @@ export class InventoryWindow extends Container2D {
 		this.detail.addChild(spdPanel(140, 120 + (item.verbs && (item.verbs.drop || item.verbs.throw) ? 18 : 0)));
 		const sprite = this.icon(item.frame); sprite.position.set(8, 9); this.detail.addChild(sprite);
 		const name = new Label({ text: item.name, size: 8, color: 0xffff44, wrapWidth: 102 }); name.position.set(28, 9); this.detail.addChild(name);
-		const stats = new Label({ text: `${item.quantity > 1 ? `${item.quantity}×  ` : ''}${item.identified !== false && item.level ? `+${item.level}` : ''}`, size: 7 });
+		const tierRoman = item.wealthDropTier ? ({ 1: 'I', 2: 'II', 3: 'III', 4: 'IV' } as const)[item.wealthDropTier] : '';
+		// Java RingOfWealth.java:172-187 communicates the tier with a transient flare; this persistent detail tag is a port UI addition.
+		const tierText = item.wealthDropTier ? t('port.item.wealth_drop_tier', { tier: tierRoman }) : '';
+		const statText = [item.quantity > 1 ? `${item.quantity}×` : '', item.identified !== false && item.level ? `+${item.level}` : '', tierText].filter(Boolean).join('  ');
+		const tierColor = item.wealthDropTier ? ({ 1: 0x00ff00, 2: 0x00aaff, 3: 0xaa00ff, 4: 0xffaa00 } as const)[item.wealthDropTier] : undefined;
+		const stats = new Label({ text: statText, size: 7, ...(tierColor ? { color: tierColor } : {}) });
 		stats.position.set(9, 35); this.detail.addChild(stats);
 		const bag = subBagFor(item);
+		let descriptionY = 46;
 		if (bag) {
 			const bagLabel = new Label({ text: t(SUB_BAG_LABEL[bag]), size: 6, color: 0x9999ff });
-			bagLabel.position.set(9, 44); this.detail.addChild(bagLabel);
+			bagLabel.position.set(9, 45); this.detail.addChild(bagLabel);
+			descriptionY = 56;
 		}
+		let y = 46;
 		if (item.description) {
 			const description = new Label({ text: item.description, size: 6, wrapWidth: 122, color: 0xd0d0c0 });
-			description.position.set(9, 46); this.detail.addChild(description);
+			description.position.set(9, descriptionY); this.detail.addChild(description);
+			y = Math.max(84, descriptionY + description.height + 3);
 		}
-		let y = item.description ? 84 : 46;
 		//`Potion.defaultAction()`: a known malevolent flask's default is THROW; drinking it moves to the guarded second row.
 		const throwsByDefault = !!(this.verbs && item.verbs?.drink && item.verbs.throw);
 		if (item.action) {
