@@ -7,6 +7,7 @@ import { planHiddenMimicContact } from '../../simulation/hiddenMimicContact';
 import { planShockElementalArc } from '../../simulation/shockArc';
 import { applyDefenderDamageCurves } from '../../simulation/defenderDamageCurves';
 import { dm300ChargeEndTurns, dm300SuperchargeEntry, dm300SuperchargeThreshold } from '../../simulation/dm300Boss';
+import { annoyingProcChance, blazingProcChance, blockingProcChance, bloomingProcChance, chillingProcChance, dazzlingProcChance, elasticProcChance, explosiveFuseWear, luckyProcChance, shockingProcChance, vampiricHealChance, waywardProcChance } from '../../simulation/attackWeaponAffixes';
 import { weaponHitDisqualifiesDwarfKingChallenge } from '../../simulation/bossChallenge';
 import { fishingSpearPiranhaDamage } from '../../simulation/fishingSpearProc';
 import { fieryDamageHalved } from '../../simulation/buffs';
@@ -1544,7 +1545,7 @@ export const combatResolutionMethods: Record<string, any> = {
 		//ignite or damage a MagicImmune defender at all (`Char.damage()`'s generic zero-out).
 		if (affix === 'blazing' && !defender.magicImmune) {
 			const level = Math.max(0, this.degradedLevel(this.weaponLevel));
-			const procChance = ((level + 1) / (level + 3)) * this.enchantProcMultiplier();
+			const procChance = blazingProcChance(level, this.enchantProcMultiplier());
 			if (Random.chance(procChance)) {
 				let powerMulti = Math.max(1, procChance);
 				if (defender.buffs['burning'] === undefined) {
@@ -1569,7 +1570,7 @@ export const combatResolutionMethods: Record<string, any> = {
 		//entirely (Java's chill slows the target and escalates into frost) and with no roll.
 		if (affix === 'chilling') {
 			const level = Math.max(0, this.degradedLevel(this.weaponLevel));
-			const procChance = ((level + 1) / (level + 4)) * this.enchantProcMultiplier();
+			const procChance = chillingProcChance(level, this.enchantProcMultiplier());
 			if (Random.chance(procChance)) {
 				const powerMulti = Math.max(1, procChance);
 				const existing = defender.buffs['chill'] ?? 0;
@@ -1586,7 +1587,7 @@ export const combatResolutionMethods: Record<string, any> = {
 		//chance))` each. What stood here dealt 2 unconditional points to the defender itself, the
 		//one character Java's arc never touches, and hit nobody else.
 		if (affix === 'shocking') {
-			const procChance = (1 / 3) * this.enchantProcMultiplier();
+			const procChance = shockingProcChance(this.enchantProcMultiplier());
 			if (Random.chance(procChance)) {
 				this.shockingArc(attacker, defender, damage, Math.max(1, procChance));
 			}
@@ -1597,8 +1598,7 @@ export const combatResolutionMethods: Record<string, any> = {
 		//Mimic, which is neutral but meant to be bitten). What stood here healed a flat 1 HP with no
 		//roll, no damage scaling and no target check at all.
 		if (affix === 'vampiric') {
-			const missing = attacker.maxHp > 0 ? (attacker.maxHp - attacker.hp) / attacker.maxHp : 0;
-			const healChance = (0.05 + 0.25 * missing) * this.enchantProcMultiplier();
+			const healChance = vampiricHealChance(attacker.hp, attacker.maxHp, this.enchantProcMultiplier());
 			const neutralTarget = defender.isNPC || defender.isAlly;
 			if (Random.chance(healChance) && !neutralTarget && attacker.hp < attacker.maxHp) {
 				const healAmount = Math.min(
@@ -1620,7 +1620,7 @@ export const combatResolutionMethods: Record<string, any> = {
 		//.proc(weapon, attacker, defender, damage)` does - it runs on the wielder's attack.
 		if (affix === 'explosive') {
 			const fuseBefore = this.weaponCurseDurability;
-			this.weaponCurseDurability -= Math.round(Random.range(0, 10) * this.enchantProcMultiplier());
+			this.weaponCurseDurability -= explosiveFuseWear(Random.range(0, 10), this.enchantProcMultiplier());
 			//`Explosive.proc()` warns across the 50 and 10 thresholds (`desc_warm` /
 			//`desc_hot`, SPD's own catalogue strings) before the fuse blows. The
 			//status icons and burst particles have no seam here; the log line
@@ -1641,7 +1641,7 @@ export const combatResolutionMethods: Record<string, any> = {
 		//Two things the old branch got wrong: it dazed the hero unconditionally (the hero always sees
 		//*itself*, so its visibility test was vacuously true), and it dispelled the hero's
 		//invisibility - `Invisibility.dispel()` is `Annoying`'s line, not this one's.
-		if (affix === 'dazzling' && Random.chance((1 / 10) * this.enchantProcMultiplier())) {
+		if (affix === 'dazzling' && Random.chance(dazzlingProcChance(this.enchantProcMultiplier()))) {
 			if (this.fov.isVisible(defender.x, defender.y) && !buffBlocked(this.hero, 'daze')) this.hero.buffs['daze'] = Math.max(this.hero.buffs['daze'] ?? 0, 10);
 			for (const creature of this.creatures) {
 				if (creature.isHero || creature.hp <= 0 || !this.fov.isVisible(creature.x, creature.y)) continue;
@@ -1652,7 +1652,7 @@ export const combatResolutionMethods: Record<string, any> = {
 		//toward the attacker and then dispelling invisibility. `seesHero` is this port's
 		//target-acquisition state, the standing stand-in for `beckon`; the crate/scream/sound
 		//presentation and the 13 flavour lines remain UI gaps.
-		if (affix === 'annoying' && Random.chance((1 / 20) * this.enchantProcMultiplier())) {
+		if (affix === 'annoying' && Random.chance(annoyingProcChance(this.enchantProcMultiplier()))) {
 			for (const creature of this.creatures) {
 				if (!creature.isHero && !creature.isNPC && creature.hp > 0) {
 					creature.seesHero = true;
@@ -1667,7 +1667,7 @@ export const combatResolutionMethods: Record<string, any> = {
 		//`syncHeroFromStats`), not the affix on its own.
 		if (affix === 'wayward') {
 			if (attacker.buffs['wayward'] !== undefined) delete attacker.buffs['wayward'];
-			else if (Random.chance((1 / 4) * this.enchantProcMultiplier())) addBuff(attacker, 'wayward');
+			else if (Random.chance(waywardProcChance(this.enchantProcMultiplier()))) addBuff(attacker, 'wayward');
 		}
 		//Elastic.proc(): on a successful proc, knock the defender along the part of
 		//the attack trajectory beyond its cell by `round(2 * max(1, chance))` cells.
@@ -1675,7 +1675,7 @@ export const combatResolutionMethods: Record<string, any> = {
 		//straight grid shove reproduces the meaningful result without a new actor type.
 		if (affix === 'elastic' && defender.hp > 0 && (attacker === this.hero || gearDelegated)) {
 			const level = Math.max(0, this.degradedLevel(this.weaponLevel));
-			const procChance = ((level + 1) / (level + 5)) * this.enchantProcMultiplier();
+			const procChance = elasticProcChance(level, this.enchantProcMultiplier());
 			if (Random.chance(procChance)) {
 				const dx = Math.sign(defender.x - attacker.x);
 				const dy = Math.sign(defender.y - attacker.y);
@@ -1704,7 +1704,7 @@ export const combatResolutionMethods: Record<string, any> = {
 		//neighbour-cell search is kept for whichever heap lands first.
 		if (affix === 'lucky' && defender.hp <= 0) {
 			const level = Math.max(0, this.degradedLevel(this.weaponLevel));
-			const chance = ((level + 4) / (level + 40)) * this.enchantProcMultiplier();
+			const chance = luckyProcChance(level, this.enchantProcMultiplier());
 			if (Random.chance(chance)) {
 				//`Gold.random()` (`Gold.java`, tag `v3.3.8`): `IntRange(30 + depth*10,
 				//60 + depth*20)`; the low tier halves it (`i.quantity(i.quantity()/2)`),
@@ -1758,7 +1758,7 @@ export const combatResolutionMethods: Record<string, any> = {
 			//found using raw `this.weaponLevel` instead in the 2026-09-09 item-system audit
 			//(so a Degrade-hit weapon procced/shielded as if undegraded).
 			const level = this.degradedLevel(this.weaponLevel);
-			const procChance = ((level + 4) / (level + 40)) * this.enchantProcMultiplier();
+			const procChance = blockingProcChance(level, this.enchantProcMultiplier());
 			if (Random.chance(procChance)) {
 				const powerMulti = Math.max(1, procChance);
 				this.grantBlockingShield(Math.round(powerMulti * (2 + level)));
@@ -1775,7 +1775,7 @@ export const combatResolutionMethods: Record<string, any> = {
 		if (affix === 'blooming') {
 			//Blooming.proc() also reads `weapon.buffedLvl()`, same Degrade fix as Blocking above.
 			const level = Math.max(0, this.degradedLevel(this.weaponLevel));
-			const procChance = ((level + 1) / (level + 3)) * this.enchantProcMultiplier();
+			const procChance = bloomingProcChance(level, this.enchantProcMultiplier());
 			if (Random.chance(procChance)) this.applyBloomingGrass(attacker, defender, level, procChance);
 		}
 	},
