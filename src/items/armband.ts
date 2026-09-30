@@ -124,7 +124,10 @@ export function armbandLootPick(ctx: ArmbandFlowContext, kind: string | undefine
 	return { kind: entry.kind };
 }
 
-/** The steal confirm: surprise bonus, level-gated chance, drop, mark, debuff, pay, level. */
+/** The steal confirm: surprise bonus, level-gated chance, drop, mark, debuff, pay, level.
+ * Deliberate timing simplification from `MasterThievesArmband.java:131-208`: Java runs this
+ * transaction inside `curUser.sprite.attack()`'s completion callback; this port's aiming
+ * confirmation calls it immediately because the flow has no post-attack callback seam. */
 export function confirmArmbandStealFlow(ctx: ArmbandFlowContext, target: { x: number; y: number }, instanceId?: string): void {
 	const armband = ctx.armbandOf(instanceId);
 	if (!armband) return;
