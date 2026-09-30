@@ -137,7 +137,10 @@ export function beaconAdjacentEnemy(ctx: BeaconFlowContext): boolean {
 
 /** `LloydsBeacon.execute()`'s three rows (`beacon-zap`/`beacon-set`/`beacon-return` synthetic
  *  instance ids, the same trick the horn and rose rows use): the zap hides below its price,
- *  the set is always offered, the return only once anchored. */
+ *  the set is always offered, the return only once anchored. Deliberate UI simplification:
+ *  Java's `WndUseItem` combines item details, journal access, and action buttons; this port sends
+ *  the same gated actions through its shared item picker, with the presentation gap documented
+ *  in `ui/itemPicker.ts` and the Lloyd's Beacon coverage row. */
 export function useBeaconFlow(ctx: BeaconFlowContext, instanceId?: string): void {
 	const beacon = ctx.beaconOf(instanceId);
 	if (!beacon) return;
