@@ -12,7 +12,11 @@ import { UNSTABLE_DELEGATES } from '../../items/itemAffixes';
 import { ringArcanaMultiplier, ringForceBonus, ringTenacityMultiplier } from '../../items/ringModifiers';
 import { HOLY_WARD_BLOCK, HOLY_WEAPON_BONUS, auraProcBonus, auraProtectedDamage, satiatedShieldAmount, searingLightBonus, shieldOfLightRange, trinityBodyGlyphActive } from '../../simulation/clericSpells';
 import { capitalize, has, t } from '../../i18n/index';
-import { assassinReachBonus, empoweredStrikeBonus, farsightMultiplier, shieldBatteryGain, weaponRechargingDamage } from '../../talentEffects';
+import { assassinReachBonus, farsightMultiplier, shieldBatteryGain } from '../../talentEffects';
+import { modifyAttackDamage } from '../../simulation/attackModifiers';
+import { resolveAttackTalentBonuses } from '../../simulation/attackTalentBonuses';
+import { resolveAttackWeaponAffixes } from '../../simulation/attackWeaponAffixes';
+import { simulationRandom } from '../../adapters/mwgRandom';
 import { weaponRechargeWindow } from '../../items/artifactRecharge';
 import { runState } from '../../runState';
 import { isChallengeEnabled } from '../../challenges';
@@ -80,23 +84,18 @@ export const attackSeamMethods = {
 		//wired T61 world would apply it twice (once in the roll, once here).
 		//This also makes Affection's armor-glyph charm usable by ordinary monsters,
 		//not only by the already-portable Friendly weapon path.
-		if (this.isCharmedToward(attacker, defender)) damage = 0;
+		const charmedTowardDefender = this.isCharmedToward(attacker, defender);
 		//`Char.damage()` negates through `isInvulnerable()`, which a
 		//`Challenge.SpectatorFreeze` carries - frozen spectators take no attack
 		//damage, same zeroing shape as the charm line above. Bomb/trap/blast seams
 		//apply the same guard at their own `damage()` boundaries; DoTs are negated
 		//at the mob tick.
-		if (defender.buffs['spectatorFreeze'] !== undefined) damage = 0;
+		const defenderSpectatorFrozen = defender.buffs['spectatorFreeze'] !== undefined;
 		//Weapon.Augment: real Java's `Augment` enum (`Weapon.java`, tag `v3.3.8`) trades damage
 		//against attack speed in both directions - `SPEED(0.7f damageFactor, 2/3f delayFactor)`,
 		//`DAMAGE(1.5f damageFactor, 5/3f delayFactor)` - not a flat "20% up, nothing down" this
 		//previously modeled (wrong numbers, and only DAMAGE's half at all). The delay half lives
 		//in `getAttackTurnCostMod()`.
-		if (attacker === this.hero && this.weaponAugment === 'speed') {
-			damage = Math.round(damage * 0.7);
-		} else if (attacker === this.hero && this.weaponAugment === 'damage') {
-			damage = Math.round(damage * 1.5);
-		}
 		//Weapon Recharging (`Hero.damageRoll()`, Duelist T2): `round(dmg*1.025 + 0.025*points)`
 		//while a Recharging-class buff is held - a melee damage multiplier, never the
 		//per-hit wand-charge refund this used to be (that shape had no Java basis at all;
@@ -106,10 +105,6 @@ export const attackSeamMethods = {
 		//note, read before "fixing": both tags gate the Java line on `heroClass != DUELIST`
 		//- unsatisfiable alongside class-locked talents, so the port follows the evident
 		//intent (the talent-holding class) rather than the literal gate.
-		if (attacker === this.hero && this.talentRank('weapon_recharging') > 0
-			&& weaponRechargeWindow(this.hero.buffs['recharging'] !== undefined, this.artifactRechargeTurns)) {
-			damage = weaponRechargingDamage(damage, this.talentRank('weapon_recharging'));
-		}
 		//RingOfForce.armedDamageBonus(): flat +level on any armed (non-missile) melee hit -
 		//`Hero.damageRoll()` gates this on `wep instanceof MissileWeapon`, which this port already
 		//expresses the same way every other hero-only bonus here does: `attacker === this.hero`
@@ -119,8 +114,17 @@ export const attackSeamMethods = {
 		//gate in `combatResolution.ts` and `RingOfForce.java:257-274` (v3.3.8). The no-weapon
 		//`RingOfForce.damageRoll()` branch is unreachable because `startingWeapon` is always
 		//present here (`Hero.java:663-676`, `RingOfForce.java:82-129`).
-		if (attacker === this.hero && !this.monk.unarmedAttack) damage += ringForceBonus(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
-		return damage;
+		return modifyAttackDamage(damage, {
+			charmedTowardDefender,
+			defenderSpectatorFrozen,
+			attackerIsHero: attacker === this.hero,
+			weaponAugment: this.weaponAugment,
+			weaponRechargingRank: this.talentRank('weapon_recharging'),
+			rechargingWindow: weaponRechargeWindow(this.hero.buffs['recharging'] !== undefined, this.artifactRechargeTurns),
+			ringForceBonus: attacker === this.hero
+				? ringForceBonus(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()) : 0,
+			monkUnarmedAttack: this.monk.unarmedAttack,
+		});
 	},
 
 	/**
@@ -170,43 +174,43 @@ export const attackSeamMethods = {
 	 * where it did inline, so a second swing sees the same state.
 	 */
 	applyHeroTalentBonuses(this: DungeonScene, attacker: Creature, defender: Creature, surprise: boolean, damage: number): number {
-		if (attacker === this.hero) damage += empoweredStrikeBonus(this.subclass(), this.talentRank('empowered_strike'));
 		//Talent.java's SUCKER_PUNCH branch: `Random.IntRange(points, 2)` (1-2 at rank 1, flat 2
 		//at rank 2), not a flat `points` bonus - found in the 2026-09-09 hero-progression audit.
 		//Real Java attaches a `SuckerPunchTracker` to the enemy on the first proc, so surprising
 		//the same target twice only triggers the bonus once. The port stores that tracker by the
 		//creature's stable id and clears it naturally when a new run starts; it is saved with the
 		//run so save/load cannot reopen the bonus.
-		if (attacker.isHero && surprise) {
-			const rank = this.talentRank('sucker_punch');
-			if (rank > 0 && !this.suckerPunchTargets.has(defender.id)) {
-				damage += Random.range(rank, 2);
-				this.suckerPunchTargets.add(defender.id);
-			}
-		}
-		if (attacker === this.hero && this.physicalBonusAttacks > 0) {
-			damage += this.physicalBonusDamage;
-			this.physicalBonusAttacks--;
-		}
-		if (attacker === this.hero && this.patientStrikeReady) {
-			damage += this.talentRank('patient_strike');
-			this.patientStrikeReady = false;
-		}
-		if (attacker === this.hero && this.followupTarget === defender) {
-			damage += this.followupDamage;
-			this.followupTarget = null;
-			this.followupDamage = 0;
-		}
 		//`Talent.DEADLY_FOLLOWUP`: last in Java's own `onAttackProc` chain, multiplying the
 		//whole accumulated damage rather than adding to it. `attacker === this.hero` already
 		//excludes a thrown hit here (the throw path attacks with a spread copy of `this.hero`,
 		//never the live reference), matching Java's own `attackingWeapon() instanceof
 		//MissileWeapon` exclusion for free.
-		if (attacker === this.hero && this.deadlyFollowupTarget === defender) {
-			damage = Math.round(damage * (1 + 0.08 * this.talentRank('deadly_followup')));
-			this.deadlyFollowupTarget = null;
+		const result = resolveAttackTalentBonuses(damage, {
+			isHero: attacker.isHero === true,
+			isLiveHero: attacker === this.hero,
+			surprise,
+			subclass: this.subclass(),
+			empoweredStrikeRank: this.talentRank('empowered_strike'),
+			suckerPunchRank: this.talentRank('sucker_punch'),
+			suckerPunchAlreadyUsed: this.suckerPunchTargets.has(defender.id),
+			physicalBonusAttacks: this.physicalBonusAttacks,
+			physicalBonusDamage: this.physicalBonusDamage,
+			patientStrikeReady: this.patientStrikeReady,
+			patientStrikeRank: this.talentRank('patient_strike'),
+			followupReady: this.followupTarget === defender,
+			followupDamage: this.followupDamage,
+			deadlyFollowupReady: this.deadlyFollowupTarget === defender,
+			deadlyFollowupRank: this.talentRank('deadly_followup'),
+		}, simulationRandom);
+		if (result.usedSuckerPunch) this.suckerPunchTargets.add(defender.id);
+		if (result.usedPhysicalBonusAttack) this.physicalBonusAttacks--;
+		if (result.usedPatientStrike) this.patientStrikeReady = false;
+		if (result.usedFollowup) {
+			this.followupTarget = null;
+			this.followupDamage = 0;
 		}
-		return damage;
+		if (result.usedDeadlyFollowup) this.deadlyFollowupTarget = null;
+		return result.damage;
 	},
 
 	/**
@@ -218,24 +222,30 @@ export const attackSeamMethods = {
 		//Polarized.proc(): real chance is a flat 1/2 - on success it amplifies to 1.5x, on
 		//failure it zeroes the hit outright (a coin-flip between "hits hard" and "whiffs"),
 		//reproduced exactly since it needs no subsystem beyond the damage value itself.
-		if (attacker === this.hero && this.weaponAffix === 'polarized') {
-			damage = Random.chance(0.5) ? Math.round(damage * 1.5) : 0;
-		}
 		//Sacrificial.proc(): Java rolls 1/10 x Arcana, then rolls a second time against
 		//(HP/HT)^2 * HT / 8 and applies Bleeding at max(1, bleedAmt). The first draft
 		//mistakenly used missing HP and a poison stand-in; both were wrong.
-		if (attacker === this.hero && this.weaponAffix === 'sacrificial' && Random.chance((1 / 10) * this.enchantProcMultiplier())) {
-			const bleedAmount = (attacker.hp / attacker.maxHp) ** 2 * attacker.maxHp / 8;
-			if (Random.chance(bleedAmount)) setBleeding(attacker, Math.max(1, bleedAmount), 'sacrificial');
-		}
 		//Displacing.proc(): real chance is 1/12 x arcana, skipped against Java's IMMOVABLE targets.
 		//Reuses the same free-cell search this file's Displacement armor curse already
 		//uses in place of Java's ScrollOfTeleportation.teleportChar. Java also resets a fleeing
 		//HUNTING mob back to WANDERING; this port has no such explicit state to reset, but the
 		//next monster-turn FOV recompute (`seesHero`) naturally loses track once far enough away.
-		if (attacker === this.hero && this.weaponAffix === 'displacing' && !defender.isNPC
-			&& (defender.kind === undefined || !IMMOVABLE_KINDS.has(defender.kind))
-			&& Random.chance((1 / 12) * this.enchantProcMultiplier())) {
+		//Only Sacrificial and Displacing consume the one-shot Java proc multiplier here;
+		//keep the call lazy by branch so Polarized and unrelated affixes do not drain it.
+		const usesEnchantMultiplier = this.weaponAffix === 'sacrificial' || this.weaponAffix === 'displacing';
+		const result = resolveAttackWeaponAffixes(damage, {
+			affix: this.weaponAffix,
+			isLiveHero: attacker === this.hero,
+			enchantProcMultiplier: attacker === this.hero && usesEnchantMultiplier ? this.enchantProcMultiplier() : 1,
+			attackerHp: attacker.hp,
+			attackerMaxHp: attacker.maxHp,
+			defenderIsNpc: defender.isNPC === true,
+			defenderImmovable: defender.kind !== undefined && IMMOVABLE_KINDS.has(defender.kind),
+		}, simulationRandom);
+		if (result.applySacrificialBleeding) {
+			setBleeding(attacker, Math.max(1, result.sacrificialBleedAmount), 'sacrificial');
+		}
+		if (result.displaceDefender) {
 			const destination = this.randomFreeCell(defender);
 			if (destination) {
 				const displaceFrom = { x: defender.x, y: defender.y };
@@ -243,7 +253,7 @@ export const attackSeamMethods = {
 				this.playTeleportAppear(displaceFrom, destination, defender);
 			}
 		}
-		return damage;
+		return result.damage;
 	},
 
 	/**

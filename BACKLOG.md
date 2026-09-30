@@ -78,8 +78,12 @@ B9's coord tasks are T159 (residuals, re-filed after T18-T21 were cancelled as d
 - [ ] Extract the scene's `attack()` pure resolution (hit/damage rolls, weapon-affix/talent branches, event-worthy outcomes
   such as mimic reveal and displacement) from its presentation calls (sprite tint, audio cue, floating text); the likely
   vehicle for adopting `SimulationRuntime` (B6). **Complexity: L.**
-  - Remaining: whatever of the attack tail is not yet in `simulation/` (the hit/damage roll pair, the defender-side
-    `damage()` overrides and the executes are extracted; see the log for the current seam list).
+  - Progress 2026-09-30: the landed-hit pre-armor numeric modifiers (charm/spectator suppression, weapon augment,
+    Weapon Recharging, and Ring of Force) now resolve in `simulation/attackModifiers.ts`; hero talent damage bonuses
+    (Empowered Strike, Sucker Punch, physical bonus, Patient Strike, Followup, Deadly Followup) resolve in
+    `simulation/attackTalentBonuses.ts`; Polarized, Sacrificial, and Displacing proc decisions now resolve in
+    `simulation/attackWeaponAffixes.ts`. The scene supplies live state and applies returned tracker, bleed, and
+    displacement effects. Remaining: other weapon/defender procs and attack event outcomes are still scene-coupled.
 
 ## B9. Armor-ability residuals
 
