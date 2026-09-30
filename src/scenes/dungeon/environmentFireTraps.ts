@@ -48,7 +48,7 @@ import { DOOR, DOOR_CLOSED, EMBERS, FLOOR, GRASS, HIGH_GRASS, TILE, TRAP, WALL, 
 import { regionForDepth, type Region } from '../../genericDungeon';
 import { addBuff, applyElementalBacklash, buffBlocked, electricDamageHalved, explosiveTrapBounds, grimTrapDamage, icyBuffImmune, reigniteBuff, resistedBuffDuration, rollDamage, setBleeding, type Creature, type GroundItem, type Step } from '../../combat';
 import { applyChillFreeze } from '../../simulation/buffs';
-import { BLOB_IMMUNE_KINDS, BOSSES, FLYING_KINDS, IMMOVABLE_KINDS, INORGANIC_KINDS, MONSTERS, UNDEAD_KINDS, mobRosterForDepth, type AnyMonsterId, type MonsterId } from '../../monsters';
+import { BLOB_IMMUNE_KINDS, BOSSES, FLYING_KINDS, IMMATERIAL_KINDS, IMMOVABLE_KINDS, INORGANIC_KINDS, MONSTERS, UNDEAD_KINDS, mobRosterForDepth, type AnyMonsterId, type MonsterId } from '../../monsters';
 import { ETERNAL_FIRE_BURN, wardTexture, type BonesShape } from './shared';
 import { spawnTrapSpecks } from '../../ui/effectBursts';
 import { nonSolidDistanceMap } from '../../simulation/trapAreas';
@@ -1565,6 +1565,55 @@ export const environmentFireTrapsMethods = {
 	},
 
 	/**
+	 * Resolve the floor effects of `ScrollOfTeleportation.teleportChar()` after its direct
+	 * relocation. Java calls `Level.occupyCell()` here (tag `v3.3.8`): grounded heroes make a
+	 * hard press; other grounded characters make a soft press; web, water and doors are handled
+	 * around that press. Keep this seam beside trap dispatch so teleport traps and other direct
+	 * relocations can share the same destination semantics.
+	 *
+	 * DELIBERATE REDUCTION (R106): Java immediately ticks Burning/Ooze on water and runs
+	 * RejuvenatingSteps terrain/cooldown logic here; the port has no reusable immediate DoT actor
+	 * tick, and its RejuvenatingSteps model currently lives only on ordinary movement. Java also
+	 * attaches SacrificialFire.Marked for two turns, while this port's documented sacrifice rule
+	 * checks live fire volume at death; that existing simplification already controls its reward.
+	 */
+	occupyTeleportedCharacter(this: DungeonScene, creature: Creature): void {
+		if (creature.hp <= 0) return;
+		const { x, y } = creature;
+		if (this.web.volumeAt(x, y) > 0 && !buffBlocked(creature, 'roots')) {
+			this.web.clear(x, y);
+			//Web.affectChar applies Roots for five turns after clearing the web (Web.java and
+			//Roots.DURATION, tag `v3.3.8`). The Roots immunity check is centralized in addBuff.
+			addBuff(creature, 'roots', 5);
+		}
+		if (!creature.flying) {
+			if (creature.isHero) {
+				this.trampleHighGrass(x, y);
+				const cell = this.level.index(x, y);
+				const delayedTrap = this.trapKinds.has(cell);
+				const delayedFeature = this.portedFeatures.kindAt(cell)?.startsWith('plant:') ?? false;
+				if (this.timeBubbleTurns > 0 && (delayedTrap || delayedFeature)) this.timeBubblePresses.add(cell);
+				else this.portedFeatures.interact(cell, this);
+				if (!(this.timeBubbleTurns > 0 && delayedTrap)) this.triggerTrapAt(x, y);
+			} else {
+				this.trampleMobGrass(creature);
+				this.triggerMobTrapAt(creature);
+				if (creature.hp > 0) this.triggerMobPlantAt(creature);
+			}
+		}
+		if (creature.hp <= 0) return;
+		const landing = { x: creature.x, y: creature.y };
+		if (this.level.get(landing.x, landing.y) === WATER) this.waterSurface?.ripple(landing.x, landing.y);
+		const immaterial = (creature.kind !== undefined && IMMATERIAL_KINDS.has(creature.kind)) || creature.allyKind === 'ghost';
+		if (!immaterial && this.doors.isDoor(landing.x, landing.y) && !this.doors.isOpen(landing.x, landing.y) && !this.doors.isLocked(landing.x, landing.y)
+			&& !this.secrets.isSecret(landing.x, landing.y)) {
+			this.doors.open(landing.x, landing.y);
+			if (this.fov.isVisible(landing.x, landing.y)) runState.audio.cue('door_open', 0.55);
+			this.restitchTilesAround(landing.x, landing.y);
+		}
+	},
+
+	/**
 	 * `AlarmTrap`/`TeleportationTrap`/`SummoningTrap.activate()` (tag v3.3.8), shared by the hero and
 	 * mob step paths. The alert sound and scream/light specks use the port's presentation layer.
 	 * - Alarm: `mob.beckon(pos)` on every mob - wakes it and sends it to the trap cell. `lastSeen` is
@@ -1747,7 +1796,7 @@ export const environmentFireTrapsMethods = {
 			runState.audio.cue('alert', 0.7);
 		} else if (kind === 'teleportation' || kind === 'warping') {
 			//Java `TeleportationTrap` does not push/collide characters; it calls teleportChar,
-			//whose `Level.occupyCell()` destination effects are the remaining R006 gap below.
+			//whose `Level.occupyCell()` destination effects are dispatched after relocation below.
 			//`WarpingTrap` is a `TeleportationTrap` that first wipes the map memory (visited and
 			//mapped cells) when the hero is within one cell of it.
 			if (kind === 'warping' && Roguelike.chebyshevDistance(this.hero, { x, y }) <= 1) this.fov.explored.clear();
@@ -1774,8 +1823,7 @@ export const environmentFireTrapsMethods = {
 							ch.lastSeen = undefined;
 						}
 						this.playTeleportAppear(from, destination, ch);
-						//Java teleportChar calls Level.occupyCell() after moving; destination
-						//traps, water, webs and grass are not dispatched from this direct relocation yet (R006).
+						this.occupyTeleportedCharacter(ch);
 					}
 					}
 				//TeleportationTrap moves the top item of each plain Heap. If this port finds
