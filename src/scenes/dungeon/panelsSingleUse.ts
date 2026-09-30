@@ -406,6 +406,9 @@ export const panelsSingleUseMethods = {
 					if (source?.tomeExp !== undefined) tome.exp = source.tomeExp;
 					if (source?.tomeLevel !== undefined) tome.level = source.tomeLevel;
 				}
+				if (item.id === 'toolkit' && source?.toolkitWarmUpDelay !== undefined) {
+					(item as typeof item & { warmUpDelay?: number }).warmUpDelay = source.toolkitWarmUpDelay;
+				}
 			}
 		} else {
 			this.bag = new Actors.Inventory();

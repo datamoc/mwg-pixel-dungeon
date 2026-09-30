@@ -62,12 +62,14 @@
  * no adjacency requirement for this particular action. `AC_ENERGIZE` (spend 6 carried alchemy
  * energy per level to permanently raise the toolkit) is exposed as an extra row inside that
  * same picker rather than a second button, since there is no other seam this port has for the
- * energy pool that action spends. **Not ported**: the equip/unequip-tied `warmUpDelay` window
- * (this port has no artifact equip slot at all - every carried artifact is always active, so
- * there is no equip event to gate), the generic `Artifact.charge(Hero, float)` override (no
- * caller in this port reaches it), and the "energize just one level" alternative to spending
+ * energy pool that action spends. **Simplified:** Java starts `warmUpDelay` at 101 on equip,
+ * then `kitEnergy.act()` reduces it once per turn; because this port has no selectable artifact
+ * slot, it starts the same delay on first pickup and ticks while carried, without an
+ * unequip/re-equip reset (documented at the pickup and actor-tick sites). `Artifact.charge(Hero,
+ * float)` is reached through the shared `ArtifactRecharge` flow (R043). The "energize just one
+ * level" alternative to spending
  * the maximum affordable at once (no options-window seam at this call site). See
- * `PORT_COVERAGE.md`'s `AlchemistsToolkit` row.
+ * `coverage/rows-items-equipment-and-artifacts.md`'s AlchemistsToolkit row.
  *
  * **LloydsBeacon is now implemented too (2026-09-15)**: `dungeonScene.ts`'s
  * `useBeaconArtifact` opens the same generic item-picker seam `openAlchemyRecipes` already

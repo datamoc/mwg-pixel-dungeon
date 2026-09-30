@@ -1572,6 +1572,9 @@ export const deathSaveRefreshMethods = {
 				tomePartialCharge: (item as typeof item & { partialCharge?: number }).partialCharge,
 				tomeExp: (item as typeof item & { exp?: number }).exp,
 				tomeLevel: (item as typeof item & { level?: number }).level,
+				//`AlchemistsToolkit.storeInBundle()` (`warm_up`, tag `v3.3.8`): the
+				//framework inventory intentionally serializes only declared item fields.
+				toolkitWarmUpDelay: item.id === 'toolkit' ? (item as typeof item & { warmUpDelay?: number }).warmUpDelay : undefined,
 			})),
 			staffImbue: staffImbueFor(this),
 			itemSerial: this.itemSerial,

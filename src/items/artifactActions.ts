@@ -206,15 +206,15 @@ function refuseIfCursed(scene: ArtifactActionContext, id: string, instanceId?: s
 	return item;
 }
 
-type ToolkitItem = { level?: number; charge?: number; partialCharge?: number; cursed?: boolean };
+type ToolkitItem = { level?: number; charge?: number; partialCharge?: number; warmUpDelay?: number; cursed?: boolean };
 
 /** `AlchemistsToolkit.execute()` (tag `v3.3.8`): the item's own default action is `AC_BREW`
  * - `AlchemyScene.assignToolkit(this); Game.switchScene(AlchemyScene.class)` - with no
  * adjacency requirement to a physical pot, gated only on `isEquipped(hero) && !cursed &&
- * hero.buff(MagicImmune.class) == null` (real Java's `warmUpDelay > 0` gate, tied to the
- * artifact's equip/unequip cycle, does not apply here - this port has no artifact equip
- * slot at all, every carried artifact is always "worn", so there is no warm-up window to
- * reproduce; Not ported for that reason, not simplified away). `AC_ENERGIZE` (spend the
+ * hero.buff(MagicImmune.class) == null` and `warmUpDelay <= 0`. Since this port has no
+ * selectable artifact slot, its explicit approximation starts the Java 101-delay on first
+ * pickup and advances it while carried (see `simulation/toolkitWarmup.ts`); it does not
+ * restart on a later equip. `AC_ENERGIZE` (spend the
  * carried alchemy energy pool, 6 per level, to permanently raise the toolkit's own level)
  * is exposed from `openAlchemyRecipes`'s picker instead of a second button here, since that
  * is the one place this port already surfaces the energy pool the action spends - see the
@@ -223,6 +223,7 @@ export function useToolkit(scene: ArtifactActionContext, instanceId?: string): v
 	const toolkit = findArtifact(scene, 'toolkit', instanceId) as (typeof scene.bag.items[number] & ToolkitItem) | undefined;
 	if (!toolkit || scene.hero.magicImmune) return;
 	if (toolkit.cursed) { scene.say(t('items.artifacts.alchemiststoolkit.cursed'), 'negative'); return; }
+	if ((toolkit.warmUpDelay ?? 0) > 0) { scene.say(t('items.artifacts.alchemiststoolkit.not_ready'), 'negative'); return; }
 	if (!scene.openAlchemyPot) { scene.say(t('items.artifacts.alchemiststoolkit.not_ready'), 'negative'); return; }
 	scene.openAlchemyPot();
 }

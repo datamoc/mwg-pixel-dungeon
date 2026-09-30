@@ -14,6 +14,7 @@ import { onZoomChanged, screenShake, setZoomOffset, zoomForOffset, zoomOffset } 
 import { EMPOWERING_SCROLLS_BONUS, arcaneVisionDuration, canImproviseProjectile, enragedCatalystBonus, ironStomachReduction, lightReadingWandMult, monasticVigorShield, preservationChance, projectileMomentumBonus } from '../../talentEffects';
 import { directTomeCharge, findHolyTome } from '../../items/holyTome';
 import { tomeChargeCap, tomeTickRate } from '../../simulation/clericSpells';
+import { advanceToolkitWarmup } from '../../simulation/toolkitWarmup';
 import { advanceWellFed, HUNGRY, STARVING } from '../../simulation/hunger';
 import { addLockedFloorTime, lockedFloorBossTime, regenOn, regenerationDelay, removeLockedFloorTime, tickLockedFloor, tickRegeneration } from '../../simulation/regeneration';
 import { isChallengeEnabled } from '../../challenges'; import { prolongPrismaticWandLight } from '../../simulation/prismaticWandLight';
@@ -1432,6 +1433,16 @@ export const turnLoopAimingMethods = {
 				//tick, rather than one pass for the input event. Keep the existing effect order
 				//inside the loop: Java's actor priorities are represented by this order here.
 				for (let tick = 0; tick < cost; tick++) {
+				//`AlchemistsToolkit.kitEnergy.act()` (tag `v3.3.8`): warm-up ticks once per
+				//hero actor turn, even when recharge is suppressed; curse and Magic Immunity
+				//freeze the delay. With no artifact slot, the port advances while carried.
+				{
+					const toolkit = this.bag.find('toolkit') as (typeof this.bag.items[number] & { level?: number; warmUpDelay?: number }) | undefined;
+					if (toolkit && toolkit.warmUpDelay !== undefined) {
+						advanceToolkitWarmup(toolkit as { warmUpDelay: number }, toolkit.level ?? 0,
+							toolkit.cursed === true, this.hero.magicImmune === true);
+					}
+				}
 				if (this.hero.buffs.toxicImbue !== undefined) emitToxicImbueGas((x, y, volume) => this.toxicGas.seed(x, y, volume), (x, y) => this.level.passable(x, y), { x: this.hero.x, y: this.hero.y }, Roguelike.neighbourOffsets(8) as readonly (readonly [number, number])[]);
 				//CloakOfShadows.cloakRecharge/cloakStealth.act(): recharge while inactive and
 				//spend one charge every four active turns. The Java fractional actor-clock

@@ -2,6 +2,7 @@ import { Random } from 'mwg';
 import type { GroundItem } from '../combat';
 import { type BagPickupStack } from './bags';
 import { missileStackFields } from './missiles';
+import { mwlItemEffectValue } from '../mwlContent';
 
 type ItemPayload = NonNullable<GroundItem['item']>;
 type GroundKind = GroundItem['kind'];
@@ -254,6 +255,12 @@ function pickupPayload(context: GroundPickupContext, item: ItemPayload): void {
 		return;
 	}
 	const payload = { ...item, stackable: true };
+	//`AlchemistsToolkit.doEquip()` (tag `v3.3.8`) starts `warmUpDelay` at 101 when
+	//equipped. This port has no selectable artifact slot, so first pickup stands in
+	//for equipping; do not restart an already-carried Toolkit's saved warm-up state.
+	if (payload.id === 'toolkit' && payload.warmUpDelay === undefined) {
+		payload.warmUpDelay = mwlItemEffectValue('toolkit', 'warmUpInitial');
+	}
 	if (payload.id === 'gold') {
 		context.addLooseGold(payload.quantity);
 		return;

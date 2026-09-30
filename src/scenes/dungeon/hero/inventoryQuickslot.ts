@@ -5,6 +5,7 @@ import { createJournalTabs } from '../../../ui/journalContent';
 import { inventoryDocked } from '../../../ui/interfaceMode';
 import { uiMode } from '../../../settings';
 import { armorSTRReq, weaponSTRReq } from '../../../items/strReq';
+import { toolkitWarmupPercent } from '../../../simulation/toolkitWarmup';
 import { Actors, Blob, Camera, Game, Random, Roguelike, TintedSprite, Window } from 'mwg';
 import { spawnDeathBursts, spawnFlare, spawnHitFlash, spawnShadowBurst, spawnTeleportBurst, syncBlobCells, syncPourAuras } from '../../../ui/effectBursts';
 import { BOOMERANG_RETURN_ACC_FACTOR, BOOMERANG_RETURN_TURNS, MISSILE_DEFAULT_QUANTITY, MISSILE_MAX_DURABILITY, bolasCrippleTurns, missileDamageRange, missileStackId, recordMissileUpgrade, tomahawkBleedRange } from '../../../items/missiles';
@@ -246,6 +247,12 @@ export const inventoryQuickslotMethods = {
 			armorStrReq: armorSTRReq(this.armorTier, this.armorLevel), heroStr: this.hero?.str ?? 0,
 			open: this.inventoryOpen,
 			items: this.bag.items,
+			itemDescription: (id) => {
+				if (id !== 'toolkit') return undefined;
+				const toolkit = this.bag.find('toolkit') as (typeof this.bag.items[number] & { warmUpDelay?: number; cursed?: boolean }) | undefined;
+				if (!toolkit || toolkit.cursed || (toolkit.warmUpDelay ?? 0) <= 0) return undefined;
+				return `${t('items.artifacts.alchemiststoolkit.desc')}\n\n${t('items.artifacts.alchemiststoolkit.desc_warming')}\n${toolkitWarmupPercent(toolkit.warmUpDelay!)}%`;
+			},
 			itemVerbs: (id, known) => this.itemVerbs(id, known),
 			armorId: this.armorId, armorInstanceId: this.armorInstanceId, armorLevel: this.armorLevel, armorSealed: this.armorSealed,
 			weaponInstanceId: this.weaponInstanceId,

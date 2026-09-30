@@ -552,6 +552,12 @@
           { tag: "row", id: "capeExpPerLevelBase", item: "cape", effect: "expPerLevelBase", value: 5 },
           { tag: "row", id: "toolkitLevelCap", item: "toolkit", effect: "levelCap", value: 10 },
           { tag: "row", id: "toolkitEnergizeCost", item: "toolkit", effect: "energizeCost", value: 6 },
+          // `AlchemistsToolkit.doEquip()`/`kitEnergy.act()` (tag `v3.3.8`): equip starts
+          // warm-up at 101, the first tick sets 100, then subtracts 100/(10-level)^2.
+          { tag: "row", id: "toolkitWarmUpInitial", item: "toolkit", effect: "warmUpInitial", value: 101 },
+          { tag: "row", id: "toolkitWarmUpStart", item: "toolkit", effect: "warmUpStart", value: 100 },
+          { tag: "row", id: "toolkitWarmUpBaseLevel", item: "toolkit", effect: "warmUpBaseLevel", value: 10 },
+          { tag: "row", id: "toolkitWarmUpTotal", item: "toolkit", effect: "warmUpTotal", value: 100 },
           // `UnstableSpellbook` (tag `v3.3.8`): the artifact's own instance block -
           // `levelCap = 10`, `chargeCap = (int)(level*0.6f)+2`.
           { tag: "row", id: "spellbookLevelCap", item: "spellbook", effect: "levelCap", value: 10 },
