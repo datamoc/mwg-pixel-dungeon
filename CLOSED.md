@@ -4251,3 +4251,7 @@ Every family named in the section below is matrixed (55 matrices under `garbage/
 # R072. Heap explosion item consequences
 
 - [x] **R072** _(Heap.explode() ordinary ground-item consequences)_ **Closed 2026-10-01:** the tagged Java `items/Heap.java` has specific Potion, ShatteredPot and Bomb branches, not a per-item callback; the tipped-dart premise was incorrect. The port survivor, potion and bomb rules are documented and pinned; ShatteredPot subtype behavior stays with R009.
+
+# R053. Stone of Aggression duration and damage
+
+- [x] **R053** _(StoneOfAggression mark duration and half-damage rule)_ **Closed 2026-10-01:** the spawned miniboss flags, 20/5-turn mark durations, and the pre-armor half-damage/Yog quarter-damage rules are implemented. The existing combat verification pins the damage gates and rounding; coverage records the prior browser check and the visual fade simplification.
