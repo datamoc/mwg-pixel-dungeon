@@ -4235,3 +4235,7 @@ Every family named in the section below is matrixed (55 matrices under `garbage/
 # R083. Feather Fall elixir identity
 
 - [x] **R083** _(Resolve FeatherFall identity for `v3.3.8`)_ **Closed 2026-10-01:** live toolkit craft and use verified the elixir name, Levitation input, 10 energy cost, item consumption, and feather-fall buff. The prior spell-versus-elixir divergence row was corrected.
+
+# R084. Scroll to Stone identification
+
+- [x] **R084** _(`ScrollToStone` should identify the scroll kind)_ **Closed 2026-10-01:** the live picker converted one unknown Teleportation scroll into two Stones of Blink and identified the remaining same-kind scroll.
