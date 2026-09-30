@@ -1446,6 +1446,10 @@ export const environmentFireTrapsMethods = {
 		//reveal state, tag `v3.3.8`) - only the reveal itself needs the secret check.
 		if (this.secrets.isSecret(x, y)) this.secrets.discover(x, y);
 		const kind = this.trapKinds.get(this.level.index(x, y)) ?? 'poisonDart';
+		//Trap.trigger() marks disarmedByActivation before activate() (Trap.java, tag v3.3.8).
+		//Set this first so a teleport trap landing on another active trap cannot recursively
+		//re-trigger the same cell before its activation returns.
+		if (kind !== 'gateway') this.spentTrapCells.add(this.level.index(x, y));
 		this.featuresMap?.setLayerData('features', this.featureFrames());
 
 		if (kind === 'toxic') {
@@ -1559,9 +1563,6 @@ export const environmentFireTrapsMethods = {
 		if (kind !== 'stormTrap' && !isUnmarkedTrap(kind) && !PRE_DAMAGE_HAZARD_TRAPS.has(kind)) this.markHazardArea(x, y);
 		this.sprite(this.hero).setColorAdd(1, 0.2, 0.2);
 		if (this.hero.hp <= 0) this.kill(this.hero, kind === 'burning' || kind === 'explosive' ? 'fire' : 'trap');
-		//`GatewayTrap` sets `disarmedByActivation = false` - the one reusable trap in the
-		//set, so it never lands in the spent set no matter who steps on it.
-		if (kind !== 'gateway') this.spentTrapCells.add(this.level.index(x, y));
 	},
 
 	/**
@@ -1587,6 +1588,48 @@ export const environmentFireTrapsMethods = {
 			addBuff(creature, 'roots', 5);
 		}
 		if (!creature.flying) {
+			//`Level.occupyCell()` forces Burning.act()/Ooze.act() before the press when a
+			//grounded character lands on water (Level.java, tag `v3.3.8`). The port has no
+			//per-buff `acted` bit, so it applies the current port tick formula once, then
+			//extinguishes/washes away that buff; exact suppression for a buff that already
+			//acted is tracked with the remaining R106 timing state.
+			if (this.level.get(x, y) === WATER) {
+				if (creature.buffs['burning'] !== undefined) {
+					const raw = Random.int(1, 4 + Math.floor(this.depth / 4));
+					const damage = creature.isHero
+						? Math.floor(raw * ringElementsMultiplier(this.effectiveRing(), creature.magicImmune, this.trinitySpiritRing()))
+						: raw;
+					if (damage > 0) {
+						const died = this.applyCharacterDamage(creature, damage, { pierceArmor: true, cause: 'fire', magical: false, skipAura: true });
+						this.say(t('port.log.affliction', { damage }), 'negative');
+						if (died) return;
+					}
+					if (creature.isHero && !this.hourglassFreeze) {
+						this.burningIncrement++;
+						if (Random.int(0, 2) < this.burningIncrement - 3) {
+							this.burningIncrement = 0;
+						this.burnHeroInventoryItem();
+						}
+					}
+					delete creature.buffs['burning'];
+				}
+				if (creature.buffs['ooze'] !== undefined) {
+					const raw = this.depth > 5 ? 1 + Math.floor(this.depth / 5)
+						: this.depth === 5 ? 1 : Random.chance(0.5) ? 1 : 0;
+					const damage = creature.isHero
+						? Math.floor(raw * ringElementsMultiplier(this.effectiveRing(), creature.magicImmune, this.trinitySpiritRing()))
+						: raw;
+					if (damage > 0) {
+						const died = this.applyCharacterDamage(creature, damage, { pierceArmor: true, cause: 'poison', magical: false, skipAura: true });
+						this.say(t('port.log.affliction', { damage }), 'negative');
+						if (died) {
+							if (creature.isHero) this.say(t('actors.buffs.ooze.ondeath'), 'negative');
+							return;
+						}
+					}
+					delete creature.buffs['ooze'];
+				}
+			}
 			if (creature.isHero) {
 				this.trampleHighGrass(x, y);
 				const cell = this.level.index(x, y);
@@ -2124,6 +2167,9 @@ export const environmentFireTrapsMethods = {
 			this.spentTrapCells.add(cell);
 			return;
 		}
+		//Trap.trigger() disarms before activate() (Trap.java, tag v3.3.8); guard recursive
+		//destination presses before a teleport trap can return to this activation frame.
+		if (kind !== 'gateway') this.spentTrapCells.add(cell);
 		if (kind === 'toxic') this.toxicGas.seed(monster.x, monster.y, 300 + 20 * this.depth);
 		else if (kind === 'confusionGas') this.confusionGas.seed(monster.x, monster.y, 300 + 20 * this.depth);
 		else if (isUtilityTrap(kind)) this.activateUtilityTrap(kind, monster.x, monster.y);
@@ -2224,8 +2270,6 @@ export const environmentFireTrapsMethods = {
 		//were marked before damage above; other non-damaging activations mark here.
 		if (kind !== 'stormTrap' && !isUnmarkedTrap(kind) && !PRE_DAMAGE_HAZARD_TRAPS.has(kind)) this.markHazardArea(monster.x, monster.y);
 		monster.sleeping = false;
-		//Same reusable-trap rule as the hero path: a gateway never spends itself.
-		if (kind !== 'gateway') this.spentTrapCells.add(cell);
 		//Every branch that can take the monster to 0 HP now kills it inside the shared
 		//dispatch, in the same bucket this tail used to pick (`fire` for explosive,
 		//`trap` for the rest) - rockfall included, whose mob loop dispatches too; the
