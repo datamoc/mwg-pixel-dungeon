@@ -4211,3 +4211,7 @@ Every family named in the section below is matrixed (55 matrices under `garbage/
 # R111. Burning extinguishes Chill
 
 - [x] **R111** _(`Burning` never extinguishes `Chill`)_ **Closed 2026-10-01:** fresh Burning creation through both `addBuff()` and environmental-fire `reigniteBuff()`, plus each damage tick, removes Chill as Java's `Burning.attachTo()`/`act()` do (`Burning.java:86,100`, tag `v3.3.8`). Focused assertions cover all three entry paths; the real fire-spread flow was verified in the built browser. See `coverage/rows-monsters-bosses-and-combat.md`.
+
+# R077. Identified alchemy ingredients
+
+- [x] **R077** _(Add the identified-ingredient gate)_ **Closed 2026-10-01:** simple recipes now carry the Java identification requirement in MWL and enforce it at both recipe listing and craft time. Browser verification showed Magical Infusion hidden for an unknown Upgrade Scroll, no consumption through the guarded craft path, and successful craft for 12 energy after identification. See `coverage/rows-items-consumables-and-crafting.md`.
