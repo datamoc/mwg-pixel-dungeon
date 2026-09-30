@@ -555,7 +555,7 @@ export const turnLoopAimingMethods = {
 				true,
 				this.talentRank('point_blank'),
 			);
-			//`			const hit = this.attack({ ...this.hero, kind: undefined, attackMode: 'throw', damage: thrownDamage }, target, thrownAccFactor);
+			const hit = this.attack({ ...this.hero, kind: undefined, attackMode: 'throw', damage: thrownDamage }, target, thrownAccFactor);
 			//`Crossbow.ChargedShot`: the forced hit above is the "always hits" half; the dart
 			//also applies on-hit effects to enemies in a 5x5 area around the target (tipped
 			//darts last longer than that area's ordinary coverage - see `TippedDart`).
