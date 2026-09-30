@@ -4231,3 +4231,7 @@ Every family named in the section below is matrixed (55 matrices under `garbage/
 # R081. Spell alchemy recipes
 
 - [x] **R081** _(Make the spell recipes craftable)_ **Closed 2026-10-01:** the conversion created `scrollPassage`, and all nine spell recipes crafted in the browser with the expected ingredient use, output quantities and energy costs. The Passage scroll's reading effect stays separately Not ported. See `coverage/rows-items-consumables-and-crafting.md`.
+
+# R083. Feather Fall elixir identity
+
+- [x] **R083** _(Resolve FeatherFall identity for `v3.3.8`)_ **Closed 2026-10-01:** live toolkit craft and use verified the elixir name, Levitation input, 10 energy cost, item consumption, and feather-fall buff. The prior spell-versus-elixir divergence row was corrected.
