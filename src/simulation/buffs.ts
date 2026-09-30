@@ -313,6 +313,8 @@ export function advanceBuffs(previous: Readonly<BuffState>, random: SimulationRa
 		//`RejuvenatingStepsFurrow` is a revive-persistent CounterBuff in Talent.java, not a timer.
 		if (id === 'rejuvenatingStepsFurrow') continue;
 		if (id === 'burning') {
+			//`Burning.act()` removes `Chill` before ticking damage (Burning.java:100, tag `v3.3.8`).
+			delete buffs.chill;
 			damage += random.int(1, 4 + Math.floor(scalingDepth / 4));
 			//`Burning.act()` sets acted before damage (`Burning.java`, tag `v3.3.8`).
 			buffs.burningActed = 1;

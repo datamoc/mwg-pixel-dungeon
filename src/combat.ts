@@ -651,6 +651,9 @@ export function addBuff(c: Creature, id: BuffId, duration?: number): void {
 	if (applyElementalBacklash(c, id) > 0) return;
 	if (buffBlocked(c, id)) return;
 	const event = combat.addBuff(c, id, resistedBuffDuration(c, id, duration ?? BUFF_DURATION[id]));
+	//`Burning.attachTo()` removes `Chill` when fire first lands (Burning.java:86, tag `v3.3.8`);
+	//the tick path repeats this in `advanceBuffs`, covering chill added during an active burn.
+	if (event.fresh && id === 'burning') delete c.buffs.chill;
 	//A fresh Java Burning/Ooze instance begins with acted=false; carried acted markers
 	//belong to a previous buff instance and must not survive a fresh attach.
 	if (event.fresh && id === 'burning') delete c.buffs.burningActed;
@@ -671,6 +674,9 @@ export function reigniteBuff(c: Creature, id: BuffId, duration?: number): void {
 	if (applyElementalBacklash(c, id) > 0) return;
 	if (buffBlocked(c, id)) return;
 	const event = combat.reigniteBuff(c, id, resistedBuffDuration(c, id, duration ?? BUFF_DURATION[id]));
+	//A fresh Java Burning instance always runs `Burning.attachTo()` and detaches Chill,
+	//including this reignite path used by environmental fire (`Burning.java:86`, tag `v3.3.8`).
+	if (event.fresh && id === 'burning') delete c.buffs.chill;
 	//Reignite preserves an existing Java buff's acted bit; clear only on a new instance.
 	if (event.fresh && id === 'burning') delete c.buffs.burningActed;
 	if (event.fresh && id === 'ooze') delete c.buffs.oozeActed;

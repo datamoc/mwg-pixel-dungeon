@@ -303,6 +303,17 @@ export function verifyCombat(require, check) {
 		assert.equal(draws, 1);
 		assert.deepEqual(result, { buffs: { roots: undefined }, damage: 2 });
 	});
+	check('Burning removes Chill on attachment and on every damage tick', () => {
+		const creature = { buffs: { chill: 4 } };
+		facade.addBuff(creature, 'burning');
+		assert.equal(creature.buffs.chill, undefined, 'fresh Burning attachment extinguishes Chill');
+		const reignited = { buffs: { chill: 4 } };
+		facade.reigniteBuff(reignited, 'burning');
+		assert.equal(reignited.buffs.chill, undefined, 'fresh Burning created through reignite also extinguishes Chill');
+		const tick = advanceBuffs({ burning: 4, chill: 3 }, { int: () => 1 });
+		assert.equal(tick.buffs.chill, undefined, 'a burn tick extinguishes Chill applied after attachment');
+		assert.equal(tick.buffs.burningActed, 1);
+	});
 	check('legacy announcement fires after commit, once per fresh announced buff', () => {
 		const creature = { buffs: {} }, ref = creature.buffs;
 		const announcements = [];
