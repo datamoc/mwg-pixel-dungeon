@@ -117,4 +117,34 @@ export function waywardProcChance(multiplier: number): number {
 export function friendlyProcChance(multiplier: number): number {
 	return (1 / 10) * multiplier;
 }
+/**
+ * Hero weapon-proc decisions - the pure decision half of the Kinetic conserve/store
+ * (`items/weapon/enchantments/Kinetic.java`), Spirit Blades arming (`Talent.java` 896-901)
+ * and the Holy-weapon bonus hit (`Weapon.java` 147-154, tag `v3.3.8`). Extracted from the
+ * pre/post-hit weapon blocks in combatResolution so the parity kit (BACKLOG B7) checks the
+ * *same* decisions the game runs rather than a second copy of them. Behavior-identical;
+ * gates (hero wielder, tracker armed, live defender) and effects stay scene-side.
+ */
 
+/** Spirit Blades: an armed tracker fires the SpiritBow proc on `Int(10) < 3*points`.
+ * Takes the rolled draw; a failed roll leaves it armed (Java detaches only on success). */
+export function spiritBladesFires(armed: boolean, isHero: boolean, intRoll: number, talentPoints: number): boolean {
+	return armed && isHero && intRoll < 3 * talentPoints;
+}
+
+/** Kinetic conserve release: the banked overkill pays out ceiled, then zeroes. */
+export function kineticConserveRelease(stored: number): number {
+	return Math.ceil(stored);
+}
+
+/** Kinetic kill storage: the overkill beyond this swing's conserved bonus, scaled by the
+ * generic multiplier, REPLACING the old amount. */
+export function kineticOverkillStore(defenderHp: number, conservedAdded: number, multiplier: number): number {
+	return Math.round(Math.max(0, -defenderHp - conservedAdded) * multiplier);
+}
+
+/** Holy-weapon bonus hit: `round((Paladin ? 6 : 2) x generic multiplier)` off the subclass
+ * bonus. Takes the precomputed bonus; melee-bump and defender gates stay scene-side. */
+export function holyWeaponHitDamage(subclassBonus: number, multiplier: number): number {
+	return Math.round(subclassBonus * multiplier);
+}

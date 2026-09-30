@@ -7,7 +7,7 @@ import { planHiddenMimicContact } from '../../simulation/hiddenMimicContact';
 import { planShockElementalArc } from '../../simulation/shockArc';
 import { applyDefenderDamageCurves } from '../../simulation/defenderDamageCurves';
 import { dm300ChargeEndTurns, dm300SuperchargeEntry, dm300SuperchargeThreshold } from '../../simulation/dm300Boss';
-import { annoyingProcChance, blazingProcChance, blockingProcChance, bloomingProcChance, chillingProcChance, dazzlingProcChance, elasticProcChance, explosiveFuseWear, friendlyProcChance, luckyProcChance, shockingProcChance, vampiricHealChance, waywardProcChance } from '../../simulation/attackWeaponAffixes';
+import { annoyingProcChance, blazingProcChance, blockingProcChance, bloomingProcChance, chillingProcChance, dazzlingProcChance, elasticProcChance, explosiveFuseWear, friendlyProcChance, holyWeaponHitDamage, kineticConserveRelease, kineticOverkillStore, luckyProcChance, shockingProcChance, spiritBladesFires, vampiricHealChance, waywardProcChance } from '../../simulation/attackWeaponAffixes';
 import { weaponHitDisqualifiesDwarfKingChallenge } from '../../simulation/bossChallenge';
 import { displacementProcChance, repulsionProcChance } from '../../simulation/combat';
 import { fishingSpearPiranhaDamage } from '../../simulation/fishingSpearProc';
@@ -478,7 +478,7 @@ export const combatResolutionMethods: Record<string, any> = {
 		//audit**: this used to gate the read-back on `kineticTrackerHit` too, silently
 		//withholding the stored bonus on ~8/9 of an Unstable weapon's own swings.
 		if (attacker === this.hero && (this.weaponAffix === 'kinetic' || this.weaponAffix === 'unstable') && this.kineticStored > 0) {
-			this.kineticConservedAdded = Math.ceil(this.kineticStored);
+			this.kineticConservedAdded = kineticConserveRelease(this.kineticStored);
 			damage += this.kineticConservedAdded;
 			this.kineticStored = 0;
 		}
@@ -1475,8 +1475,8 @@ export const combatResolutionMethods: Record<string, any> = {
 		//runs here for real - and detaches the tracker on a success only. A failed roll leaves
 		//it armed for the remaining blades, matching Java (whose detach sits inside the roll's
 		//branch, not after it). The melee affix below is the same attack's separate `wep.proc`.
-		const spiritBladesProc = this.spiritBladesArmed && attacker === this.hero
-			&& Random.int(0, 10) < 3 * this.talentRank('spirit_blades');
+		const bladeRoll = Random.int(0, 10);
+		const spiritBladesProc = spiritBladesFires(this.spiritBladesArmed, attacker === this.hero, bladeRoll, this.talentRank('spirit_blades'));
 		if (spiritBladesProc) {
 			this.spiritBladesArmed = false;
 			this.applyNaturesPowerOnHit(defender);
@@ -1509,9 +1509,7 @@ export const combatResolutionMethods: Record<string, any> = {
 		//`Char.damage()`'s Kinetic gate is `HP < 0` (strict - an exact-zero kill stores
 		//nothing) with `alignment == ENEMY`, so allied kills never bank overkill.
 		if (this.kineticTrackerHit && defender.hp < 0 && !defender.isHero && !defender.isNPC && !defender.isAlly) {
-			const overkill = Math.max(0, -defender.hp - this.kineticConservedAdded);
-			const multi = this.genericProcMultiplier();
-			const stored = Math.round(overkill * multi);
+			const stored = kineticOverkillStore(defender.hp, this.kineticConservedAdded, this.genericProcMultiplier());
 			if (stored > 0) this.kineticStored = stored;
 		}
 		//Battlemage: staff melee feeds the wand (advance 2 per landed hit, simplified from
@@ -1531,7 +1529,7 @@ export const combatResolutionMethods: Record<string, any> = {
 		//with every other on-hit damage block.
 		if (attacker === this.hero && this.hero.buffs['holyWeapon'] !== undefined
 			&& !defender.magicImmune && defender.hp > 0) {
-			const holy = doomDamage(Math.round(holyWeaponBonus(this.subclass()) * this.genericProcMultiplier()), defender);
+			const holy = doomDamage(holyWeaponHitDamage(holyWeaponBonus(this.subclass()), this.genericProcMultiplier()), defender);
 			if (holy > 0) {
 				defender.hp -= holy;
 				this.showDamage(defender, holy);

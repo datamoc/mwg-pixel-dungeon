@@ -41,6 +41,17 @@ assert.equal(seam.vampiricHealChance(0, 0, 1), 0.05);
 // Explosive fuse wear takes the rolled draw.
 assert.equal(seam.explosiveFuseWear(7, 1), 7);
 assert.equal(seam.explosiveFuseWear(7, 0.5), 4);
+// Hero weapon-proc decisions: Spirit Blades arming, Kinetic conserve/store, holy magnitude.
+assert.equal(seam.spiritBladesFires(true, true, 2, 1), true, 'Int(10) < 3*points');
+assert.equal(seam.spiritBladesFires(true, true, 3, 1), false, 'boundary is strict');
+assert.equal(seam.spiritBladesFires(false, true, 0, 3), false, 'disarmed stays armed');
+assert.equal(seam.spiritBladesFires(true, false, 0, 3), false, 'hero-only gate');
+assert.equal(seam.kineticConserveRelease(7.2), 8);
+assert.equal(seam.kineticOverkillStore(-30, 8, 1), 22);
+assert.equal(seam.kineticOverkillStore(-5, 8, 1), 0, 'conserved bonus is subtracted first');
+assert.equal(seam.holyWeaponHitDamage(6, 1), 6);
+assert.equal(seam.holyWeaponHitDamage(2, 1.5), 3);
+
 // Arcana-style scaling rides the shared multiplier on every chance.
 assert.equal(seam.blazingProcChance(1, 1.5), 0.75);
 assert.ok(Math.abs(seam.dazzlingProcChance(1.5) - 0.15) < 1e-12);
@@ -58,6 +69,13 @@ const chainStart = chain.indexOf("if (affix === 'blazing'");
 const chainEnd = chain.indexOf("applyBloomingGrass(attacker, defender, level, procChance);");
 assert.ok(chainStart !== -1 && chainEnd !== -1 && chainEnd > chainStart, 'chain bounds found');
 const region = chain.slice(chainStart, chainEnd);
+for (const name of ['spiritBladesFires', 'kineticConserveRelease', 'kineticOverkillStore', 'holyWeaponHitDamage']) {
+	assert.ok(chain.includes(name), `hero blocks delegate to ${name}`);
+}
+assert.ok(!chain.includes("Random.int(0, 10) < 3 * this.talentRank('spirit_blades')"), 'no duplicated blades roll');
+assert.ok(!chain.includes('Math.ceil(this.kineticStored)'), 'no duplicated conserve release');
+assert.ok(!chain.includes('Math.max(0, -defender.hp - this.kineticConservedAdded)'), 'no duplicated overkill');
+assert.ok(!chain.includes('Math.round(holyWeaponBonus(this.subclass()) * this.genericProcMultiplier())'), 'no duplicated holy magnitude');
 for (const formula of ['((level + 1) / (level + 3)) * this.enchantProcMultiplier()',
 	'((level + 1) / (level + 4)) * this.enchantProcMultiplier()',
 	'((level + 1) / (level + 5)) * this.enchantProcMultiplier()',
