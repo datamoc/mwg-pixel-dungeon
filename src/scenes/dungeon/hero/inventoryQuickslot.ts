@@ -28,6 +28,7 @@ import { entranceRoomContext } from '../../../spdLevelGen/rooms/standard/entranc
 import { Terrain } from '../../../spdLevelGen/paintLevel';
 import { runState } from '../../../runState';
 import { STARVING } from '../../../simulation/hunger';
+import { MEAL_TALENTS } from '../../../simulation/heroActions';
 import { armorAbilityDef, armorAbilityKey, armorChargeUse, type ArmorAbilityDef } from '../../../armorAbilities';
 import { CLASSES } from '../../../classes';
 import { TitleScene } from '../../../scenes/titleScene';
@@ -603,13 +604,10 @@ export const inventoryQuickslotMethods = {
 				set hunger(value: number) { scene.hunger = value; },
 				applyMealEaten: () => applyMealEatenEffects(scene.consumableContext(), 0),
 				showHeal: (amount) => { scene.showHeal(scene.hero, amount); },
-				/** `Food.eatingTime()`'s fast-eating gate (tag `v3.3.8`): any of the six meal
-				 * talents drops the meal from `TIME_TO_EAT` (3) to 1. Five exist here
-				 * (`iron_stomach`, `energizing_meal`, `mystical_meal`, `invigorating_meal`,
-				 * `focused_meal`); `ENLIGHTENING_MEAL` has no port talent, so a cleric-adjacent
-				 * build can never hit the fast path - Not ported for that reason. */
-				hasFastEating: () => ['iron_stomach', 'energizing_meal', 'mystical_meal', 'invigorating_meal', 'focused_meal']
-					.some((id) => scene.talentRank(id) > 0),
+				/** `Food.eatingTime()` and `HornOfPlenty.doEatEffect()` (`Food.java` and
+				 * `HornOfPlenty.java`, tag `v3.3.8`) share this six-talent gate. Reuse the same
+				 * list as ordinary food so `ENLIGHTENING_MEAL` stays included. */
+				hasFastEating: () => MEAL_TALENTS.some((id) => scene.talentRank(id) > 0),
 				armEnhancedRings: () => { scene.armEnhancedRingsFromArtifact(); },
 				spendTurn: (cost) => { scene.actionSpentTurn = true; scene.spendHeroTurn(cost); },
 				say: scene.say.bind(scene),

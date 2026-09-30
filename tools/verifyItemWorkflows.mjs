@@ -2876,10 +2876,18 @@ function hornDrive(overrides = {}, pickScript = [0]) {
 	assert.ok(eat.log.includes('meal'), 'the meal talents fire');
 	assert.deepEqual(eat.flags.turns, [3], 'a slow meal costs 3');
 	assert.equal(eat.flags.rings, 1);
+	const fastMeal = hornDrive({ ctx: { hasFastEating: () => true } }, [0]);
+	assert.deepEqual(fastMeal.flags.turns, [1], 'a fast meal talent, including ENLIGHTENING_MEAL, reduces Horn eating to one turn');
 	const snack = hornDrive({}, [1]);
+
 	assert.equal(snack.hunger, 410, 'one charge is 90 hunger');
 	assert.equal(snack.horn.charge, 9);
 	assert.deepEqual(snack.flags.turns, [3]);
+}
+// The scene adapter deliberately shares ordinary food's complete six-talent gate.
+{
+	const sceneQuickslotSource = readFileSync(join(root, 'src/scenes/dungeon/hero/inventoryQuickslot.ts'), 'utf8');
+	assert.match(sceneQuickslotSource, /hasFastEating:\s*\(\)\s*=>\s*MEAL_TALENTS\.some\(\(id\)\s*=>\s*scene\.talentRank\(id\)\s*>\s*0\)/);
 }
 // Store: a meat pie banks 900 plus the full-belly bonus, leveling the horn four times.
 {
