@@ -1,7 +1,7 @@
 import { Actors } from 'mwg';
 import { ITEM_KEYS, RING_KEYS, WAND_KEYS, has, t } from '../i18n';
 import { wandTypeFromSource, type WandType } from './wands';
-import { ARMOR_NAME_BY_CLASS, WEAPON_NAME_BY_CLASS, isClassArmorId, weaponCombat } from './catalog';
+import { ARMOR_NAME_BY_CLASS, STARTING_WEAPON_CLASS, WEAPON_NAME_BY_CLASS, isClassArmorId, weaponCombat } from './catalog';
 import { tippedDartNameKey, missileDamageRange } from './missiles';
 import { getCurse } from './itemCurses';
 import { armorSTRReq, missileSTRReq, weaponSTRReq } from './strReq';
@@ -114,6 +114,9 @@ export interface ItemDisplayContext {
 	 * bag. Optional so callers without a scene (plain bag lookups) stay valid. */
 	readonly weaponSourceClass?: string;
 	readonly armorSourceClass?: string;
+	/** The hero class for run-start gear names (R110) - the wielded `startingWeapon`
+	 * names its Java class per hero class, like the slot trackers above. */
+	readonly heroClass?: string;
 	/** Live imbuement state for the equipped-gear labels (`Weapon.name()` /
 	 * `Armor.name()`, tag `v3.3.8`): the wielded/worn affix (for the curse gate)
 	 * and whether each holy buff is up. Optional so plain bag lookups stay valid -
@@ -263,10 +266,13 @@ export function itemDisplayName(scene: ItemDisplayContext, id: string, identifie
 		//"quest weapon"/"quest armor" (`item-rules.mwl`, port strings) - so before this, every
 		//procedurally-generated weapon in the game read as "quest weapon". The class comes from
 		//`sourceClass`, which is the Java class name lowercased (`WEAPON_NAME_BY_CLASS`'s own key).
-		const classKey = sourceClass
+		const startClass = id === 'startingWeapon' ? STARTING_WEAPON_CLASS[scene.heroClass ?? ''] : undefined;
+		const startKey = startClass === undefined ? undefined
+			: startClass === 'cudgel' ? 'port.name.cudgel' : WEAPON_NAME_BY_CLASS[startClass];
+		const classKey = startKey ?? (sourceClass
 			? (weapon ? WEAPON_NAME_BY_CLASS[sourceClass.toLowerCase()]
 				: armor ? ARMOR_NAME_BY_CLASS[sourceClass.toLowerCase()] : undefined)
-			: undefined;
+			: undefined);
 		const hardenedFlag = (item as (typeof item | undefined) & { hardened?: boolean })?.hardened;
 		const hardened = weapon ? (hardenedFlag ?? (isEquipped(scene.weaponId, scene.weaponInstanceId) ? scene.weaponHardened : false))
 			: armor ? (hardenedFlag ?? (isEquipped(scene.armorId, scene.armorInstanceId) ? scene.armorHardened : false)) : false;

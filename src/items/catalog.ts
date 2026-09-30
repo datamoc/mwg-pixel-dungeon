@@ -185,6 +185,10 @@ function equipmentStatRange(kind: string, tier: number, level: number): [number,
  */
 export const STARTING_WEAPON_CLASS: Readonly<Record<string, string>> = {
 	warrior: 'wornshortsword', mage: 'magesstaff', rogue: 'dagger', huntress: 'gloves', duelist: 'rapier',
+	//`HeroClass.initCleric()` (`HeroClass.java` 248-250, tag `v3.3.8`): the Cleric
+	//starts with a Cudgel (ACC 1.40). It has no `weaponCombatRules` row, but its
+	//name key (`port.name.cudgel`, all locales) resolves the display name.
+	cleric: 'cudgel',
 };
 
 /** The default `MeleeWeapon` range for a tier and level. Prefer `weaponCombat` when the class is known: about

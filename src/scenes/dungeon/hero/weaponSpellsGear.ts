@@ -1606,6 +1606,7 @@ export const weaponSpellsGearMethods = {
 			weaponId: this.weaponId, weaponInstanceId: this.weaponInstanceId, weaponHardened: this.weaponHardened,
 			weaponSourceClass: this.weaponSourceClass,
 			weaponAffix: this.weaponAffix, holyWeaponUp: this.hero?.buffs['holyWeapon'] !== undefined,
+			heroClass: this.heroClass,
 			ringTypesKnown: ringTypesKnownFor(this),
 			armorId: this.armorId, armorInstanceId: this.armorInstanceId, armorHardened: this.armorHardened,
 			armorSourceClass: this.armorSourceClass,

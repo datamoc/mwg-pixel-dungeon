@@ -118,6 +118,17 @@ export function verifyClericSpells(require, check) {
 		assert.equal(holyWardBlock('priest'), 1);
 	});
 
+	check('the run-start weapon names its Java class, cudgel included (R110)', () => {
+		const catalog = readFileSync(new URL('../src/items/catalog.ts', import.meta.url), 'utf8');
+		assert.match(catalog, /cleric: 'cudgel',/,
+			'cleric starts with the Java Cudgel');
+		const names = readFileSync(new URL('../src/items/displayName.ts', import.meta.url), 'utf8');
+		assert.match(names, /STARTING_WEAPON_CLASS\[scene\.heroClass \?\? ''\]/,
+			'startingWeapon resolves its class from the hero class');
+		assert.match(names, /startClass === 'cudgel' \? 'port\.name\.cudgel' : WEAPON_NAME_BY_CLASS\[startClass\]/,
+			'the cudgel falls back to its own port name key');
+	});
+
 	check('imbued gear reads through the real ench_name/glyph_name keys (R029)', () => {
 		const names = readFileSync(new URL('../src/items/displayName.ts', import.meta.url), 'utf8');
 		assert.match(names, /t\('actors\.hero\.spells\.holyweapon\.ench_name', \{ '0': base \}\)/,
