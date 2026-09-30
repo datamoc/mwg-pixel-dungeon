@@ -311,3 +311,21 @@ export function grimTrapDamage(hp: number, maxHp: number): number {
 export function explosiveTrapBounds(depth: number): [number, number] {
 	return [4 + depth, 12 + 3 * depth];
 }
+/**
+ * Armor-glyph proc chances - the pure decision half of `Displacement` (armor curse) and
+ * `Repulsion` (`items/armor/curses/Displacement.java`, `items/armor/glyphs/Repulsion.java`,
+ * tag `v3.3.8`). Extracted from the defender-proc sites in attackSeams/combatResolution so
+ * the parity kit (BACKLOG B7) checks the *same* chances the game rolls rather than a second
+ * copy of them. Behavior-identical; rolls, gates and effects stay scene-side.
+ */
+
+/** `Displacement.proc()`: `1/20 x arcana`, teleporting the defender and zeroing the hit. */
+export function displacementProcChance(multiplier: number): number {
+	return (1 / 20) * multiplier;
+}
+
+/** `Repulsion.proc()`: `(level+1)/(level+5) x arcana`, shoving an adjacent attacker. */
+export function repulsionProcChance(level: number, multiplier: number): number {
+	return ((level + 1) / (level + 5)) * multiplier;
+}
+

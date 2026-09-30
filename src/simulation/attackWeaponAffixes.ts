@@ -112,3 +112,9 @@ export function annoyingProcChance(multiplier: number): number {
 export function waywardProcChance(multiplier: number): number {
 	return (1 / 4) * multiplier;
 }
+/** `Friendly.proc()` (`items/weapon/curses/Friendly.java`, tag `v3.3.8`): `1/10 x arcana`,
+ * charming both sides of the exchange (payloads stay scene-side). */
+export function friendlyProcChance(multiplier: number): number {
+	return (1 / 10) * multiplier;
+}
+

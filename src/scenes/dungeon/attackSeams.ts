@@ -9,6 +9,7 @@ import { AnimatedSprite, Random, Roguelike, SpriteSheet } from 'mwg';
 import { preparationCanKo } from '../../simulation/preparation';
 import { dm300SuperchargeEntry, dm300SuperchargeThreshold } from '../../simulation/dm300Boss';
 import { planShockElementalArc } from '../../simulation/shockArc';
+import { displacementProcChance, repulsionProcChance } from '../../simulation/combat';
 import { UNSTABLE_DELEGATES } from '../../items/itemAffixes';
 import { ringArcanaMultiplier, ringForceBonus, ringTenacityMultiplier } from '../../items/ringModifiers';
 import { HOLY_WARD_BLOCK, HOLY_WEAPON_BONUS, auraProcBonus, auraProtectedDamage, satiatedShieldAmount, searingLightBonus, shieldOfLightRange, trinityBodyGlyphActive } from '../../simulation/clericSpells';
@@ -16,7 +17,7 @@ import { capitalize, has, t } from '../../i18n/index';
 import { assassinReachBonus, farsightMultiplier, shieldBatteryGain } from '../../talentEffects';
 import { modifyAttackDamage } from '../../simulation/attackModifiers';
 import { resolveAttackTalentBonuses } from '../../simulation/attackTalentBonuses';
-import { resolveAttackWeaponAffixes } from '../../simulation/attackWeaponAffixes';
+import { friendlyProcChance, resolveAttackWeaponAffixes } from '../../simulation/attackWeaponAffixes';
 import { simulationRandom } from '../../adapters/mwgRandom';
 import { weaponRechargeWindow } from '../../items/artifactRecharge';
 import { runState } from '../../runState';
@@ -275,7 +276,7 @@ export const attackSeamMethods = {
 		}
 		//Displacement.proc(): a 1-in-20 x arcana armor-curse proc teleports the defender
 		//and replaces the incoming hit with zero damage.
-		if (defender.isHero && this.armorGlyphActive() && this.armorGlyph === 'displacement' && Random.chance((1 / 20) * this.armorProcMultiplier(defender))) {
+		if (defender.isHero && this.armorGlyphActive() && this.armorGlyph === 'displacement' && Random.chance(displacementProcChance(this.armorProcMultiplier(defender)))) {
 			const armorDisplaceFrom = { x: defender.x, y: defender.y };
 			const destination = this.randomFreeCell(defender);
 			if (destination) {
@@ -295,7 +296,7 @@ export const attackSeamMethods = {
 		//without pretending Charm is a global, target-free stun.
 		if (attacker === this.hero && this.weaponAffix === 'friendly') {
 			if (this.isCharmedToward(attacker, defender)) damage = 0;
-			if (Random.chance((1 / 10) * this.enchantProcMultiplier())) {
+			if (Random.chance(friendlyProcChance(this.enchantProcMultiplier()))) {
 				addBuff(attacker, 'charm');
 				this.charmTargets.set(attacker.id, defender.id);
 				addBuff(defender, 'charm');
@@ -711,7 +712,7 @@ export const attackSeamMethods = {
 			if (defender.isHero && ((this.armorGlyphActive() && this.armorGlyph === 'repulsion') || this.trinityBodyGlyphIs('repulsion')) && attacker.hp > 0
 				&& Roguelike.chebyshevDistance(attacker, defender) <= 1) {
 				const level = this.degradedLevel(this.armorLevel);
-				const procChance = ((level + 1) / (level + 5)) * this.armorProcMultiplier(defender);
+				const procChance = repulsionProcChance(level, this.armorProcMultiplier(defender));
 				if (Random.chance(procChance)) {
 					const power = Math.round(2 * Math.max(1, procChance));
 					const dx = Math.sign(attacker.x - defender.x);

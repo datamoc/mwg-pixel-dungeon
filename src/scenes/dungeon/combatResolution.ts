@@ -7,8 +7,9 @@ import { planHiddenMimicContact } from '../../simulation/hiddenMimicContact';
 import { planShockElementalArc } from '../../simulation/shockArc';
 import { applyDefenderDamageCurves } from '../../simulation/defenderDamageCurves';
 import { dm300ChargeEndTurns, dm300SuperchargeEntry, dm300SuperchargeThreshold } from '../../simulation/dm300Boss';
-import { annoyingProcChance, blazingProcChance, blockingProcChance, bloomingProcChance, chillingProcChance, dazzlingProcChance, elasticProcChance, explosiveFuseWear, luckyProcChance, shockingProcChance, vampiricHealChance, waywardProcChance } from '../../simulation/attackWeaponAffixes';
+import { annoyingProcChance, blazingProcChance, blockingProcChance, bloomingProcChance, chillingProcChance, dazzlingProcChance, elasticProcChance, explosiveFuseWear, friendlyProcChance, luckyProcChance, shockingProcChance, vampiricHealChance, waywardProcChance } from '../../simulation/attackWeaponAffixes';
 import { weaponHitDisqualifiesDwarfKingChallenge } from '../../simulation/bossChallenge';
+import { displacementProcChance, repulsionProcChance } from '../../simulation/combat';
 import { fishingSpearPiranhaDamage } from '../../simulation/fishingSpearProc';
 import { fieryDamageHalved } from '../../simulation/buffs';
 import { UNSTABLE_DELEGATES } from '../../items/itemAffixes';
@@ -564,7 +565,7 @@ export const combatResolutionMethods: Record<string, any> = {
 		}
 		//Displacement.proc(): a 1-in-20 x arcana armor-curse proc teleports the defender
 		//and replaces the incoming hit with zero damage.
-		if ((defender.isHero || cloneDefenderGate) && this.armorGlyphActive(defender) && this.armorGlyph === 'displacement' && Random.chance((1 / 20) * this.armorProcMultiplier(defender))) {
+		if ((defender.isHero || cloneDefenderGate) && this.armorGlyphActive(defender) && this.armorGlyph === 'displacement' && Random.chance(displacementProcChance(this.armorProcMultiplier(defender)))) {
 			const armorDisplaceFrom = { x: defender.x, y: defender.y };
 			const destination = this.randomFreeCell(defender);
 			if (destination) {
@@ -584,7 +585,7 @@ export const combatResolutionMethods: Record<string, any> = {
 		//without pretending Charm is a global, target-free stun.
 		if (gearAttacker && this.weaponAffix === 'friendly') {
 			if (attacker.buffs['charm'] !== undefined && this.charmTargets.get(attacker.id) === defender.id) damage = 0;
-			if (Random.chance((1 / 10) * this.enchantProcMultiplier())) {
+			if (Random.chance(friendlyProcChance(this.enchantProcMultiplier()))) {
 				addBuff(attacker, 'charm');
 				this.charmTargets.set(attacker.id, defender.id);
 				addBuff(defender, 'charm');
@@ -1147,7 +1148,7 @@ export const combatResolutionMethods: Record<string, any> = {
 		if ((defender.isHero || cloneDefenderGate) && ((this.armorGlyphActive(defender) && this.armorGlyph === 'repulsion') || (defender.isHero && this.trinityBodyGlyphIs('repulsion'))) && attacker.hp > 0
 			&& Roguelike.chebyshevDistance(attacker, defender) <= 1) {
 			const level = this.degradedLevel(this.armorLevel);
-			const procChance = ((level + 1) / (level + 5)) * this.armorProcMultiplier(defender);
+			const procChance = repulsionProcChance(level, this.armorProcMultiplier(defender));
 			if (Random.chance(procChance)) {
 				const power = Math.round(2 * Math.max(1, procChance));
 				const dx = Math.sign(attacker.x - defender.x);
@@ -1371,7 +1372,7 @@ export const combatResolutionMethods: Record<string, any> = {
 	friendlyCurseProc(this: DungeonScene, attacker: Creature, defender: Creature, damage: number, gearAttacker: boolean): number {
 		if (gearAttacker && this.weaponAffix === 'friendly') {
 			if (attacker.buffs['charm'] !== undefined && this.charmTargets.get(attacker.id) === defender.id) damage = 0;
-			if (Random.chance((1 / 10) * this.enchantProcMultiplier())) {
+			if (Random.chance(friendlyProcChance(this.enchantProcMultiplier()))) {
 				addBuff(attacker, 'charm');
 				this.charmTargets.set(attacker.id, defender.id);
 				addBuff(defender, 'charm');
