@@ -23,6 +23,7 @@ import { isResurrectKeepCandidate, partitionResurrectKeeps } from '../../items/r
 import { useStoneOfAggression as useItemStoneOfAggression, useStoneOfAugmentation as useItemStoneOfAugmentation, useStoneOfBlast as useItemStoneOfBlast, useStoneOfBlink as useItemStoneOfBlink, useStoneOfClairvoyance as useItemStoneOfClairvoyance, useStoneOfDeepSleep as useItemStoneOfDeepSleep, useStoneOfEnchantment as useItemStoneOfEnchantment, useStoneOfFear as useItemStoneOfFear, useStoneOfFlock as useItemStoneOfFlock, useStoneOfShock as useItemStoneOfShock } from '../../items/stones';
 import { type AlchemyFlowContext } from '../../items/alchemy';
 import { applyDefenderDamageCurves } from '../../simulation/defenderDamageCurves';
+import { shadowCloneArmorProc } from '../../simulation/rogueAbilities';
 import { absorbCreatureShields } from '../../simulation/allyShields';
 import { rollGeneratedAffix } from '../../items/itemKinds';
 import { ENCHANT_TABLE, GLYPH_TABLE } from '../../items/itemAffixes';
@@ -1593,6 +1594,30 @@ export const panelsSingleUseMethods = {
 		//This shared blast/bomb/ability path models Char.damage() for non-hero targets;
 		//apply Doom after Aura and before the target-specific curve and shields.
 		if (!options.skipDoom) damage = doomDamage(damage, c);
+		//`ShadowAlly.defenseProc()`'s AntiMagic/Viscosity shares (`ShadowClone.java`
+		//249-257, tag `v3.3.8`): a CLONED_ARMOR-gated clone defends with the *hero's*
+		//armor glyph, read off the hero's armor level like every other clone share.
+		//Java's roll-before-armor order is reproduced by drawing inside the gate
+		//helper (see `mobOnHit`'s clone gate note). The hero's own hits use the
+		//shared boundary above; nothing else wears glyph armor, so no other
+		//defender can reach these branches.
+		const cloneGlyphShare = c.allyKind === 'shadowClone'
+			&& shadowCloneArmorProc(Random.int(4), this.talentRank('cloned_armor'), this.armorGlyph != null);
+		if (options.magical === true && cloneGlyphShare && this.armorGlyphActive() && this.armorGlyph === 'antimagic') {
+			const level = Math.max(0, this.degradedLevel(this.armorLevel));
+			const multiplier = this.armorProcMultiplier(this.hero);
+			damage = Math.max(0, damage - Random.normalRange(Math.round(level * multiplier), Math.round((3 + level * 1.5) * multiplier)));
+		}
+		if (!this.applyingDeferredDamage && cloneGlyphShare && this.armorGlyphActive() && this.armorGlyph === 'viscosity' && damage > 0) {
+			const level = Math.max(0, this.degradedLevel(this.armorLevel));
+			const percent = ((level + 1) / (level + 6)) * this.armorProcMultiplier(this.hero);
+			const deferred = percent > 1 ? Math.round(damage / percent) : Math.ceil(damage * percent);
+			if (deferred > 0) {
+				c.deferredDamage = (c.deferredDamage ?? 0) + deferred;
+				if (!c.deferredDamageDelay) c.deferredDamageDelay = true;
+				damage = percent > 1 ? Math.round(damage / percent) - deferred : damage - deferred;
+			}
+		}
 				//`Char.damage()`'s `damage *= resist(srcClass)` (`Char.java`, tag `v3.3.8`) - ICY/ELECTRIC/FIERY
 				//holders halve their opposing source classes, right after Doom and before the one `Math.round`.
 				if (options.sourceElement) damage = sourceElementResisted(damage, options.sourceElement, c.kind, c.elementalType, c.yogFistType);

@@ -694,6 +694,19 @@ export function verifyArmorAbilities(require, check) {
 			'generic defend-side glyph sites accept the clone');
 		assert.match(cloneMobOnHit, /if \(defender\.isHero && armorGlyph\('metabolism'\)/,
 			'hero-scoped glyph sites stay keyed on the hero');
+		//`ShadowAlly.defenseProc()`'s AntiMagic/Viscosity shares (B9-a): the shared
+		//dispatch reduces magical hits and defers hits on a CLONED_ARMOR-gated clone
+		//off the hero's armor level, and the ally turn pays the clone's pool out.
+		const cloneDispatch = readFileSync(new URL('../src/scenes/dungeon/panelsSingleUse.ts', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+		assert.match(cloneDispatch, /const cloneGlyphShare = c\.allyKind === 'shadowClone'\s*&& shadowCloneArmorProc\(Random\.int\(4\), this\.talentRank\('cloned_armor'\), this\.armorGlyph != null\)/,
+			'the dispatch draws the defenseProc roll for clone hits');
+		assert.match(cloneDispatch, /options\.magical === true && cloneGlyphShare && this\.armorGlyphActive\(\) && this\.armorGlyph === 'antimagic'/,
+			'magical hits on the clone lose the hero-armor AntiMagic roll');
+		assert.match(cloneDispatch, /cloneGlyphShare && this\.armorGlyphActive\(\) && this\.armorGlyph === 'viscosity' && damage > 0[\s\S]*?c\.deferredDamage = \(c\.deferredDamage \?\? 0\) \+ deferred/,
+			'clone hits bank into the clone-owned deferred pool');
+		const allyTurns = readFileSync(new URL('../src/scenes/dungeon/actorTurnsHazards.ts', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+		assert.match(allyTurns, /if \(this\.tickMonsterDeferredDamage\(ally\)\) return;/,
+			'the ally turn pays a deferred pool out');
 		const scene = readSceneSource();
 		assert.match(scene, /heroSheet\(runState\.sprites\.rogue\)/, 'ShadowSprite uses Java HeroClass.ROGUE spritesheet');
 		assert.match(scene, /sprite\.add\('idle', \[0, 0, 0, 1, 0, 0, 1, 1\]\.map\(frame\), \{ fps: 1 \}\)/, 'ShadowSprite ports Java idle frames');

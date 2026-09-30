@@ -82,7 +82,7 @@ B9's coord tasks are T159 (residuals, re-filed after T18-T21 were cancelled as d
 ## B9. Armor-ability residuals
 
 - [ ] Fine-grained armor-ability residuals, each recorded in its own `PORT_COVERAGE.md` row:
-  - ShadowClone's remaining gear-proc shares and the `CityLevel.Smoke` pour;
+  - ShadowClone's remaining gear-proc shares (AntiMagic/Viscosity ported 2026-09-30 (B9-a): CLONED_ARMOR-gated clone shares in the shared damage dispatch, clone-owned deferred pool paid out on ally turns) and the `CityLevel.Smoke` pour;
   - CursedWand's VeryRare tier (`v4.0.0`, all eight effects dispatched 2026-09-29; remaining model and presentation simplifications are documented in its coverage row);
   - Trinity BodyForm's remaining unsupported positive glyph entries, and MindForm's discovery and projectile reductions;
   - Java's ref-counted `TimeStasis` and the purely visual `FireBall` blast ripple stay simplified.

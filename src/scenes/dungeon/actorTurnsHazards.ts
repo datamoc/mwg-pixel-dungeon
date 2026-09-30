@@ -1564,6 +1564,10 @@ export const actorTurnsHazardsMethods = {
 		if (allyDot > 0) {
 			this.applyCharacterDamage(ally, allyDot, { pierceArmor: true, cause: 'foe', skipAura: true });
 			if (ally.hp <= 0) return;
+		//`Viscosity.DeferedDamage.act()` for an ally wearer (tag `v3.3.8`): the
+		//clone-gated Viscosity share banks into the ally's own pool, which pays
+		//out on its turns through the same per-creature tick the monsters use.
+		if (this.tickMonsterDeferredDamage(ally)) return;
 		}
 		if (ally.buffs['paralysis'] || ally.buffs['frost']) return;
 		//`SmokeBomb.NinjaLog` never acts: it is an IMMOVABLE decoy whose whole job is to be attacked
