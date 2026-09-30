@@ -55,6 +55,7 @@ import { Banner } from '../../ui/banner';
 import { showDefeatPanel as showDefeatPanelUi, showVictoryPanel as showVictoryPanelUi } from '../../ui/endPanels';
 import { createItemPickerWindow } from '../../ui/itemPicker';
 import { itemFrameFor } from '../../ui/itemFrame';
+import { itemDescription } from '../../items/displayName';
 import { createTalentInfoWindow, talentTierPane } from '../../ui/talentPane';
 import { appearanceItemFrame } from '../../items/appearanceFrames';
 import { CLASS_ARMOR_ID_BY_CLASS, isClassArmorId, weaponCombat } from '../../items/catalog';
@@ -1146,6 +1147,10 @@ export const panelsSingleUseMethods = {
 			body,
 			entries,
 			displayName: (id, identified, instanceId) => this.itemDisplayName(id, identified, instanceId),
+			displayDescription: (id, instanceId) => {
+				const item = this.bag.items.find((candidate) => candidate.id === id && (candidate.instanceId ?? undefined) === (instanceId ?? undefined)) as (typeof this.bag.items[number] & { sourceClass?: string }) | undefined;
+				return itemDescription(id, item?.sourceClass);
+			},
 			iconFrame: (id) => {
 				//The bag's own frame resolution, including a dealt potion/scroll appearance (`Potion.reset()`).
 				const category = id.startsWith('potion') ? 'potion' as const : id.startsWith('scroll') ? 'scroll' as const : null;
