@@ -36,3 +36,43 @@ export function planTenguConeFront(context: TenguConeFrontContext): Step[] {
 	}
 	return next;
 }
+/**
+ * Tengu HP-bracket decisions - the pure decision half of `Tengu.damage()`'s bracket clamp,
+ * phase-1 end and bracket-change jump (actors/mobs/Tengu.java 132-200, tag `v3.3.8`). Extracted
+ * from `clampTenguBracket` and `tenguBracketJump` so the parity kit (BACKLOG B3, boss
+ * transitions) checks the *same* predicates the game runs rather than a second copy of them.
+ * Behavior-identical: the same comparisons in the same order.
+ *
+ * Java works on `hpBracket = HT/8` with integer division throughout: the pre-hit bracket
+ * `curbracket = HP/hpBracket`, the single-bracket clamp `HP = (curbracket-1)*hpBracket + 1`,
+ * the FIGHT_START end at `HP <= HT/2`, and the jump when the post-hit bracket differs. The
+ * port derives the bracket from pre-hit HP instead of tracking it persistently (equivalent:
+ * brackets only move down) and gates phase 1 on its own `tenguPhase` cell state instead of
+ * the level fight state; the bracket floor of 1 guards only hypothetical sub-8 maxima.
+ */
+
+/** HP bracket: `HT/8` (floored, never below 1). */
+export function tenguHpBracket(maxHp: number): number {
+	return Math.max(1, Math.floor(maxHp / 8));
+}
+
+/** Bracket index of an HP value under the bracket. */
+export function tenguBracketOf(hp: number, bracket: number): number {
+	return Math.floor(hp / bracket);
+}
+
+/** Single-bracket clamp: a blow crossing more than one bracket floors at the next bracket +1. */
+export function tenguBracketClamp(preHp: number, hp: number, bracket: number): number {
+	const line = (tenguBracketOf(preHp, bracket) - 1) * bracket;
+	return hp <= line ? line + 1 : hp;
+}
+
+/** Bracket change across the hit (drives the deferred jump). */
+export function tenguBracketChanged(preHp: number, hp: number, bracket: number): boolean {
+	return tenguBracketOf(preHp, bracket) !== tenguBracketOf(hp, bracket);
+}
+
+/** Phase-1 end: first time at or under half HP while still in the cell. */
+export function tenguPhase1Edge(phase: string, hp: number, maxHp: number): boolean {
+	return phase === 'cell' && hp <= Math.floor(maxHp / 2);
+}

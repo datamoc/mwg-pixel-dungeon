@@ -13,6 +13,7 @@ import { simulationRandom } from '../../../adapters/mwgRandom';
 import { simulationRoguelike } from '../../../adapters/mwgRoguelike';
 import { wraithCombatStats } from '../../../simulation/wraith';
 import { stepTenguAbility, tenguAbilityCost } from '../../../simulation/tenguAbility';
+import { tenguBracketChanged, tenguBracketClamp, tenguHpBracket, tenguPhase1Edge } from '../../../simulation/tenguBeam';
 import { colorblind, highContrast } from '../../../settings';
 import { capitalize, has, t } from '../../../i18n/index';
 import { SPD_TERRAIN_TO_GAME_KIND, toGameTerrain } from '../../../spdLevelGen/gameBridge';
@@ -1552,14 +1553,12 @@ export const monsterAiMethods = {
 	 * down. Lethal hits kill normally (phase transitions own death, not the clamp). */
 	clampTenguBracket(this: DungeonScene, tengu: Creature, preHp: number): void {
 		if (tengu.kind !== 'tengu' || tengu.hp <= 0 || preHp <= 0) return;
-		const bracket = Math.max(1, Math.floor(tengu.maxHp / 8));
-		if (tengu.hp <= (Math.floor(preHp / bracket) - 1) * bracket) {
-			tengu.hp = (Math.floor(preHp / bracket) - 1) * bracket + 1;
-		}
+		const bracket = tenguHpBracket(tengu.maxHp);
+		tengu.hp = tenguBracketClamp(preHp, tengu.hp, bracket);
 		//`Tengu.damage()` measures `dmg = beforeHitHP - HP` for `LockedFloor.addTime` here: after
 		//the bracket clamp, before the phase-1 HT/2 clamp below.
 		this.creditLockedFloor('tengu', preHp - tengu.hp, preHp - tengu.hp);
-		if ((tengu.tenguPhase ?? 'cell') === 'cell' && tengu.hp <= Math.floor(tengu.maxHp / 2)) {
+		if (tenguPhase1Edge(tengu.tenguPhase ?? 'cell', tengu.hp, tengu.maxHp)) {
 			tengu.hp = Math.floor(tengu.maxHp / 2);
 			tengu.tenguPhase = 'paused';
 			this.say(t('port.log.tenguinteresting'), 'warning');
@@ -1783,8 +1782,8 @@ export const monsterAiMethods = {
 	 * after the hit resolves (Java queues it past the full attack the same way). */
 	tenguBracketJump(this: DungeonScene, tengu: Creature, preHp: number): void {
 		if (tengu.kind !== 'tengu' || tengu.hp <= 0) return;
-		const bracket = Math.max(1, Math.floor(tengu.maxHp / 8));
-		if (Math.floor(preHp / bracket) === Math.floor(tengu.hp / bracket)) return;
+		const bracket = tenguHpBracket(tengu.maxHp);
+		if (!tenguBracketChanged(preHp, tengu.hp, bracket)) return;
 		if ((tengu.tenguPhase ?? 'cell') === 'cell') this.tenguCellJump(tengu);
 		else this.tenguArenaJump(tengu);
 	},
