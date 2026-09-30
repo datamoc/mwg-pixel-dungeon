@@ -1,6 +1,7 @@
 import { Actors } from 'mwg';
 import { craft, type Recipe } from 'mwg/actors';
 import type { Inventory } from 'mwg/actors';
+import { readTableMap, tableKey } from 'mwg/mwl';
 import { t } from '../i18n';
 import { MWL_CONSUMABLE_CLASS_TO_ID, MWL_ITEM_NODES, MWL_SPECIAL_ITEM_INVENTORY_RULES, MWL_TABLE_ROWS, mwlItemEffectValue } from '../mwlContent';
 import { SpdRandom } from '../spdRng';
@@ -174,14 +175,16 @@ function energyKindOf(itemId: string): string | undefined {
  * `ScrollOfTransmutation`, tag v3.3.8). Every other energy value is the class base, which the
  * authored table already carries.
  */
-const KNOWN_ENERGY = new Map(
-	MWL_TABLE_ROWS('alchemyKnownEnergy', 'item').map((row) => [String(row.item).toLowerCase(), Number(row.energy)]),
-);
-const SCALED_ENERGY = new Map(
-	MWL_TABLE_ROWS('alchemyScaledEnergy', 'item').map((row) => [String(row.item).toLowerCase(), {
-		total: Number(row.total), outputQuantity: Number(row.outputQuantity),
-	}]),
-);
+const KNOWN_ENERGY = readTableMap(MWL_TABLE_ROWS('alchemyKnownEnergy', 'item'), {
+	key: (row) => String(row.item).toLowerCase(),
+	value: (row) => Number(row.energy),
+	duplicate: 'last',
+});
+const SCALED_ENERGY = readTableMap(MWL_TABLE_ROWS('alchemyScaledEnergy', 'item'), {
+	key: (row) => String(row.item).toLowerCase(),
+	value: (row) => ({ total: Number(row.total), outputQuantity: Number(row.outputQuantity) }),
+	duplicate: 'last',
+});
 
 /** `Item.energyVal()` for one carried item: an exact authored row wins, then the item's own
  * consumable kind, else zero (Java's `Item.energyVal()` default). */
@@ -193,13 +196,13 @@ export function alchemyEnergyFor(itemId: string, identified: boolean, quantity =
 		const ratio = scrapRatioEnergy(itemId, quantity);
 		if (ratio !== undefined) return ratio;
 	}
-	const scaled = SCALED_ENERGY.get(itemId.toLowerCase());
+	const scaled = SCALED_ENERGY.get(tableKey(itemId.toLowerCase()));
 	// Java's spell energyVal() methods scale total energy by Recipe.OUT_QUANTITY and
 	// truncate (`PhaseShift.java:75`, `TelekineticGrab.java:146`, etc.); a picker consumes one.
 	if (scaled) return Math.trunc(scaled.total / scaled.outputQuantity);
 	const kind = energyKindOf(itemId);
 	const base = kind === undefined ? 0 : ALCHEMY_ENERGY[kind] ?? 0;
-	const knownEnergy = KNOWN_ENERGY.get(itemId.toLowerCase());
+	const knownEnergy = KNOWN_ENERGY.get(tableKey(itemId.toLowerCase()));
 	if (base > 0 && identified && knownEnergy !== undefined) return knownEnergy;
 	return base;
 }

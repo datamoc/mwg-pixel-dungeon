@@ -6,6 +6,7 @@
  */
 import { Random } from 'mwg';
 import { type Ingredient, type Inventory, type InventoryItem, type Recipe } from 'mwg/actors';
+import { readTableMap, tableKey } from 'mwg/mwl';
 import { MWL_TABLE_ROWS } from '../mwlContent';
 
 /** A recipe as authored in `alchemy.mwl`: exact-id ingredients, one result. */
@@ -131,11 +132,12 @@ export function rollSeedToPotion(potionIds: readonly string[], cooking: CookingH
  * `(int)(base * (quantity / (float) Recipe.OUT_QUANTITY))` - evaluated on the quantity, like Java
  * (the truncation is on the stack, not per unit).
  */
-const SCRAP_RATIO = new Map(
-	MWL_TABLE_ROWS('alchemyScrapRatio', 'item').map((row) => [String(row.item), { base: Number(row.base), out: Number(row.outQuantity) }]),
-);
+const SCRAP_RATIO = readTableMap(MWL_TABLE_ROWS('alchemyScrapRatio', 'item'), {
+	key: (row) => String(row.item),
+	value: (row) => ({ base: Number(row.base), out: Number(row.outQuantity) }),
+});
 
 export function scrapRatioEnergy(itemId: string, quantity: number): number | undefined {
-	const ratio = SCRAP_RATIO.get(itemId);
+	const ratio = SCRAP_RATIO.get(tableKey(itemId));
 	return ratio === undefined ? undefined : Math.trunc(ratio.base * (quantity / ratio.out));
 }

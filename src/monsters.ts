@@ -2,6 +2,7 @@ import { SpriteSheet } from 'mwg';
 import type { Texture2D } from 'mwg/two-d/render';
 import type { GroundItemKind } from './dungeonConstants';
 import type { SpdSprites } from './images';
+import { readTableMap, tableKey } from 'mwg/mwl';
 import { MWL_MONSTERS, MWL_MONSTER_DEPTH_STATS, MWL_SCENARIO_CHAPTERS, MWL_TABLE_ROWS, MWL_TRAIT_NODES } from './mwlContent';
 
 function mwlActorFlagSet(flag: string): Set<AnyMonsterId> {
@@ -378,10 +379,13 @@ if (Object.values(YOG_FIST_SUMMON_STATS).some((stats) =>
  * require every supported depth here instead of silently inventing a regional fallback. */
 const rosterOf = (row: Readonly<Record<string, unknown>>): MonsterId[] =>
 	(Array.isArray(row.roster) ? row.roster.map((kind) => String(kind) as MonsterId) : []);
-const ROSTER_BY_DEPTH = new Map(MWL_TABLE_ROWS('monsterRosterByDepth', 'depth').map((row) => [String(row.depth), rosterOf(row)]));
+const ROSTER_BY_DEPTH = readTableMap(MWL_TABLE_ROWS('monsterRosterByDepth', 'depth'), {
+	key: (row) => String(row.depth),
+	value: (row) => rosterOf(row),
+});
 
 export function mobRosterForDepth(depth: number): MonsterId[] {
-	const direct = ROSTER_BY_DEPTH.get(String(depth));
+	const direct = ROSTER_BY_DEPTH.get(tableKey(String(depth)));
 	if (!direct) throw new Error(`MWL dungeon roster has no Java depth row for ${depth}`);
 	return direct;
 }

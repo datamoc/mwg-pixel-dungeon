@@ -10,6 +10,7 @@ import { Room } from './room';
 import { LoopBuilder } from './loopBuilder';
 import { FigureEightBuilder } from './figureEightBuilder';
 import { SpdRandom } from '../spdRng';
+import { readTableMap, tableKey } from 'mwg/mwl';
 import { MWL_TABLE_ROWS } from '../mwlContent';
 import { STANDARD_ROOM_CLASS_ORDER } from './rooms/standard/registry';
 import { createSpecialRoom, initSpecialRoomFloor } from './rooms/special/registry';
@@ -23,24 +24,27 @@ import { randomGooBossKind } from './rooms/sewerBoss/gooBossRoom';
  * far; every other `RegularLevel` subclass inherits the base `return 0`, which would generate
  * a degenerate floor, so `regionRoomCounts()` throws rather than silently doing that.
  */
-const REGION_ROOM_COUNTS = new Map(MWL_TABLE_ROWS('regionRoomCounts', 'region').map((row) => {
-	const weights = (value: unknown): number[] => (Array.isArray(value) ? value.map(Number) : []);
-	const counts = {
-		standardMax: Number(row.standardMax),
-		standardBase: Number(row.standardBase),
-		standardWeights: weights(row.standardWeights),
-		specialMax: Number(row.specialMax),
-		specialBase: Number(row.specialBase),
-		specialWeights: weights(row.specialWeights),
-	};
-	if (counts.standardWeights.length === 0 || counts.specialWeights.length === 0) {
-		throw new Error(`MWL room rule has invalid region counts for ${String(row.region)}`);
-	}
-	return [String(row.region), counts] as const;
-}));
+const REGION_ROOM_COUNTS = readTableMap(MWL_TABLE_ROWS('regionRoomCounts', 'region'), {
+	key: (row) => String(row.region),
+	value: (row) => {
+		const weights = (value: unknown): number[] => (Array.isArray(value) ? value.map(Number) : []);
+		const counts = {
+			standardMax: Number(row.standardMax),
+			standardBase: Number(row.standardBase),
+			standardWeights: weights(row.standardWeights),
+			specialMax: Number(row.specialMax),
+			specialBase: Number(row.specialBase),
+			specialWeights: weights(row.specialWeights),
+		};
+		if (counts.standardWeights.length === 0 || counts.specialWeights.length === 0) {
+			throw new Error(`MWL room rule has invalid region counts for ${String(row.region)}`);
+		}
+		return counts;
+	},
+});
 
 function regionRoomCount(region: string, kind: 'standard' | 'special', forceMax: boolean): number {
-	const counts = REGION_ROOM_COUNTS.get(region);
+	const counts = REGION_ROOM_COUNTS.get(tableKey(region));
 	if (!counts) throw new Error(`MWL room rule has no counts for ${region}`);
 	const max = kind === 'standard' ? counts.standardMax : counts.specialMax;
 	const base = kind === 'standard' ? counts.standardBase : counts.specialBase;

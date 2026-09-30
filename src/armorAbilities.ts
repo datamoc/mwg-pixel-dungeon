@@ -8,6 +8,7 @@
  * port keeps SPD's data in MWL and its code in TypeScript.
  */
 import type { ClassId } from './classes';
+import { readTableMap, tableKey } from 'mwg/mwl';
 import { MWL_TABLE_ROWS } from './mwlContent';
 import { eliminationMatchFactor } from './simulation/duelistAbilities';
 
@@ -48,8 +49,9 @@ export const ARMOR_CHARGE_PER_TURN = 100 / 500;
 /** `ArmorAbility.chargeUse()`'s `HEROIC_ENERGY` table: reduced charge use by 12%/23%/32%/40%. */
 const HEROIC_ENERGY_FACTORS = [1, 0.88, 0.77, 0.68, 0.6] as const;
 
-const DEFINITIONS = new Map<string, ArmorAbilityDef>(
-	MWL_TABLE_ROWS('armorAbilities', 'id').map((row) => {
+const DEFINITIONS = readTableMap(MWL_TABLE_ROWS('armorAbilities', 'id'), {
+	key: (row) => String(row.id),
+	value: (row) => {
 		const def: ArmorAbilityDef = {
 			id: String(row.id),
 			classId: String(row.class) as ClassId,
@@ -57,12 +59,12 @@ const DEFINITIONS = new Map<string, ArmorAbilityDef>(
 			targeting: String(row.targeting) as ArmorAbilityTargeting,
 			talents: (Array.isArray(row.talents) ? row.talents.map(String) : []).filter((id) => id.length > 0),
 		};
-		return [def.id, def];
-	}),
-);
+		return def;
+	},
+});
 
 export function armorAbilityDef(id: string): ArmorAbilityDef | undefined {
-	return DEFINITIONS.get(id);
+	return DEFINITIONS.get(tableKey(id));
 }
 
 /**

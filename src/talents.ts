@@ -1,4 +1,5 @@
 import type { ClassId } from './classes';
+import { readTableMap, tableKey } from 'mwg/mwl';
 import { MWL_TABLE_ROWS, MWL_TRAIT_NODES } from './mwlContent';
 
 export interface TalentDefinition {
@@ -111,7 +112,10 @@ export function subclassTalentDefinitions(subclass: string, classId: ClassId): T
  * the partial slices their `PORT_COVERAGE.md` rows state, rather than silently absent.
  */
 const ARMOR_ABILITY_ROWS = MWL_TABLE_ROWS('armorAbilities', 'id');
-const ARMOR_ABILITY_TALENT_ENTRIES = new Map(ARMOR_ABILITY_ROWS.map((row) => [String(row.id), talentsOf(row)]));
+const ARMOR_ABILITY_TALENT_ENTRIES = readTableMap(ARMOR_ABILITY_ROWS, {
+	key: (row) => String(row.id),
+	value: (row) => talentsOf(row),
+});
 
 /** Per-class ability ids in the authored table's own row order, which is
  *  `HeroClass.armorAbilities()`'s order (`HeroicLeap`, `Shockwave`, `Endure`, ...). */
@@ -131,7 +135,7 @@ export const ARMOR_ABILITY_TALENTS: ReadonlyMap<string, string[]> = ARMOR_ABILIT
  *  carries `class: "any"` (the Rat King grants it to any class, bypassing the class-gated
  *  offering), so it feeds this window for every hero while landing in no class's offer list. */
 export function armorTalentDefinitions(ability: string, classId: ClassId): TalentDefinition[] {
-	const own = ARMOR_ABILITY_TALENT_ENTRIES.get(ability);
+	const own = ARMOR_ABILITY_TALENT_ENTRIES.get(tableKey(ability));
 	if (own === undefined) return [];
 	return [...own, 'heroic_energy'].map(id => ({ id, classId, tier: 4, maxRank: 4 }));
 }
