@@ -75,6 +75,11 @@ export interface CharacterDamageOptions {
 	/** `Char.damage()`'s `resist(srcClass)` for an elemental source class (ICY/ELECTRIC/FIERY holders halve it,
 	 * one `Math.round`), applied after Doom exactly where Java does. */
 	readonly sourceElement?: DamageSourceElement;
+	/** `Char.damage()`'s `resist(srcClass)` for a target-specific source class the element lookup
+	 * cannot express: `YogFist.BurningFist`'s own `resistances.add(GeyserTrap.class)` (`YogFist.java`
+	 * 284, tag `v3.3.8`) halves its geyser hit. Same static 0.5 and single `Math.round` as
+	 * `sourceElement`, at the same post-Doom position. */
+	readonly sourceClassResistHalf?: boolean;
 	readonly deferKill?: boolean;
 	/** Hero-side `Hero.damage()` pieces the caller already applied (`Skeleton.die()`'s Earthroot/HolyWard folding). */
 	readonly heroAbsorb?: { skipEarthroot?: boolean; skipHolyWard?: boolean };

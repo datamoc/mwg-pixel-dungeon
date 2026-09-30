@@ -340,15 +340,20 @@ export const cursedWandCastMethods = {
 		} else if (effect === 'geyser') {
 			this.applyCursedWandArcaneVision(target ?? this.creatureAt(cell.x, cell.y));
 			//Geyser.effect(): a fresh GeyserTrap activates at the bolt's own cell - the same
-			//flow the port's own geyser utility trap already uses.
+			//flow the port's own geyser utility trap already uses. Java sets `geyser.source`
+			//to the wand/user, so `activate()`'s `source == this` gate skips its
+			//`HazardAssistTracker` prolong - this caller's `markHazardMob` bridge is a no-op
+			//for exactly that reason (the utility-trap path passes the real mark instead).
 			activateGeyserTrapFlow({
 				depth: this.depth, random: Random, neighbourOffsets: Roguelike.neighbourOffsets(8) as ReadonlyArray<readonly [number, number]>,
 				randomElement: <T,>(values: readonly T[]) => Random.element(values), width: this.level.width, height: this.level.height,
 				distanceMap: (origin) => this.pathfinder.distanceMap(origin), passable: (gx, gy) => this.level.passable(gx, gy),
 				setWater: (gx, gy) => this.level.set(gx, gy, WATER), clearFire: (gx, gy) => this.fire.clear(gx, gy),
-				restitch: () => this.restitchAllTiles(), creatureAt: (gx, gy) => this.creatureAt(gx, gy), hero: this.hero,
-				absorbHeroDamage: (damage) => this.absorbHeroDamage(damage), showDamage: (t, damage) => this.showDamage(t, damage),
-				kill: (t, cause) => this.kill(t, cause), moveTo: (creature, destination) => this.moveTo(creature, destination),
+				restitch: () => this.restitchAllTiles(), creatureAt: (gx, gy) => this.creatureAt(gx, gy),
+				markHazardMob: () => {},
+				applyCharacterDamage: (target, damage, options) => this.applyCharacterDamage(target, damage, options),
+				disqualifyBossChallenge: (target) => this.disqualifyBossChallenge(target),
+				moveTo: (creature, destination) => this.moveTo(creature, destination),
 			}, cell.x, cell.y);
 		} else if (effect === 'summonSheep') {
 			this.applyCursedWandArcaneVision(target ?? this.creatureAt(cell.x, cell.y));

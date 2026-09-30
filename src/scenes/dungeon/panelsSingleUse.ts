@@ -1591,6 +1591,12 @@ export const panelsSingleUseMethods = {
 				//`Char.damage()`'s `damage *= resist(srcClass)` (`Char.java`, tag `v3.3.8`) - ICY/ELECTRIC/FIERY
 				//holders halve their opposing source classes, right after Doom and before the one `Math.round`.
 				if (options.sourceElement) damage = sourceElementResisted(damage, options.sourceElement, c.kind, c.elementalType, c.yogFistType);
+		//`Char.damage()`'s `resist(srcClass)` also reads the defender's own instance `resistances`
+		//set: `YogFist.BurningFist` adds `GeyserTrap.class` (tag `v3.3.8`), so the burning fist
+		//takes half of a geyser's hit. Same static 0.5 with one `Math.round`, beside the element
+		//halves; no class registers `GeyserTrap.class` in its immunities, so Java's
+		//`isImmune(srcClass)` zero never fires for this source.
+		if (options.sourceClassResistHalf) damage = Math.round(damage * 0.5);
 		//Every defender-side `damage()` override (`Pylon` 14+/15, `Eye` /4 while charging,
 		//`DemonSpawner` 19+/20, `Slime`/`CausticSlime` 4+/5) is part of `Char.damage()`, so it
 		//applies to *any* source that reaches a mob through `damage()` - including a bomb blast

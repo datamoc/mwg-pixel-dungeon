@@ -1,6 +1,15 @@
 import type { SimulationRandom } from './random';
 import type { Creature, Step } from '../combat';
-import { doomDamage } from './buffs';
+
+/** The `CharacterDamageOptions` slice this pure flow sets (`items/bombEffects.ts` carries the
+ * shared type); structural, so `simulation/` keeps no items/scene import. The scene bridge
+ * fills in whatever else the shared dispatch takes. */
+export interface GeyserDamageOptions {
+	readonly pierceArmor: boolean;
+	readonly cause: 'trap';
+	readonly sourceClassResistHalf?: boolean;
+	readonly onNonWeaponBossDamage?: (target: Creature) => void;
+}
 
 export interface GeyserTrapContext {
 	depth: number;
@@ -15,10 +24,15 @@ export interface GeyserTrapContext {
 	clearFire: (x: number, y: number) => void;
 	restitch: () => void;
 	creatureAt: (x: number, y: number) => Creature | null;
-	hero: Creature;
-	absorbHeroDamage: (damage: number) => number;
-	showDamage: (target: Creature, damage: number) => void;
-	kill: (target: Creature, cause?: 'poison' | 'fire' | 'hunger' | 'trap' | 'foe') => void;
+	/** `Trap.HazardAssistTracker` prolong (`Buff.prolong` keep-max), bridged from the scene's
+	 * `markHazardMob`. Java gates it on `source == this` inside `activate()`, so the utility
+	 * path passes the real mark and callers that build a trap with `source` set elsewhere
+	 * (the cursed-wand `Geyser.effect`) pass a no-op. */
+	markHazardMob: (creature: Creature) => void;
+	/** The scene's shared `applyCharacterDamage` dispatch (`panelsSingleUse.ts`), bridged by
+	 * both live callers exactly like `BombEffectsContext.applyCharacterDamage`. */
+	applyCharacterDamage: (target: Creature, damage: number, options: GeyserDamageOptions) => boolean;
+	disqualifyBossChallenge: (target: Creature) => void;
 	moveTo: (creature: Creature, destination: Step) => void;
 }
 
@@ -47,20 +61,23 @@ export function activateGeyserTrap(ctx: GeyserTrapContext, x: number, y: number)
 		|| (creature.kind === 'yogFist' && creature.yogFistType === 'burning');
 	const geyserDamage = (creature: Creature, multiplier: number): void => {
 		if (!fiery(creature)) return;
-		let damage = Math.floor(ctx.random.normalRange(5 + ctx.depth, 10 + ctx.depth * 2) * multiplier);
-		if (creature.isHero) {
-			damage = ctx.absorbHeroDamage(damage);
-			ctx.hero.hp -= damage;
-			ctx.showDamage(ctx.hero, damage);
-		} else if (creature.buffs['spectatorFreeze'] !== undefined) {
-			//`Challenge.SpectatorFreeze` makes `Char.isInvulnerable()` true for
-			//GeyserTrap's damage source too; the douse/push tail still runs.
-		} else {
-			damage = doomDamage(damage, creature);
-			creature.hp -= damage;
-			ctx.showDamage(creature, damage);
-			if (creature.hp <= 0) ctx.kill(creature, 'trap');
-		}
+		const damage = Math.floor(ctx.random.normalRange(5 + ctx.depth, 10 + ctx.depth * 2) * multiplier);
+		//Java: `if (!ch.isImmune(GeyserTrap.class)) ch.damage(dmg, this)`
+		//(`GeyserTrap.activate()`, tag `v3.3.8`) - the full `Char.damage()` seam, so Aura, Doom,
+		//the defender curves, the invulnerability gates (SpectatorFreeze, dormant pylon, guarded
+		//fist, ...), shield pools, damage hooks, wake and the death `kill` all ride the shared
+		//dispatch; the hand-rolled `absorbHeroDamage`/`hp -=`/`doomDamage`/`kill` pair this
+		//replaces only had Doom and the kill. `GeyserTrap` is absent from `AntiMagic.RESISTS`
+		//(so the hero's share is not `magical`) and Java's `damage()` subtracts no DR here
+		//(`pierceArmor`); no v3.3.8 class registers `GeyserTrap.class` in its immunities, so
+		//Java's `isImmune` gate never fires, and BurningFist's own
+		//`resistances.add(GeyserTrap.class)` (`YogFist.java` 284) halves its share instead.
+		ctx.applyCharacterDamage(creature, damage, {
+			pierceArmor: true,
+			cause: 'trap',
+			sourceClassResistHalf: creature.kind === 'yogFist' && creature.yogFistType === 'burning',
+			onNonWeaponBossDamage: (target) => ctx.disqualifyBossChallenge(target),
+		});
 	};
 	const douseAndPush = (creature: Creature, dx: number, dy: number, multiplier: number): void => {
 		geyserDamage(creature, multiplier);
@@ -74,14 +91,25 @@ export function activateGeyserTrap(ctx: GeyserTrapContext, x: number, y: number)
 	};
 	for (const [dx, dy] of ring) {
 		const creature = ctx.creatureAt(x + dx, y + dy);
-		if (creature) douseAndPush(creature, Math.sign(dx), Math.sign(dy), 0.67);
+		if (creature) {
+			//Java marks `source == this && ch instanceof Mob` *before* its hit
+			//(`GeyserTrap.activate()`, tag `v3.3.8`, lines 79-81), so a lethal geyser hit
+			//still counts as a hazard assist; `markHazardMob` skips the hero like `Mob` does.
+			ctx.markHazardMob(creature);
+			douseAndPush(creature, Math.sign(dx), Math.sign(dy), 0.67);
+		}
 	}
 	const center = ctx.creatureAt(x, y);
 	if (center) {
+		ctx.markHazardMob(center);
+		//Java prefers `centerKnockBackDirection` (only `AquaBrew.shatter` ever sets it, and
+		//its recipe is Not ported - rows/consumables R082), else a random direction whose
+		//both cells a hero can stand in, else any random direction; `targetpos == -1` (a hero
+		//with no safe pair) skips the douse/push tail entirely, which the null target mirrors.
 		const directions = center.isHero
 			? ring.filter(([dx, dy]) => ctx.passable(x + dx, y + dy) && ctx.passable(x + dx * 2, y + dy * 2))
 			: ring;
-		const [dx, dy] = ctx.randomElement(directions) ?? [0, 0];
-		douseAndPush(center, dx, dy, 1);
+		const target = ctx.randomElement(directions);
+		if (target) douseAndPush(center, target[0], target[1], 1);
 	}
 }

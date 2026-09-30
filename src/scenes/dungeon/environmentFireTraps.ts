@@ -1915,7 +1915,10 @@ export const environmentFireTrapsMethods = {
 				}
 			}
 		} else if (kind === 'geyser') {
-			activateGeyserTrapFlow({ depth: this.depth, random: Random, neighbourOffsets: Roguelike.neighbourOffsets(8) as ReadonlyArray<readonly [number, number]>, randomElement: <T>(values: readonly T[]) => Random.element(values), width: this.level.width, height: this.level.height, distanceMap: (origin) => this.pathfinder.distanceMap(origin), passable: (gx, gy) => this.level.passable(gx, gy), setWater: (gx, gy) => this.level.set(gx, gy, WATER), clearFire: (gx, gy) => this.fire.clear(gx, gy), restitch: () => this.restitchAllTiles(), creatureAt: (gx, gy) => this.creatureAt(gx, gy), hero: this.hero, absorbHeroDamage: (damage) => this.absorbHeroDamage(damage), showDamage: (target, damage) => this.showDamage(target, damage), kill: (target, cause) => this.kill(target, cause), moveTo: (creature, destination) => this.moveTo(creature, destination) }, x, y);
+			//`GeyserTrap.activate()`'s hit reaches the shared dispatch through this bridge
+			//(`GeyserTrapContext.applyCharacterDamage`), and its `HazardAssistTracker` prolong
+			//- Java marks before the hit - rides `markHazardMob` here too.
+			activateGeyserTrapFlow({ depth: this.depth, random: Random, neighbourOffsets: Roguelike.neighbourOffsets(8) as ReadonlyArray<readonly [number, number]>, randomElement: <T>(values: readonly T[]) => Random.element(values), width: this.level.width, height: this.level.height, distanceMap: (origin) => this.pathfinder.distanceMap(origin), passable: (gx, gy) => this.level.passable(gx, gy), setWater: (gx, gy) => this.level.set(gx, gy, WATER), clearFire: (gx, gy) => this.fire.clear(gx, gy), restitch: () => this.restitchAllTiles(), creatureAt: (gx, gy) => this.creatureAt(gx, gy), markHazardMob: (target) => this.markHazardMob(target), applyCharacterDamage: (target, damage, options) => this.applyCharacterDamage(target, damage, options), disqualifyBossChallenge: (target) => this.disqualifyBossChallenge(target), moveTo: (creature, destination) => this.moveTo(creature, destination) }, x, y);
 		} else if (kind === 'gateway') {
 			this.activateGatewayTrap(x, y);
 		} else if (kind === 'guardian') {

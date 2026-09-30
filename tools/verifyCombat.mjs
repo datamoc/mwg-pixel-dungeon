@@ -240,6 +240,7 @@ export function verifyCombat(require, check) {
 		[fire, frost, burning, rotting, rat].forEach((c, i) => { c.x = 5 + ring[i][0]; c.y = 5 + ring[i][1]; });
 		const creatures = [fire, frost, burning, rotting, rat];
 		const waters = [];
+		const marked = new Set();
 		activateGeyserTrap({
 			depth: 10, width: 11, height: 11,
 			random: { int: () => 1, float: () => 0, normalRange: () => 30, range: (a) => a, chance: () => false },
@@ -250,14 +251,24 @@ export function verifyCombat(require, check) {
 			setWater: (x, y) => { waters.push([x, y]); },
 			clearFire: () => {}, restitch: () => {},
 			creatureAt: (x, y) => creatures.find((c) => c.x === x && c.y === y) ?? null,
-			hero: mk('hero', { isHero: true }),
-			absorbHeroDamage: (damage) => damage,
-			showDamage: () => {},
-			kill: (target) => { target.hp = 0; },
+			//The scene bridges (T63 geyser): `markHazardMob` runs before the hit (Java's
+			//`source == this` HazardAssistTracker prolong) and the dispatch receives the trap
+			//policy plus the BurningFist `GeyserTrap` resist flag; the real dispatch halves
+			//after Doom with one `Math.round`, so mirror that here for the fist's share.
+			markHazardMob: (c) => { marked.add(c); },
+			applyCharacterDamage: (target, damage, options) => {
+				assert.ok(marked.has(target), 'Java marks HazardAssistTracker before the geyser hit');
+				assert.equal(options.pierceArmor, true);
+				assert.equal(options.cause, 'trap');
+				target.hp -= options.sourceClassResistHalf ? Math.round(damage * 0.5) : damage;
+				return false;
+			},
+			disqualifyBossChallenge: () => {},
 			moveTo: (creature, destination) => { creature.x = destination.x; creature.y = destination.y; },
 		}, 5, 5);
-		//Floor(30 * 0.67) = 20 off the fiery two; everyone else untouched.
-		assert.deepEqual([fire.hp, frost.hp, burning.hp, rotting.hp, rat.hp], [30, 50, 30, 50, 50]);
+		//Floor(30 * 0.67) = 20 off the fiery fire elemental; BurningFist's own
+		//`resistances.add(GeyserTrap.class)` halves its 20 to 10; everyone else untouched.
+		assert.deepEqual([fire.hp, frost.hp, burning.hp, rotting.hp, rat.hp], [30, 50, 40, 50, 50]);
 	});
 	check('Challenge spectator freeze reaches every direct blast/trap damage seam', () => {
 		// `Challenge.SpectatorFreeze` makes Java `Char.isInvulnerable()` true for every
@@ -267,7 +278,9 @@ export function verifyCombat(require, check) {
 		assert.match(blastSource, /c\.buffs\['spectatorFreeze'\].*return false/s);
 		assert.match(trapSource, /ch\.buffs\['spectatorFreeze'\]/);
 		assert.match(trapSource, /target\.buffs\.spectatorFreeze/);
-		assert.match(geyserSource, /creature\.buffs\['spectatorFreeze'\]/);
+		//The geyser no longer hand-rolls its own gate: its damage reaches the shared dispatch
+		//(`blastSource`'s pin just above), which refuses `SpectatorFreeze` victims there.
+		assert.match(geyserSource, /ctx\.applyCharacterDamage\(creature, damage/);
 	});
 	check('Metabolism curse charges hunger instead of feeding it', () => {
 		//`Metabolism.proc()` (`items/armor/curses/Metabolism.java`, tag `v3.3.8`) calls
