@@ -454,6 +454,27 @@ export function generatorFullReset(): void {
 // `.random()` per superclass. These run on the LEVEL stream and are the bulk of the draws.
 // ---------------------------------------------------------------------------------------------
 
+/**
+ * `UnstableSpellbook()` constructor (UnstableSpellbook.java, tag `v3.3.8`): clones the scroll
+ * deck-1 table and keeps picking stored scrolls, zeroing each pick, until the table runs dry
+ * (`scrolls.remove(ScrollOfTransmutation.class)` afterwards is draw-free). Only the DRAWS are
+ * modelled here: this port picks the book's scroll at READ time (`randomSpellbookScroll`)
+ * instead of dealing from a stored list, so the picked identities are intentionally dropped -
+ * but the loop must still burn, draw for draw, terminal `-1` pick included (both this port
+ * and the oracle-era tree roll once more on the drained table there; v3.3.8 returns draw-free
+ * instead, but no v3.3.8 stage drains a table).
+ * Found by `--stage levelgen` (seed 1, depth 6): a vault-prize book desynced the whole floor
+ * past its construction once the missile-draw fix let that seed reach the artifact pick.
+ */
+function burnSpellbookConstruction(): void {
+	const weights = [...CATS[Cat.SCROLL].defaultProbs!];
+	let i = SpdRandom.chances(weights);
+	while (i !== -1) {
+		weights[i] = 0;
+		i = SpdRandom.chances(weights);
+	}
+}
+
 /** `Weapon.random()` / `Armor.random()` - identical except the enchant threshold (0.9 vs 0.85)
  *  and which pool the enchantment comes from (same sizes either way). */
 function weaponOrArmorRandom(cat: Cat, cls: string, enchantThreshold: number): GenItem {
@@ -504,37 +525,32 @@ function itemRandom(cat: Cat, cls: string): GenItem {
 	switch (CATS[cat].superKind) {
 		case 'weapon': return weaponOrArmorRandom(cat, cls, 0.9);
 		/**
-		 * `MissileWeapon.random()` (MissileWeapon.java:252) fully OVERRIDES `Weapon.random()` -
-		 * it rolls a STACK SIZE and never touches level/enchant/curse:
-		 *     if (!stackable) return this;                       // zero draws
-		 *     quantity = 2;
-		 *     if (Random.Int(3) == 0) { quantity++;
-		 *         if (Random.Int(5) == 0) quantity++; }
-		 * So 1-2 draws, versus `Weapon.random()`'s 2-4 (Int(4) [+Int(5)] + a curse/enchant
-		 * Float()). An earlier revision filed MISSILE/MIS_T1..T5 under `superKind: 'weapon'`,
-		 * which made every generated missile burn ~2 extra level-stream draws and desynced any
-		 * floor with a missile prize - found by trace-diffing 1:9's ArmoryRoom. Every class in
-		 * MIS_T1..MIS_T5 is stackable (MissileWeapon's constructor sets `stackable = true` and
-		 * none of the 15 tier classes override it - verified by grep), so the early return is
-		 * unreachable from level generation and is not modelled here.
+		 * `MissileWeapon.random()` (MissileWeapon.java, tag `v3.3.8`) has the SAME level roll
+		 * plus Long-seeded effect substream as `Weapon.random()` (30% cursed, 10% enchanted) -
+		 * an earlier revision mirrored the pre-v3.3.8 stack-size roll instead (`Int(3)`/`Int(5)`
+		 * for quantity 2-4, zero level/effect draws), which burned the wrong draws on the wrong
+		 * streams and desynced everything downstream of a missile generation (found by the
+		 * Blacksmith parity stage: armor class, item levels and the enchant keep all diverged
+		 * past the missile draw). Fresh quantity is `defaultQuantity()` (3 - `Dart`'s 2 is not
+		 * modelled, the port has no Dart class hierarchy), set draw-free in the constructor.
 		 */
 		case 'missile': {
-			let quantity = 2;
-			if (SpdRandom.int(3) === 0) {
-				quantity++;
-				if (SpdRandom.int(5) === 0) quantity++;
-			}
-			return { cat, cls, cursed: false, level: 0, quantity, hasGoodEnchant: false };
+			const rolled = weaponOrArmorRandom(cat, cls, 0.9);
+			return { ...rolled, quantity: 3 };
 		}
 		case 'armor': return weaponOrArmorRandom(cat, cls, 0.85);
 		case 'ring':
 		case 'wand': return ringOrWandRandom(cat, cls);
-		case 'artifact':
+		case 'artifact': {
+			//Construction draws come before `.random()` (`Reflection.newInstance` runs the
+			//constructor first) - for most artifacts that is nothing, for the spellbook below.
+			if (cls === 'UnstableSpellbook') burnSpellbookConstruction();
 			// `Artifact.random()`: always +0, 30% cursed.
 			return {
 				cat, cls, cursed: SpdRandom.float() < 0.3, level: 0, quantity: 1,
 				hasGoodEnchant: false,
 			};
+		}
 		case 'gold':
 			// `Gold.random()`: `Random.IntRange(30 + depth*10, 60 + depth*20)`.
 			return {
@@ -948,20 +964,29 @@ export function cursedGiftPrize(floorSet: number, kind: 'armor' | 'weapon'): Gen
 }
 
 /**
- * `Blacksmith.Quest.generateRewards(useDecks)` (`Blacksmith.java` 370-407): four tier-3 rewards -
- * two weapons of *different* classes, one missile, one armor - all sharing one upgrade level
- * (30/45/20/5% for +0/+1/+2/+3) and one enchant roll. Java pre-generates them when the quest
- * spawns, with `useDecks = true` so they come out of the level's own item decks; this port
- * generates them lazily on first open, which is Java's own fallback branch (`WndSmith`'s
- * `generateRewards(false)`), so the deck bookkeeping is stated as not modelled rather than faked.
+ * `Blacksmith.Quest.generateRewards(useDecks)` (`Blacksmith.java`, tag `v3.3.8`): two weapons
+ * of *different* classes, one missile, one armor - all sharing one upgrade level (30/45/20/5%
+ * for +0/+1/+2/+3) and one enchant roll. The tiers are NOT fixed: `randomWeapon(3, ...)`,
+ * `randomMissile(3, ...)` and `randomArmor(3)` roll them on `floorSetTierProbs[3]`
+ * (`{0, 0, 20, 40, 40}`, `Generator.java`, tag `v3.3.8`), so rewards land on tiers 3-5
+ * (armor: Mail/Scale/Plate, one class per tier). Despite the parameter name, the spawn call
+ * `generateRewards(true)` forwards it to `randomWeapon/randomMissile(floorSet, useDefaults)`,
+ * so spawn-time rewards use DEFAULT probs, never the run's decks; only `WndBlacksmith`'s lazy
+ * fallback (`generateRewards(false)`) draws from real decks. This port models the spawn branch
+ * (it still generates lazily on first open, but with the spawn branch's defaults-based rolls -
+ * the deck fallback is not modelled). Java's clash loop `undoDrop`s discarded doubles back
+ * into the WEP decks, burning no RNG; the port skips that bookkeeping, which only affects
+ * later in-run deck weights after a clash, never the rewards themselves. The spawn gate
+ * (`Random.Int(15-depth)==0` on depths 12+, `CavesLevel.initRooms()`) and the quest type
+ * (`Random.IntRange(1, 2)`, CRYSTAL/GNOLL) live in the parity trace driver, same split as the
+ * Ghost slice - no scene consumer yet.
  */
 export function blacksmithSmithRewards(): GenItem[] {
-	const first = randomCategory(Cat.WEP_T3);
-	let second = randomCategory(Cat.WEP_T3);
-	while (second.cls === first.cls) second = randomCategory(Cat.WEP_T3);
-	const missile = randomCategory(Cat.MIS_T3);
-	//tier 3's class, from the same tier-indexed list the Ghost's own reward reads
-	const armorClass = GHOST_ARMOR_CLASSES[2] ?? 'MailArmor';
+	const first = randomWeapon(3, true);
+	let second = randomWeapon(3, true);
+	while (second.cls === first.cls) second = randomWeapon(3, true);
+	const missile = randomMissile(3, true);
+	const armor = randomArmor(3);
 	//30%:+0, 45%:+1, 20%:+2, 5%:+3 - one roll shared by all four items
 	const itemLevelRoll = SpdRandom.float();
 	const itemLevel = itemLevelRoll < 0.3 ? 0 : itemLevelRoll < 0.75 ? 1 : itemLevelRoll < 0.95 ? 2 : 3;
@@ -972,11 +997,13 @@ export function blacksmithSmithRewards(): GenItem[] {
 	SpdRandom.int(ENCH_POOL_SIZES[weaponEnchantType < 0 ? 0 : weaponEnchantType]);
 	const armorGlyphType = SpdRandom.chances(ENCH_TYPE_CHANCES);
 	SpdRandom.int(ENCH_POOL_SIZES[armorGlyphType < 0 ? 0 : armorGlyphType]);
+	//Real threshold is `0.3 * ParchmentScrap.enchantChanceMultiplier()`; this port has no
+	//ParchmentScrap trinket, so the multiplier is always its default of 1.
 	const keepEnchant = SpdRandom.float() <= 0.3;
 	return [
 		{ ...first, level: itemLevel, cursed: false, hasGoodEnchant: keepEnchant },
 		{ ...second, level: itemLevel, cursed: false, hasGoodEnchant: keepEnchant },
 		{ ...missile, level: itemLevel, cursed: false, hasGoodEnchant: keepEnchant },
-		{ cat: Cat.ARMOR, cls: armorClass, cursed: false, level: itemLevel, quantity: 1, hasGoodEnchant: keepEnchant },
+		{ ...armor, level: itemLevel, cursed: false, hasGoodEnchant: keepEnchant },
 	];
 }

@@ -13,6 +13,11 @@
  *     randomUsingDefaults Total branch.
  *   Weapon.java / Armor.java: Long-seeded substream around the effect rolls only
  *     (level rolls stay on the caller stream), mirroring the port's generator.ts.
+ *   MissileWeapon.java (blacksmith slice): the whole oracle-era `random()` stack-size
+ *     body is replaced with the v3.3.8 level + Long-seeded effect-substream shape
+ *     (flat bare-hero thresholds - the oracle tree has no ParchmentScrap, and neither
+ *     does any harness hero). Without it every oracle missile burns the wrong draws and
+ *     desyncs the stream past it.
  * Deliberately NOT touched: ARTIFACT table (port already matches oracle there),
  *   bundle persistence (harness never saves), undoDrop (draw-free), the exotic-swap
  *   Float branch (dead in practice - potions/scrolls always take the Total path).
@@ -37,6 +42,7 @@ const mwlPath = resolve(arg('--mwl', join(ROOT, 'src', 'content', 'decks.mwl')))
 const GEN = 'core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/Generator.java';
 const WEP = 'core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/weapon/Weapon.java';
 const ARM = 'core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/armor/Armor.java';
+const MIS = 'core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/weapon/missiles/MissileWeapon.java';
 
 /** Deck tables, parsed from the port's own MWL (never hardcoded from Java). */
 function getTables() {
@@ -69,19 +75,25 @@ function edit(file, anchor, replacement, { count = 1, mode = 'after', label = ''
 	edits.push({ file, anchor, replacement, count, mode, label: label || anchor.slice(0, 60) });
 }
 
+const MIS_MARKER = 'v3.3.8 missile draw sequence (oracle backport)';
+
 function applyAll() {
 	const genPath = join(dir, root(GEN));
-	if (readFileSync(genPath, 'utf8').includes('defaultProbs2 = null')) {
+	const genDone = readFileSync(genPath, 'utf8').includes('defaultProbs2 = null');
+	const misDone = readFileSync(join(dir, root(MIS)), 'utf8').includes(MIS_MARKER);
+	if (genDone && misDone) {
 		console.log('already patched, skipping');
 		return getTables();
 	}
+	for (const e of edits) e.skip = e.file === MIS ? misDone : genDone;
 	const T = getTables();
 	const trinketClasses = `new Class<?>[]{ ${new Array(T.trinketN).fill('Item.class').join(', ')} }`;
 	const files = {};
 	// Exported trees may carry CRLF; normalize (scratch build input only, javac-indifferent).
 	for (const { file } of edits) if (!files[file]) files[file] = readFileSync(join(dir, root(file)), 'utf8').replace(/\r\n/g, '\n');
 
-	for (const { file, anchor, replacement, count, mode, label } of edits) {
+	for (const { file, anchor, replacement, count, mode, label, skip } of edits) {
+		if (skip) continue;
 		let text = files[file];
 		const hits = text.split(anchor).length - 1;
 		if (hits !== count) throw new Error(`${file} [${label}]: anchor hit ${hits}x, want ${count}x - tree shape changed, aborting`);
@@ -164,6 +176,8 @@ function buildEdits() {
 		'\t\tRandom.pushGenerator(Random.Long());\n', { mode: 'before', label: 'armor push' });
 	edit(ARM, '\t\t\tinscribe();\n\t\t}',
 		'\n\t\tRandom.popGenerator();', { label: 'armor pop' });
+	// ---- MissileWeapon.java: full v3.3.8 body (the oracle-era stack roll shares nothing) ----
+	edit(MIS, '\tpublic Item random() {\n\t\tif (!stackable) return this;\n\t\t\n\t\t//2: 66.67% (2/3)\n\t\t//3: 26.67% (4/15)\n\t\t//4: 6.67%  (1/15)\n\t\tquantity = 2;\n\t\tif (Random.Int(3) == 0) {\n\t\t\tquantity++;\n\t\t\tif (Random.Int(5) == 0) {\n\t\t\t\tquantity++;\n\t\t\t}\n\t\t}\n\t\treturn this;\n\t}\n', '\tpublic Item random() {\n\t\t//+0: 75% (3/4)\n\t\t//+1: 20% (4/20)\n\t\t//+2: 5%  (1/20)\n\t\tint n = 0;\n\t\tif (Random.Int(4) == 0) {\n\t\t\tn++;\n\t\t\tif (Random.Int(5) == 0) {\n\t\t\t\tn++;\n\t\t\t}\n\t\t}\n\t\tlevel(n);\n\n\t\t//v3.3.8 missile draw sequence (oracle backport): level rolls stay on the caller\n\t\t//stream, effect rolls on a Long-seeded substream, flat bare-hero thresholds\n\t\t//(the oracle tree has no ParchmentScrap; no harness hero carries one either).\n\t\tRandom.pushGenerator(Random.Long());\n\n\t\t//30% chance to be cursed\n\t\t//10% chance to be enchanted\n\t\tfloat effectRoll = Random.Float();\n\t\tif (effectRoll < 0.3f) {\n\t\t\tenchant(Enchantment.randomCurse());\n\t\t\tcursed = true;\n\t\t} else if (effectRoll >= 0.9f){\n\t\t\tenchant();\n\t\t}\n\n\t\tRandom.popGenerator();\n\n\t\treturn this;\n\t}\n', { mode: 'replace', label: 'missile v3.3.8 body' });
 }
 
 function run() {

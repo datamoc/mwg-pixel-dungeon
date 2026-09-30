@@ -11,6 +11,7 @@
  *   node tools/parity/run-parity.mjs --stage quest       run-level Wandmaker quest type rolled during levelgen, checkout oracle vs TS
  *   node tools/parity/run-parity.mjs --stage ghost       Ghost spawn gate + reward rolls per (seed, depth), Java v3.3.8 vs TS
  *   node tools/parity/run-parity.mjs --stage imp         Imp spawn gate + alternative flag + reward ring per seed, checkout oracle + S6 deck backport vs TS
+ *   node tools/parity/run-parity.mjs --stage blacksmith  Blacksmith spawn gate + type + reward rolls per (seed, depth), Java v3.3.8 vs TS
  *   options: --spd <SPD checkout>   (default $SPD_CHECKOUT or ~/dev/shattered-pixel-dungeon; a git repo with the tags/commits)
  *            --work <dir>           scratch dir for the Java trees (default <os tmp>/mwg-parity; reused between runs)
  *            --combat-ref v3.3.8    Java ref for the combat oracle
@@ -72,7 +73,7 @@ function exportTree(dir, ref) {
 }
 
 /** Copies our harness classes in, inserts the trace hook into Random.java and makes sure the Gradle tasks exist. */
-function installHarness(dir, { combat, levelgen, loot, mobdata, ghost, imp }) {
+function installHarness(dir, { combat, levelgen, loot, mobdata, ghost, imp, blacksmith }) {
 	const put = (name, rel) => { mkdirSync(dirname(join(dir, rel)), { recursive: true }); copyFileSync(join(JAVA_SRC, name), join(dir, rel)); };
 	if (combat) { put('CombatHarness.java', `${CORE}/actors/mobs/CombatHarness.java`); put('CombatHarnessLauncher.java', `${DESKTOP}/CombatHarnessLauncher.java`); }
 	if (levelgen) { put('LevelGenHarness.java', `${CORE}/levels/LevelGenHarness.java`); put('LevelGenHarnessLauncher.java', `${DESKTOP}/LevelGenHarnessLauncher.java`); }
@@ -80,6 +81,7 @@ function installHarness(dir, { combat, levelgen, loot, mobdata, ghost, imp }) {
 	if (loot) { put('LootHarness.java', `${CORE}/actors/mobs/LootHarness.java`); put('LootHarnessLauncher.java', `${DESKTOP}/LootHarnessLauncher.java`); }
 	if (ghost) { put('GhostRewardHarness.java', `${CORE}/actors/mobs/npcs/GhostRewardHarness.java`); put('GhostRewardHarnessLauncher.java', `${DESKTOP}/GhostRewardHarnessLauncher.java`); }
 	if (imp) { put('ImpRewardHarness.java', `${CORE}/actors/mobs/npcs/ImpRewardHarness.java`); put('ImpRewardHarnessLauncher.java', `${DESKTOP}/ImpRewardHarnessLauncher.java`); }
+	if (blacksmith) { put('BlacksmithRewardHarness.java', `${CORE}/actors/mobs/npcs/BlacksmithRewardHarness.java`); put('BlacksmithRewardHarnessLauncher.java', `${DESKTOP}/BlacksmithRewardHarnessLauncher.java`); }
 
 	const randomFile = join(dir, 'SPD-classes/src/main/java/com/watabou/utils/Random.java');
 	let random = readFileSync(randomFile, 'utf8');
@@ -103,6 +105,7 @@ function installHarness(dir, { combat, levelgen, loot, mobdata, ghost, imp }) {
 	if (loot && !gradle.includes("'runLootHarness'")) gradle += task('runLootHarness', 'LootHarnessLauncher');
 	if (ghost && !gradle.includes("'runGhostReward'")) gradle += task('runGhostReward', 'GhostRewardHarnessLauncher');
 	if (imp && !gradle.includes("'runImpReward'")) gradle += task('runImpReward', 'ImpRewardHarnessLauncher');
+	if (blacksmith && !gradle.includes("'runBlacksmithReward'")) gradle += task('runBlacksmithReward', 'BlacksmithRewardHarnessLauncher');
 	writeFileSync(gradleFile, gradle);
 }
 
@@ -255,6 +258,30 @@ function impStage() {
 	gate('imp: spawn depth, alternative flag, ring class and level all match Java or are documented in impReward-known.json', r.status === 0, `report: ${join(outDir, 'imp-report.txt')}`);
 }
 
+/** B3, Blacksmith quest domain: `Blacksmith.Quest.spawn()`'s spawn gate (`Random.Int(15-depth)==0`,
+ * depths 12-14, `type = Random.IntRange(1, 2)`) plus every reward roll (floor-set-3 weapon/missile/armor
+ * tiers and classes, the shared item level, the enchant/glyph keep) per (seed, depth) - Java v3.3.8
+ * (fresh decks per case, calling the real `generateRewards(true)`) vs the port's gate + type
+ * composition + `blacksmithSmithRewards()`. The room placement is not walked on either side:
+ * its draws depend on level geometry. No S6 backport: the v3.3.8 tree already has the deck mechanics. */
+function blacksmithStage() {
+	console.log(`\n== blacksmith: Java ${combatRef} Blacksmith.Quest.spawn() gate + type + reward rolls vs this port's gate + type + blacksmithSmithRewards() ==`);
+	const dir = join(work, `spd-${combatRef}`);
+	exportTree(dir, combatRef);
+	installHarness(dir, { blacksmith: true });
+	const outDir = join(work, 'blacksmith'); mkdirSync(outDir, { recursive: true });
+	const javaOut = join(outDir, 'blacksmith_java_out.txt');
+	rmSync(javaOut, { force: true });
+	const g = gradle(dir, 'runBlacksmithReward', { BLACKSMITH_OUT: javaOut });
+	if (!existsSync(javaOut)) { gate('blacksmith Java dump produced', false, g.out.slice(-400)); return; }
+	const cases = (readFileSync(javaOut, 'utf8').match(/"depth":/g) || []).length;
+	gate('blacksmith Java dump produced', true, `${cases} cases`);
+	const tsRunner = tsBundle('tools/parityBlacksmithTrace.ts', 'parityBlacksmithTrace.mjs');
+	const r = run(process.execPath, [tsRunner, '--java', javaOut, '--known', join(ROOT, 'tools', 'parity', 'blacksmith-known.json'), '--report', join(outDir, 'blacksmith-report.txt')]);
+	console.log(r.out.trim().split('\n').slice(0, 40).join('\n'));
+	gate('blacksmith: spawn gate, type, tiers, classes, item level and enchant keep all match Java or are documented in blacksmith-known.json', r.status === 0, `report: ${join(outDir, 'blacksmith-report.txt')}`);
+}
+
 function levelgenStage() {
 
 	console.log(`\n== levelgen: floor-generation RNG draws, oracle ${prebuiltLevelgenTree ? prebuiltLevelgenTree : levelgenRef} vs this port (depths 3-9, 4 seeds) ==`);
@@ -291,6 +318,7 @@ try {
 	if (stage === 'all' || stage === 'quest') questStage();
 	if (stage === 'all' || stage === 'ghost') ghostStage();
 	if (stage === 'all' || stage === 'imp') impStage();
+	if (stage === 'all' || stage === 'blacksmith') blacksmithStage();
 	if (stage === 'all' || stage === 'levelgen') levelgenStage();
 } catch (e) {
 	gate('runner', false, e.message);
