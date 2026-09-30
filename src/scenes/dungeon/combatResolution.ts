@@ -6,6 +6,7 @@ import { preparationCanKo } from '../../simulation/preparation';
 import { planHiddenMimicContact } from '../../simulation/hiddenMimicContact';
 import { planShockElementalArc } from '../../simulation/shockArc';
 import { applyDefenderDamageCurves } from '../../simulation/defenderDamageCurves';
+import { dm300SuperchargeEntry, dm300SuperchargeThreshold } from '../../simulation/dm300Boss';
 import { weaponHitDisqualifiesDwarfKingChallenge } from '../../simulation/bossChallenge';
 import { fishingSpearPiranhaDamage } from '../../simulation/fishingSpearProc';
 import { fieryDamageHalved } from '../../simulation/buffs';
@@ -967,10 +968,8 @@ export const combatResolutionMethods: Record<string, any> = {
 		this.lockedFloorBossDamage(defender, preHp - defender.hp, preHp - defender.hp);
 		if (defender.kind === 'dm300') {
 			const activated = defender.dmPylonsActivated ?? 0;
-			const threshold = isChallengeEnabled('stronger_bosses')
-				? defender.maxHp / 4 * (3 - activated)
-				: defender.maxHp / 3 * (2 - activated);
-			if (!defender.dmSupercharged && threshold > 0 && defender.hp <= threshold) {
+			const threshold = dm300SuperchargeThreshold(defender.maxHp, activated, isChallengeEnabled('stronger_bosses'));
+			if (dm300SuperchargeEntry(defender.dmSupercharged, defender.hp, threshold)) {
 				defender.hp = threshold;
 				this.dm300Supercharge(defender);
 			}

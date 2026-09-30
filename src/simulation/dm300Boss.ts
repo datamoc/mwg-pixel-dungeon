@@ -110,3 +110,27 @@ export function planDM300Rockfall(
 	}
 	return { cells, safe };
 }
+
+/**
+ * DM300 supercharge-entry decision - the pure predicate half of `DM300.damage()`'s
+ * threshold branch (actors/mobs/DM300.java 496-506, tag `v3.3.8`). Two damage call sites
+ * (`runBossDamageHooks` in attackSeams.ts and the dispatch tail in combatResolution.ts)
+ * carried the same inline threshold; both now run this seam, the way `mobLootChance()` did
+ * for the loot decision. Behavior-identical: the same expression, same order.
+ *
+ * Java combines the threshold from HT with *integer* division (`HT/4*(3-pylons)` on the
+ * challenge, `HT/3*(2-pylons)` otherwise) and enters at `HP <= threshold && threshold > 0`,
+ * clamping HP back up to the threshold; the supercharge itself (`supercharged = true`,
+ * `pylonsActivated++`, pylon activation, yells) stays scene-side in `dm300Supercharge`.
+ * The port carries the division in float (existing shape, preserved here): with integer HP
+ * the entry fires on the same hits, but the clamp can leave a fractional HP where Java
+ * leaves the integer threshold.
+ */
+export function dm300SuperchargeThreshold(maxHp: number, pylonsActivated: number, strongerBosses: boolean): number {
+	return strongerBosses ? maxHp / 4 * (3 - pylonsActivated) : maxHp / 3 * (2 - pylonsActivated);
+}
+
+/** Supercharge entry: not currently charged, a live threshold, HP at or under it. */
+export function dm300SuperchargeEntry(supercharged: boolean | undefined, hp: number, threshold: number): boolean {
+	return !supercharged && threshold > 0 && hp <= threshold;
+}

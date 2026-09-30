@@ -7,6 +7,7 @@ import type { DungeonScene } from '../dungeonScene';
 import { faceCharacter, placeCharacterArt } from '../../ui/characterPlacement';
 import { AnimatedSprite, Random, Roguelike, SpriteSheet } from 'mwg';
 import { preparationCanKo } from '../../simulation/preparation';
+import { dm300SuperchargeEntry, dm300SuperchargeThreshold } from '../../simulation/dm300Boss';
 import { planShockElementalArc } from '../../simulation/shockArc';
 import { UNSTABLE_DELEGATES } from '../../items/itemAffixes';
 import { ringArcanaMultiplier, ringForceBonus, ringTenacityMultiplier } from '../../items/ringModifiers';
@@ -558,10 +559,8 @@ export const attackSeamMethods = {
 		this.lockedFloorBossDamage(defender, preHp - defender.hp, preHp - defender.hp);
 		if (defender.kind === 'dm300') {
 			const activated = defender.dmPylonsActivated ?? 0;
-			const threshold = isChallengeEnabled('stronger_bosses')
-				? defender.maxHp / 4 * (3 - activated)
-				: defender.maxHp / 3 * (2 - activated);
-			if (!defender.dmSupercharged && threshold > 0 && defender.hp <= threshold) {
+			const threshold = dm300SuperchargeThreshold(defender.maxHp, activated, isChallengeEnabled('stronger_bosses'));
+			if (dm300SuperchargeEntry(defender.dmSupercharged, defender.hp, threshold)) {
 				defender.hp = threshold;
 				this.dm300Supercharge(defender);
 			}
