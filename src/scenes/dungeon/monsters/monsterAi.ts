@@ -1817,7 +1817,7 @@ export const monsterAiMethods = {
 			if (!patch[i]) continue;
 			const x = room.left + (i % width), y = room.top + Math.floor(i / width);
 			if (this.creatureAt(x, y)) continue;
-			if (Math.max(Math.abs(x - this.hero.x), Math.abs(y - this.hero.y)) <= 1) continue;
+			if (Roguelike.chebyshevDistance({ x, y }, this.hero) <= 1) continue;
 			//Java's TenguDartTrap subclasses PoisonDartTrap with its own poisonAmount():
 			//8 normally, 15 under STRONGER_BOSSES. Preserve that identity through activation.
 			this.seedBossTrap({ x, y }, 'tenguDart');

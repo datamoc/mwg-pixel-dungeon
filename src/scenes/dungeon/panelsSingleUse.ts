@@ -62,7 +62,7 @@ import { MWL_HERO_BASE_STATS, mwlItemEffectValue } from '../../mwlContent';
 import { useAlchemizeFlow, useStylusFlow, type AlchemizeContext, type StylusContext } from '../../items/spells';
 import { useStoneById as routeStoneAction, type StoneActionContext } from '../../items/stoneActions';
 import { setWandmakerQuestType, setWandmakerQuestWands, wandmakerQuestType } from '../../spdLevelGen/wandmaker';
-import { ITEM_FRAME, WATER } from '../../dungeonConstants';
+import { WATER } from '../../dungeonConstants';
 import { BUFF_DURATION, absorbShield, addBuff, doomDamage, setAnnounceBuff, setAttachBacklash, setBuffDurationModifier, type BuffId, type Creature, type GroundItem, type Step } from '../../combat';
 import { BOSSES } from '../../monsters';
 import { APPEARANCE_TABLES, AUGMENT_OPTIONS, BLACKSMITH_QUEST, IMP_QUEST, SAD_GHOST_QUEST, SPD_LEVEL_CURVE, SUBCLASS_OPTIONS, SUBCLASS_TRACK, WANDMAKER_QUEST } from './shared';
@@ -159,6 +159,7 @@ export const panelsSingleUseMethods = {
 		this.armorSealed = s.armorSealed ?? false;
 		this.stealthTalentTicks = s.stealthTalentTicks ?? 0;
 		this.empoweredZaps = s.empoweredZaps ?? 0;
+		this.inscribedPowerZaps = s.inscribedPowerZaps ?? 0;
 		this.enhancedRingsTurns = s.enhancedRingsTurns ?? 0;
 		this.seerShotCooldown = s.seerShotCooldown ?? 0;
 		this.seerCells = new Map((s.seerCells ?? []) as [number, number][]);
@@ -304,8 +305,8 @@ export const panelsSingleUseMethods = {
 		this.qualifiedForBossChallenge = (s as { qualifiedForBossChallenge?: boolean }).qualifiedForBossChallenge ?? false;
 		this.resurrectPending = (s as { resurrectPending?: boolean }).resurrectPending ?? false;
 		this.interfaceSize = ((s as { interfaceSize?: number }).interfaceSize === 1 ? 1 : 0);
-		this.quickslots = ((s as { quickslots?: ({ id: string; instanceId?: string } | null)[] }).quickslots ?? [null, null, null, null]).slice(0, 4);
-		while (this.quickslots.length < 4) this.quickslots.push(null);
+		this.quickslots = ((s as { quickslots?: ({ id: string; instanceId?: string } | null)[] }).quickslots ?? [null, null, null, null, null, null]).slice(0, 6);
+		while (this.quickslots.length < 6) this.quickslots.push(null);
 		this.weaponCharge = (s as { weaponCharge?: number }).weaponCharge ?? 2;
 		this.weaponPartialCharge = (s as { weaponPartialCharge?: number }).weaponPartialCharge ?? 0;
 		this.spinSpins = (s as { spinSpins?: number }).spinSpins ?? 0;
@@ -367,6 +368,7 @@ export const panelsSingleUseMethods = {
 			for (const item of this.bag.items) {
 				const source = s.bagSources?.find((saved) => saved.id === item.id && saved.instanceId === item.instanceId);
 				if (source?.sourceClass) (item as typeof item & { sourceClass?: string }).sourceClass = source.sourceClass;
+				if (source?.wealthDropTier !== undefined) (item as typeof item & { wealthDropTier?: 1 | 2 | 3 | 4 }).wealthDropTier = source.wealthDropTier;
 				const gearState = item as typeof item & { tier?: number; affix?: string; cursed?: boolean; level?: number; hardened?: boolean; curseInfusionBonus?: boolean; ghostWeapon?: SaveShape['bag'][number]['ghostWeapon']; ghostArmor?: SaveShape['bag'][number]['ghostArmor'] };
 				if (source?.level !== undefined) gearState.level = source.level;
 				if (source?.tier !== undefined) gearState.tier = source.tier;
@@ -378,7 +380,6 @@ export const panelsSingleUseMethods = {
 				if (source?.ghostArmor !== undefined) gearState.ghostArmor = source.ghostArmor;
 				if (source?.sandBags !== undefined) (item as typeof item & { sandBags?: number }).sandBags = source.sandBags;
 				if (source?.charges !== undefined) (item as typeof item & { charges?: number }).charges = source.charges;
-				if (source?.wealthDropTier !== undefined) (item as typeof item & { wealthDropTier?: 1 | 2 | 3 | 4 }).wealthDropTier = source.wealthDropTier;
 				if (source?.wandCur !== undefined) (item as typeof item & { wandCur?: number }).wandCur = source.wandCur;
 				if (source?.wandPartial !== undefined) (item as typeof item & { wandPartial?: number }).wandPartial = source.wandPartial;
 				if (source?.wandMax !== undefined) (item as typeof item & { wandMax?: number }).wandMax = source.wandMax;
@@ -434,6 +435,8 @@ export const panelsSingleUseMethods = {
 		//`ascensionChallengeActive`'s field comment) does too - `enterLevel()` re-syncs it into
 		//`combat.ts` right after this method calls it, below.
 		this.ascensionChallengeActive = s.ascensionChallengeActive ?? false;
+		//Older port saves have the challenge flag but no separate Stat field; current depth is their best recoverable `highestAscent`.
+		this.highestAscent = s.highestAscent ?? (this.ascensionChallengeActive ? this.depth : 0);
 		this.roseFirstSummon = s.roseFirstSummon ?? false;
 		this.quests = Rpg.QuestLog.fromJSON(
 			[SAD_GHOST_QUEST, WANDMAKER_QUEST, BLACKSMITH_QUEST, IMP_QUEST],
@@ -540,12 +543,9 @@ export const panelsSingleUseMethods = {
 		this.hintLabel.visible = false;
 		this.stage.addChild(this.hintLabel);
 
-		// Toolbar.java's grouped art/layout, with fixed quick actions for this port.
-		// ItemSpriteSheet.MISSILE_WEP starts at 144; Cleric uses a wand placeholder
-		// because this checkout's item sheet predates HolyTome.
-		const specialFrame = { warrior: 147, mage: ITEM_FRAME.wand, rogue: 146, huntress: 144, duelist: 145, cleric: ITEM_FRAME.wand }[this.heroClass];
+		//`Toolbar.java`'s grouped row: six manual quickslots plus search, wait and the
+		//backpack. A slot long-press opens the bag to pick that slot's item; tap uses it.
 		this.actionBar = new SpdToolbar(
-			[ITEM_FRAME.scroll, ITEM_FRAME.potion, ITEM_FRAME.food, specialFrame].map(frame => this.itemsSheet.get(frame)),
 			(action) => {
 				if (action === 'inventory') {
 					//`Toolbar.btnInventory`: with the docked pane the button toggles the pane, else it opens the bag.
@@ -557,6 +557,7 @@ export const panelsSingleUseMethods = {
 				else this.onAction(action);
 			},
 			() => this.positionInterface(Game.current.width, Game.current.height),
+			{ assignSlot: (slot) => this.openQuickslotPicker(slot) },
 		);
 		this.stage.addChild(this.actionBar);
 
@@ -565,12 +566,13 @@ export const panelsSingleUseMethods = {
 		this.stage.addChild(this.inventoryDock);
 		this.inventoryPanel = new InventoryWindow(
 			(id, instanceId) => this.useItemById(id, instanceId),
-			() => { this.inventoryOpen = false; this.inventoryPanel.reset(); this.refreshInventoryPanel(); },
+			() => { this.inventoryOpen = false; this.quickslotPickSlot = null; this.inventoryPanel.pickHandler = null; this.inventoryPanel.reset(); this.refreshInventoryPanel(); },
 			{
 				drop: (id, instanceId) => this.dropBagItem(id, instanceId),
 				throw: (id, instanceId) => this.throwBagItem(id, instanceId),
 				drink: (id, instanceId) => this.drinkBagPotion(id, instanceId),
 			},
+			{ assignToFree: (id, instanceId) => this.assignBagItemToFree(id, instanceId) },
 		);
 		this.stage.addChild(this.inventoryPanel);
 		this.refreshInventoryPanel();
@@ -622,7 +624,7 @@ export const panelsSingleUseMethods = {
 	},
 
 	/** LastLevel's Amulet pickup ends the run with a visible, restartable result screen. */
-	showVictoryPanel(this: DungeonScene): void {
+	showVictoryPanel(this: DungeonScene, ascended = true): void {
 		//`SewerLevel.activateTransition`'s `SURFACE` branch calls `Badges.validateHappyEnd()`
 		//before `Dungeon.win` - this panel is that branch's port-side counterpart (its only
 		//caller is `beginAscendOneFloor`'s depth-1 win), so the three ascent badges are awarded
@@ -634,9 +636,13 @@ export const panelsSingleUseMethods = {
 		//stacks (`AscensionChallenge.qualifiedForPacifist`). Ordering vs `recordRun` (called just
 		//before this panel) is immaterial here: the port's run record carries depth/level/gold
 		//only and reads no badge state, unlike Java's badge-scored ranking submit.
-		this.awardBadge('happy_end');
-		if (PORTED_REMAINS_IDS.some((id) => this.bag.find(id) !== undefined)) this.awardBadge('happy_end_remains');
-		if (this.ascensionChallengeActive && !this.ascensionStacksLowered) this.awardBadge('pacifist_ascent');
+		//`AmuletScene`'s immediate `Dungeon.win(Amulet.class)` path does not call
+		//`Badges.validateHappyEnd()`; those badges belong only to the actual surface ascent.
+		if (ascended) {
+			this.awardBadge('happy_end');
+			if (PORTED_REMAINS_IDS.some((id) => this.bag.find(id) !== undefined)) this.awardBadge('happy_end_remains');
+			if (this.ascensionChallengeActive && !this.ascensionStacksLowered) this.awardBadge('pacifist_ascent');
+		}
 		showVictoryPanelUi({ panel: this.victoryPanel, level: this.progression.level, depth: this.depth, position: () => this.positionInterface(Game.current.width, Game.current.height) });
 	},
 
@@ -660,11 +666,22 @@ export const panelsSingleUseMethods = {
 	showBuffInfo(this: DungeonScene, buff: string): void {
 		if (this.buffInfoOpen && !this.buffInfoOpen.closed) this.buffInfoOpen.close();
 		const turns = buff === 'hungry' || buff === 'starving' ? undefined
+			: buff === 'scrollEmpower' ? this.inscribedPowerZaps
 			: buff === 'prismaticGuard' ? Math.floor(this.hero.prismaticGuardHp ?? 0)
 			: this.hero.buffs[buff as BuffId];
+		const berserk = buff === 'berserk' ? {
+			mode: this.rageState.mode,
+			power: this.rageState.power,
+			shield: this.rageBarrier.total,
+			levelRecovery: this.rageState.levelRecovery,
+			turnRecovery: this.rageState.turnRecovery,
+			hp: this.rageState.zeroHp ? 0 : this.hero.hp,
+			maxHp: this.hero.maxHp,
+			armorBuffedLevel: Math.max(0, this.degradedLevel(this.armorLevel)),
+		} : undefined;
 		const info = buffInfo(buff as BuffId | 'hungry' | 'starving', turns,
 			buff === 'prismaticGuard' ? prismaticGuardMaxHp(this.progression.level) : undefined,
-			buff === 'recallUsed' ? this.recallTrackedItemName() : undefined);
+			buff === 'recallUsed' ? this.recallTrackedItemName() : undefined, berserk);
 		if (!info) return;
 		const window = showBuffInfoWindow(info);
 		this.buffInfoOpen = window;
@@ -1287,6 +1304,7 @@ export const panelsSingleUseMethods = {
 	alchemizeContext(this: DungeonScene): AlchemizeContext {
 		const scene = this;
 		return {
+			onScrollUsed: (factor, chance) => scene.onScrollUsed(factor, chance),
 			hasSpell: (id, instanceId) => scene.bag.find(id, instanceId) !== undefined,
 			consumeSpell: (id, instanceId) => { scene.bag.remove(id, 1, instanceId); },
 			openPicker: (title, entries, onPick) => scene.openItemPicker(title, entries, onPick),

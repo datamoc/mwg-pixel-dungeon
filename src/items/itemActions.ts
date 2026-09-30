@@ -56,64 +56,81 @@ export interface ItemActionContext {
 	openBag(bag: BagId): void;
 }
 
+/** `QuickSlot.SIZE` (`QuickSlot.java`, tag `v3.3.8`): six manual slots. Java notes the
+ * cap is a UI constraint, not a model one - the same holds here. */
+export const QUICKSLOT_SIZE = 6;
+
 /** One toolbar quickslot assignment: the item id plus its bag instance. The scene owns
- * the four-slot array; this module only reads and writes entries through the context. */
+ * the six-slot array; this module only reads and writes entries through the context. */
 export interface QuickslotEntry {
 	id: string;
 	instanceId?: string;
 }
 
-/** A quickslot's live toolbar state: the assignment plus its current bag quantity. */
+/** A quickslot's live toolbar state: the assignment plus its current bag quantity.
+ * A departed item keeps its assignment as a placeholder (`quantity: 0`, the way Java's
+ * `QuickSlot.isPlaceholder` keeps a zero-quantity entry) so the slot re-links when the
+ * item returns; only an explicit clear (or a use of the empty slot) drops it. */
 export interface QuickslotState extends QuickslotEntry {
 	frame: number;
 	quantity: number;
 }
 
-/** Scene services behind the quickslot trio: the live slot array (mutated in place),
- * the bag lookup, and the ordinary item-use path a slot fires through. */
+/** Scene services behind the quickslot set: the live slot array (mutated in place),
+ * the bag lookup, the sprite frame an id draws with, and the ordinary item-use path
+ * a slot fires through. */
 export interface QuickslotContext {
 	slots: (QuickslotEntry | null)[];
 	findHeld: (id: string, instanceId?: string) => { instanceId?: string; quantity: number } | undefined;
+	itemFrame: (id: string) => number;
 	useItem: (id: string, instanceId?: string) => void;
 }
 
-/** The toolbar family an item id belongs to (potions 0, scrolls 1, food 2, bombs and
- * stones 3), or -1 when the id has no quickslot family. Pure, so the mapping itself
- * is testable without a scene. */
-export function quickslotFamilySlot(id: string): number {
-	const lower = id.toLowerCase();
-	return lower.startsWith('potion') ? 0
-		: lower.startsWith('scroll') ? 1
-		: lower === 'food' || lower === 'meat' || lower === 'chargrilledmeat' ? 2
-		: lower === 'bomb' || lower === 'doublebomb' || lower.startsWith('stoneof') ? 3
-		: -1;
-}
-
-/** The toolbar's four quickslot states: the assigned item's live quantity (or nothing when
- * the assignment left the bag - the slot clears itself on the next refresh). */
+/** The toolbar's six quickslot states: the assigned item's live quantity (or a
+ * zero-quantity placeholder when the assignment left the bag). */
 export function readQuickslotStates(ctx: QuickslotContext): (QuickslotState | null)[] {
-	return [0, 1, 2, 3].map((slot) => {
+	return Array.from({ length: QUICKSLOT_SIZE }, (_, slot) => {
 		const assigned = ctx.slots[slot];
 		if (!assigned) return null;
 		const held = ctx.findHeld(assigned.id, assigned.instanceId);
 		if (!held || held.quantity <= 0) {
-			ctx.slots[slot] = null;
-			return null;
+			return { id: assigned.id, instanceId: assigned.instanceId, frame: ctx.itemFrame(assigned.id), quantity: 0 };
 		}
-		return { id: assigned.id, instanceId: held.instanceId, frame: 0, quantity: held.quantity };
+		return { id: assigned.id, instanceId: held.instanceId, frame: ctx.itemFrame(assigned.id), quantity: held.quantity };
 	});
 }
 
-/** Assigns a used consumable to its family's quickslot, so the slot always mirrors the
- * most recently used item of that family. */
-export function assignQuickslot(ctx: QuickslotContext, id: string, instanceId?: string): void {
-	const slot = quickslotFamilySlot(id);
-	if (slot < 0) return;
+/** Puts an item in one exact slot (the slot long-press picker), replacing whatever was there. */
+export function setQuickslotSlot(ctx: QuickslotContext, slot: number, id: string, instanceId?: string): void {
+	if (slot < 0 || slot >= QUICKSLOT_SIZE) return;
 	ctx.slots[slot] = { id, instanceId };
 }
 
-/** Uses a quickslot's assigned item through the ordinary item-use path. */
+/** Drops a slot's assignment entirely. */
+export function clearQuickslotSlot(ctx: QuickslotContext, slot: number): void {
+	if (slot < 0 || slot >= QUICKSLOT_SIZE) return;
+	ctx.slots[slot] = null;
+}
+
+/** Assigns an item to a free slot (the inventory long-press): refreshes the slot when the
+ * same id is already quickslotted, otherwise takes the first empty one. Returns the slot
+ * index, or -1 when every slot is taken. */
+export function assignQuickslotToFree(ctx: QuickslotContext, id: string, instanceId?: string): number {
+	const existing = ctx.slots.findIndex((slot) => slot?.id === id);
+	if (existing >= 0) {
+		ctx.slots[existing] = { id, instanceId };
+		return existing;
+	}
+	const free = ctx.slots.findIndex((slot) => slot === null);
+	if (free < 0) return -1;
+	ctx.slots[free] = { id, instanceId };
+	return free;
+}
+
+/** Uses a quickslot's assigned item through the ordinary item-use path. A placeholder
+ * (departed item) clears itself instead of firing. */
 export function useQuickslot(ctx: QuickslotContext, slot: number): void {
+	if (slot < 0 || slot >= QUICKSLOT_SIZE) return;
 	const assigned = ctx.slots[slot];
 	if (!assigned) return;
 	const held = ctx.findHeld(assigned.id, assigned.instanceId);

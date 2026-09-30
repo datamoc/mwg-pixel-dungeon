@@ -34,10 +34,22 @@ export const elementalStrikeAbilityMethods = {
 			trace: (coneFrom, coneTo) => this.coneRay(coneFrom, coneTo, true),
 		});
 		this.armorCharge = Math.max(0, this.armorCharge - cost);
-		//`Sample.INSTANCE.play(Assets.Sounds.CHARGEUP)` fires when the cone is cast
-		//(tag `v3.3.8`); the per-ray MagicMissile cone bolts have no equivalent because
-		//this port has no projectile-flight visuals at all (see PORT_COVERAGE.md).
+		//`ElementalStrike.activate()` (`v3.3.8`) plays CHARGEUP and launches one
+		//`MagicMissile` along each outer cone ray before the attack callback. The port's
+		//shared bolt helper animates those paths; its generic white dot replaces Java's
+		//enchantment-specific particle cone and is documented as a presentation simplification.
 		runState.audio.cue('chargeup', 0.7);
+		const source = { x: this.hero.x, y: this.hero.y };
+		for (const rim of cone.outer) {
+			const ray = this.coneRay(source, rim, true);
+			const landing = ray[ray.length - 1];
+			if (landing && (landing.x !== source.x || landing.y !== source.y)) {
+				//Java's default `MAGIC_MISS_CONE` uses white `WhiteParticle`; distinct
+				//enchantment emitters and size 10 remain simplified to this dot. `MagicMissile.SPEED`
+				//is 200 px/s; `spawnBoltTo` accepts that speed for this effect.
+				this.spawnBoltTo(this.hero, landing, 0xffffff, undefined, undefined, 200);
+			}
+		}
 		const ench = this.weaponAffix;
 		const coneIndex = new Set(cone.cells.map((at) => this.level.index(at.x, at.y)));
 		//`perCharEffect`'s `affected` is `alignment != ALLY` (neutrals take the hit).

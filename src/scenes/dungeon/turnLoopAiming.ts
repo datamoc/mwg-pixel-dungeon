@@ -416,11 +416,11 @@ export const turnLoopAimingMethods = {
 			return false;
 		}
 
-			//`Talent.EMPOWERING_SCROLLS` prospectively: an armed charge makes the coming zap read
-			//+3 levels, including disintegration's level-scaled targeting range - the charge is
+			//An armed `EMPOWERING_SCROLLS` charge (+3) or `INSCRIBED_POWER` charge (+2)
+			//prospectively changes the coming zap's level, including Disintegration's range - the charge is
 			//only consumed once the zap actually fires (see the zap branch), so this previews
 			//the bonus without spending it on a cancelled aim.
-			const range = special.kind === 'throw' ? 6 : wandTargetRange(this.wandType, this.weaponLevel + (this.empoweredZaps > 0 ? EMPOWERING_SCROLLS_BONUS : 0));
+			const range = special.kind === 'throw' ? 6 : wandTargetRange(this.wandType, this.weaponLevel + Math.max(this.empoweredZaps > 0 ? EMPOWERING_SCROLLS_BONUS : 0, this.inscribedPowerZaps > 0 ? 2 : 0));
 		if (special.kind === 'zap' && this.wandType === 'disintegration') {
 			this.beginAiming({
 				range,
@@ -627,12 +627,13 @@ export const turnLoopAimingMethods = {
 			const fullyCharged = this.wandCharges.current === this.wandCharges.max;
 			const lastCharge = this.wandCharges.current === 1;
 			this.wandCharges.spend(chargesPerCast);
-			//`Talent.EMPOWERING_SCROLLS`: one armed charge per zap action makes this zap read
-			//+3 levels through `effectiveZapLevel()` below (damage, corrosion, statuses, and the
+			//One armed empowerment charge per zap action makes this zap read its corresponding
+			//+3 or +2 levels through `effectiveZapLevel()` below (damage, corrosion, statuses, and the
 			//regrowth/fireblast/transfusion/warding helpers). Consumed even when the bolt itself
 			//fizzles (crab parry): the charge paid for a zap, which is what arms it.
-			this.empoweredZapBonus = this.empoweredZaps > 0 ? EMPOWERING_SCROLLS_BONUS : 0;
+			this.empoweredZapBonus = Math.max(this.empoweredZaps > 0 ? EMPOWERING_SCROLLS_BONUS : 0, this.inscribedPowerZaps > 0 ? 2 : 0);
 			if (this.empoweredZaps > 0) this.empoweredZaps--;
+			if (this.inscribedPowerZaps > 0) this.inscribedPowerZaps--;
 			const preservation = preservationChance(this.talentRank('wand_preservation'));
 			if (preservation > 0 && Random.chance(preservation)) this.wandCharges.refund(1);
 			if (lastCharge && this.talentRank('backup_barrier') > 0) this.grantHeroShield(this.talentRank('backup_barrier') === 1 ? 3 : 5, this.hero.maxHp);
@@ -775,14 +776,14 @@ export const turnLoopAimingMethods = {
 	 * `spawnProjectile` above drives for thrown weapons, just without requiring a
 	 * `Creature` at the destination.
 	 */
-	spawnBoltTo(this: DungeonScene, from: Creature, to: { x: number; y: number }, tint: number, onArrive?: () => void, art?: MissileFlightArt | null): void {
+	spawnBoltTo(this: DungeonScene, from: Creature, to: { x: number; y: number }, tint: number, onArrive?: () => void, art?: MissileFlightArt | null, speed = 300): void {
 		const sprite = new TintedSprite(art ? this.itemsSheet.get(art.frame) : this.dotTexture);
 		if (!art) sprite.tint = tint;
 		this.creatureLayer.addChild(sprite);
 		const [fx, fy] = this.worldOf(from);
 		const tx = (to.x + 0.5) * TILE, ty = (to.y + 0.5) * TILE;
 		this.projectiles.push({
-			flight: new Projectile(sprite, { x: fx, y: fy }, { x: tx, y: ty }, { speed: 300 }),
+			flight: new Projectile(sprite, { x: fx, y: fy }, { x: tx, y: ty }, { speed }),
 			sprite,
 			spin: art?.spin ?? 0,
 			onArrive,
@@ -889,9 +890,13 @@ export const turnLoopAimingMethods = {
 			return true;
 		}
 		//Java's `QuickslotButton.press()`: uses the assigned item through the ordinary path.
-		if (action === 'quickslot0' || action === 'quickslot1' || action === 'quickslot2' || action === 'quickslot3') {
-			this.useQuickslot(Number(action.slice(-1)));
-			return true;
+		if (action.startsWith('quickslot')) {
+			const rest = action.slice('quickslot'.length);
+			const slot = Number(rest);
+			if (rest !== '' && Number.isInteger(slot)) {
+				this.useQuickslot(slot);
+				return true;
+			}
 		}
 		//The Duelist's T-key weapon ability (`MeleeWeapon.ability()` overrides).
 		if (action === 'weaponAbility') {
@@ -1314,6 +1319,13 @@ export const turnLoopAimingMethods = {
 		//collapsed to the hero pass: distant enemies are beckoned once per hero action
 		//while the other per-turn challenge effects ride the cost-scaled bindings below.
 		turnCost += takePickupTimeOwed(); //`Item.doPickUp` spends `pickupDelay()` on top of the step
+		//`AscensionChallenge.modifyHeroSpeed()` (`AscensionChallenge.java`, tag `v3.3.8`)
+		//halves hero speed at 6+ stacks and caps it at 1x. This port stores inverse speed
+		//as action `turnCost`, so double that cost but never let the hero act faster than 1x.
+		//Java schedules hero and buff actors independently; this port applies its buff pass once
+		//per actor-time unit within the longer action cost, preserving the tick count while
+		//retaining the existing grouped ordering of hero effects before scheduled mob turns.
+		if (this.ascensionChallengeActive && this.ascensionStacks >= 6) turnCost = Math.max(turnCost * 2, 1);
 		this.beckonAscensionEnemies();
 		runHeroTurn({
 			isAlive: () => this.hero.hp > 0,
@@ -1854,6 +1866,8 @@ export const turnLoopAimingMethods = {
 				//depth 5, a coin-flip 1 in the Sewers), in RESISTS like Burning/Poison, with
 				//the real `ondeath` line on a kill (no dedicated badge exists to award).
 				if (this.hero.buffs['ooze'] !== undefined) {
+					//`Ooze.act()` sets its acted bit before rolling damage (`Ooze.java`, tag `v3.3.8`).
+					this.hero.buffs['oozeActed'] = 1;
 					const rawOoze = this.depth > 5 ? 1 + Math.floor(this.depth / 5)
 						: this.depth === 5 ? 1 : Random.chance(0.5) ? 1 : 0;
 					const oozeDot = Math.floor(rawOoze * ringElementsMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()));
@@ -1904,6 +1918,9 @@ export const turnLoopAimingMethods = {
 					} else this.ascensionDamageInc = 0;
 				}
 				if (this.tickCavesBossEnergy()) return true;
+				//`Berserk.act()` is a buff actor in Java; this scene folds its shield/rage tick
+				//into the end of the hero's own buff phase, alongside the other actor-time adapters.
+				this.rageTurn();
 				}
 				return false;
 			},

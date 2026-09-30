@@ -86,6 +86,8 @@ const BUFF_ICON: Record<string, number> = {
 	berserk: 40,
 	//RECHARGING = 34; HASTE = 41 (`BuffIndicator.java`, tag `v3.3.8`)
 	recharging: 34,
+	//`BuffIndicator.WAND` (`ScrollEmpower.java`, tag `v3.3.8`).
+	scrollEmpower: 72,
 	//`ArtifactRecharge.icon()` reuses RECHARGING and hardlights it green (`ArtifactRecharge.java`).
 	artifactRecharge: 34,
 	haste: 41,
@@ -137,6 +139,8 @@ const BUFF_ICON: Record<string, number> = {
 	//IMMUNITY = 25 (`BuffIndicator.java`, tag `v3.3.8`) - `PotionOfCleansing.Cleanse`'s
 	//own icon, which the Cleric's `Cleanse` spell prolongs (same post-checkout sheet).
 	cleanseImmunity: 25,
+	//Talent.RejuvenatingStepsCooldown reuses BuffIndicator.TIME (7), tag `v3.3.8`.
+	rejuvenatingStepsCooldown: 7,
 };
 
 /** buffs.png is 128x64 of 7x7 cells, so TextureFilm walks 18 to a row */
@@ -169,6 +173,8 @@ export interface StatusPaneState {
 	/** The hero's live buffs with their remaining turns (`hero.buffs` entries) - the
 	 * turns feed `BuffButton`'s large-mode text and fade overlays (see `layoutBuffs`). */
 	buffs: { id: BuffId | 'hungry' | 'starving'; turns: number | undefined }[];
+	/** Java `Berserk.iconFadePercent()`/`iconTextDisplay()` are state-dependent rather than a timer. */
+	berserk?: { mode: 'normal' | 'berserk' | 'recovering'; power: number; maxPower: number; shield: number; maxShield: number; levelRecovery: number; turnRecovery: number; deathlessFuryRank: number };
 	staff: { current: number; max: number } | null;
 	ammo: number | null;
 	carriedCount: number;
@@ -453,7 +459,7 @@ export class StatusPane extends Container {
 		);
 		this.statsText.setColor(state.hunger === 'starving' ? 0xff8800 : 0xcccccc);
 
-		this.layoutBuffs([...state.buffs, ...(state.hunger === 'none' ? [] : [{ id: state.hunger, turns: undefined }])]);
+		this.layoutBuffs([...state.buffs, ...(state.hunger === 'none' ? [] : [{ id: state.hunger, turns: undefined }])], state.berserk);
 	}
 
 	/**
@@ -468,8 +474,8 @@ export class StatusPane extends Container {
 	 * every other icon - all small ones, large ones with no text - gets the `iconFadePercent()`
 	 * grey wash growing down from the top as the buff expires.
 	 */
-	private layoutBuffs(buffs: { id: BuffId | 'hungry' | 'starving'; turns: number | undefined }[]): void {
-		const key = buffs.map((buff) => `${buff.id}:${buff.turns ?? ''}`).join(',');
+	private layoutBuffs(buffs: { id: BuffId | 'hungry' | 'starving'; turns: number | undefined }[], berserk?: StatusPaneState['berserk']): void {
+		const key = `${buffs.map((buff) => `${buff.id}:${buff.turns ?? ''}`).join(',')}|${berserk ? `${berserk.mode}:${berserk.power}:${berserk.maxPower}:${berserk.shield}:${berserk.maxShield}:${berserk.levelRecovery}:${berserk.turnRecovery}:${berserk.deathlessFuryRank}` : ''}`;
 		if (key === this.lastBuffs) return;
 		this.lastBuffs = key;
 		this.buffLayer.removeChildren().forEach((child) => child.destroy());
@@ -495,10 +501,19 @@ export class StatusPane extends Container {
 			//Monk's Focus is hardlit green in Java (tintIcon: 0.25, 1.5, 1.0)
 			if (buff === 'focus') icon.tint = 0x40ff80;
 			if (buff === 'artifactRecharge') icon.tint = 0x00ff00;
+			//`ScrollEmpower.tintIcon()` hardlights the icon in the scroll's parchment colour.
+			if (buff === 'scrollEmpower') icon.tint = 0xd6c9a6;
 			//`PotionOfCleansing.Cleanse.tintIcon` hardlights the immunity icon pink
 			//(1.0, 0.0, 2.0); a multiply tint cannot exceed 1 per channel, so this
 			//is the closest magenta (red kept, green dropped, blue kept).
 			if (buff === 'cleanseImmunity') icon.tint = 0xff00ff;
+			//Talent.RejuvenatingStepsCooldown.tintIcon() hardlights dark green.
+			if (buff === 'rejuvenatingStepsCooldown') icon.tint = 0x005926;
+			//`Berserk.tintIcon()`, `iconTextDisplay()` and `iconFadePercent()` in
+			//actors/buffs/Berserk.java (tag v3.3.8) depend on rage mode, power and shield.
+			if (buff === 'berserk' && berserk) {
+				icon.tint = berserk.mode === 'recovering' ? 0x0000ff : berserk.mode === 'berserk' || berserk.power >= 1 ? 0xff0000 : 0xff8000;
+			}
 			icon.x = x;
 			icon.scale.set(SCALE);
 			//`WndInfoBuff`: Java opens the buff's own info window on click. `onBuffClick` reads
@@ -513,7 +528,12 @@ export class StatusPane extends Container {
 			const displayed = buffSize * SCALE;
 			//Both overlays sit above the icon but must never swallow its own click, so
 			//they opt out of hit-testing outright.
-			const text = this.large ? buffIconText(buff, turns) : null;
+			const rageText = buff === 'berserk' && berserk
+				? berserk.mode === 'normal' ? `${Math.floor(berserk.power * 100)}%`
+					: berserk.mode === 'berserk' ? String(Math.max(0, Math.trunc(berserk.shield)))
+						: berserk.levelRecovery > 0 ? String(Number(berserk.levelRecovery.toFixed(2))) : String(Math.max(0, Math.trunc(berserk.turnRecovery)))
+				: null;
+			const text = this.large ? rageText ?? buffIconText(buff, turns) : null;
 			if (text !== null) {
 				const overlay = new Label({ text, size: 7 });
 				overlay.setColor(buffIconTextColor(buff));
@@ -526,7 +546,16 @@ export class StatusPane extends Container {
 			} else {
 				//`grey`: Java's `0xCC666666` solid scaled to `(width, fadeHeight)` from the
 				//icon's top, pixel-snapped up below half height and down above it.
-				const fade = buffIconFade(buff, turns);
+				const fade = buff === 'scrollEmpower'
+					? Math.min(1, Math.max(0, (3 - (turns ?? 0)) / 3))
+					: buff === 'berserk' && berserk
+					? Math.min(1, Math.max(0, berserk.mode === 'normal'
+						? (berserk.maxPower - berserk.power) / Math.max(1, berserk.maxPower)
+						: berserk.mode === 'berserk' ? 1 - berserk.shield / Math.max(1, berserk.maxShield)
+							: berserk.levelRecovery > 0
+								? berserk.levelRecovery / Math.max(1, 4 - berserk.deathlessFuryRank)
+								: berserk.turnRecovery / 100))
+					: buffIconFade(buff, turns);
 				const fadeHeight = fade * buffSize;
 				const snapped = fadeHeight <= 0 ? 0
 					: fadeHeight < buffSize / 2

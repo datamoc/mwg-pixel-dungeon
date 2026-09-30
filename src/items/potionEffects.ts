@@ -240,7 +240,7 @@ export function shatterPotionAt(scene: PotionEffectsContext, id: string, cx: num
 				if (scene.eternalFireVolumeAt(x, y) >= 1) touchesFire = true;
 				//`Freezing.evolve()` clears ordinary Fire at every affected cell; its seeds cover NEIGHBOURS9
 				//only, so the clear runs at Chebyshev 1 even though the loop scans the MWL radius.
-				if (scene.level.inside(x, y) && Math.max(Math.abs(dx), Math.abs(dy)) <= 1) { scene.clearFire(x, y); scene.freezeHeapAt(x, y); }
+				if (scene.level.inside(x, y) && Roguelike.chebyshevDistance({ x, y }, { x: cx, y: cy }) <= 1) { scene.clearFire(x, y); scene.freezeHeapAt(x, y); }
 			}
 			if (touchesFire) {
 				scene.clearEternalFire();

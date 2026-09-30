@@ -287,6 +287,9 @@ export const coreSpawnTilesMethods = {
 			this.bag.add({ id: 'cloak', quantity: 1, identified: true });
 			const cloak = this.bag.find('cloak');
 			if (cloak) (cloak as typeof cloak & { charges?: number }).charges = 3;
+			//`HeroClass.initRogue()`: the cloak starts in quickslot 0 (knives have no port
+			//equivalent with a quickslot use, so slot 1 starts empty).
+			this.quickslots[0] = { id: 'cloak', instanceId: this.bag.find('cloak')?.instanceId };
 			this.bag.add({ id: 'scrollMapping', quantity: 1, stackable: true, identified: true });
 			this.bag.add({ id: 'potionInvis', quantity: 1, stackable: true, identified: true });
 		} else if (this.heroClass === 'huntress') {
@@ -301,6 +304,8 @@ export const coreSpawnTilesMethods = {
 			//Purity/RemoveCurse knowledge this port grants as real items (see the
 			//method's own comment). The tome arrives full at `min(0+3, 10)` charges.
 			this.bag.add({ id: 'holyTome', quantity: 1, identified: true });
+			//The tome starts in quickslot 0, the way the kit comment always claimed.
+			this.quickslots[0] = { id: 'holyTome', instanceId: this.bag.find('holyTome')?.instanceId };
 			const tome = this.bag.find('holyTome');
 			if (tome) {
 				const state = tome as typeof tome & { charge?: number; partialCharge?: number; level?: number; exp?: number };
@@ -890,6 +895,7 @@ export const coreSpawnTilesMethods = {
 				firstSummon: creature.firstSummon,
 				impShopkeeperGreeted: creature.impShopkeeperGreeted,
 				isAlly: creature.isAlly,
+				summonedByElementalSpell: creature.summonedByElementalSpell,
 				allyKind: creature.allyKind,
 				allyDefendCell: creature.allyDefendCell ? { ...creature.allyDefendCell } : undefined,
 				allyMovingToDefend: creature.allyMovingToDefend,
@@ -1067,6 +1073,7 @@ export const coreSpawnTilesMethods = {
 				firstSummon: saved.firstSummon ?? true,
 				impShopkeeperGreeted: saved.impShopkeeperGreeted ?? false,
 				isAlly: saved.isAlly,
+				summonedByElementalSpell: saved.summonedByElementalSpell,
 				allyKind: saved.allyKind,
 				allyDefendCell: saved.allyDefendCell ? { ...saved.allyDefendCell } : undefined,
 				allyMovingToDefend: saved.allyMovingToDefend,

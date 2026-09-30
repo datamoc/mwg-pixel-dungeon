@@ -223,7 +223,6 @@ import { hallsDemonSpawnerFloorFrames } from './regions/halls';
 import { wandChargesPerCast, wandDamageRange, wandTargetRange, wandTypeFromSource, type WandType } from '../items/wands';
 import {
 	useItemById as routeItemAction,
-	assignQuickslot as assignFamilyQuickslot,
 	readQuickslotStates,
 	useQuickslot as useQuickslotEntry,
 	type ItemActionContext,
@@ -324,6 +323,7 @@ import { attackSeamMethods } from './dungeon/attackSeams';
 import { deathSaveRefreshMethods } from './dungeon/deathSaveRefresh';
 import { panelsSingleUseMethods } from './dungeon/panelsSingleUse';
 import { inventoryQuickslotMethods } from './dungeon/hero/inventoryQuickslot';
+import { heroQuickslotMethods } from './dungeon/hero/heroQuickslots';
 import { clericSpellFlowsMethods } from './dungeon/hero/clericSpellFlows';
 import { armorAbilityUseMethods } from './dungeon/hero/armorAbilityUse'; import { powerOfManyMethods } from './dungeon/hero/powerOfMany';
 import { skeletonKeyMethods } from './dungeon/hero/skeletonKeyScene';
@@ -350,7 +350,7 @@ export class DungeonScene extends Scene2D {
 	dyingMonsters = new Map<TintedSprite, { x: number; y: number; fade: number; duration: number; playDieClip: boolean }>();
 	characterEffects!: CharacterEffects;
 	/** Reused each frame; avoids rebuilding the character-visual array in `update()`. */
-	characterEffectCharacters: Array<{ sprite: TintedSprite; sleeping?: boolean; emote?: 'alert' | 'lost'; shadowOffset?: number; castsShadow?: boolean }> = [];
+	characterEffectCharacters: Array<{ sprite: TintedSprite; sleeping?: boolean; emote?: 'alert' | 'lost'; hearts?: boolean; shadowOffset?: number; castsShadow?: boolean }> = [];
 	fog?: FogOfWar;
 	wallBlocking?: TileMap;
 	level!: Roguelike.Level;
@@ -400,6 +400,8 @@ export class DungeonScene extends Scene2D {
 			//spends the charge and the turn - one turn for Heroic Leap and Shockwave, three for
 			//Endure, and nothing at all when the charge is short or the ability refuses.
 			armorAbility: () => this.useArmorAbility(),
+			//`Berserk` implements Java's `ActionIndicator.Action` independently from ClassArmor.
+			berserk: () => this.rageAction(),
 			talents: () => {
 				this.talentOpen = this.subclassChoiceOpen || this.armorChoiceOpen || this.augmentChoiceOpen || this.itemPickerOpen || !this.talentOpen;
 				this.refreshTalentPanel();
@@ -536,6 +538,8 @@ export class DungeonScene extends Scene2D {
 	 * confirmation (`tryAscendStairs`), never cleared. Mirrored into `combat.ts`'s module-level
 	 * `ascensionActive` at the top of every `enterLevel()`, since that module has no scene ref. */
 	ascensionChallengeActive = false;
+	/** Java `Statistics.highestAscent`: 0 until the climb starts, then shallowest depth reached. */
+	highestAscent = 0;
 	/** `AscensionChallenge.stacks` (tag `v3.3.8`): +2 per non-boss floor climbed, -1 (-0.5 for
 	 * Ghoul/RipperDemon) per boosted-kind kill, floored at 0. Drives the beckon (>=2)/hero-damage
 	 * (>=8) thresholds below; see `beginAscendOneFloor`/`applyAscensionKillDecay` for the exact
@@ -1006,6 +1010,8 @@ export class DungeonScene extends Scene2D {
 	 * a scroll (Mage, 1/2/3 charges by rank) and consumed one per zap action. Persisted.
 	 */
 	empoweredZaps = 0;
+	/** Mage `INSCRIBED_POWER`'s remaining +2 wand-zap charges (`Talent.onScrollUsed`). */
+	inscribedPowerZaps = 0;
 	/**
 	 * `Talent.ENHANCED_RINGS`: remaining turns the worn ring reads one upgrade level higher,
 	 * armed by using an artifact (Rogue, 3/6/9 turns by rank). Ticked on the hero clock,
@@ -1133,12 +1139,14 @@ export class DungeonScene extends Scene2D {
 	/** `SPDSettings.interfaceSize()`: 0 small, 1 large. Persisted per run. */
 	interfaceSize: 0 | 1 = uiMode() > 0 ? 1 : 0; //new runs follow `SPDSettings.interfaceSize()` (desktop default 2)
 	/**
-	 * Java's four `QuickslotButton`s: assigned item id + instance per slot, persisted per run.
-	 * Assignment is automatic (the most recently used consumable fills its family's slot -
-	 * potions/scrolls/food/bombs), since this port has no drag-to-slot gesture; tapping a
-	 * slot uses the assigned item through the ordinary use path.
+	 * Java's six `QuickslotButton`s (`QuickSlot.SIZE`, tag `v3.3.8`): assigned item id +
+	 * instance per slot, persisted per run. Assignment is manual - a slot long-press picks
+	 * the slot's item from the bag, an inventory long-press takes the first free slot;
+	 * tapping a slot uses the assigned item through the ordinary use path.
 	 */
-	quickslots: ({ id: string; instanceId?: string } | null)[] = [null, null, null, null];
+	quickslots: ({ id: string; instanceId?: string } | null)[] = [null, null, null, null, null, null];
+	/** The slot the open bag is picking an item for, if the toolbar opened it as a picker. */
+	quickslotPickSlot: number | null = null;
 	/**
 	 * `MeleeWeapon.Charger` T-key ability state (`src/items/weaponAbilities.ts`): whole charges
 	 * plus the fractional `partialCharge`, starting at Java's own 2 (the cap is the hero's
@@ -1540,6 +1548,7 @@ export class DungeonScene extends Scene2D {
 		this.missileThresholds = new Map();
 		this.dustSpawnPower = 0;
 		this.ascensionChallengeActive = false;
+		this.highestAscent = 0;
 		this.ascensionStacks = 0;
 		this.ascensionDamageInc = 0;
 		this.ascensionStacksLowered = false;
@@ -2233,9 +2242,9 @@ export class DungeonScene extends Scene2D {
 
 
 	/**
-	 * The wand power the current zap resolves at. `Talent.EMPOWERING_SCROLLS` makes the next
-	 * N zaps read +3 levels; `empoweredZapBonus` carries that bonus only for the duration of
-	 * one zap resolution (set around the zap branch, cleared after), so every other
+	 * The wand power the current zap resolves at. `EMPOWERING_SCROLLS` makes zaps read +3
+	 * levels and `INSCRIBED_POWER` +2; `empoweredZapBonus` carries the stronger active effect
+	 * only for one zap resolution (set around the zap branch, cleared after), so every other
 	 * `weaponLevel` read - melee damage, upgrade logic, save - is untouched.
 	 */
 	empoweredZapBonus = 0;
@@ -2520,7 +2529,9 @@ export class DungeonScene extends Scene2D {
 		//CharacterEffects still receives an exact current-frame list and owns its own entry cleanup.
 		const characterEffects = this.characterEffectCharacters;
 		characterEffects.length = 0;
-		for (const creature of this.creatures) characterEffects.push({ sprite: this.sprite(creature), sleeping: creature.sleeping && !(creature.kind === 'mimic' && creature.mimicRevealed === false) /* MimicSprite.hideSleep() */, shadowOffset: crystalShadowOffsets.get(creature.id), castsShadow: creature.allyKind !== 'shadowClone', emote: creature.emote });
+		for (const creature of this.creatures) characterEffects.push({ sprite: this.sprite(creature), sleeping: creature.sleeping && !(creature.kind === 'mimic' && creature.mimicRevealed === false) /* MimicSprite.hideSleep() */, shadowOffset: crystalShadowOffsets.get(creature.id), castsShadow: creature.allyKind !== 'shadowClone', emote: creature.emote,
+			//`SummonElemental.InvisAlly.fx()` attaches CharSprite.State.HEARTS to only its buffed elemental (tag `v3.3.8`).
+			hearts: creature.summonedByElementalSpell === true });
 		for (const sprite of this.dyingMonsters.keys()) characterEffects.push({ sprite });
 		const heroVisual = this.sprite(this.hero);
 		if (this.gameOver && !heroVisual.destroyed) characterEffects.push({ sprite: heroVisual });
@@ -2593,5 +2604,5 @@ export class DungeonScene extends Scene2D {
 
 /** The method groups in `./dungeon/` are typed with `this: DungeonScene` and merged onto the prototype here. */
 type Mixed<T> = { [K in keyof T]: OmitThisParameter<T[K]> };
-export interface DungeonScene extends Mixed<typeof coreSpawnTilesMethods>, Mixed<typeof npcShopBlacksmithMethods>, Mixed<typeof environmentFireTrapsMethods>, Mixed<typeof pitfallCollapseMethods>, Mixed<typeof turnLoopAimingMethods>, Mixed<typeof actorTurnsHazardsMethods>, Mixed<typeof monsterAiMethods>, Mixed<typeof bossLogicMethods>, Mixed<typeof gnollMineMethods>, Mixed<typeof crystalMineMethods>, Mixed<typeof combatResolutionMethods>, Mixed<typeof attackSeamMethods>, Mixed<typeof deathSaveRefreshMethods>, Mixed<typeof panelsSingleUseMethods>, Mixed<typeof inventoryQuickslotMethods>, Mixed<typeof clericSpellFlowsMethods>, Mixed<typeof armorAbilityUseMethods>, Mixed<typeof powerOfManyMethods>, Mixed<typeof skeletonKeyMethods>, Mixed<typeof dropThrowMethods>, Mixed<typeof cursedWandCastMethods>, Mixed<typeof tippedDartEffectsMethods>, Mixed<typeof weaponSpellsGearMethods>, Mixed<typeof comboMovesMethods>, Mixed<typeof monkAbilitiesMethods>, Mixed<typeof berserkRageMethods> {}
-Object.assign(DungeonScene.prototype, coreSpawnTilesMethods, npcShopBlacksmithMethods, environmentFireTrapsMethods, pitfallCollapseMethods, turnLoopAimingMethods, actorTurnsHazardsMethods, monsterAiMethods, bossLogicMethods, gnollMineMethods, crystalMineMethods, combatResolutionMethods, attackSeamMethods, deathSaveRefreshMethods, panelsSingleUseMethods, inventoryQuickslotMethods, clericSpellFlowsMethods, armorAbilityUseMethods, powerOfManyMethods, skeletonKeyMethods, dropThrowMethods, cursedWandCastMethods, tippedDartEffectsMethods, weaponSpellsGearMethods, comboMovesMethods, berserkRageMethods);
+export interface DungeonScene extends Mixed<typeof coreSpawnTilesMethods>, Mixed<typeof npcShopBlacksmithMethods>, Mixed<typeof environmentFireTrapsMethods>, Mixed<typeof pitfallCollapseMethods>, Mixed<typeof turnLoopAimingMethods>, Mixed<typeof actorTurnsHazardsMethods>, Mixed<typeof monsterAiMethods>, Mixed<typeof bossLogicMethods>, Mixed<typeof gnollMineMethods>, Mixed<typeof crystalMineMethods>, Mixed<typeof combatResolutionMethods>, Mixed<typeof attackSeamMethods>, Mixed<typeof deathSaveRefreshMethods>, Mixed<typeof panelsSingleUseMethods>, Mixed<typeof inventoryQuickslotMethods>, Mixed<typeof heroQuickslotMethods>, Mixed<typeof clericSpellFlowsMethods>, Mixed<typeof armorAbilityUseMethods>, Mixed<typeof powerOfManyMethods>, Mixed<typeof skeletonKeyMethods>, Mixed<typeof dropThrowMethods>, Mixed<typeof cursedWandCastMethods>, Mixed<typeof tippedDartEffectsMethods>, Mixed<typeof weaponSpellsGearMethods>, Mixed<typeof comboMovesMethods>, Mixed<typeof monkAbilitiesMethods>, Mixed<typeof berserkRageMethods> {}
+Object.assign(DungeonScene.prototype, coreSpawnTilesMethods, npcShopBlacksmithMethods, environmentFireTrapsMethods, pitfallCollapseMethods, turnLoopAimingMethods, actorTurnsHazardsMethods, monsterAiMethods, bossLogicMethods, gnollMineMethods, crystalMineMethods, combatResolutionMethods, attackSeamMethods, deathSaveRefreshMethods, panelsSingleUseMethods, inventoryQuickslotMethods, heroQuickslotMethods, clericSpellFlowsMethods, armorAbilityUseMethods, powerOfManyMethods, skeletonKeyMethods, dropThrowMethods, cursedWandCastMethods, tippedDartEffectsMethods, weaponSpellsGearMethods, comboMovesMethods, berserkRageMethods);

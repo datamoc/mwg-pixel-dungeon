@@ -115,6 +115,7 @@ export const environmentFireTrapsMethods = {
 				this.hero.prismaticGuardHp = hp;
 				addBuff(this.hero, 'prismaticGuard', 9999);
 			},
+			onScrollUsed: (factor, chance) => this.onScrollUsed(factor, chance),
 		};
 	},
 
@@ -142,6 +143,7 @@ export const environmentFireTrapsMethods = {
 			get missileThresholds() { return scene.missileThresholds; },
 			set missileThresholds(thresholds: Map<string, number>) { scene.missileThresholds = thresholds; },
 			set empoweredZaps(zaps: number) { scene.empoweredZaps = zaps; },
+			onScrollUsed: (factor, chance) => scene.onScrollUsed(factor, chance),
 			armRecallInscription: (sourceClass) => scene.armRecallInscription(sourceClass),
 		};
 	},
@@ -212,6 +214,7 @@ export const environmentFireTrapsMethods = {
 			get armorHardened() { return scene.armorHardened; }, set armorHardened(hardened: boolean) { scene.armorHardened = hardened; },
 			randomInt: (min, max) => Random.int(min, max),
 			randomFloat: (bound) => Random.float(bound),
+			onScrollUsed: (factor, chance) => scene.onScrollUsed(factor, chance),
 			say: (message, level) => scene.say(message, level),
 			syncHeroFromStats: () => scene.syncHeroFromStats(),
 		};
@@ -1572,11 +1575,11 @@ export const environmentFireTrapsMethods = {
 	 * around that press. Keep this seam beside trap dispatch so teleport traps and other direct
 	 * relocations can share the same destination semantics.
 	 *
-	 * DELIBERATE REDUCTION (R106): Java immediately ticks Burning/Ooze on water and runs
-	 * RejuvenatingSteps terrain/cooldown logic here; the port has no reusable immediate DoT actor
-	 * tick, and its RejuvenatingSteps model currently lives only on ordinary movement. Java also
-	 * attaches SacrificialFire.Marked for two turns, while this port's documented sacrifice rule
-	 * checks live fire volume at death; that existing simplification already controls its reward.
+	 * R106: Java calls Burning/Ooze.act() on water occupancy: an unacted buff ticks, while an
+	 * already-acted buff detaches without a second tick (Level.java/Burning.java/Ooze.java,
+	 * tag `v3.3.8`). The saved acted markers now preserve that split; a forced first tick uses
+	 * the port's regular damage formulas. Java also attaches SacrificialFire.Marked for two turns,
+	 * while this port checks live fire volume at death; that separate reduction controls its reward.
 	 */
 	occupyTeleportedCharacter(this: DungeonScene, creature: Creature): void {
 		if (creature.hp <= 0) return;
@@ -1589,48 +1592,54 @@ export const environmentFireTrapsMethods = {
 		}
 		if (!creature.flying) {
 			//`Level.occupyCell()` forces Burning.act()/Ooze.act() before the press when a
-			//grounded character lands on water (Level.java, tag `v3.3.8`). The port has no
-			//per-buff `acted` bit, so it applies the current port tick formula once, then
-			//extinguishes/washes away that buff; exact suppression for a buff that already
-			//acted is tracked with the remaining R106 timing state.
+			//grounded character lands on water (Level.java, tag `v3.3.8`). The saved acted
+			//markers let an effect that already ticked detach without a second hit; a fresh
+			//effect is forced through the port's current tick formula before it is cleared.
 			if (this.level.get(x, y) === WATER) {
 				if (creature.buffs['burning'] !== undefined) {
-					const raw = Random.int(1, 4 + Math.floor(this.depth / 4));
-					const damage = creature.isHero
-						? Math.floor(raw * ringElementsMultiplier(this.effectiveRing(), creature.magicImmune, this.trinitySpiritRing()))
-						: raw;
-					if (damage > 0) {
-						const died = this.applyCharacterDamage(creature, damage, { pierceArmor: true, cause: 'fire', magical: false, skipAura: true });
-						this.say(t('port.log.affliction', { damage }), 'negative');
-						if (died) return;
-					}
-					if (creature.isHero && !this.hourglassFreeze) {
-						this.burningIncrement++;
-						if (Random.int(0, 2) < this.burningIncrement - 3) {
-							this.burningIncrement = 0;
-						this.burnHeroInventoryItem();
+					if (creature.buffs['burningActed'] === undefined) {
+						const raw = Random.int(1, 4 + Math.floor(this.depth / 4));
+						const damage = creature.isHero
+							? Math.floor(raw * ringElementsMultiplier(this.effectiveRing(), creature.magicImmune, this.trinitySpiritRing()))
+							: raw;
+						if (damage > 0) {
+							const died = this.applyCharacterDamage(creature, damage, { pierceArmor: true, cause: 'fire', magical: false, skipAura: true });
+							this.say(t('port.log.affliction', { damage }), 'negative');
+							if (died) return;
+						}
+						if (creature.isHero && !this.hourglassFreeze) {
+							this.burningIncrement++;
+							if (Random.int(0, 2) < this.burningIncrement - 3) {
+								this.burningIncrement = 0;
+								this.burnHeroInventoryItem();
+							}
 						}
 					}
 					delete creature.buffs['burning'];
+					delete creature.buffs['burningActed'];
 				}
 				if (creature.buffs['ooze'] !== undefined) {
-					const raw = this.depth > 5 ? 1 + Math.floor(this.depth / 5)
-						: this.depth === 5 ? 1 : Random.chance(0.5) ? 1 : 0;
-					const damage = creature.isHero
-						? Math.floor(raw * ringElementsMultiplier(this.effectiveRing(), creature.magicImmune, this.trinitySpiritRing()))
-						: raw;
-					if (damage > 0) {
-						const died = this.applyCharacterDamage(creature, damage, { pierceArmor: true, cause: 'poison', magical: false, skipAura: true });
-						this.say(t('port.log.affliction', { damage }), 'negative');
-						if (died) {
-							if (creature.isHero) this.say(t('actors.buffs.ooze.ondeath'), 'negative');
-							return;
+					if (creature.buffs['oozeActed'] === undefined) {
+						const raw = this.depth > 5 ? 1 + Math.floor(this.depth / 5)
+							: this.depth === 5 ? 1 : Random.chance(0.5) ? 1 : 0;
+						const damage = creature.isHero
+							? Math.floor(raw * ringElementsMultiplier(this.effectiveRing(), creature.magicImmune, this.trinitySpiritRing()))
+							: raw;
+						if (damage > 0) {
+							const died = this.applyCharacterDamage(creature, damage, { pierceArmor: true, cause: 'poison', magical: false, skipAura: true });
+							this.say(t('port.log.affliction', { damage }), 'negative');
+							if (died) {
+								if (creature.isHero) this.say(t('actors.buffs.ooze.ondeath'), 'negative');
+								return;
+							}
 						}
 					}
 					delete creature.buffs['ooze'];
+					delete creature.buffs['oozeActed'];
 				}
 			}
 			if (creature.isHero) {
+				this.rejuvenatingStepsOnOccupy(x, y);
 				this.trampleHighGrass(x, y);
 				const cell = this.level.index(x, y);
 				const delayedTrap = this.trapKinds.has(cell);
@@ -1654,6 +1663,29 @@ export const environmentFireTrapsMethods = {
 			if (this.fov.isVisible(landing.x, landing.y)) runState.audio.cue('door_open', 0.55);
 			this.restitchTilesAround(landing.x, landing.y);
 		}
+	},
+
+	/** `Level.occupyCell()`'s RejuvenatingSteps branch (Talent.java, tag `v3.3.8`):
+	 * when the Huntress occupies GRASS/EMBERS with the talent ready, grow HIGH_GRASS and
+	 * immediately furrow it; passive-regeneration lock or 200 accumulated counter points
+	 * instead grows already-furrowed grass. The rank-specific cooldown is 15 - 5*rank.
+	 * This destination path shares the ordinary movement terrain representation: HIGH_GRASS
+	 * plus `furrowedGrass` records Java's FURROWED_GRASS state. */
+	rejuvenatingStepsOnOccupy(this: DungeonScene, x: number, y: number): void {
+		const rank = this.talentRank('rejuvenating_steps');
+		const terrain = this.level.get(x, y);
+		if (rank <= 0 || (terrain !== GRASS && terrain !== EMBERS)
+			|| this.hero.buffs.rejuvenatingStepsCooldown !== undefined) return;
+		const cell = this.level.index(x, y);
+		const furrowed = !this.regenOn() || (this.hero.buffs.rejuvenatingStepsFurrow ?? 0) >= 200;
+		this.level.set(x, y, HIGH_GRASS);
+		if (furrowed) this.furrowedGrass.add(cell);
+		else {
+			this.furrowedGrass.delete(cell);
+			this.hero.buffs.rejuvenatingStepsFurrow = (this.hero.buffs.rejuvenatingStepsFurrow ?? 0) + 3 - rank;
+		}
+		this.restitchTilesAround(x, y);
+		this.hero.buffs.rejuvenatingStepsCooldown = 15 - 5 * rank;
 	},
 
 	/**

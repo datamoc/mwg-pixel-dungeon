@@ -1,6 +1,6 @@
-import { Container, Rectangle, Sprite, Texture } from 'mwg/two-d/pixi-interop';
+import { Container, Graphics, Rectangle, Sprite, Texture } from 'mwg/two-d/pixi-interop';
 
-interface CharacterVisual { sprite: Sprite; sleeping?: boolean; emote?: 'alert' | 'lost'; shadowOffset?: number; castsShadow?: boolean; }
+interface CharacterVisual { sprite: Sprite; sleeping?: boolean; emote?: 'alert' | 'lost'; hearts?: boolean; shadowOffset?: number; castsShadow?: boolean; }
 
 /** CharSprite's flattened sprite shadow and EmoIcon.Sleep's pulsing icon.
  * Java's per-sprite flying/jumping shadow offsets are not modeled yet.
@@ -8,7 +8,7 @@ interface CharacterVisual { sprite: Sprite; sleeping?: boolean; emote?: 'alert' 
 export class CharacterEffects {
 	readonly shadows = new Container();
 	readonly icons = new Container();
-	private entries = new Map<Sprite, { shadow: Sprite; sleep?: Sprite; emo?: Sprite; emoKind?: string; pulse: number }>();
+	private entries = new Map<Sprite, { shadow: Sprite; sleep?: Sprite; emo?: Sprite; emoKind?: string; pulse: number; heartClock: number; hearts: { sprite: Graphics; age: number }[] }>();
 	private sleepTexture: Texture;
 	private emoTextures: Record<'alert' | 'lost', Texture>;
 	constructor(icons: Texture) {
@@ -21,17 +21,19 @@ export class CharacterEffects {
 		const current = new Set(characters.map(character => character.sprite));
 		for (const [sprite, entry] of this.entries) {
 			if (sprite.destroyed || !current.has(sprite)) {
-				entry.shadow.destroy(); entry.sleep?.destroy(); entry.emo?.destroy(); this.entries.delete(sprite);
+				entry.shadow.destroy(); entry.sleep?.destroy(); entry.emo?.destroy();
+				for (const heart of entry.hearts) heart.sprite.destroy();
+				this.entries.delete(sprite);
 			}
 		}
-		for (const { sprite, sleeping, emote, shadowOffset = 0, castsShadow = true } of characters) {
+		for (const { sprite, sleeping, emote, hearts, shadowOffset = 0, castsShadow = true } of characters) {
 			if (sprite.destroyed) continue;
 			let entry = this.entries.get(sprite);
 			if (!entry) {
 				const shadow = new Sprite(sprite.texture);
 				shadow.tint = 0x000000;
 				this.shadows.addChild(shadow);
-				entry = { shadow, pulse: 0 }; this.entries.set(sprite, entry);
+				entry = { shadow, pulse: 0, heartClock: 0, hearts: [] }; this.entries.set(sprite, entry);
 			}
 			const w = sprite.texture.orig.width, h = sprite.texture.orig.height;
 			const left = sprite.x + (16 - w) / 2, top = sprite.y + 10 - h;
@@ -68,10 +70,34 @@ export class CharacterEffects {
 				entry.sleep.scale.set(1 + (entry.pulse <= 0.2 ? entry.pulse : 0.4 - entry.pulse));
 				entry.sleep.position.set(left + w, top - 4);
 			}
+			//`SummonElemental.InvisAlly.fx()` (tag `v3.3.8`) pours Speck.HEART every 0.5s
+			//while attached. The port uses a small vector heart particle in the shared overlay
+			//instead of Java's Speck texture/particle class; lifetime and upward drift are visual.
+			for (let i = entry.hearts.length - 1; i >= 0; i--) {
+				const heart = entry.hearts[i]!;
+				heart.age += dt;
+				if (heart.age >= 1.2) { heart.sprite.destroy(); entry.hearts.splice(i, 1); continue; }
+				heart.sprite.y -= dt * 8;
+				heart.sprite.alpha = 1 - heart.age / 1.2;
+			}
+			if (hearts && sprite.visible) {
+				entry.heartClock += dt;
+				if (entry.heartClock >= 0.5) {
+					entry.heartClock %= 0.5;
+					const heart = new Graphics().circle(2, 2, 2).circle(6, 2, 2)
+						.poly([0, 2, 8, 2, 4, 8]).fill({ color: 0xff5b88 });
+					heart.position.set(left + w / 2 - 4, top - 2);
+					this.icons.addChild(heart);
+					entry.hearts.push({ sprite: heart, age: 0 });
+				}
+			} else entry.heartClock = 0;
 		}
 	}
 	clear(): void {
-		for (const entry of this.entries.values()) { entry.shadow.destroy(); entry.sleep?.destroy(); entry.emo?.destroy(); }
+		for (const entry of this.entries.values()) {
+			entry.shadow.destroy(); entry.sleep?.destroy(); entry.emo?.destroy();
+			for (const heart of entry.hearts) heart.sprite.destroy();
+		}
 		this.entries.clear();
 	}
 }

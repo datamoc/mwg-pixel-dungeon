@@ -40,6 +40,8 @@ export interface ScrollEffectsContext {
 	readonly heroLevel: number;
 	/** Set (or reset) the latent guard pool; the buff-map icon is re-armed with it. */
 	readonly grantPrismaticGuard: (hp: number) => void;
+	/** `Talent.onScrollUsed()`'s Mage/Rogue effects (`Talent.java`, tag `v3.3.8`). */
+	readonly onScrollUsed: (factor?: number, chance?: number) => void;
 }
 
 export function applyScrollEffect(id: string, context: ScrollEffectsContext): boolean {
@@ -307,6 +309,9 @@ export function readScrollFlow(context: ReadScrollContext, opts?: { freeRecast?:
 	//`TransmuteFlowContext` (file-size refactor) - see `startTransmutationPick`.
 	if (id === 'scrollTransmutation') return context.startTransmutationPick(context.requestedItemInstanceId);
 	if (!free) bag.remove(id, 1, context.requestedItemInstanceId);
+	//`Scroll.readAnimation()` reaches `Talent.onScrollUsed()` after the successful read
+	//(`Scroll.java`, tag `v3.3.8`); free Recall Inscription re-reads use talentChance 0.
+	if (!free) context.onScrollUsed();
 	//`Scroll.readAnimation()`'s `Random.Float() < talentChance` (same file): chance is 1
 	//for every ported scroll, so each successful read below arms the recall tracker -
 	//except a free re-read, whose `talentChance = 0` reports no class back.
@@ -402,6 +407,8 @@ export interface UpgradeGearContext {
 	/** Scriptable rolls: `Random.int`/`Random.float` in play, a queue in the suite. */
 	readonly randomInt: (min: number, max: number) => number;
 	readonly randomFloat: (bound: number) => number;
+	/** `Talent.onScrollUsed()` after a successful paid ScrollOfUpgrade. */
+	readonly onScrollUsed: (factor?: number, chance?: number) => void;
 	readonly say: (message: string, level?: 'positive' | 'negative' | 'warning') => void;
 	readonly syncHeroFromStats: () => void;
 }
@@ -456,6 +463,8 @@ export function upgradeGearFlow(context: UpgradeGearContext): boolean {
 		context.syncHeroFromStats();
 		context.say(t('port.log.armorupgraded', { level: context.armorLevel }), 'positive');
 	}
+	//`Scroll.readAnimation()` runs the shared talent hook after the successful upgrade.
+	context.onScrollUsed();
 	return true;
 }
 

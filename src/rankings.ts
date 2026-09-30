@@ -25,6 +25,8 @@ export interface RunRecord {
 	score: number;
 	/** the run's `Dungeon.challenges` int mask (`Rankings.java:308,344`), 0 when none. */
 	challenges?: number;
+	/** `Statistics.highestAscent`: shallowest depth reached after starting the Amulet ascent (0 = never started). */
+	highestAscent?: number;
 }
 
 /** `RankingsScene`'s score: depth dominates, then level, then gold. */
@@ -51,9 +53,12 @@ export function recordRun(record: Omit<RunRecord, 'score'>): void {
 	try {
 		//`Rankings.calculateScore()` (`Rankings.java:225-231`): the score is scaled by `1.25^active`, rounded to 0.05.
 		const mask = challengeMask();
+		//`Rankings.Record` stores highestAscent as the ranked depth once the climb has begun (Rankings.java:105-113, v3.3.8).
+		const rankedDepth = record.highestAscent && record.highestAscent > 0 ? record.highestAscent : record.depth;
 		history.record({
 			...record,
-			score: Math.round(runScore(record.depth, record.level, record.gold) * challengeScoreMultiplier(activeChallengeCount())),
+			depth: rankedDepth,
+			score: Math.round(runScore(rankedDepth, record.level, record.gold) * challengeScoreMultiplier(activeChallengeCount())),
 			...(mask !== 0 ? { challenges: mask } : {}),
 		});
 	} catch {

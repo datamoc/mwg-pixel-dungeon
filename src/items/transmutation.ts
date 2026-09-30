@@ -290,6 +290,8 @@ export interface TransmuteFlowContext {
 	get missileThresholds(): Map<string, number>;
 	set missileThresholds(thresholds: Map<string, number>);
 	set empoweredZaps(zaps: number);
+	/** Shared `Talent.onScrollUsed()` hook after a successful paid transmutation. */
+	readonly onScrollUsed: (factor?: number, chance?: number) => void;
 	/** `Talent.onScrollUsed()`'s Cleric half (tag `v3.3.8`) - the scene
 	 * implementation no-ops unless the hero is a Cleric with the talent. */
 	readonly armRecallInscription: (sourceClass: string) => void;
@@ -363,6 +365,9 @@ export function completeTransmutation(scene: TransmuteFlowContext, pick: { id: s
 	}
 	const free = opts?.freeRecast === true;
 	if (!free) scene.bag.remove('scrollTransmutation', 1, scrollInstanceId);
+	//`Scroll.readAnimation()`'s talent hook follows a successful transmutation selection;
+	//recalled reads pass talentChance 0 (`Scroll.java`/`ScrollOfTransmutation.java`, tag `v3.3.8`).
+	if (!free) scene.onScrollUsed();
 	//`Talent.EMPOWERING_SCROLLS` arms on a successful transmutation read too (see
 	//`readScroll`): the scroll is only consumed here, so this is the exact point -
 	//skipped, with the recall re-arm below, on a free re-read (`talentChance = 0`).

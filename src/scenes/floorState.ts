@@ -68,6 +68,8 @@ export interface FloorState {
 
 export interface SavedCreature {
 	kind: AnyMonsterId;
+	/** Java `SummonElemental.InvisAlly` marker; only these Elementals are recalled by that spell. */
+	summonedByElementalSpell?: boolean;
 	x: number;
 	y: number;
 	hp: number;

@@ -1,5 +1,6 @@
 import { t, titleCase } from '../i18n';
 import type { BuffId } from '../simulation/buffs';
+import { berserkDamageFactor, berserkShieldBoost } from '../simulation/subclassPassives';
 
 /**
  * `WndInfoBuff`: clicking a `BuffIndicator` icon opens a small window with the buff's real
@@ -73,6 +74,7 @@ const BUFF_MESSAGE_KEY: Partial<Record<BuffId, string>> = {
 	//other Cleric buffs above. Its desc takes the turns-remaining `{0}`, so it
 	//stays out of `NO_TURNS_PARAM`.
 	cleanseImmunity: 'port.buff.cleanseimmunity',
+	rejuvenatingStepsCooldown: 'actors.hero.talent$rejuvenatingstepscooldown',
 };
 
 /**
@@ -85,6 +87,17 @@ const NO_TURNS_PARAM = new Set<BuffId>(['cloak', 'fury', 'illuminated', 'satiate
 export interface BuffInfo {
 	name: string;
 	desc: string;
+}
+
+export interface BerserkBuffInfoState {
+	mode: 'normal' | 'berserk' | 'recovering';
+	power: number;
+	shield: number;
+	levelRecovery: number;
+	turnRecovery: number;
+	hp: number;
+	maxHp: number;
+	armorBuffedLevel: number;
 }
 
 /**
@@ -115,8 +128,33 @@ function hungerInfo(state: 'hungry' | 'starving'): BuffInfo {
  * item (`%1$s`), which the scene maps back from its Java class. `undefined` prints
  * `?` - reachable only if the tracker lapsed without detaching.
  */
-export function buffInfo(id: BuffId | 'hungry' | 'starving', turns: number | undefined, maxHp?: number, itemName?: string): BuffInfo | null {
+export function buffInfo(id: BuffId | 'hungry' | 'starving', turns: number | undefined, maxHp?: number, itemName?: string, berserk?: BerserkBuffInfoState): BuffInfo | null {
 	if (id === 'hungry' || id === 'starving') return hungerInfo(id);
+	//`ScrollEmpower.desc()` takes fixed +2 level boost and its remaining zap count
+	//(actors/buffs/ScrollEmpower.java, tag `v3.3.8`); this is an action count, not turns.
+	if (id === 'scrollEmpower') {
+		return { name: titleCase(t('actors.buffs.scrollempower.name')),
+			desc: t('actors.buffs.scrollempower.desc', { 0: 2, 1: Math.max(0, Math.trunc(turns ?? 0)) }) };
+	}
+	//`Berserk.desc()` selects Angry, Berserking or Recovering text from live state
+	//(actors/buffs/Berserk.java, tag v3.3.8); its buff-map sentinel is not a duration.
+	if (id === 'berserk' && berserk) {
+		if (berserk.mode === 'berserk') {
+			return { name: titleCase(t('actors.buffs.berserk.berserk')),
+				desc: t('actors.buffs.berserk.berserk_desc', { 0: Math.max(0, Math.trunc(berserk.shield)) }) };
+		}
+		if (berserk.mode === 'recovering') {
+			const debt = berserk.levelRecovery > 0
+				? t('actors.buffs.berserk.recovering_desc_levels', { 0: decimal(berserk.levelRecovery) })
+				: t('actors.buffs.berserk.recovering_desc_turns', { 0: Math.max(0, Math.trunc(berserk.turnRecovery)) });
+			return { name: titleCase(t('actors.buffs.berserk.recovering')),
+				desc: `${t('actors.buffs.berserk.recovering_desc')}\n\n${debt}` };
+		}
+		const damageBonus = Math.floor(berserkDamageFactor(10000, berserk.power)) / 100 - 100;
+		const nextShield = berserkShieldBoost(berserk.hp, berserk.maxHp, berserk.armorBuffedLevel, berserk.power);
+		return { name: titleCase(t('actors.buffs.berserk.angered')),
+			desc: t('actors.buffs.berserk.angered_desc', { 0: Math.floor(berserk.power * 100), 1: damageBonus, 2: nextShield }) };
+	}
 	const key = BUFF_MESSAGE_KEY[id];
 	if (!key) return null;
 	if (id === 'recallUsed') {
@@ -131,4 +169,8 @@ export function buffInfo(id: BuffId | 'hungry' | 'starving', turns: number | und
 	}
 	const desc = NO_TURNS_PARAM.has(id) ? t(`${key}.desc`) : t(`${key}.desc`, { 0: Math.max(0, turns ?? 0) });
 	return { name: titleCase(t(`${key}.name`)), desc };
+}
+
+function decimal(value: number): string {
+	return Number.isFinite(value) ? String(Number(value.toFixed(2))) : '0';
 }

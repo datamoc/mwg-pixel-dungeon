@@ -16,7 +16,7 @@ import { MONSTER_IMMUNITY_DATA } from './mwlMonsterImmunities';
  * creature cannot see - or hunt - the hero (see `dungeonScene`'s monster-perception line), and a
  * blinded hero would see nothing. Duration 10 is `Blindness.DURATION`.
  */
-export type BuffId = 'bless' | 'hex' | 'daze' | 'vertigo' | 'combo' | 'monkEnergy' | 'chill' | 'frost' | 'drowsy' | 'magicalSleep' | 'fury' | 'berserk' | 'weakness' | 'vulnerable' | 'doom' | 'burning' | 'poison' | 'bleeding' | 'cripple' | 'paralysis' | 'roots' | 'levitation' | 'featherFall' | 'invisibility' | 'timeStasis' | 'cloak' | 'focus' | 'recharging' | 'artifactRecharge' | 'wellFed' | 'frostImbue' | 'fireImbue' | 'toxicImbue' | 'blobImmunity' | 'adrenalineSurge' | 'mindvision' | 'terror' | 'amok' | 'aggression' | 'awareness' | 'haste' | 'degrade' | 'ooze' | 'charm' | 'lethalHasteCooldown' | 'wayward' | 'blindness' | 'feintConfusion' | 'counterAbility' | 'light' | 'invulnerability' | 'hazardAssist' | 'spectatorFreeze' | 'duelParticipant' | 'eliminationMatch' | 'luckyTracker' | 'soulmark' | 'prismaticGuard' | 'illuminated' | 'wasIlluminated' | 'holyWeapon' | 'holyWard' | 'powerOfMany' | 'satiatedSpells' | 'shieldOfLight' | 'divineSense' | 'recallUsed' | 'sunrayUsed' | 'sunrayRecent' | 'cleanseImmunity' | 'lanceCooldown' | 'heroDisguise' | 'auraProtection' | 'smiteTracker' | 'guidingPriestCooldown' | 'searingLightCooldown' | 'lightWallActive' | 'lockedFloor';
+export type BuffId = 'bless' | 'hex' | 'daze' | 'vertigo' | 'combo' | 'monkEnergy' | 'chill' | 'frost' | 'drowsy' | 'magicalSleep' | 'fury' | 'berserk' | 'weakness' | 'vulnerable' | 'doom' | 'burning' | 'poison' | 'bleeding' | 'cripple' | 'paralysis' | 'roots' | 'levitation' | 'featherFall' | 'invisibility' | 'timeStasis' | 'cloak' | 'focus' | 'recharging' | 'scrollEmpower' | 'artifactRecharge' | 'wellFed' | 'frostImbue' | 'fireImbue' | 'toxicImbue' | 'blobImmunity' | 'adrenalineSurge' | 'mindvision' | 'terror' | 'amok' | 'aggression' | 'awareness' | 'haste' | 'degrade' | 'ooze' | 'charm' | 'lethalHasteCooldown' | 'wayward' | 'blindness' | 'feintConfusion' | 'counterAbility' | 'light' | 'invulnerability' | 'hazardAssist' | 'spectatorFreeze' | 'duelParticipant' | 'eliminationMatch' | 'luckyTracker' | 'soulmark' | 'prismaticGuard' | 'illuminated' | 'wasIlluminated' | 'holyWeapon' | 'holyWard' | 'powerOfMany' | 'satiatedSpells' | 'shieldOfLight' | 'divineSense' | 'recallUsed' | 'sunrayUsed' | 'sunrayRecent' | 'cleanseImmunity' | 'lanceCooldown' | 'heroDisguise' | 'auraProtection' | 'smiteTracker' | 'guidingPriestCooldown' | 'searingLightCooldown' | 'lightWallActive' | 'lockedFloor' | 'rejuvenatingStepsCooldown' | 'rejuvenatingStepsFurrow' | 'burningActed' | 'oozeActed';
 /** The duration catalogue is authored in MWL and emitted as an isolated simulation module. */
 export const BUFF_DURATION: Record<BuffId, number> = (() => {
 	const values = { ...BUFF_DURATION_DATA } as Record<string, number>;
@@ -305,9 +305,18 @@ export function advanceBuffs(previous: Readonly<BuffState>, random: SimulationRa
 		// skipped entirely. `DungeonScene.hungerStep()` ticks it before hunger, so the
 		// generic creature-buff clock must leave it untouched.
 		if (id === 'wellFed') continue;
+		//Java's Burning/Ooze `acted` bits persist for the active buff instance; these
+		//serialized markers are state, not clocks of their own.
+		if (id === 'burningActed' || id === 'oozeActed') continue;
 		// `Doom` has no duration or act method in Java: it lasts until the target dies.
 		if (id === 'doom') continue;
-		if (id === 'burning') damage += random.int(1, 4 + Math.floor(scalingDepth / 4));
+		//`RejuvenatingStepsFurrow` is a revive-persistent CounterBuff in Talent.java, not a timer.
+		if (id === 'rejuvenatingStepsFurrow') continue;
+		if (id === 'burning') {
+			damage += random.int(1, 4 + Math.floor(scalingDepth / 4));
+			//`Burning.act()` sets acted before damage (`Burning.java`, tag `v3.3.8`).
+			buffs.burningActed = 1;
+		}
 		//`Poison.act()` (tag v3.3.8): `(int)(left/3)+1` deals off the *remaining*
 		//duration, not a flat roll - a fresh 6-turn poison hits for 3, decaying as the clock
 		//runs down. The old flat `int(1, 2) (exclusive upper bound: always 1) had no Java
@@ -330,7 +339,11 @@ export function advanceBuffs(previous: Readonly<BuffState>, random: SimulationRa
 			else delete buffs[id];
 			continue;
 		}
-		if (left <= 1) delete buffs[id];
+		if (left <= 1) {
+			delete buffs[id];
+			if (id === 'burning') delete buffs.burningActed;
+			if (id === 'ooze') delete buffs.oozeActed;
+		}
 		else buffs[id] = left - 1;
 	}
 	return { buffs, damage };

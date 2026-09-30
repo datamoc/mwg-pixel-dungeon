@@ -287,9 +287,8 @@ export const actorTurnsHazardsMethods = {
 	 *   climb actually starts. "No" leaves the hero on depth 26, free to keep fighting Yog's
 	 *   remains or grab more loot. "Yes" grants `AscensionChallenge` (`Buff.affect` in Java;
 	 *   here `ascensionChallengeActive = true` + `setAscensionActive`, see the field comment)
-	 *   and Java's `Statistics.highestAscent = 25` - this port has no Rankings/high-score
-	 *   screen to feed that into (`PORT_COVERAGE.md`: "Post-victory ascent"), so it is not
-	 *   tracked as a separate stat, only used here to gate the confirmation.
+	 *   and Java's `Statistics.highestAscent = 25`; this port tracks that stat through floor
+	 *   transitions, saves, and completed-run rankings.
 	 * - Depth 1: `SewerLevel.activateTransition`'s `SURFACE` branch - the real win.
 	 *   `Badges.validateHappyEnd()` is ported in `showVictoryPanel` (2026-09-25):
 	 *   `happy_end` unconditionally, `pacifist_ascent` while the ascent is active with
@@ -299,8 +298,8 @@ export const actorTurnsHazardsMethods = {
 	 *   the real `AscensionChallenge.onLevelSwitch`/`act()` escalation - +2 stacks per floor
 	 *   (`beginAscendOneFloor`), -1 (-0.5 Ghoul/RipperDemon) per boosted kill
 	 *   (`deathSaveRefresh.ts`'s `ASCENSION_MOD` gate), and direct hero damage at 8+ stacks
-	 *   (`turnLoopAiming.ts`'s `applyBuffDamage`). `Statistics.highestAscent` is still not
-	 *   tracked (no Rankings screen reads it); the DemonSpawner sub-20 cooldown carve-out is
+	 *   (`turnLoopAiming.ts`'s `applyBuffDamage`). `Statistics.highestAscent` is updated here
+	 *   and recorded in run summaries; the DemonSpawner sub-20 cooldown carve-out is
 	 *   ported (`tickDemonSpawner` caps above-20 to 20 while the challenge runs, 2026-09-25). The
 	 *   beckon (>=2 stacks: distant enemies pulled onto the hero's trail) and haste (>=4:
 	 *   idle enemies move at 2x through the scheduler cost) effects are ported too
@@ -321,6 +320,8 @@ export const actorTurnsHazardsMethods = {
 				t('items.amulet.ascent_no'),
 				() => {
 					this.ascensionChallengeActive = true;
+					//`HallsBossLevel.activateTransition()` initializes `Statistics.highestAscent` to 25 when the ascent begins (v3.3.8).
+					this.highestAscent = 25;
 					setAscensionActive(true);
 					this.beginAscendOneFloor();
 				},
@@ -339,12 +340,14 @@ export const actorTurnsHazardsMethods = {
 			this.say(t('scenes.amuletscene.exit'), 'positive');
 			this.awaitingInput = false;
 			this.gameOver = true;
-			recordRun({ result: 'won', depth: this.depth, level: this.progression.level, gold: this.heroStats.base('gold') });
+			recordRun({ result: 'won', depth: this.depth, level: this.progression.level, gold: this.heroStats.base('gold'), highestAscent: this.highestAscent });
 			this.showVictoryPanel();
 			this.justDescended = true;
 			return;
 		}
 		this.depth--;
+		//`AscensionChallenge.onLevelSwitch()` lowers highestAscent only after reaching a new shallower floor (v3.3.8).
+		if (this.ascensionChallengeActive && this.highestAscent > 0) this.highestAscent = Math.min(this.highestAscent, this.depth);
 		//`AscensionChallenge.onLevelSwitch()` (tag `v3.3.8`): every non-boss floor climbed adds 2
 		//stacks (the boss-floor branch instead satiates hunger and heals - not reachable here,
 		//since depth 26 is a one-time confirmation the hero has already passed by the time this
@@ -507,7 +510,7 @@ export const actorTurnsHazardsMethods = {
 		const y = Math.floor(cell / this.level.width);
 		const chance = this.creatures
 			.filter((c) => c.isAlly && c.allyKind === 'lotus' && c.hp > 0)
-			.filter((c) => Math.max(Math.abs(c.x - x), Math.abs(c.y - y)) <= Math.max(0, Math.round((c.maxHp - 25) / 3)))
+			.filter((c) => Roguelike.chebyshevDistance(c, { x, y }) <= Math.max(0, Math.round((c.maxHp - 25) / 3)))
 			.reduce((best, c) => Math.max(best, 0.4 + 0.04 * Math.max(0, Math.round((c.maxHp - 25) / 3))), 0);
 		return chance > 0 && Random.float() < chance;
 	},
@@ -1218,6 +1221,8 @@ export const actorTurnsHazardsMethods = {
 		if (monsterWasBurning && this.level.get(monster.x, monster.y) === WATER && !monster.flying) delete monster.buffs['burning'];
 		//Ooze.act()'s own depth-scaled tick for monsters (same formula as the hero side).
 		if (monsterWasOozing && monster.hp > 0) {
+			//`Ooze.act()` sets its acted bit before rolling damage (`Ooze.java`, tag `v3.3.8`).
+			monster.buffs['oozeActed'] = 1;
 			const ooze = this.depth > 5 ? 1 + Math.floor(this.depth / 5)
 				: this.depth === 5 ? 1 : Random.chance(0.5) ? 1 : 0;
 			if (ooze > 0) {

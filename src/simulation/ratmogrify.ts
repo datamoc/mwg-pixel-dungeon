@@ -8,6 +8,8 @@
  * not on the combatant stat block `rollDamage` reads.
  */
 
+import { chebyshevDistance } from './combatState';
+
 /** The per-point base of `Math.pow(0.9f, pointsInTalent(RATSISTANCE))`. */
 export const RATSISTANCE_BASE = 0.9;
 
@@ -62,8 +64,7 @@ export function useRatmogrifyFlow(context: RatmogrifyContext): boolean {
 	const target = context.creatures
 		.filter((c) => !c.isHero && !c.isNPC && !c.isAlly && c.hp > 0 && !c.ratmogrifiedPermanent && c.kind !== 'rat'
 			&& !context.isBossKind(c.kind) && context.fov.isVisible(c.x, c.y))
-		.sort((a, b) => Math.max(Math.abs(a.x - context.hero.x), Math.abs(a.y - context.hero.y))
-			- Math.max(Math.abs(b.x - context.hero.x), Math.abs(b.y - context.hero.y)))[0];
+		.sort((a, b) => chebyshevDistance(a, context.hero) - chebyshevDistance(b, context.hero))[0];
 	//`Ratmogrify.chargeUse()` is the real 50, so the ability is not free - this used to cost no
 	//charge at all, since it predates the charge system. The turn is spent by the calling
 	//`attempt` action (`HeroAction.Attack`'s own `spendAndNext`); spending it here as well made

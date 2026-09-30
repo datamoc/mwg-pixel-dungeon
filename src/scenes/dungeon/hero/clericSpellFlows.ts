@@ -422,7 +422,7 @@ export const clericSpellFlowsMethods = {
 		const radius = hallowedGroundRadius(rank);
 		for (const target of this.creatures) {
 			if (target.hp <= 0) continue;
-			if (Math.max(Math.abs(target.x - cell.x), Math.abs(target.y - cell.y)) > radius) continue;
+			if (Roguelike.chebyshevDistance(target, cell) > radius) continue;
 			if (target === this.hero || target.isAlly) {
 				const missing = target.maxHp - target.hp;
 				if (missing > 0) {

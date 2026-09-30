@@ -1,4 +1,5 @@
 import type { SimulationRandom } from './random';
+import { chebyshevDistance } from './combatState';
 
 /**
  * Renderer-free halves of the Blacksmith GNOLL mine quest's shared abilities
@@ -14,7 +15,9 @@ export function neighbours9(width: number): number[] { return [-width - 1, -widt
 
 /** `Level.distance()` (Chebyshev) and `Level.trueDistance()` (Euclidean) over cell indices. */
 export function cellDistance(width: number, a: number, b: number): number {
-	return Math.max(Math.abs((a % width) - (b % width)), Math.abs(Math.floor(a / width) - Math.floor(b / width)));
+	const pa = { x: a % width, y: Math.floor(a / width) };
+	const pb = { x: b % width, y: Math.floor(b / width) };
+	return chebyshevDistance(pa, pb);
 }
 export function cellTrueDistance(width: number, a: number, b: number): number {
 	const dx = (a % width) - (b % width), dy = Math.floor(a / width) - Math.floor(b / width);

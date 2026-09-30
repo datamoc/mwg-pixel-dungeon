@@ -24,7 +24,7 @@ export const TURN_COSTS: Record<string, number> = {
 };
 
 export type AttemptAction = 'special' | 'eat' | 'quaff' | 'read' | 'upgrade';
-export type FreeAction = 'examine' | 'talents' | 'buyHeal' | 'buyId' | 'sellFood' | 'buyback' | 'save' | 'load' | 'preparation' | 'armorAbility';
+export type FreeAction = 'examine' | 'talents' | 'buyHeal' | 'buyId' | 'sellFood' | 'buyback' | 'save' | 'load' | 'preparation' | 'armorAbility' | 'berserk';
 export type HeroActionPlan =
 	| { kind: 'paralysed' | 'search' | 'unknown'; turnCost?: number }
 	| { kind: 'attempt'; action: AttemptAction; turnCost: number }

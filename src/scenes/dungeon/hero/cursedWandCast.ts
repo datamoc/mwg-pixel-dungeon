@@ -18,6 +18,7 @@ import { coneCells } from '../../../mechanics/cone';
 import { Cat, randomUsingDefaults } from '../../../items/generator';
 import { generatedInventoryItem } from '../../../items/generatedItems';
 import { groundKindForItem } from '../../../items/itemKinds';
+import { arcaneVisionDuration } from '../../../talentEffects';
 
 /** `CursedWand.cursedZap()` (`items/wands/CursedWand.java`, tag `v3.3.8`) - moved verbatim from
  * `armorAbilityUse.ts` as the file-size refactor's extraction once `activateWildMagic`'s cursed
@@ -43,6 +44,18 @@ export const cursedWandCastMethods = {
 		else if (tier === 'uncommon') this.castCursedWandUncommonEffect(target, cell);
 		else if (tier === 'rare') this.castCursedWandRareEffect(target, cell);
 		else this.castCursedWandVeryRareEffect(cell, origin);
+	},
+
+	/** `CursedWand.tryForWandProc()` -> `Wand.wandProc()` (`CursedWand.java`/`Wand.java`,
+	 * tag `v3.3.8`): the Arcane Vision leg applies only to a non-hero collision target. Java
+	 * attaches target-specific `CharAwareness`; this port has no per-creature awareness buff,
+	 * so it uses the ordinary-zap all-mobs `mindvision` stand-in at the same `5 + 5*rank`
+	 * duration. Warlock SoulMark and the other Wand.wandProc talent hooks remain unmodelled.
+	 */
+	applyCursedWandArcaneVision(this: DungeonScene, target: Creature | null | undefined): void {
+		const rank = this.talentRank('arcane_vision');
+		if (!target || target === this.hero || rank <= 0) return;
+		this.hero.buffs['mindvision'] = Math.max(this.hero.buffs['mindvision'] ?? 0, arcaneVisionDuration(rank));
 	},
 
 	/** `CursedWand.cursedZap()`'s VeryRare tier (`CursedWand.java`, tag `v4.0.0`: eight effects;
@@ -223,6 +236,7 @@ export const cursedWandCastMethods = {
 				if (targetStatus === 'burning') reigniteBuff(target, 'burning');
 				else target.buffs['frost'] = Math.max(target.buffs['frost'] ?? 0, BUFF_DURATION.frost);
 			}
+			this.applyCursedWandArcaneVision(target);
 		} else if (effect === 'randomTeleport') {
 			//RandomTeleport.effect(): a live, non-IMMOVABLE target teleports on a coin flip;
 			//anything else (no target, IMMOVABLE, or the flip losing) teleports the caster
@@ -232,16 +246,19 @@ export const cursedWandCastMethods = {
 			const mover = targetEligible && Random.int(2) === 0 ? target : this.hero;
 			const from = { x: mover.x, y: mover.y };
 			const destination = this.randomFreeCell(mover);
+			if (mover === target) this.applyCursedWandArcaneVision(target);
 			if (destination) {
 				this.moveTo(mover, destination);
 				this.playTeleportAppear(from, destination, mover);
 			}
 		} else if (effect === 'randomGas') {
+			this.applyCursedWandArcaneVision(target ?? this.creatureAt(cell.x, cell.y));
 			const gas = CURSED_RANDOM_GAS[Random.int(CURSED_RANDOM_GAS.length)]!;
 			if (gas.id === 'confusionGas') this.confusionGas.seed(cell.x, cell.y, gas.volume);
 			else if (gas.id === 'toxicGas') this.toxicGas.seed(cell.x, cell.y, gas.volume);
 			else this.paralyticGas.seed(cell.x, cell.y, gas.volume);
 		} else if (effect === 'bubbles') {
+			this.applyCursedWandArcaneVision(target ?? this.creatureAt(cell.x, cell.y));
 			//Bubbles.effect(): a harmless particle burst plus a cell press this port doesn't
 			//model (no generic arbitrary-cell trap/plant press seam) - genuinely a no-op here
 			//beyond the tier draw itself, matching Java's own "fun, harmless" cursed outcome.
@@ -266,8 +283,10 @@ export const cursedWandCastMethods = {
 				if (dist >= 0 && dist <= 2) addBuff(creature, 'ooze');
 			}
 		} else if (effect === 'randomAreaEffect') {
+			this.applyCursedWandArcaneVision(target ?? this.creatureAt(cell.x, cell.y));
 			//RandomAreaEffect.effect() (`CursedWand.java`, tag `v3.3.8`): Java first calls
-			//tryForWandProc, then Level.pressCell on an empty collision cell, then activates a
+			//tryForWandProc (the supported Arcane Vision leg is dispatched here), then
+			//Level.pressCell on an empty collision cell, then activates a
 			//uniform BurningTrap/ChillingTrap/ShockingTrap at that same cell. This port lacks
 			//those two generic seams, but the trap payloads are already represented by the same
 			//Fire, Freezing, and Electricity fields as the ordinary traps, so preserve the area
@@ -281,6 +300,7 @@ export const cursedWandCastMethods = {
 				else this.electricity.seed(x, y, 10);
 			}
 		} else if (effect === 'spawnRegrowth') {
+			this.applyCursedWandArcaneVision(target ?? this.creatureAt(cell.x, cell.y));
 			//`SpawnRegrowth.effect()` (`CursedWand.java`, tag `v3.3.8`) seeds 30 volume at
 			//the collision cell even when occupied; the persistent floor blob grows terrain
 			//and roots on subsequent environmental turns. Its `Level.pressCell` call on empty
@@ -299,6 +319,7 @@ export const cursedWandCastMethods = {
 			//`Char.damage()` never reduces by armor. No badge system exists here for the
 			//friendly/enemy-magic death distinction Java books on this specific kill.
 			if (!target || target.hp <= 0) return;
+			this.applyCursedWandArcaneVision(target);
 			const damage = this.depth * 2;
 			const targetTakesDamage = Random.int(2) === 0;
 			const healer = targetTakesDamage ? this.hero : target;
@@ -317,6 +338,7 @@ export const cursedWandCastMethods = {
 					onNonWeaponBossDamage: (target) => this.disqualifyBossChallenge(target) });
 			}
 		} else if (effect === 'geyser') {
+			this.applyCursedWandArcaneVision(target ?? this.creatureAt(cell.x, cell.y));
 			//Geyser.effect(): a fresh GeyserTrap activates at the bolt's own cell - the same
 			//flow the port's own geyser utility trap already uses.
 			activateGeyserTrapFlow({
@@ -329,6 +351,7 @@ export const cursedWandCastMethods = {
 				kill: (t, cause) => this.kill(t, cause), moveTo: (creature, destination) => this.moveTo(creature, destination),
 			}, cell.x, cell.y);
 		} else if (effect === 'summonSheep') {
+			this.applyCursedWandArcaneVision(target ?? this.creatureAt(cell.x, cell.y));
 			//SummonSheep.effect(): a fresh FlockTrap activates at the bolt's cell - Java's own
 			//distance-2 flood of free non-pit cells, one Sheep (lifespan 6) each, matching this
 			//port's existing 'flock' utility trap exactly.
@@ -359,6 +382,7 @@ export const cursedWandCastMethods = {
 				if (!mob.fleeing) mob.lastSeen = { x: this.hero.x, y: this.hero.y };
 			}
 		} else if (effect === 'randomPlant') {
+			this.applyCursedWandArcaneVision(target ?? this.creatureAt(cell.x, cell.y));
 			//RandomPlant.effect(): a uniformly-picked plant kind seeds at the bolt's own cell,
 			//refusing silently on an occupied feature, a chasm, or impassable terrain - the same
 			//`valid()` gate the hero's own `plantSeed` action already checks, generalized off the
@@ -371,6 +395,7 @@ export const cursedWandCastMethods = {
 				this.placePortedFeature(plantCellIndex, kind);
 			}
 		} else if (effect === 'explosion') {
+			this.applyCursedWandArcaneVision(target ?? this.creatureAt(cell.x, cell.y));
 			//Explosion.effect(): `new Bomb.ConjuredBomb().explode(pos)` - Java's `ConjuredBomb`
 			//is an empty `Bomb` subclass with zero overrides, so it resolves exactly this port's
 			//'standard' MWL_BOMB_RULES entry. Reuses `detonateBomb`'s own three base-blast loops
@@ -378,6 +403,7 @@ export const cursedWandCastMethods = {
 			//since there is no ground item to remove/chain from here.
 			this.explodeConjuredBomb(cell);
 		} else {
+			this.applyCursedWandArcaneVision(target ?? this.creatureAt(cell.x, cell.y));
 			//LightningBolt.effect(): every `Lightning()` visual call and `ScrollOfRecharging.
 			//charge()` are pure particle bursts with zero mechanical effect in `v3.3.8`, both
 			//skipped. The mechanical shape: the union of NEIGHBOURS9 around the caster's own
@@ -527,6 +553,7 @@ export const cursedWandCastMethods = {
 			return;
 		}
 		if (effect === 'fireBall') {
+			this.applyCursedWandArcaneVision(target ?? this.creatureAt(cell.x, cell.y));
 			//`FireBall.effect()` (`CursedWand.java`, tag `v3.3.8`): radius-3 shadowcast from
 			//the bolt collision cell, damage/ignite visible non-solid cells, then a radius-6
 			//BlastWave used only for its visual ripple (no knockback or damage); FlameParticle,
@@ -555,7 +582,8 @@ export const cursedWandCastMethods = {
 		//`stopAtTarget: false` is that same STOP_SOLID-alone stop mode. `positiveOnly` is never
 		//true from WildMagic, so the ally-exemption branch never fires and is skipped, matching
 		//every other tier's documented convention here; `tryForWandProc` (a generic wand-glyph
-		//reaction hook) has no seam in this port and is not modeled, also matching convention.
+		//reaction hook) runs for its collision-cell character before the cone is applied.
+		this.applyCursedWandArcaneVision(target ?? this.creatureAt(cell.x, cell.y));
 		const cone = coneCells({
 			source: { x: this.hero.x, y: this.hero.y },
 			target: cell,

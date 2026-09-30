@@ -277,10 +277,14 @@
             talents: "empowering_meal,scholars_intuition,tested_hypothesis,backup_barrier",
           },
           {
+            //`Talent.initClassTalents()` Mage tier 2 includes `INSCRIBED_POWER`
+            //(`actors/hero/Talent.java`, tag `v3.3.8`). `energizing_upgrade` is an
+            //additional carried-forward v2.1.4 choice, so this port has six where
+            //Java has five; the roster difference is recorded in hero coverage.
             tag: "row",
             class: "mage",
             tier: 2,
-            talents: "energizing_meal,energizing_upgrade,wand_preservation,arcane_vision,shield_battery",
+            talents: "energizing_meal,inscribed_power,energizing_upgrade,wand_preservation,arcane_vision,shield_battery",
           },
           {
             tag: "row",
@@ -289,10 +293,14 @@
             talents: "cached_rations,thiefs_intuition,sucker_punch,protective_shadows",
           },
           {
+            //`Talent.initClassTalents()` Rogue tier 2 includes `INSCRIBED_STEALTH`
+            //(`actors/hero/Talent.java`, tag `v3.3.8`). `mystical_upgrade` is an
+            //additional carried-forward v2.1.4 choice; the roster difference is
+            //recorded in the matching hero/armor coverage row.
             tag: "row",
             class: "rogue",
             tier: 2,
-            talents: "mystical_meal,mystical_upgrade,wide_search,silent_steps,rogues_foresight",
+            talents: "mystical_meal,inscribed_stealth,mystical_upgrade,wide_search,silent_steps,rogues_foresight",
           },
           {
             tag: "row",

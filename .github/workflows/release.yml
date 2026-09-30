@@ -82,12 +82,12 @@ jobs:
       # pinned here before (android-actions/setup-android v3), but it unconditionally installs
       # the obsolete `tools' package (sdkmanager answers `Failed to find package' -
       # Google removed it), failing every release before gradle even starts. The runner's own
-      # sdkmanager installs exactly what the Capacitor project needs: platform 35, Capacitor 7's
+      # sdkmanager installs exactly what the Capacitor project needs: platform 36, Capacitor 8's
       # target (see RELEASING.md's local-build notes for the same requirement).
-      - name: Install Android platform 35
+      - name: Install Android platform 36
         run: |
           yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
-          "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+          "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0"
       - run: npm ci
       - run: npm run build
       - run: test -d android || npx cap add android

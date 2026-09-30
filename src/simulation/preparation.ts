@@ -1,4 +1,5 @@
 import type { Creature, Step } from '../combat';
+import { chebyshevDistance } from './combatState';
 
 /**
  * `Preparation` (`actors/buffs/Preparation.java`, tag `v3.3.8`) - the Assassin's stealth state, and
@@ -206,7 +207,7 @@ export function blinkTarget(context: PreparationBlinkContext, cell: Step): Creat
 
 /** `Dungeon.hero.canAttack(enemy)`'s practical half for this port: melee reach is one cell. */
 export function canBumpAttack(context: PreparationBlinkContext, cell: Step): boolean {
-	return Math.max(Math.abs(cell.x - context.hero.x), Math.abs(cell.y - context.hero.y)) <= 1;
+	return chebyshevDistance(cell, context.hero) <= 1;
 }
 
 /**

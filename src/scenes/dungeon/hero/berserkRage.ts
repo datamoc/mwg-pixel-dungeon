@@ -1,5 +1,5 @@
 import type { DungeonScene } from '../../dungeonScene';
-import { Random } from 'mwg';
+import { Game, Random } from 'mwg';
 import { t } from '../../../i18n/index';
 import { NEW_RAGE, rageDeathless, rageRecover, rageStart, rageTakeDamage, rageTick } from '../../../simulation/berserkRage';
 
@@ -12,8 +12,8 @@ import { NEW_RAGE, rageDeathless, rageRecover, rageStart, rageTakeDamage, rageTi
  * The `berserk` buff (permanent value, like the other state carriers) is attached exactly while Java's buff would be:
  * from the first hit taken until the rage fades to nothing. `hero.berserkPower` mirrors `power` for the damage roll.
  *
- * Reductions (stated in `PORT_COVERAGE.md`): no `ActionIndicator` (the ability key starts the berserk), no
- * `HoldFast.buffDecayFactor` on the shield drain, a death-berserk keeps the hero at 1 HP with `rageZeroHp` standing in
+ * Reductions (stated in `PORT_COVERAGE.md`): the contextual `ActionIndicator` uses Java's action-name text instead of
+ * a dedicated HeroIcon represented by a contextual text button. A death-berserk keeps the hero at 1 HP with `rageZeroHp` standing in
  * for Java's real 0 HP (`isAlive()` overriding), and Java's berserk-shield priority (-1, drained last of all) is the
  * pool order here.
  */
@@ -24,6 +24,9 @@ export const berserkRageMethods = {
 		this.hero.berserkPower = attached ? this.rageState.power : 0;
 		if (attached) this.hero.buffs['berserk'] = 9999;
 		else delete this.hero.buffs['berserk'];
+		if (this.actionBar?.setBerserkAvailable(attached && this.rageState.mode === 'normal' && this.rageState.power >= 1)) {
+			this.positionInterface(Game.current.width, Game.current.height);
+		}
 	},
 
 	/** `Hero.defenseProc()`: every landed blow on a Berserker (after armor, before shields) builds rage. */
@@ -45,9 +48,15 @@ export const berserkRageMethods = {
 
 	/** `Berserk.act()`, once per hero turn. */
 	rageTurn(this: DungeonScene): void {
+		const holdFastRank = this.talentRank('hold_fast');
+		const holdingFast = holdFastRank > 0 && this.holdFastX === this.hero.x && this.holdFastY === this.hero.y;
+		if (!holdingFast) { this.holdFastX = null; this.holdFastY = null; }
+		//`HoldFast.buffDecayFactor()` (HoldFast.java, tag `v3.3.8`): rank 1/2/3 scales
+		//Berserk's shield drain by 0.5/0.25/0 while the hero remains on the wait cell.
+		const decayFactor = holdingFast ? [1, 0.5, 0.25, 0][holdFastRank] ?? 1 : 1;
 		if (this.subclass() !== 'berserker' || (this.rageState.power <= 0 && this.rageState.mode === 'normal')) return;
 		const result = rageTick(this.rageState, {
-			hp: this.rageState.zeroHp ? 0 : this.hero.hp, maxHp: this.hero.maxHp, shielding: this.heroShieldPoolTotal(), regenOn: this.regenOn(), roll: Random.float(),
+			hp: this.rageState.zeroHp ? 0 : this.hero.hp, maxHp: this.hero.maxHp, shielding: this.heroShieldPoolTotal(), regenOn: this.regenOn(), roll: Random.float(), decayFactor,
 		});
 		this.rageState = { ...this.rageState, ...result.rage };
 		if (result.drain > 0) this.rageDrainShields(result.drain);

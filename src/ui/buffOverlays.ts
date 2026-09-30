@@ -94,11 +94,15 @@ const ICON_TEXT_KIND: Partial<Record<BuffId | 'hungry' | 'starving', 'flavour' |
 	shieldOfLight: 'flavour',
 	divineSense: 'flavour',
 	recallUsed: 'flavour',
+	//`ScrollEmpower.iconTextDisplay()` is its remaining use count, not a turn clock.
+	scrollEmpower: 'left',
 	//`PotionOfCleansing.Cleanse` is a `FlavourBuff` with no `iconTextDisplay()`
 	//override (tag `v3.3.8`) - the standard +1 countdown on large icons, and its
 	//`iconFadePercent()` is the same `DURATION`-based fade the generic branch
 	//computes from the duration table (`DURATION = 5`).
 	cleanseImmunity: 'flavour',
+	//`Talent.RejuvenatingStepsCooldown` extends FlavourBuff, as tagged in v3.3.8.
+	rejuvenatingStepsCooldown: 'flavour',
 	burning: 'left',
 	//`Bleeding.iconTextDisplay()` is `(int)Math.round(level)`, not a cooldown.
 	//The port stores that intensity in the buff value, so it is the same direct number.
@@ -144,7 +148,7 @@ export function buffIconTextColor(id: BuffId | 'hungry' | 'starving'): number {
  * read their own `left`, and `Poison` has no fade override at all (text only, even in
  * Java). Sentinel/indefinite durations (`fury`/`berserk`/`cloak`/`focus` at 9999, zero
  * durations, unknown values) fade nothing - Java's `Fury`/`Shadows` likewise define no
- * fade, and `Berserk`'s state-fraction fade has no quantity behind it here.
+ * fade. `Berserk`'s state-fraction fade is supplied by `statusPane.ts` from rage state.
  */
 export function buffIconFade(id: BuffId | 'hungry' | 'starving', turns: number | undefined): number {
 	if (turns === undefined) return 0;
@@ -159,6 +163,9 @@ export function buffIconFade(id: BuffId | 'hungry' | 'starving', turns: number |
 	//`ArtifactRecharge.iconFadePercent()` uses `left` directly, not `left + 1`.
 	if (id === 'artifactRecharge') return Math.min(1, Math.max(0, (duration - turns) / duration));
 	if (id === 'amok') return 0;
+	//The rank-specific denominator (10/5) is not carried with the saved cooldown value;
+	//using the rank-1 table default preserves a useful fade but is approximate at rank 2.
+	if (id === 'rejuvenatingStepsCooldown') return Math.min(1, Math.max(0, (10 - (turns + 1)) / 10));
 	//Aggression's Java fade is target-dependent (DURATION 20, or DURATION/4 for
 	//bosses/minibosses), but the compact status value does not retain its target class.
 	//Keep the icon visible rather than applying the wrong fixed fade curve.

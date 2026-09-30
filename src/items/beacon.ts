@@ -86,6 +86,7 @@ export interface BeaconMobView extends BeaconCreatureView {
  * so the `t('...')` key audits keep matching these call sites.
  */
 export interface BeaconFlowContext {
+	onScrollUsed?(factor?: number, chance?: number): void;
 	readonly depth: number;
 	readonly heroPos: { x: number; y: number };
 	readonly miningBranchActive: boolean;
@@ -300,7 +301,11 @@ export function useReturningBeaconFlow(ctx: BeaconFlowContext, instanceId?: stri
 		beacon.returnPos = ctx.cellIndex(ctx.heroPos.x, ctx.heroPos.y);
 		beacon.returnX = ctx.heroPos.x;
 		beacon.returnY = ctx.heroPos.y;
+		// Spell.onCast is an inventory-spell use even when it only sets the anchor (v3.3.8).
+		ctx.consumeReturningBeacon(instanceId);
 		ctx.say(ctx.t('items.spells.beaconofreturning.set'), 'positive');
+		// BeaconOfReturning.onCast uses its recipe's 1/3 talent chance (v3.3.8).
+		ctx.onScrollUsed?.(1, 1 / 3);
 		ctx.spendTurn();
 		return;
 	}
@@ -328,5 +333,7 @@ export function useReturningBeaconFlow(ctx: BeaconFlowContext, instanceId?: stri
 		ctx.say(ctx.t('items.spells.beaconofreturning.preventing'), 'negative');
 		return;
 	}
+	// Only a successful return reaches Java's onSpellUsed call (v3.3.8, 1/3 recipe chance).
+	ctx.onScrollUsed?.(1, 1 / 3);
 	ctx.spendTurn();
 }

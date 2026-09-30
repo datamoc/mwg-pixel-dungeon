@@ -1,34 +1,31 @@
-import { Container } from 'mwg/two-d/pixi-interop';
-import { SpdLabel as Label } from './spdLabel';
+import { MessageLog, type MessageLevel } from 'mwg/two-d/ui';
 import { SPD_STATUS_COLOR } from './spdTheme';
 
 /**
- * The message log, ported from `ui/GameLog.java`.
+ * The message log, ported from `ui/GameLog.java` and now a thin SPD skin over the
+ * framework's `MessageLog` (which was extracted from this file's earlier
+ * hand-rolled version - same per-block entries, same drop-by-wrapped-lines trim,
+ * same severity levels). What stays SPD-specific here:
  *
- * Three behaviours of the real log that the port's previous single dim `Label` had none of,
- * and that carry real information:
+ *  - **Severity colours.** `GLog.java`'s `++`/`--`/`**`/`@@` prefixes hardlight a block
+ *    with `CharSprite.POSITIVE`/`NEGATIVE`/`WARNING`/`NEUTRAL`; passed as the
+ *    `colors` override instead of encoded into the string and parsed back out.
+ *  - **The black outline.** `RenderedTextBlock`'s outline keeps small text legible
+ *    over game artwork. `MessageLog` builds its own labels with no style hook, so
+ *    `add()` re-applies `SpdLabel`'s stroke (and `roundPixels`) to the new block
+ *    after delegating - the one place this file still touches label styling, and a
+ *    candidate for a framework label-style passthrough instead.
+ *  - **Interface size.** `SPDSettings.interfaceSize()`: large keeps 5 lines of
+ *    history instead of 3, pushed in via `setInterfaceSize()` whenever the toggle
+ *    fires or a save loads.
+ *  - **Zoom.** Java's log text (size 6) draws at the UI zoom (3 on a desktop);
+ *    the container keeps that scale and rasterises at it too.
  *
- *  - **Severity colour.** `GLog.java` prefixes a line with `++`/`--`/`**`/`@@` and
- *    `GameLog.update()` strips the prefix and hardlights the block with
- *    `CharSprite.POSITIVE`/`NEGATIVE`/`WARNING`/`NEUTRAL` respectively, plain lines staying
- *    `DEFAULT`. Colour is how "you are starving" reads differently from "you found a
- *    dewdrop" at a glance. The prefixes themselves are not reproduced - a severity is passed
- *    as an argument instead of encoded into the string and parsed back out.
- *  - **One entry per block.** Each message gets its own rendered block, so rapid messages remain
- *    visually and semantically distinct instead of becoming one horizontally long sentence.
- *  - **Dropping by line, not by entry.** The oldest block is dropped while the total wrapped
- *    line count exceeds the limit, so one long message costs as much room as the several
- *    short ones it is worth.
- *
- * `MAX_LINES` is 3, or 5 when `SPDSettings.interfaceSize() > 0`. This port now has that same
- * toggle (`dungeonScene.ts`'s `interfaceSize`, the `toggleInterfaceSize` action) - it starts
- * at the small default and is pushed in via `setInterfaceSize()` whenever the toggle fires or
- * a save loads, rather than a permanently-large stand-in.
+ * Two framework micro-differences are accepted, not papered over: `setWrapWidth`
+ * trims while it relayouts (this file used to only relayout), and `logHeight`
+ * sums the same unscaled block heights times the zoom.
  */
-const MAX_LINES_SMALL = 3;
-const MAX_LINES_LARGE = 5;
-
-export type LogLevel = 'info' | 'positive' | 'negative' | 'warning' | 'highlight';
+export type LogLevel = MessageLevel;
 
 const LEVEL_COLOR: Record<LogLevel, number> = {
 	info: SPD_STATUS_COLOR.default,
@@ -39,87 +36,40 @@ const LEVEL_COLOR: Record<LogLevel, number> = {
 	highlight: SPD_STATUS_COLOR.neutral,
 };
 
-interface Block {
-	label: Label;
-	level: LogLevel;
-}
+const MAX_LINES_SMALL = 3;
+const MAX_LINES_LARGE = 5;
 
-export class GameLog extends Container {
-	private blocks: Block[] = [];
-	private wrapWidth: number;
-	private maxLines = MAX_LINES_SMALL;
-
+export class GameLog extends MessageLog {
 	constructor(wrapWidth: number) {
-		super();
-		this.wrapWidth = wrapWidth;
-		//Java's log text (size 6) is drawn at the UI zoom (3 on a desktop); 2x left it at 12 px,
-		//too small to read against a large canvas
+		super({
+			wrapWidth,
+			size: 6,
+			colors: LEVEL_COLOR,
+			//drawn at this container's zoom, so rasterise at it too (device ratio x 3) - at 1x the text was magnified and blurry
+			resolution: (globalThis.devicePixelRatio || 1) * 3,
+		});
 		this.scale.set(3);
 	}
 
 	/** `SPDSettings.interfaceSize()`: large keeps 5 lines of history instead of 3. */
 	setInterfaceSize(size: 0 | 1): void {
-		this.maxLines = size === 1 ? MAX_LINES_LARGE : MAX_LINES_SMALL;
-		this.trim();
-		this.layout();
+		this.setMaxLines(size === 1 ? MAX_LINES_LARGE : MAX_LINES_SMALL);
 	}
 
-	add(text: string, level: LogLevel = 'info'): void {
-		const label = new Label({
-			text,
-			size: 6,
-			color: LEVEL_COLOR[level],
-			wrapWidth: this.wrapWidth,
-			//drawn at this container's zoom, so rasterise at it too (device ratio x 3) - at 1x the text was magnified and blurry
-			resolution: (globalThis.devicePixelRatio || 1) * this.scale.x,
-		});
-		this.addChild(label);
-		this.blocks.push({ label, level });
-
-		this.trim();
-		this.layout();
-	}
-
-	/** how many wrapped lines a block occupies, Java's `RenderedTextBlock.nLines` */
-	private linesOf(block: Block): number {
-		//Pixi measures the wrapped text for us; height/lineHeight is its line count
-		const lineHeight = (block.label.style.lineHeight as number) || block.label.style.fontSize;
-		return Math.max(1, Math.round(block.label.height / lineHeight));
-	}
-
-	private trim(): void {
-		//drop oldest blocks while the total line count is over budget - by lines, as Java
-		//does, not by entry count
-		for (;;) {
-			let lines = 0;
-			for (const block of this.blocks) lines += this.linesOf(block);
-			if (lines <= this.maxLines || this.blocks.length <= 1) break;
-			const oldest = this.blocks.shift();
-			oldest?.label.destroy();
-		}
-	}
-
-	private layout(): void {
-		let y = 0;
-		for (const block of this.blocks) {
-			block.label.x = 0;
-			block.label.y = y;
-			y += block.label.height;
-		}
+	override add(text: string, level: LogLevel = 'info'): void {
+		super.add(text, level);
+		//No style hook on the built label, so the outline goes on after: the newest
+		//block is always the container's last child.
+		const label = this.children[this.children.length - 1] as unknown as {
+			style: { stroke: unknown };
+			roundPixels: boolean;
+		};
+		label.style.stroke = { color: 0x000000, width: 0.65 };
+		label.roundPixels = true;
 	}
 
 	/** the log's own drawn height, so the caller can sit it on the bottom edge */
 	get logHeight(): number {
-		let height = 0;
-		for (const block of this.blocks) height += block.label.height;
-		return height * this.scale.y;
-	}
-
-	setWrapWidth(width: number): void {
-		this.wrapWidth = width;
-		for (const block of this.blocks) {
-			block.label.style.wordWrapWidth = width;
-		}
-		this.layout();
+		return this.contentHeight * this.scale.y;
 	}
 }

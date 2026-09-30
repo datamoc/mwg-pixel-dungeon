@@ -551,6 +551,7 @@ export interface SaveShape {
 	appearances?: { assigned: [string, [string, string][]][] };
 	switches: [string, boolean][];
 	ascensionChallengeActive?: boolean;
+	highestAscent?: number;
 	/** `DriedRose.firstSummon` (`DriedRose.storeInBundle()`, tag `v3.3.8`). */
 	roseFirstSummon?: boolean;
 	/** `Dungeon.challenges` (`Dungeon.java:742,861`): the run's challenge ids; absent in older saves. */
@@ -664,6 +665,7 @@ export interface SaveShape {
 	stealthTalentTicks?: number;
 	/** `Talent.EMPOWERING_SCROLLS`: armed +3-level zap charges left. */
 	empoweredZaps?: number;
+	inscribedPowerZaps?: number;
 	/** `Talent.ENHANCED_RINGS`: turns of +1 ring upgrade left. */
 	enhancedRingsTurns?: number;
 	/** `Talent.SEER_SHOT`: cooldown turns left. */

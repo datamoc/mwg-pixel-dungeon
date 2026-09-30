@@ -5,6 +5,8 @@
  * another character (or, for a LARGE char, is not open space - this port has no such distinction).
  * Only adjacent steps are affected (`travelling && adjacent(step, pos)`); teleports are not.
  */
+import { chebyshevDistance } from './combatState';
+
 export type VertigoCell = { x: number; y: number };
 
 export interface PlaceSwapRestrictions {
@@ -44,7 +46,7 @@ export function vertigoStep(
 	passable: (cell: VertigoCell) => boolean,
 	occupied: (cell: VertigoCell) => boolean,
 ): VertigoCell | null {
-	if (Math.max(Math.abs(intended.x - from.x), Math.abs(intended.y - from.y)) !== 1) return intended;
+	if (chebyshevDistance(intended, from) !== 1) return intended;
 	const [dx, dy] = NEIGHBOURS8[roll]!;
 	const cell = { x: from.x + dx, y: from.y + dy };
 	if (!passable(cell) || occupied(cell)) return null;

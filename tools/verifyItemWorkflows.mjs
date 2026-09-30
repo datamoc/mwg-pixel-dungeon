@@ -62,6 +62,7 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	compile(join(root, 'src/simulation/mwlMonsterImmunities.ts'), 'simulation/mwlMonsterImmunities.js');
 	compile(join(root, 'src/simulation/mwlBuffDurations.ts'), 'simulation/mwlBuffDurations.js');
 	compile(join(root, 'src/simulation/buffs.ts'), 'simulation/buffs.js');
+compile(join(root, 'src/simulation/combatState.ts'), 'simulation/combatState.js');
 	// The meal chain value-imports `addBuff`/`reigniteBuff` from `../combat`, and the scroll drive
 	// below needs `doomDamage` from it (`wands.js`'s combat import is type-only now, so
 	// `consumables.js` is the first loader - it reads the meal-site write below, and this
@@ -218,6 +219,7 @@ compile(join(root, 'src/items/appearanceFrames.ts'), 'items/appearanceFrames.js'
 	shim(join('node_modules', 'mwg', 'actors.js'), join(dist, 'actors', 'index.js'));
 	shim(join('core', 'Random.js'), join(dist, 'core', 'Random.js'));
 	shim(join('node_modules', 'mwg', 'mwl', 'index.js'), join(dist, 'mwl', 'index.js'));
+shim(join('node_modules', 'mwg', 'core', 'index.js'), join(dist, 'core', 'index.js'));
 	//The workflow module imports only actors and Random from the package, so provide a tiny local barrel.
 	mkdirSync(join(out, 'node_modules/mwg'), { recursive: true });
 	writeFileSync(join(out, 'node_modules/mwg/index.js'),
@@ -2498,39 +2500,49 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 		const ankhCalls = [];
 		require('./items/itemActions.js').useItemById({ awaitingInput: true, setRequestedItem: () => {}, useAnkh: (instanceId) => ankhCalls.push(instanceId) }, 'ankh', 'ankh:abc');
 		assert.deepEqual(ankhCalls, ['ankh:abc'], 'the BLESS action routes to useAnkh');
-		// The toolbar quickslot trio moved next to the router in the file-size refactor
-		// (sixth extraction): family mapping, live-quantity refresh with stale-slot
-		// cleanup, and use-through to the ordinary item-use path.
+		// The toolbar quickslots moved next to the router in the file-size refactor
+		// (sixth extraction); the 2026-09-30 toolbar port replaced the four auto-filled
+		// family slots with Java's six manual ones (`QuickSlot.SIZE`): exact-slot sets,
+		// first-free assignment, placeholder refresh, and use-through to the ordinary
+		// item-use path.
 		const quickslotActions = require('./items/itemActions.js');
-		assert.equal(quickslotActions.quickslotFamilySlot('potionHealing'), 0, 'potions fill slot 0');
-		assert.equal(quickslotActions.quickslotFamilySlot('scrollUpgrade'), 1, 'scrolls fill slot 1');
-		assert.equal(quickslotActions.quickslotFamilySlot('meat'), 2, 'meats share the food slot');
-		assert.equal(quickslotActions.quickslotFamilySlot('stoneOfBlink'), 3, 'stones share the bomb slot');
-		assert.equal(quickslotActions.quickslotFamilySlot('wand'), -1, 'wands have no quickslot family');
-		assert.equal(quickslotActions.quickslotFamilySlot('seed'), -1, 'seeds have no quickslot family');
+		assert.equal(quickslotActions.QUICKSLOT_SIZE, 6, 'six manual slots like Java');
 		function driveQuickslots(held) {
 			const used = [];
 			const ctx = {
-				slots: [null, null, null, null],
+				slots: [null, null, null, null, null, null],
 				findHeld: (id) => held[id],
+				itemFrame: () => 7,
 				useItem: (id, instanceId) => { used.push([id, instanceId]); },
 			};
 			return { ctx, used };
 		}
 		let q = driveQuickslots({});
-		quickslotActions.assignQuickslot(q.ctx, 'potionHealing', 'p:1');
-		assert.deepEqual(q.ctx.slots[0], { id: 'potionHealing', instanceId: 'p:1' }, 'assign mirrors the used item');
-		quickslotActions.assignQuickslot(q.ctx, 'wand', 'w:1');
-		assert.deepEqual(q.ctx.slots, [{ id: 'potionHealing', instanceId: 'p:1' }, null, null, null], 'familyless ids assign nothing');
+		quickslotActions.setQuickslotSlot(q.ctx, 2, 'potionHealing', 'p:1');
+		assert.deepEqual(q.ctx.slots[2], { id: 'potionHealing', instanceId: 'p:1' }, 'exact-slot set replaces whatever was there');
+		quickslotActions.setQuickslotSlot(q.ctx, 6, 'wand', 'w:1');
+		quickslotActions.setQuickslotSlot(q.ctx, -1, 'wand', 'w:1');
+		assert.equal(q.ctx.slots.filter(Boolean).length, 1, 'out-of-range sets change nothing');
+		quickslotActions.clearQuickslotSlot(q.ctx, 2);
+		assert.equal(q.ctx.slots[2], null, 'clear drops the assignment');
+		q = driveQuickslots({});
+		assert.equal(quickslotActions.assignQuickslotToFree(q.ctx, 'potionHealing', 'p:1'), 0, 'first assignment takes slot 0');
+		assert.equal(quickslotActions.assignQuickslotToFree(q.ctx, 'potionHealing', 'p:2'), 0, 'same id refreshes its slot');
+		assert.deepEqual(q.ctx.slots[0], { id: 'potionHealing', instanceId: 'p:2' }, 'refresh carries the new instance');
+		assert.equal(quickslotActions.assignQuickslotToFree(q.ctx, 'scrollIdentify', 's:1'), 1, 'next item takes the first free slot');
+		for (let i = 2; i < 6; i++) quickslotActions.setQuickslotSlot(q.ctx, i, 'bomb', 'b:' + i);
+		assert.equal(quickslotActions.assignQuickslotToFree(q.ctx, 'seed', 'd:1'), -1, 'a full bar reports -1');
 		q = driveQuickslots({ potionHealing: { instanceId: 'p:1', quantity: 2 } });
 		q.ctx.slots[0] = { id: 'potionHealing', instanceId: 'p:9' };
 		assert.deepEqual(quickslotActions.readQuickslotStates(q.ctx),
-			[{ id: 'potionHealing', instanceId: 'p:1', frame: 0, quantity: 2 }, null, null, null],
+			[{ id: 'potionHealing', instanceId: 'p:1', frame: 7, quantity: 2 }, null, null, null, null, null],
 			'refresh reports the held quantity under the held instance');
 		q = driveQuickslots({});
 		q.ctx.slots[1] = { id: 'scrollIdentify', instanceId: 's:1' };
-		assert.deepEqual(quickslotActions.readQuickslotStates(q.ctx), [null, null, null, null], 'a departed assignment clears on refresh');
-		assert.equal(q.ctx.slots[1], null);
+		assert.deepEqual(quickslotActions.readQuickslotStates(q.ctx),
+			[null, { id: 'scrollIdentify', instanceId: 's:1', frame: 7, quantity: 0 }, null, null, null, null],
+			'a departed assignment stays a placeholder on refresh');
+		assert.deepEqual(q.ctx.slots[1], { id: 'scrollIdentify', instanceId: 's:1' }, 'and the assignment survives for re-linking');
 		q = driveQuickslots({ bomb: { instanceId: 'b:1', quantity: 1 } });
 		q.ctx.slots[3] = { id: 'bomb', instanceId: 'b:1' };
 		quickslotActions.useQuickslot(q.ctx, 3);
@@ -2541,6 +2553,7 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 		assert.deepEqual(q.used, [], 'a stale slot uses nothing');
 		assert.equal(q.ctx.slots[3], null, 'and clears itself');
 		quickslotActions.useQuickslot(q.ctx, 0);
+		quickslotActions.useQuickslot(q.ctx, 6);
 		assert.equal(torchRows('itemActionKeys', 'item').find((row) => String(row.item) === 'ankh')?.actionKey,
 			'items.ankh.ac_bless', 'ankh keeps its BLESS action');
 		// `WndResurrect`: two keeps survive (matched by id plus instance), everything else -
@@ -5308,7 +5321,7 @@ function healingDrive(overrides = {}) {
 	assert.doesNotMatch(potionSource, /function applyPotionPurity[\s\S]*?delete hero\.buffs\[/);
 	// `Freezing` seeds cover NEIGHBOURS9 only, so the frost fire-clear runs at
 	// Chebyshev 1 even though the scan loop uses the MWL radius (ACP #390).
-	assert.match(potionSource, /Math\.max\(Math\.abs\(dx\), Math\.abs\(dy\)\) <= 1\) \{ scene\.clearFire\(x, y\); scene\.freezeHeapAt\(x, y\); \}/);
+	assert.match(potionSource, /Roguelike\.chebyshevDistance\(\{ x, y \}, \{ x: cx, y: cy \}\) <= 1\) \{ scene\.clearFire\(x, y\); scene\.freezeHeapAt\(x, y\); \}/);
 }
 // Dew-drop collection moved to `items/consumables.ts` as `collectDewdrop` (the
 // file-size refactor's thirtieth extraction, behavior-identical): driven headlessly

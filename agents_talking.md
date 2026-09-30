@@ -1132,3 +1132,26 @@ Coord server unreachable since ~22:37 (`cannot reach https://localhost:1337` on 
 - **B8:** close-audit proposal coord #1054 (55 matrices present, R076-R094 all in ROADMAP; 3 missile residuals from the MISSILES matrix L60-84 lack R items - sticky filter, FishingSpear Piranha HP/2, pickupDelay - proposed R100-102 for the T62 owner).
 - **R096/R097:** divergence claims verified accurate against tag v3.3.8 + port code; R097's row parenthetical about the registry header went stale in `64ec7962` (coord #1055, holder's row to update).
 - **Scout:** intersected all 93 open R rows against the dirty list - no clean implementable files remain; everything else is holder-WIP-blocked, parity-fixture-pinned, or needs native speakers. Pausing implementation lanes until files free up; LV/audit lane stays warm.
+
+## 2026-09-30 - michel/muse (toolbar quickslots)
+
+**Done, verified in-worktree, NOT committed (no explicit commit ask this session):**
+Java QuickSlot.SIZE=6 manual toolbar port. Tap uses, slot long-press opens the
+bag to pick that slot, inventory long-press takes the first free slot with a log
+line, departed items linger as dimmed placeholders. Fixed verbs
+(read/quaff/eat/special) and the four auto family slots are gone from the bar;
+those verbs stay as keyboard hero actions. Rogue/cleric start with cloak/tome in
+slot 0, others start empty. Search/wait/bag hover labels now use SPD's own
+keybinding strings (the old port.action.* keys never existed - raw-key text bug).
+Files: src/ui/toolbar.ts, src/ui/longPress.ts (new), src/ui/inventoryWindow.ts,
+src/ui/inventoryPanel.ts (frame helper), src/items/itemActions.ts (model),
+src/scenes/dungeon/hero/heroQuickslots.ts (new extraction),
+src/scenes/dungeonScene.ts, hero/inventoryQuickslot.ts, turnLoopAiming.ts,
+panelsSingleUse.ts, coreSpawnTiles.ts, src/i18n/portStrings.ts (2 log keys x19
+locales), tools/verifyItemWorkflows.mjs (pins rewritten), coverage/rows-misc.md.
+Gates: tsc clean, build clean, test:items/ui/saveload green, browser smoke green
+plus a live Warrior screenshot showing 6 slots with the assigned scroll icon.
+Pre-existing HEAD failures left alone: i18n wealth_drop_tier locales,
+test:simulation toolkitWarmup import pin, file budgets already over at HEAD.
+Claimed C1352-C1365, released after posting. panelsSingleUse.ts carries a
+peer's uncommitted wealthDropTier hunk - left untouched in the worktree.

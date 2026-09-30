@@ -43,6 +43,13 @@
             duration: 10,
           },
           {
+            //`ScrollEmpower` is counted per successful zap, not by actor turns.
+            //This sentinel supports the status pane's state-driven fade calculation.
+            tag: "row",
+            buff: "scrollEmpower",
+            duration: 9999,
+          },
+          {
             // `MonkEnergy` (Duelist Monk, `actors/buffs/MonkEnergy.java`, tag v3.3.8): a permanent icon carrier - the
             // energy itself lives on the scene (`monk.energy`), the buff has no duration of its own.
             tag: "row",
@@ -528,6 +535,31 @@
             tag: "row",
             buff: "lightWallActive",
             duration: 20,
+          },
+          {
+            // `Talent.RejuvenatingStepsCooldown`: rank 1 is the class default; the
+            // talent applies 15 - 5*rank explicitly (10/5 turns).
+            tag: "row",
+            buff: "rejuvenatingStepsCooldown",
+            duration: 10,
+          },
+          {
+            // `Talent.RejuvenatingStepsFurrow` is a persistent CounterBuff, not a clock.
+            tag: "row",
+            buff: "rejuvenatingStepsFurrow",
+            duration: 9999,
+          },
+          {
+            // Hidden saved state for Java Burning.acted (`Burning.java`, tag `v3.3.8`).
+            tag: "row",
+            buff: "burningActed",
+            duration: 9999,
+          },
+          {
+            // Hidden saved state for Java Ooze.acted (`Ooze.java`, tag `v3.3.8`).
+            tag: "row",
+            buff: "oozeActed",
+            duration: 9999,
           },
         ],
       },

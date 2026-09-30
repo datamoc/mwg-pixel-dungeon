@@ -19,6 +19,7 @@
  * `name`/`desc` are ported with the frames, because Java's examine text on those cells is not the
  * underlying terrain's: the wires and the gate each answer their own `wires_*`/`gate_*` strings.
  */
+import { Roguelike } from 'mwg';
 import { Terrain } from './paintLevel';
 import { NULL_TILE, placeRectInto } from './customTilemapLayer';
 
@@ -145,7 +146,7 @@ export function cavesArenaFrames(context: CavesArenaVisualContext, tileW: number
 			for (const k of CAVES_PYLON_POSITIONS) {
 				if (k === j) {
 					data[i] = context.locked && !context.pylonActorAt(k) ? 38 : NULL_TILE;
-				} else if (Math.max(Math.abs((k % context.width) - (j % context.width)), Math.abs(Math.floor(k / context.width) - Math.floor(j / context.width))) === 1) {
+				} else if (Roguelike.chebyshevDistance({ x: k % context.width, y: Math.floor(k / context.width) }, { x: j % context.width, y: Math.floor(j / context.width) }) === 1) {
 					//`j / w` and `k / w` are Java's integer division - the tile index is the row
 					//number, so a float reading would pick a frame off the sheet's own palette
 					data[i] = 54 + (j % context.width + 8 * Math.floor(j / context.width)) - (k % context.width + 8 * Math.floor(k / context.width));
@@ -174,8 +175,8 @@ export function cavesArenaFrames(context: CavesArenaVisualContext, tileW: number
 function outsidePylonReach(context: CavesArenaVisualContext, cell: number): boolean {
 	const x = cell % context.width;
 	const y = Math.floor(cell / context.width);
-	return !CAVES_PYLON_POSITIONS.some((k) => Math.max(
-		Math.abs((k % context.width) - x), Math.abs(Math.floor(k / context.width) - y)) <= 1);
+	return !CAVES_PYLON_POSITIONS.some((k) => Roguelike.chebyshevDistance(
+		{ x: k % context.width, y: Math.floor(k / context.width) }, { x, y }) <= 1);
 }
 
 /** `ArenaVisuals.name()`'s overrides: the wires and the gate name themselves, and everything else

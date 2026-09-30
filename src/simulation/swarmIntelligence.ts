@@ -1,3 +1,4 @@
+import { chebyshevDistance } from './combatState';
 import { ignoresCrystalGuardianBeckon } from './crystalSpire';
 
 /** The slice of a creature the swarm-intelligence beckon reads. */
@@ -30,7 +31,7 @@ export function swarmBeckon<T extends SwarmCreature>(source: T, creatures: reado
 		if (other === source || other.isHero || other.isNPC || other.buffs['paralysis']) continue;
 		if (ignoresCrystalGuardianBeckon(other.kind, other.sleeping === true)) continue;
 		if (other.sleeping === false && other.seesHero) continue;
-		if (Math.max(Math.abs(source.x - other.x), Math.abs(source.y - other.y)) > 8) continue;
+		if (chebyshevDistance(source, other) > 8) continue;
 		other.sleeping = false;
 		other.seesHero = true;
 		beckoned.push(other);

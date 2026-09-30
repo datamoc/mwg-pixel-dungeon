@@ -3,6 +3,13 @@ import type { EntityId } from './entityId';
 
 export interface Step { x: number; y: number; }
 
+/** Chebyshev steps between two cells - the same `max(|dx|, |dy|)` math as
+ * `mwg/roguelike`'s `chebyshevDistance`, kept local because simulation modules
+ * run headless without the framework runtime. */
+export function chebyshevDistance(a: Step, b: Step): number {
+	return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
+}
+
 /** Only the data needed by combat formulas. No sprite, scene, or framework reference. */
 export interface Combatant extends Step {
 	/** Stable across the object's lifetime; see `entityId.ts`. */

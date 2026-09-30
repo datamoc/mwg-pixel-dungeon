@@ -61,6 +61,19 @@ export interface InventoryPanelContext {
 	readonly positionInterface: () => void;
 }
 
+/** The `items.png` cell an id draws with: the bag row's own frame rule (specific frame,
+ * specialty-bomb/stone family frames, shuffled potion/scroll appearance when supplied),
+ * shared so the toolbar quickslots draw exactly what the bag shows. */
+export function quickslotItemFrame(id: string, appearanceFrame?: (id: string) => number | undefined): number {
+	let frame = MWL_ITEM_SPECIFIC_FRAMES[id] ?? 0;
+	if (SPECIALTY_BOMB_IDS.has(id)) frame = MWL_ITEM_FRAMES.bomb ?? frame;
+	if (id.startsWith('stoneOf')) frame = MWL_ITEM_FRAMES.stone ?? frame;
+	if (id.startsWith('potion')) frame = appearanceFrame?.(id) ?? MWL_ITEM_FRAMES.potion ?? frame;
+	else if (id.startsWith('scroll')) frame = appearanceFrame?.(id) ?? MWL_ITEM_FRAMES.scroll ?? frame;
+	else if (id.startsWith('ring_')) frame = MWL_ITEM_FRAMES.ring ?? frame;
+	return frame;
+}
+
 /** UI-only projection from live inventory state into the SPD-style inventory window. */
 export function refreshInventoryPanel(context: InventoryPanelContext): void {
 	const panel = context.panel;
@@ -69,9 +82,7 @@ export function refreshInventoryPanel(context: InventoryPanelContext): void {
 	if (!context.open && !context.dock) return;
 	const entry = (item: InventoryItem): InventoryEntry => {
 		const id = item.id;
-		let frame = MWL_ITEM_SPECIFIC_FRAMES[id] ?? 0;
-		if (SPECIALTY_BOMB_IDS.has(id)) frame = MWL_ITEM_FRAMES.bomb ?? frame;
-		if (id.startsWith('stoneOf')) frame = MWL_ITEM_FRAMES.stone ?? frame;
+		const frame = quickslotItemFrame(id, context.appearanceFrame);
 		let action: string | undefined;
 		const authoredAction = MWL_ITEM_ACTION_RULES[id]
 			?? (id.startsWith('potion') ? MWL_ITEM_ACTION_RULES.potion : undefined)
@@ -79,9 +90,6 @@ export function refreshInventoryPanel(context: InventoryPanelContext): void {
 			?? (SPECIALTY_BOMB_IDS.has(id) ? MWL_ITEM_ACTION_RULES.bomb : undefined)
 			?? (id.startsWith('stoneOf') ? MWL_ITEM_ACTION_RULES.stone : undefined)
 			?? (id.startsWith('ring_') ? MWL_ITEM_ACTION_RULES.ring : undefined);
-		if (id.startsWith('potion')) frame = context.appearanceFrame?.(id) ?? MWL_ITEM_FRAMES.potion ?? frame;
-		else if (id.startsWith('scroll')) frame = context.appearanceFrame?.(id) ?? MWL_ITEM_FRAMES.scroll ?? frame;
-		else if (id.startsWith('ring_')) frame = MWL_ITEM_FRAMES.ring ?? frame;
 		if (authoredAction) {
 			const translated = t(authoredAction.actionKey);
 			action = authoredAction.capitalize ? capitalize(translated) : translated;

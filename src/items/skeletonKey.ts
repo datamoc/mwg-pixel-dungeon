@@ -9,6 +9,7 @@
  * direction to raise a three-cell temporary wall) and a passive recharge (`keyRecharge`, 60-120
  * turns per charge). Every number is an MWL `skeletonkey*` row in `item-rules.mwl`.
  */
+import { Roguelike } from 'mwg';
 import { mwlItemEffectValue } from '../mwlContent';
 
 export type SkeletonKeyItem = {
@@ -202,7 +203,7 @@ export function confirmSkeletonKeyFlow(ctx: SkeletonKeyFlowContext, target: { x:
 	const hero = ctx.heroPos;
 	if (target.x === hero.x && target.y === hero.y) { ctx.say(ctx.t(K('invalid_target')), 'warning'); return; }
 	const charge = skeletonKeyCharge(key);
-	const adjacent = Math.max(Math.abs(target.x - hero.x), Math.abs(target.y - hero.y)) === 1;
+	const adjacent = Roguelike.chebyshevDistance(target, hero) === 1;
 	if (adjacent) {
 		const kind = ctx.targetAt(target.x, target.y);
 		const cost = (effect: string): number => value(effect);

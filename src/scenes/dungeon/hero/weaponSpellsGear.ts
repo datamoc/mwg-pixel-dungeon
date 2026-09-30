@@ -812,6 +812,7 @@ export const weaponSpellsGearMethods = {
 	castBase(this: DungeonScene): CastBase {
 		const scene = this;
 		return {
+			onScrollUsed: (factor, chance) => scene.onScrollUsed(factor, chance),
 			hasSpell: (id, instanceId) => scene.bag.find(id, instanceId) !== undefined,
 			consumeSpell: (id, instanceId) => { scene.bag.remove(id, 1, instanceId); },
 			spendTurn: () => { scene.actionSpentTurn = true; scene.spendHeroTurn(1); },
@@ -885,6 +886,7 @@ export const weaponSpellsGearMethods = {
 	targetedSpellBase(this: DungeonScene): TargetedSpellAim {
 		const scene = this;
 		return {
+			onScrollUsed: (factor, chance) => scene.onScrollUsed(factor, chance),
 			hasSpell: (id, instanceId) => scene.bag.find(id, instanceId) !== undefined,
 			consumeSpell: (id, instanceId) => { scene.bag.remove(id, 1, instanceId); },
 			beginAim: (opts) => scene.beginAiming(opts),
@@ -988,6 +990,7 @@ export const weaponSpellsGearMethods = {
 		type Recyclable = { id: string; quantity: number; instanceId?: string; identified?: boolean; sourceClass?: string; tippedSeed?: string };
 		const carried = () => scene.bag.items as Recyclable[];
 		return {
+			onScrollUsed: (factor, chance) => scene.onScrollUsed(factor, chance),
 			hasSpell: (id, instanceId) => scene.bag.find(id, instanceId) !== undefined,
 			openPicker: (title, entries, onPick) => scene.openItemPicker(title, entries, onPick),
 			recyclables: () => carried(),
@@ -1071,6 +1074,7 @@ export const weaponSpellsGearMethods = {
 		type Infusable = { id: string; quantity: number; instanceId?: string; affix?: string; cursed?: boolean; level?: number; identified?: boolean; curseInfusionBonus?: boolean };
 		const carried = () => scene.bag.items as Infusable[];
 		return {
+			onScrollUsed: (factor, chance) => scene.onScrollUsed(factor, chance),
 			hasSpell: (id, instanceId) => scene.bag.find(id, instanceId) !== undefined,
 			consumeSpell: (id, instanceId) => { scene.bag.remove(id, 1, instanceId); },
 			openPicker: (title, entries, onPick) => scene.openItemPicker(title, entries, onPick),

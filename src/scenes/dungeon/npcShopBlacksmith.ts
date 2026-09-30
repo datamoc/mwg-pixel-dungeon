@@ -34,6 +34,7 @@ import { CLASSES } from '../../classes';
 import { showChoiceWindow, showConfirmWindow, showInfoWindow } from '../../ui/portWindows';
 import { confirmBlacksmithCashout, confirmBlacksmithSmith, openBlacksmithWindow, type BlacksmithWindowContext } from '../../ui/blacksmithWindow';
 import { getCurse } from '../../items/itemCurses';
+import { recordRun } from '../../rankings';
 import { Cat, blacksmithSmithRewards, generatorRandom, ghostQuestReward, randomArmor, randomArtifact, randomCategory, randomUsingDefaults, randomWeapon, setGeneratorDepth, type GenItem } from '../../items/generator';
 import { mwlItemEffectValue } from '../../mwlContent';
 import { hallsDemonSpawnerFloorFrames } from '../regions/halls';
@@ -1798,22 +1799,20 @@ export const npcShopBlacksmithMethods = {
 				this.bag.add({ id: 'amulet', quantity: 1, identified: true });
 				if (this.demonSpawnerFloor) this.demonSpawnerFloor.setLayerData('demonSpawnerFloor', this.demonSpawnerFloorFrames(false));
 				if (this.vaultVisuals) { const layers = this.vaultTileLayers(); this.vaultVisuals.setLayerData('vaultFloor', layers.floor); this.vaultVisuals.setLayerData('vaultCenter', layers.center); this.vaultVisuals.setLayerData('vaultCenterWalls', layers.walls); }
-				//`Amulet.doPickUp`/`showAmuletScene` (Amulet.java, tag `v3.3.8`): real Java does not
-				//end the run here - it switches to `AmuletScene`, which calls
-				//`Badges.validateVictory()` (the "Escaped with the Amulet" trophy fires on pickup,
-				//not on the later surface exit - see `Badges.java:1016`) and then offers the player
-				//a choice: "Let's call it a day" (an immediate win, `Dungeon.win(Amulet.class)`,
-				//exactly the old always-instant-win behaviour this port used to have unconditionally)
-				//or "I'm not done yet" (stay and keep exploring/climbing). This port has no separate
-				//cutscene scene to host that choice, so it takes Java's "stay" branch unconditionally
-				//and relies on the real climb instead: the hero now carries the Amulet, and walking
-				//onto the entrance tile they arrived on (`tryAscendStairs`, `actorTurnsHazards.ts`)
-				//is the way back up, matching `Dungeon.interfloorTeleportAllowed()` blocking every
-				//other way off this floor while the Amulet is carried (`returnToPreviousFloor`
-				//already enforced that half). The real win only fires at the depth-1 surface exit
-				//(`SewerLevel.activateTransition`'s `LevelTransition.Type.SURFACE` branch) - see
-				//`tryAscendStairs`. PORT_COVERAGE.md: "Post-victory ascent".
-				this.awardBadge('amulet'); this.awardChampionBadges(); this.say(t('scenes.amuletscene.text'), 'positive');
+				//`Amulet.doPickUp`/`showAmuletScene` (Amulet.java, tag `v3.3.8`) validates the pickup
+				//badge and offers an immediate `Dungeon.win(Amulet.class)` or continued play. This
+				//choice window uses the same official strings; Java's illustrated full-screen scene
+				//is simplified to the shared window component, but both choices and outcomes remain.
+				this.awardBadge('amulet'); this.awardChampionBadges();
+				showChoiceWindow(this.gameWindows, '', t('scenes.amuletscene.text'), [
+					{ label: t('scenes.amuletscene.exit'), onPick: () => {
+						this.say(t('scenes.amuletscene.exit'), 'positive');
+						this.awaitingInput = false; this.gameOver = true;
+						recordRun({ result: 'won', depth: this.depth, level: this.progression.level, gold: this.heroStats.base('gold'), highestAscent: this.highestAscent });
+						this.showVictoryPanel(false); this.justDescended = true;
+					} },
+					{ label: t('scenes.amuletscene.stay'), onPick: () => undefined },
+				]);
 				return true;
 			},
 			pickupRing: () => {

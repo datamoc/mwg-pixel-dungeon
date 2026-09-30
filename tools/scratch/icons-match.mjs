@@ -98,6 +98,16 @@ const regions = {
 	DISPLAY_LAND: [32, 16, 16, 12],
 	LANGS: [80, 16, 14, 11],
 	CHALLENGE_COLOR: [144, 32, 15, 12],
+	JOURNAL: [136, 0, 17, 15],
+	INFO: [16, 32, 14, 14],
+	CHEVRON: [240, 16, 13, 10],
+	COIN_SML: [168, 80, 7, 7],
+	BACKPACK: [176, 80, 10, 10],
+	DEPTH: [32, 80, 6, 7],
+	SCROLL_HOLDER: [186, 80, 10, 10],
+	SEED_POUCH: [196, 80, 10, 10],
+	WAND_HOLSTER: [206, 80, 10, 10],
+	POTION_BANDOLIER: [216, 80, 10, 10],
 };
 for (const [name, [x, y, w, h]] of Object.entries(regions)) {
 	const hits = find(javaSheet, x, y, w, h);

@@ -25,6 +25,8 @@ export type { Step } from './simulation/combatState';
 /** a creature on the map - the hero and every monster share this shape */
 export interface Creature extends Combatant {
 	name: string;
+	/** `SummonElemental.InvisAlly` identity: distinguishes this spell's recallable summons from charmed Elementals. */
+	summonedByElementalSpell?: boolean;
 	/** Internal combat provenance; thrown missiles use the Sniper shared-enchantment gate. */
 	attackMode?: 'melee' | 'throw';
 	/** Derived from the equipped Brimstone glyph; Java's `Char.isImmune(Burning)` path. */
@@ -443,7 +445,7 @@ export interface GroundItem extends Step {
 	tippedSeed?: string;
 	/** Concrete inventory payload; absent only for legacy scripted/cosmetic drops. */
 	item?: { id: string; quantity: number; level?: number; tier?: number; sandBags?: number; charges?: number; warmUpDelay?: number; affix?: string; cursed?: boolean; cursedKnown?: boolean; identified?: boolean; instanceId?: string; sourceClass?: string; depth?: number;
-		/** Ring of Wealth bonus tier retained for its item-detail label. */
+		/** Ring of Wealth's presentation-only bonus tier, retained through pickup/save for its item-detail tag. */
 		wealthDropTier?: 1 | 2 | 3 | 4;
 		usesLeftToIdentify?: number; availableUsesToIdentify?: number; durability?: number; maxDurability?: number; seal?: boolean;
 		/** A carried missile stack's own set id (see `src/missiles.ts`) - the legend half of its
@@ -641,6 +643,10 @@ export function addBuff(c: Creature, id: BuffId, duration?: number): void {
 	if (applyElementalBacklash(c, id) > 0) return;
 	if (buffBlocked(c, id)) return;
 	const event = combat.addBuff(c, id, resistedBuffDuration(c, id, duration ?? BUFF_DURATION[id]));
+	//A fresh Java Burning/Ooze instance begins with acted=false; carried acted markers
+	//belong to a previous buff instance and must not survive a fresh attach.
+	if (event.fresh && id === 'burning') delete c.buffs.burningActed;
+	if (event.fresh && id === 'ooze') delete c.buffs.oozeActed;
 	//`Mob.add(Amok)` switches the mob directly to HUNTING (tag `v3.3.8`), without going through
 	//`Mob.Sleeping.awaken()`. A visible CrystalGuardian can therefore wake from ScrollOfRage's
 	//Amok after its `beckon()` override correctly did nothing; keep the port's sleeping flag in step.
@@ -657,6 +663,9 @@ export function reigniteBuff(c: Creature, id: BuffId, duration?: number): void {
 	if (applyElementalBacklash(c, id) > 0) return;
 	if (buffBlocked(c, id)) return;
 	const event = combat.reigniteBuff(c, id, resistedBuffDuration(c, id, duration ?? BUFF_DURATION[id]));
+	//Reignite preserves an existing Java buff's acted bit; clear only on a new instance.
+	if (event.fresh && id === 'burning') delete c.buffs.burningActed;
+	if (event.fresh && id === 'ooze') delete c.buffs.oozeActed;
 	if (event.fresh && announceBuff && ANNOUNCED_BUFFS.has(id)) announceBuff(c, id);
 }
 

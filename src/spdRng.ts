@@ -4,6 +4,8 @@
  * from the version that lived inline in `main.ts` - see `PORT_COVERAGE.md` for what's verified.
  */
 
+import { JavaRandom, type JavaRandomDraw } from 'mwg/core';
+
 const U64 = (1n << 64n) - 1n;
 function u64(value: bigint): bigint { return value & U64; }
 
@@ -18,52 +20,35 @@ let traceDrawCount = 0;
 export let traceStackWindow: [number, number] | null = null;
 export function setTraceStackWindow(w: [number, number] | null): void { traceStackWindow = w; }
 export const traceStacks: string[] = [];
-export class SpdJavaRandom {
-	private state: bigint;
-	constructor(seed: bigint) { this.state = (seed ^ 0x5deece66dn) & ((1n << 48n) - 1n); }
-	private next(bits: number): number {
-		this.state = (this.state * 0x5deece66dn + 0xbn) & ((1n << 48n) - 1n);
-		const result = Number(this.state >> BigInt(48 - bits));
-		if (traceDrawLog !== null) {
-			//Java's `next(bits)` returns a signed `int`, so a `bits===32` draw whose top bit
-			//is set prints negative (`StringBuilder.append(int)`'s ordinary decimal form) -
-			//see `Random.java`'s `TracingRandom.next()`. `result` here stays the unsigned
-			//0..2^32-1 magnitude `nextLong()` needs (it does its own signed conversion), so
-			//only the logged text is adjusted, matching Java's int cast for comparison.
-			const traced = bits === 32 && result >= 0x80000000 ? result - 0x100000000 : result;
-			traceDrawLog.push(`${bits}:${traced}`);
-			if (traceStackWindow !== null && traceDrawCount >= traceStackWindow[0] && traceDrawCount <= traceStackWindow[1]) {
-				traceStacks.push(`#${traceDrawCount} ${bits}:${traced} :: ${(new Error().stack ?? '').split('\n').slice(2, 9).join(' <- ')}`);
-			}
-			traceDrawCount++;
-		}
-		return result;
+
+/** Feeds the parity trace from the framework generator's own per-draw hook. A 32-bit
+ * draw already arrives signed (Java's `int` cast form), so the logged text matches
+ * `TracingRandom` with no adjustment. */
+function traceDraw(draw: JavaRandomDraw): void {
+	if (traceDrawLog === null) return;
+	traceDrawLog.push(`${draw.bits}:${draw.value}`);
+	if (traceStackWindow !== null && traceDrawCount >= traceStackWindow[0] && traceDrawCount <= traceStackWindow[1]) {
+		traceStacks.push(`#${traceDrawCount} ${draw.bits}:${draw.value} :: ${(new Error().stack ?? '').split('\n').slice(2, 9).join(' <- ')}`);
 	}
-	nextFloat(): number { return this.next(24) / 0x1000000; }
-	/**
-	 * `java.util.Random.nextLong()`: `((long)(next(32)) << 32) + next(32)` - both `next(32)` calls
-	 * are cast to a SIGNED 32-bit int before the shift/add, not treated as unsigned magnitudes. A
-	 * naive `(hi << 32n) | lo` (treating both as unsigned 0..2^32-1) is only correct when the
-	 * second (low) draw's top bit is clear; when it's set, Java's signed addition effectively
-	 * borrows 2^32 from the high half, so the naive version is off by exactly +2^32 in that case.
-	 * Found via the Phase 2 Java-fixture comparison: `spdSeedForDepth()` (which burns/returns
-	 * `nextLong()` calls) matched Java for some depths and was off by exactly 2^32 for others,
-	 * which pinpointed this exact sign-handling gap rather than a higher-level ordering bug.
-	 */
-	nextLong(): bigint {
-		const hi = BigInt(this.next(32));
-		const lo = BigInt(this.next(32));
-		const hiSigned = hi >= (1n << 31n) ? hi - (1n << 32n) : hi;
-		const loSigned = lo >= (1n << 31n) ? lo - (1n << 32n) : lo;
-		const value = u64((hiSigned << 32n) + loSigned);
-		return value >= (1n << 63n) ? value - (1n << 64n) : value;
+	traceDrawCount++;
+}
+
+/** The 48-bit LCG behind `java.util.Random`, bit for bit - now the framework's own
+ * generator (proven identical draw-for-draw against this file's hand-rolled version
+ * before the swap, and covered going forward by the levelgen parity fixtures).
+ * `nextLong()`'s signed-halves handling (a real +2^32 Phase-2 find, see history) is
+ * framework-owned now. What stays ours: the parity trace above, the MX3 scramble and
+ * `seedForDepth()` below, and the `SpdRandom` generator stack. */
+export class SpdJavaRandom extends JavaRandom {
+	constructor(seed: bigint) {
+		super(seed, { onDraw: traceDraw });
 	}
-	nextInt(bound: number): number {
-		if (bound <= 0) return 0;
-		if ((bound & -bound) === bound) return Number((BigInt(bound) * BigInt(this.next(31))) >> 31n);
-		let bits: number; let value: number;
-		do { bits = this.next(31); value = bits % bound; } while (bits - value + bound - 1 < 0);
-		return value;
+	override nextInt(bound?: number): number {
+		//Java throws on bound <= 0; every call site here passes a positive bound (the
+		//`Math.max(1, ...)` guards say so explicitly), and `SpdRandom.int` treats 0 as
+		//"no range", so the historical return-0 guard stays instead of adopting the throw.
+		if (bound !== undefined && bound <= 0) return 0;
+		return super.nextInt(bound);
 	}
 }
 
@@ -186,9 +171,10 @@ export class SpdRandom {
  * `Random.Int(labelsLeft.size())` per item class with the pool shrinking by one each draw. Checked
  * against this checkout's `Generator.java`: `SCROLL`/`POTION`/`RING` each have exactly 12 classes,
  * and `Scroll`/`Potion`/`Ring`'s own label/color/gem maps each have exactly 12 entries too, so each
- * burns 12 calls with bounds 12,11,...,1, in that order (Scroll, then Potion, then Ring). This port
- * has no item-identification system, so only the RNG call count/bounds are reproduced here - not
- * the label assignment itself, which does not affect anything level-gen-side. Found via the Phase 2
+ * burns 12 calls with bounds 12,11,...,1, in that order (Scroll, then Potion, then Ring). Only
+ * the RNG burn is reproduced here - the shuffled labels themselves are assigned by the
+ * item-identification flow (`items/appearanceFrames.ts`), which does not affect anything
+ * level-gen-side. Found via the Phase 2
  * Java-fixture comparison: earlier code pushed the raw `seed` with no burn at all, which desynced
  * `SpecialRoom`/`SecretRoom`'s run-level shuffle relative to real Java (the per-floor room graph
  * and painting streams are unaffected - they come from `seedForDepth()`'s independent generator).

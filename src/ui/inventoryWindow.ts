@@ -4,6 +4,7 @@ import { IconGrid, TabbedList } from 'mwg/two-d/ui';
 import { SpdLabel as Label } from './spdLabel';
 import { SpdButton } from './spdButton';
 import { spdPanel } from './spdPanel';
+import { addLongPress } from './longPress';
 import { bagGridLayout } from './bagLayout';
 import { t } from '../i18n';
 import { runState } from '../runState';
@@ -94,6 +95,9 @@ export class InventoryWindow extends Container2D {
 	private wide = false;
 	/** Opened from the docked pane: only the item's detail card shows, and dismissing it closes. */
 	private detailOnly = false;
+	/** Set while the toolbar waits for a slot's item (`ui.quickslotbutton.select_item`):
+	 * cell taps assign to that slot instead of opening the detail card. */
+	pickHandler: ((id: string, instanceId?: string) => void) | null = null;
 	private width_ = 156;
 	private height_ = 226;
 
@@ -125,6 +129,7 @@ export class InventoryWindow extends Container2D {
 		private use: (id: string, instanceId?: string) => void,
 		private close: () => void,
 		private verbs: { drop(id: string, instanceId?: string): void; throw(id: string, instanceId?: string): void; drink(id: string, instanceId?: string): void } | null = null,
+		private hooks: { assignToFree(id: string, instanceId?: string): void } | null = null,
 	) {
 		super();
 		this.list = this.createList();
@@ -212,17 +217,32 @@ export class InventoryWindow extends Container2D {
 			// IconGrid's built-in tap is intentionally a reorder gesture. Inventory selection is
 			// an inspect gesture instead, so the adapter keeps this one semantic difference at
 			// the item cell while keyboard confirm still goes through IconGrid.confirm().
+			// A hold assigns the item to the toolbar's first free quickslot instead.
 			slot.eventMode = 'static';
-			slot.on('pointertap', () => { this.selection = index; this.showItem(item); });
+			addLongPress(slot, {
+				onTap: () => { this.selection = index; this.activateCell(item); },
+				onLongPress: () => {
+					if (this.pickHandler) this.activateCell(item);
+					else this.hooks?.assignToFree(item.id, item.instanceId);
+				},
+			});
 		}
 		return slot;
+	}
+
+	/** A cell's tap/confirm: in pick mode it assigns to the waiting slot, otherwise it
+	 * opens the detail card like before. */
+	private activateCell(item: InventoryEntry): void {
+		const pick = this.pickHandler;
+		if (pick) pick(item.id, item.instanceId);
+		else this.showItem(item);
 	}
 
 	private draw(): void {
 		const layout = bagGridLayout(this.wide);
 		this.panel.removeChildren().forEach(c => c.destroy({ children: true }));
 		this.panel.addChild(spdPanel(this.width_, this.height_));
-		const title = new Label({ text: t('port.action.bag'), size: 8, color: 0xffff44 });
+		const title = new Label({ text: this.pickHandler ? t('ui.quickslotbutton.select_item') : t('port.action.bag'), size: 8, color: 0xffff44 });
 		title.position.set(7, 7);
 		const money = new Label({ text: String(this.gold), size: 8, color: 0xffff44 });
 		money.anchor.set(1, 0); money.position.set(this.width_ - 26, 7);
@@ -261,7 +281,7 @@ export class InventoryWindow extends Container2D {
 				value: item,
 			})),
 			onHighlight: (cell) => { const item = cell.value as InventoryEntry | null; if (item) this.selection = this.entries.indexOf(item); },
-			onSelect: (cell) => { const item = cell.value as InventoryEntry | null; if (item) { this.selection = this.entries.indexOf(item); this.showItem(item); } },
+			onSelect: (cell) => { const item = cell.value as InventoryEntry | null; if (item) { this.selection = this.entries.indexOf(item); this.activateCell(item); } },
 		});
 		this.grid.position.set(5, layout.gridY);
 		this.panel.addChild(this.grid);
@@ -290,7 +310,7 @@ export class InventoryWindow extends Container2D {
 		const sprite = this.icon(item.frame); sprite.position.set(8, 9); this.detail.addChild(sprite);
 		const name = new Label({ text: item.name, size: 8, color: 0xffff44, wrapWidth: 102 }); name.position.set(28, 9); this.detail.addChild(name);
 		const tierRoman = item.wealthDropTier ? ({ 1: 'I', 2: 'II', 3: 'III', 4: 'IV' } as const)[item.wealthDropTier] : '';
-		// Java RingOfWealth.java:172-187 communicates the tier with a transient flare; this persistent detail tag is a port UI addition.
+		// Java `RingOfWealth.java:172-187` communicates this tier with a transient flare; retain it as a compact detail label so the port's dropped item remains inspectable after pickup.
 		const tierText = item.wealthDropTier ? t('port.item.wealth_drop_tier', { tier: tierRoman }) : '';
 		const statText = [item.quantity > 1 ? `${item.quantity}×` : '', item.identified !== false && item.level ? `+${item.level}` : '', tierText].filter(Boolean).join('  ');
 		const tierColor = item.wealthDropTier ? ({ 1: 0x00ff00, 2: 0x00aaff, 3: 0xaa00ff, 4: 0xffaa00 } as const)[item.wealthDropTier] : undefined;

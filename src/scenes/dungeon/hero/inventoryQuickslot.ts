@@ -43,7 +43,7 @@ import { WEAPON_NAME_BY_CLASS, armorReductionRange, isClassArmorId, weaponCombat
 import { getCurse } from '../../../items/itemCurses';
 import { Cat, generatorItemOrder, randomArmor, randomArtifact, randomGold, randomUsingDefaults, randomWeapon } from '../../../items/generator';
 import { MWL_ITEM_SLOTS, MWL_ITEM_SPECIFIC_FRAMES, MWL_MISSILE_BY_CLASS, MWL_STARTING_WEAPON_FRAMES, mwlItemEffectValue } from '../../../mwlContent';
-import { assignQuickslot as assignFamilyQuickslot, readQuickslotStates, useItemById as routeItemAction, useQuickslot as useQuickslotEntry, type ItemActionContext, type QuickslotContext } from '../../../items/itemActions';
+import { useItemById as routeItemAction, type ItemActionContext } from '../../../items/itemActions';
 import { appearanceItemFrame } from '../../../items/appearanceFrames';
 import { addScrollToSpellbook, applyCapeOfThornsProc, spellbookChargeCap, useSpellbook as useArtifactSpellbook, useToolkit as useArtifactToolkit } from '../../../items/artifactActions';
 import { useSandalsFlow, type SandalsFlowContext } from '../../../items/sandals';
@@ -369,6 +369,22 @@ export const inventoryQuickslotMethods = {
 		}
 	},
 
+	/** `Talent.onScrollUsed()`'s Mage/Rogue effects (`Talent.java`, tag `v3.3.8`):
+	 * ScrollEmpower resets to the greater remaining zap count; Invisibility is prolonged.
+	 * `chance` is the item's talentChance (ordinary reads 1, SummonElemental 1/3).
+	 */
+	onScrollUsed(this: DungeonScene, factor = 1, chance = 1): void {
+		if (Random.float() >= chance) return;
+		if (this.heroClass === 'mage') {
+			const rank = this.talentRank('inscribed_power');
+			if (rank > 0) this.inscribedPowerZaps = Math.max(this.inscribedPowerZaps, Math.trunc(factor * (1 + rank)));
+		}
+		if (this.heroClass === 'rogue') {
+			const rank = this.talentRank('inscribed_stealth');
+			if (rank > 0) addBuff(this.hero, 'invisibility', factor * (1 + 2 * rank));
+		}
+	},
+
 	useItemById(this: DungeonScene, id: string, instanceId?: string): void {
 		//`Armor.AC_DETACH` (`Armor.java` 190-198): Java lists this action on the *equipped* armor's
 		//own window, and tapping an already-equipped armor is a no-op here otherwise - `equipArmor`
@@ -378,7 +394,6 @@ export const inventoryQuickslotMethods = {
 			this.detachSeal();
 			return;
 		}
-		this.assignQuickslot(id, instanceId);
 		//Armed on the use attempt: Java arms inside each artifact's own execute path,
 		//which the methods behind this dispatch don't report back through, so the single
 		//dispatch point stands in for the ones it routes (cloak/hourglass/chalice/holyTome - horn,
@@ -615,6 +630,7 @@ export const inventoryQuickslotMethods = {
 		beaconFlowContext(this: DungeonScene): BeaconFlowContext {
 			const scene = this;
 			return {
+				onScrollUsed: (factor, chance) => scene.onScrollUsed(factor, chance),
 				get depth() { return scene.depth; },
 				get heroPos() { return { x: scene.hero.x, y: scene.hero.y }; },
 				get miningBranchActive() { return scene.miningBranchActive; },
@@ -1550,7 +1566,9 @@ export const inventoryQuickslotMethods = {
 				switch (effect.kind) {
 					case 'charge': {
 						const cap = this.artifactRechargeCap(item.id, level, item);
-						const chargeAmount = artifactRechargeAmount(effect, amount, item === equippedArtifact, this.talentRank('light_cloak'));
+						const chargeAmount = artifactRechargeAmount(effect, amount,
+							item === equippedArtifact,
+							this.talentRank('light_cloak'));
 						if (bankArtifactCharge(art, cap, effect.rate, chargeAmount, effect.capZeroesPartial) && effect.fullLineKey) {
 							this.say(t(effect.fullLineKey), 'positive');
 						}
@@ -1673,9 +1691,10 @@ export const inventoryQuickslotMethods = {
 				return;
 			}
 			const at = spawnPoints[Random.int(0, spawnPoints.length - 1)]!;
-			//`SummonElemental.onCast()` finds any `Elemental` carrying `InvisAlly` (tag `v3.3.8`),
-			//including an imbued mature summon; both elemental actor kinds can therefore be recalled.
-			const existing = this.creatures.find((c) => c.isAlly === true
+			//`SummonElemental.onCast()` finds an `Elemental` carrying `InvisAlly` (tag `v3.3.8`),
+			//including an imbued mature summon. Keep that marker separate from generic ally status
+			//so a charmed Elemental is not accidentally treated as this spell's summon.
+			const existing = this.creatures.find((c) => c.summonedByElementalSpell === true
 				&& (c.kind === 'newbornElemental' || c.kind === 'elemental') && c.hp > 0);
 			if (existing) {
 				this.moveTo(existing, at);
@@ -1689,6 +1708,7 @@ export const inventoryQuickslotMethods = {
 				? this.spawnMonster('elemental', at, false, undefined, true)
 				: this.spawnMonster('newbornElemental', at, false, undefined, true);
 			elemental.sleeping = false;
+			elemental.summonedByElementalSpell = true;
 			elemental.hp = elemental.maxHp;
 			if (imbued) elemental.elementalType = imbued;
 			else {
@@ -1712,9 +1732,9 @@ export const inventoryQuickslotMethods = {
 			this.say(t('port.log.summonelemental'), 'positive');
 			this.actionSpentTurn = true;
 			this.spendHeroTurn(1);
-			//Not ported: `SummonElemental.onCast()` calls `Talent.onScrollUsed` (`SummonElemental.java`/
-			//`Talent.java`, tag `v3.3.8`), which can trigger Mage `INSCRIBED_POWER` or Rogue
-			//`INSCRIBED_STEALTH` (and `ScrollEmpower`); those talents/buff are not modeled.
+			//`SummonElemental.onCast()` calls `Talent.onScrollUsed` only after successful
+			//summoning and its `Random.Float() < 1/Recipe.OUT_QUANTITY` roll (1/3).
+			this.onScrollUsed(1, 1 / 3);
 		},
 
 			beginElementalImbue(this: DungeonScene, instanceId?: string): void {
@@ -2322,28 +2342,5 @@ export const inventoryQuickslotMethods = {
 		const def = armorAbilityDef(this.armorAbility);
 		if (!def) return null;
 		return `${titleCase(t(`${armorAbilityKey(def.id, def.classId)}.name`))} ${Math.floor(this.armorCharge)}%`;
-	},
-
-	/** The toolbar's four quickslot states - the decision lives in `items/itemActions.ts`
-	 * next to the item-use router they feed; the scene only binds its slot array, bag
-	 * and use path. */
-	quickslotStates(this: DungeonScene): ({ id: string; instanceId?: string; frame: number; quantity: number } | null)[] {
-		return readQuickslotStates(this.quickslotContext());
-	},
-
-	assignQuickslot(this: DungeonScene, id: string, instanceId?: string): void {
-		assignFamilyQuickslot(this.quickslotContext(), id, instanceId);
-	},
-
-	useQuickslot(this: DungeonScene, slot: number): void {
-		useQuickslotEntry(this.quickslotContext(), slot);
-	},
-
-	quickslotContext(this: DungeonScene): QuickslotContext {
-		return {
-			slots: this.quickslots,
-			findHeld: (id, instanceId) => this.bag.find(id, instanceId),
-			useItem: (id, instanceId) => this.useItemById(id, instanceId),
-		};
 	},
 };

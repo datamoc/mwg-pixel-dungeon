@@ -4,6 +4,7 @@ export const BUFF_DURATION_DATA = {
   "hex": 30,
   "daze": 5,
   "blindness": 10,
+  "scrollEmpower": 9999,
   "monkEnergy": 9999,
   "doom": 9999,
   "combo": 5,
@@ -75,7 +76,11 @@ export const BUFF_DURATION_DATA = {
   "smiteTracker": 1,
   "guidingPriestCooldown": 50,
   "searingLightCooldown": 20,
-  "lightWallActive": 20
+  "lightWallActive": 20,
+  "rejuvenatingStepsCooldown": 10,
+  "rejuvenatingStepsFurrow": 9999,
+  "burningActed": 9999,
+  "oozeActed": 9999
 } as const;
 export const NEGATIVE_BUFF_DATA = [
   "poison",

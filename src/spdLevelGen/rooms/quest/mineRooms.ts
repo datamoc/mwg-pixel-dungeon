@@ -13,6 +13,7 @@
  * branches are not ported: Java's own `Quest.spawn()` never rolls that type ("not fully
  * implemented"), so they are unreachable there too.
  */
+import { Roguelike } from 'mwg';
 import { DoorType, type Door, type Room } from '../../room';
 import { PaintLevel, Terrain, fillEllipseRect, fillEllipseRoom, fillRoom, fillRoomInset, fillXY, roomPoints, set } from '../../paintLevel';
 import { paintCaveRoom } from '../standard/caveRoom';
@@ -32,7 +33,7 @@ function circle8(w: number): number[] { return [-w - 1, -w, -w + 1, 1, w + 1, w,
 /** `Level.distance()`: Chebyshev. */
 function cellDistance(level: PaintLevel, a: number, b: number): number {
 	const pa = level.cellToPoint(a), pb = level.cellToPoint(b);
-	return Math.max(Math.abs(pa.x - pb.x), Math.abs(pa.y - pb.y));
+	return Roguelike.chebyshevDistance(pa, pb);
 }
 
 /** `Point.distance(Point, Point)`: float Euclidean. */

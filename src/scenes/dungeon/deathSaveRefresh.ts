@@ -259,7 +259,7 @@ export const deathSaveRefreshMethods = {
 			);
 			this.awaitingInput = false;
 			this.gameOver = true;
-			recordRun({ result: 'lost', depth: this.depth, level: this.progression.level, gold: this.heroStats.base('gold') });
+			recordRun({ result: 'lost', depth: this.depth, level: this.progression.level, gold: this.heroStats.base('gold'), highestAscent: this.highestAscent });
 			this.showDefeatPanel();
 			//`GameScene.gameOver()`: the GAME_OVER banner with Java's own `show(0x000000, 2f)` -
 			//an infinite hold, so it stays up behind the defeat panel until a restart leaves the
@@ -915,7 +915,8 @@ export const deathSaveRefreshMethods = {
 				//Mob.java:971). The port uses its shared flare burst at the defeated mob's cell;
 				//the framework sprite-specific radius/timing is not represented by this effect API.
 				const tier = tiers[i] ?? ((drop.item?.level ?? 0) >= 2 ? 4 : 3);
-				// Java exposes this bonus tier only through its transient flare; keep it on the item so it remains inspectable after pickup.
+				//Java exposes this bonus tier only through its transient flare; the port retains it
+				//as item metadata so the player can inspect it after the drop leaves the ground.
 				if (drop.item) drop.item.wealthDropTier = tier;
 				spawnFlare(this.effectLayer, this.effectBursts, creature.x, creature.y, wealthDropFlareColor(tier));
 			}
@@ -1295,10 +1296,23 @@ export const deathSaveRefreshMethods = {
 			//status pane (icon text, info window) reads the pool instead, which is
 			//what Java's `iconTextDisplay()`/`desc()` show (`(int)HP`, `{0}/{1}`).
 			buffs: [...Object.entries(this.hero.buffs).map(([id, turns]) => ({ id: id as BuffId, turns: id === 'prismaticGuard' ? Math.floor(this.hero.prismaticGuardHp ?? 0) : turns })),
+				...(this.inscribedPowerZaps > 0 ? [{ id: 'scrollEmpower' as BuffId, turns: this.inscribedPowerZaps }] : []),
 				//`ArtifactRecharge` is a scene-owned timer here; expose the same buff identity the HUD uses in Java.
 				...(this.artifactRechargeTurns > 0 ? [{ id: 'artifactRecharge' as BuffId, turns: this.artifactRechargeTurns }] : []),
 				//`LockedFloor` has no `iconTextDisplay()` override: icon only.
 				...(this.regeneration.lockLeft !== null ? [{ id: 'lockedFloor' as BuffId, turns: undefined }] : [])],
+			//`Berserk.iconTextDisplay()`/`iconFadePercent()` are driven by rage mode,
+			//not the buff's sentinel duration. Preserve the state needed by those formulas.
+			berserk: this.hero.buffs['berserk'] !== undefined ? {
+				mode: this.rageState.mode,
+				power: this.rageState.power,
+				maxPower: 1 + 0.1667 * this.talentRank('endless_rage'),
+				shield: this.rageBarrier.total,
+				maxShield: (8 + 2 * Math.max(0, this.degradedLevel(this.armorLevel))) * 3,
+				levelRecovery: this.rageState.levelRecovery,
+				turnRecovery: this.rageState.turnRecovery,
+				deathlessFuryRank: this.talentRank('deathless_fury'),
+			} : undefined,
 			staff: this.heroClass === 'mage' ? { current: this.wandCharges.current, max: this.wandCharges.max } : null,
 			ammo: CLASS_AMMO.has(this.heroClass) ? this.ammo : null,
 			carriedCount,
@@ -1337,6 +1351,10 @@ export const deathSaveRefreshMethods = {
 		//The armor-ability button carries the charge percent in its label, so it reports a change
 		//on every percent of regen rather than only when it appears or goes.
 		if (this.actionBar.setArmorAbility(this.armorAbilityLabel())) {
+			this.positionInterface(Game.current.width, Game.current.height);
+		}
+		if (this.actionBar.setBerserkAvailable(this.subclass() === 'berserker'
+			&& this.rageState.mode === 'normal' && this.rageState.power >= 1)) {
 			this.positionInterface(Game.current.width, Game.current.height);
 		}
 		//Java's `QuickslotButton`s mirror the assigned items; slots holding items that left
@@ -1552,9 +1570,9 @@ export const deathSaveRefreshMethods = {
 			bagSources: this.bag.items.map((item) => ({
 				id: item.id,
 				instanceId: item.instanceId,
+				wealthDropTier: (item as typeof item & { wealthDropTier?: WealthDropTier }).wealthDropTier,
 				sandBags: (item as typeof item & { sandBags?: number }).sandBags,
 				charges: (item as typeof item & { charges?: number }).charges,
-				wealthDropTier: (item as typeof item & { wealthDropTier?: WealthDropTier }).wealthDropTier,
 			wandCur: (item as typeof item & { wandCur?: number }).wandCur,
 			wandPartial: (item as typeof item & { wandPartial?: number }).wandPartial,
 			wandMax: (item as typeof item & { wandMax?: number }).wandMax,
@@ -1594,6 +1612,7 @@ export const deathSaveRefreshMethods = {
 			appearances: this.appearances.toJSON(),
 			switches: this.gameState.toJSON().switches,
 			ascensionChallengeActive: this.ascensionChallengeActive,
+			highestAscent: this.highestAscent,
 			roseFirstSummon: this.roseFirstSummon,
 			challengeIds: runChallengeIds(),
 			questStages: this.quests.toJSON().stageIndex,
@@ -1644,6 +1663,7 @@ export const deathSaveRefreshMethods = {
 			armorSealed: this.armorSealed,
 			stealthTalentTicks: this.stealthTalentTicks,
 			empoweredZaps: this.empoweredZaps,
+			inscribedPowerZaps: this.inscribedPowerZaps,
 			enhancedRingsTurns: this.enhancedRingsTurns,
 			seerShotCooldown: this.seerShotCooldown,
 			seerCells: [...this.seerCells],

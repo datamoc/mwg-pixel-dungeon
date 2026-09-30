@@ -20,6 +20,7 @@ import { alchemyEnergyFor, exoticRecycleAlternatives, isExoticItemId } from './a
 
 /** The seams every targeted spell shares: the carried spell, the aimer, the turn, the log. */
 export interface TargetedSpellAim {
+	onScrollUsed?(factor?: number, chance?: number): void;
 	hasSpell(id: string, instanceId?: string): boolean;
 	consumeSpell(id: string, instanceId?: string): void;
 	beginAim(opts: { range: number; validate?: (cell: { x: number; y: number }) => boolean; onConfirm: (cell: { x: number; y: number }) => void }): void;
@@ -94,6 +95,7 @@ export type RecycleCategory = 'potion' | 'scroll' | 'seed' | 'stone' | 'tippedDa
  * same-class/same-id reroll) and the remove/add swap stay scene-side.
  */
 export interface RecycleContext {
+	onScrollUsed?(factor?: number, chance?: number): void;
 	hasSpell(id: string, instanceId?: string): boolean;
 	openPicker(title: string, entries: RecyclableView[], onPick: (entry: { id: string; instanceId?: string }) => void): void;
 	recyclables(): RecyclableView[];
@@ -137,6 +139,8 @@ export function useRecycleFlow(ctx: RecycleContext, instanceId?: string): void {
 					: source.id === 'missile_tippeddart' ? 'tippedDart' : 'stone';
 		const replacement = ctx.drawReplacement(category, source);
 		ctx.replaceRecycled(source, replacement, instanceId);
+		// Recycle.onItemSelected (v3.3.8) applies talentFactor=2 with the recipe's output chance.
+		ctx.onScrollUsed?.(2, 1 / 12);
 		ctx.say(ctx.t('items.spells.recycle.recycled', { 0: ctx.replacementName(replacement) }), 'positive');
 		ctx.refreshPanels();
 	});
@@ -144,6 +148,7 @@ export function useRecycleFlow(ctx: RecycleContext, instanceId?: string): void {
 
 /** The seams self-cast buff spells share: the carried spell, the turn, the log. */
 export interface CastBase {
+	onScrollUsed?(factor?: number, chance?: number): void;
 	hasSpell(id: string, instanceId?: string): boolean;
 	consumeSpell(id: string, instanceId?: string): void;
 	spendTurn(): void;
@@ -162,6 +167,7 @@ export interface FeatherFallContext extends CastBase {
  * `useWildEnergy` adapter the item-use router calls.
  */
 export interface WildEnergyContext extends CastBase {
+	onScrollUsed?(factor?: number, chance?: number): void;
 	chargeWands(amount: number): void;
 	grantRecharging(duration: number): void;
 	rechargeArtifacts(amount: number): void;
@@ -192,6 +198,8 @@ export function useWildEnergyFlow(ctx: WildEnergyContext, instanceId?: string): 
 	//and leaves the timer running for the same hooks to be handed `min(1, left)` on later turns.
 	ctx.rechargeArtifacts(4);
 	ctx.extendRechargeTurns(wildEnergyRechargeTurns());
+	// WildEnergy.onCast uses the spell recipe's 1/3 talent chance (v3.3.8).
+	ctx.onScrollUsed?.(1, 1 / 3);
 	// Java logs nothing on this cast (WildEnergy.affectTarget is sound and sprite only), so no line here.
 	ctx.spendTurn();
 }
@@ -241,6 +249,7 @@ export interface EnergizableView {
  * read their own tables.
  */
 export interface AlchemizeContext {
+	onScrollUsed?(factor?: number, chance?: number): void;
 	hasSpell(id: string, instanceId?: string): boolean;
 	consumeSpell(id: string, instanceId?: string): void;
 	openPicker(title: string, entries: EnergizableView[], onPick: (entry: { id: string; instanceId?: string }) => void): void;
@@ -313,6 +322,8 @@ export function useAlchemizeFlow(ctx: AlchemizeContext, instanceId?: string): vo
 		ctx.consumeTarget(target.id, target.instanceId);
 		ctx.consumeSpell('alchemize', instanceId);
 		ctx.bankEnergy(energy);
+	// Alchemize.onCast uses the spell recipe's 1/3 talent chance (v3.3.8).
+		ctx.onScrollUsed?.(1, 1 / 3);
 		//`energize()` identifies the item as it is consumed, even though it is gone.
 		ctx.markIdentified(target);
 		ctx.say(ctx.t('port.log.alchemize.energized', { item: name }), 'positive');
@@ -336,6 +347,7 @@ export interface InfusableView {
 
 /** The seams both infusion pickers share: the carried spell, the picker, the bag. */
 export interface InfusionBase {
+	onScrollUsed?(factor?: number, chance?: number): void;
 	hasSpell(id: string, instanceId?: string): boolean;
 	consumeSpell(id: string, instanceId?: string): void;
 	openPicker(title: string, entries: InfusableView[], onPick: (entry: { id: string; instanceId?: string }) => void): void;
@@ -380,6 +392,8 @@ export function useMagicalInfusionFlow(ctx: InfusionBase, instanceId?: string): 
 		if (!item) return;
 		upgradeItem(item, 1, 'keep');
 		ctx.consumeSpell('magicalInfusion', instanceId);
+	// MagicalInfusion uses talentFactor=2 and the default guaranteed chance (v3.3.8).
+		ctx.onScrollUsed?.(2, 1);
 		ctx.say(ctx.t('port.log.magicalinfusion', { item: ctx.itemName(item) }), 'positive');
 		ctx.refreshPanels();
 	});
@@ -425,6 +439,8 @@ export function useCurseInfusionFlow(ctx: CurseInfusionContext, instanceId?: str
 			ctx.relabelAfterInfusion(item);
 		}
 		ctx.consumeSpell('curseInfusion', instanceId);
+		// CurseInfusion uses the spell recipe's 1/3 talent chance (v3.3.8).
+		ctx.onScrollUsed?.(1, 1 / 3);
 		//`CurseInfusion.onItemSelected()`: five `ShadowParticle.UP` at the hero's own cell.
 		//(Magical Infusion bursts nothing - it only plays READ.)
 		ctx.burstShadowUp();
@@ -461,6 +477,8 @@ export function useReclaimTrapFlow(ctx: ReclaimTrapContext, instanceId?: string)
 				if (!kind) return;
 				ctx.placeTrap(target.x, target.y);
 				ctx.consumeSpell('reclaimTrap', instanceId);
+				// ReclaimTrap only calls onSpellUsed on redeploy, with recipe chance 1/3 (v3.3.8).
+				ctx.onScrollUsed?.(1, 1 / 3);
 				ctx.say(ctx.t('port.log.reclaimtrap.placed'), 'positive');
 			}
 			ctx.refreshTiles();
@@ -492,6 +510,8 @@ export function useTelekineticGrabFlow(ctx: TelekineticGrabContext, instanceId?:
 			// an empty or special heap. The pickup delay is capped at one actor tick there;
 			// this port has whole hero turns, so every confirmed cast spends exactly one.
 			ctx.consumeSpell('telekineticGrab', instanceId);
+			// TelekineticGrab calls onSpellUsed after any confirmed target, chance 1/3 (v3.3.8).
+			ctx.onScrollUsed?.(1, 1 / 3);
 			ctx.spendTurn();
 		},
 	});
@@ -543,6 +563,8 @@ export function usePhaseShiftFlow(ctx: PhaseShiftContext, instanceId?: string): 
 				}
 			}
 			ctx.consumeSpell('phaseShift', instanceId);
+			// PhaseShift calls onSpellUsed after any confirmed target, chance 1/3 (v3.3.8).
+			ctx.onScrollUsed?.(1, 1 / 3);
 			ctx.spendTurn();
 		},
 	});

@@ -43,14 +43,14 @@
     "android:apk": "cd android && ./gradlew assembleDebug"
   },
   "dependencies": {
-    "@datamoc/mw_games": "^0.22.0",
-    "mwg": "npm:@datamoc/mw_games@^0.22.0",
+    "@datamoc/mw_games": "^0.23.0",
+    "mwg": "npm:@datamoc/mw_games@^0.23.0",
     "pixi.js": "^8.20.1"
   },
   "devDependencies": {
-    "@capacitor/android": "^7.6.9",
-    "@capacitor/cli": "^7.6.9",
-    "@capacitor/core": "^7.6.9",
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
     "typescript": "^5.9.2",
     "vite": "^7.1.3"
   },

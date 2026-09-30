@@ -1,6 +1,6 @@
 import type { DungeonScene } from '../../dungeonScene';
 import { faceCharacter } from '../../../ui/characterPlacement';
-import { AnimatedSprite, Blob, Random, ReactionTable, Roguelike, Tweener, type ReactionRule } from 'mwg';
+import { AnimatedSprite, Blob, Easing, Random, ReactionTable, Roguelike, Tweener, type ReactionRule } from 'mwg';
 import { simulationRandom } from '../../../adapters/mwgRandom';
 import { takeGooTurn as runGooTurn } from '../../../simulation/gooBoss';
 import { runVertigoStep } from '../../../adapters/gameSimulation';
@@ -1292,7 +1292,7 @@ if (monster.hp <= 0) {
 	canSpreadFistGrass(this: DungeonScene, x: number, y: number): boolean {
 		if (!this.level.inside(x, y) || !this.level.passable(x, y)) return false;
 		if (this.level.get(x, y) === HIGH_GRASS) return false;
-		if (this.stairs && Math.max(Math.abs(x - this.stairs.x), Math.abs(y - (this.stairs.y + 3))) <= 4) return false;
+		if (this.stairs && Roguelike.chebyshevDistance({ x, y }, { x: this.stairs.x, y: this.stairs.y + 3 }) <= 4) return false;
 		return true;
 	},
 
@@ -1597,7 +1597,7 @@ if (monster.hp <= 0) {
 		motion.clear();
 		void motion.tween(0.15, progress => {
 			if (sprite.destroyed) return;
-			const eased = 2 * progress - progress * progress;
+			const eased = Easing.easeOutQuad(progress);
 			sprite.position.set(fromX + (to.x * TILE - fromX) * eased, fromY + (to.y * TILE - fromY) * eased);
 			if (progress === 1 && sprite instanceof AnimatedSprite && sprite.playing === 'run') sprite.play('idle');
 		});

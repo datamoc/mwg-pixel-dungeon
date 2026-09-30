@@ -165,9 +165,11 @@ export function showRankingsWindow(windows: WindowStack): void {
 	}
 	const body = records.slice(0, 8).map((record, index) => {
 		const result = t(record.result === 'won' ? 'rankings$record.won' : 'rankings$record.something');
+		const ascent = record.highestAscent && record.highestAscent > 0
+			? `\n${t('windows.wndranking$statstab.ascent')}: ${record.highestAscent}` : '';
 		//`WndRanking.java:116,446-466`: a record with challenges lists them under the score.
 		const chal = record.challenges ? `\n${t('windows.wndchallenges.title')}: ${challengesFromMask(record.challenges).map(challengeLabel).join(', ')}` : '';
-		return `#${index + 1}  ${result}\n${t('windows.wndranking$statstab.score')}: ${record.score}${chal}`;
+		return `#${index + 1}  ${result}\n${t('windows.wndranking$statstab.score')}: ${record.score}${ascent}${chal}`;
 	}).join('\n\n');
 	const total = new Label({ text: `${t('scenes.rankingsscene.total')} ${records.length}`, size: 7, color: theme().color.textDim });
 	const entries = new Label({ text: body, size: 6, wrapWidth: width - 16, color: theme().color.text });

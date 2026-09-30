@@ -1,4 +1,5 @@
 import type { Combatant } from './combatState';
+import { chebyshevDistance } from './combatState';
 import type { SimulationRandom } from './random';
 import { BRUTE_RAGE_DAMAGE, GOO_STATE_STATS } from './mwlMonsterStateStats';
 import { preparationDamageRoll, preparationLevelByNumber } from './preparation';
@@ -179,7 +180,7 @@ export function rollHit(attacker: Readonly<Combatant>, defender: Readonly<Combat
 	//range-based (adjacent = melee, blocked; anything further = throwable, lands on evasion 0)
 	//so the quest stays completable; Java also negates wand damage when seen (kept in useSpecial)
 	if (defender.kind === 'greatCrab' && !defender.sleeping && !magic) {
-		const adjacent = Math.max(Math.abs(attacker.x - defender.x), Math.abs(attacker.y - defender.y)) <= 1;
+		const adjacent = chebyshevDistance(attacker, defender) <= 1;
 		if (adjacent) return false;
 	}
 	//Java computes both rolls in float32, one multiplication at a time (`acuRoll *= 1.25f` ...), and the

@@ -5,56 +5,56 @@ import { t } from '../i18n';
 import { SpdButton } from './spdButton';
 import { titleIcon } from './titleIcons';
 import { hudZoom } from './interfaceMode';
+import { QUICKSLOT_SIZE, type QuickslotState } from '../items/itemActions';
+import { addLongPress } from './longPress';
 
-/** Toolbar.java GROUP layout and original toolbar.png frames.
- * Fixed item actions substitute for assignable quickslots; extra port verbs live
- * in the expandable menu. They all use the same game action handler as keyboard input.
+/** A quickslot state plus the item's display name for the hover hint - Java's
+ * `QuickslotTool` tooltip is the item's own name (`Item.name()`). */
+export type QuickslotView = QuickslotState & { name?: string };
+
+/** `Toolbar.java` GROUP layout (`Toolbar.layout()`, tag `v3.3.8`): the `more` menu cap,
+ * six assignable `QuickslotTool` cells, then search, wait and the backpack - with the
+ * contextual ability buttons above the row. Java shows 4-6 slots by UI width
+ * (`quickslotsToShow`); this row always shows all six, a stated simplification (a narrow
+ * phone window can overflow where Java would swap - there is no `SlotSwapTool` here).
  *
- * `QuickslotButton` (Java's assignable slots) is live as four small slots above the row:
- * each shows the assigned item's icon (or an empty frame) and uses it on tap, through the
- * scene's `quickslot0..3` actions. Assignment is automatic - the most recently used
- * consumable fills its family's slot - since this port has no drag-to-slot gesture; the
- * model (assigned id + instance, persisted per run) is Java's own shape.
+ * The pre-2026-09-30 row of fixed verbs (read/quaff/eat/special on generic icons, plus
+ * four auto-filled family slots floating above) is gone: tap uses the assigned item
+ * through the scene's `quickslot0..5` actions, long-press opens the bag to pick the
+ * slot's item (`ui.quickslotbutton.select_item`), and tapping an empty (or placeholder)
+ * slot opens the picker too. Those verbs remain as hero actions for keyboard/keys.
  */
-export interface QuickslotState {
-	id: string;
-	instanceId?: string;
-	frame: number;
-	quantity: number;
-}
-
 export class SpdToolbar extends Container {
 	private readonly extras = new Container();
 	private readonly hint = new Label({ size: 8 });
 	private readonly row = new Container();
 	/** Java's `ActionIndicator`: contextual ability buttons living above the toolbar, shown only
-	 * while the ability is available. Only `Preparation`'s blink exists here so far, and it appears
-	 * exactly while the hero holds Preparation - i.e. while invisible. Java draws a dedicated
-	 * `HeroIcon`; this uses SPD's own `action_name` text, because the port has no preparation icon
-	 * art and a text label is honest where invented art would not be. */
+	 * while the ability is available. Java draws a dedicated `HeroIcon`; this uses SPD action-name
+	 * text because the port has no matching icon art. */
 	private readonly actions = new Container();
 	private readonly preparationButton: SpdButton;
 	/** Java's armor-ability button: the class armor's `AC_ABILITY` action, shown while the hero has
 	 * an ability chosen, carrying its name and charge percent the way `ClassArmor.status()` does. */
 	private readonly armorAbilityButton: SpdButton;
-	private readonly quickslots: SpdButton[] = [];
-	private readonly rowWidth = 174;
+	private readonly berserkButton: SpdButton;
+	private readonly slotCells: { root: Container; base: Sprite; icon: Sprite | null; qty: Label }[] = [];
+	private readonly rowWidth = 218;
 	private zoom = 2;
 	/** Both contextual buttons stack above the toolbar row - Preparation at `-19`, the armor
-	 *  ability above it at `-40`, quickslots at `-62` - so what the interface layout has to
+	 *  ability above it at `-40`, and Berserk at `-61` - so what the interface layout has to
 	 *  clear is the *highest* visible button's own top edge, not one row per button. Counting
 	 *  a row each would reserve 21 units for a button whose box reaches 40 above the row, and
 	 *  the game log is anchored off this number (`positionInterface`), so the newest lines
 	 *  would land underneath the armor button. */
 	get occupiedHeight(): number {
 		let contextual = 0;
-		for (const button of [this.preparationButton, this.armorAbilityButton, ...this.quickslots]) {
+		for (const button of [this.preparationButton, this.armorAbilityButton, this.berserkButton]) {
 			if (button.visible) contextual = Math.max(contextual, -button.y);
 		}
 		return (this.extras.visible ? 143 : 26) * this.zoom + contextual * this.zoom;
 	}
 
-	constructor(itemTextures: Texture[], onAction: (action: string) => void, onLayout: () => void) {
+	constructor(onAction: (action: string) => void, onLayout: () => void, hooks: { assignSlot: (slot: number) => void }) {
 		super();
 		this.extras.visible = false;
 		this.hint.visible = false;
@@ -69,7 +69,11 @@ export class SpdToolbar extends Container {
 		this.armorAbilityButton.position.set(this.rowWidth - 110, -40);
 		this.armorAbilityButton.visible = false;
 		this.actions.addChild(this.armorAbilityButton);
-		//Both contextual buttons live in one container so `occupiedHeight` moves the interface above
+		this.berserkButton = new SpdButton({ width: 110, height: 19, text: t('actors.buffs.berserk.action_name'), onClick: () => onAction('berserk') });
+		this.berserkButton.position.set(this.rowWidth - 110, -61);
+		this.berserkButton.visible = false;
+		this.actions.addChild(this.berserkButton);
+		//Contextual buttons live in one container so `occupiedHeight` moves the interface above
 		//the toolbar once, whichever of them appears.
 		this.actions.visible = false;
 		const sheet = runState.sprites.uiToolbar;
@@ -94,21 +98,52 @@ export class SpdToolbar extends Container {
 			this.hint.visible = false;
 			onLayout();
 		});
-		[['read', 'port.action.scroll'], ['quaff', 'port.action.potion'], ['eat', 'port.action.eat'], ['special', 'port.action.special']].forEach(([action, key], i) => {
-			add(action, key, 64, 22, 24, new Sprite(itemTextures[i]));
-		});
-		//`Toolbar.layout()`: search, wait, then the backpack as the right-hand cap of the row.
-		add('search', 'port.action.search', 44, 20, 26, new Sprite(crop(192, 0, 16, 16)));
-		add('wait', 'port.action.wait', 24, 20, 26, new Sprite(crop(176, 0, 16, 16)));
-		add('inventory', 'port.action.bag', 0, 24, 26, new Sprite(crop(160, 0, 16, 16)));
-		//Java's four `QuickslotButton`s sit above the row; each uses its assigned item on tap.
-		for (let slot = 0; slot < 4; slot++) {
-			const button = new SpdButton({ width: 22, height: 22, text: `Q${slot + 1}`, onClick: () => onAction(`quickslot${slot}`) });
-			button.position.set(this.rowWidth - 110 + slot * 24, -62);
-			button.visible = false;
-			this.actions.addChild(button);
-			this.quickslots.push(button);
+		//Java's six `QuickslotTool`s sit in the row itself: uniform 22-wide cells on the
+		//same frame art as the row's other buttons (Java varies the end caps by position;
+		//one frame for all six is a stated simplification, not a new asset).
+		//items.png is a 16-wide grid of 16px cells; slot icons cut the same frames the bag shows.
+		for (let slot = 0; slot < QUICKSLOT_SIZE; slot++) {
+			const root = new Container();
+			const base = new Sprite(crop(64, 0, 22, 24));
+			root.addChild(base);
+			const qty = new Label({ size: 7 });
+			qty.anchor.set(1, 1);
+			qty.position.set(21, 23);
+			root.addChild(qty);
+			root.eventMode = 'static';
+			root.cursor = 'pointer';
+			root.position.set(x, 26 - 24);
+			x += 22;
+			const cell = { root, base, icon: null as Sprite | null, qty };
+			this.slotCells.push(cell);
+			const index = slot;
+			addLongPress(root, {
+				onTap: () => {
+					const current = this.slotState(index);
+					//An empty or placeholder slot cannot fire - tapping it picks its item instead.
+					if (!current || current.quantity <= 0) hooks.assignSlot(index);
+					else onAction(`quickslot${index}`);
+				},
+				onLongPress: () => hooks.assignSlot(index),
+			});
+			root.on('pointerover', () => {
+				const current = this.slotState(index);
+				this.hint.setText(current?.name ?? t('ui.toolbar.quickslot_assign'));
+				this.hint.visible = !this.extras.visible;
+			});
+			root.on('pointerout', () => {
+				this.hint.visible = false;
+				base.tint = 0xffffff;
+			});
+			this.row.addChild(root);
 		}
+		//`Toolbar.layout()`: search, wait, then the backpack as the right-hand cap of the row.
+		//Hover labels are SPD's own keybinding names (`Toolbar.hoverText()`, tag `v3.3.8`),
+		//translated in every locale - the `port.action.*` keys this row used before this
+		//change never existed in any catalogue and rendered as raw key text.
+		add('search', 'windows.wndkeybindings.examine', 44, 20, 26, new Sprite(crop(192, 0, 16, 16)));
+		add('wait', 'windows.wndkeybindings.wait', 24, 20, 26, new Sprite(crop(176, 0, 16, 16)));
+		add('inventory', 'windows.wndkeybindings.inventory', 0, 24, 26, new Sprite(crop(160, 0, 16, 16)));
 		const extraActions = [['examine', 'port.action.examine'], ['upgrade', 'port.action.upgrade'], ['talents', 'port.action.talents'], ['weaponAbility', 'port.action.ability'], ['journal', 'windows.wndkeybindings.journal'], ['gameMenu', 'windows.wndkeybindings.menu'], ['save', 'port.action.save'], ['load', 'port.action.load']];
 		extraActions.forEach(([action, key], i) => {
 			const button = new SpdButton({ width: 100, height: 21, text: t(key), onClick: () => {
@@ -119,6 +154,11 @@ export class SpdToolbar extends Container {
 			button.position.set(this.rowWidth - 100, -extraActions.length * 23 + i * 23);
 			this.extras.addChild(button);
 		});
+	}
+
+	private states: readonly (QuickslotView | null)[] = [];
+	private slotState(slot: number): QuickslotView | null {
+		return this.states[slot] ?? null;
 	}
 
 	/** `height` is where the row's bottom edge sits; `windowHeight` (the whole window) picks the zoom, which must not shrink when a docked pane takes height. */
@@ -135,7 +175,7 @@ export class SpdToolbar extends Container {
 	setPreparationAvailable(available: boolean): boolean {
 		if (this.preparationButton.visible === available) return false;
 		this.preparationButton.visible = available;
-		this.actions.visible = this.preparationButton.visible || this.armorAbilityButton.visible;
+		this.actions.visible = this.preparationButton.visible || this.armorAbilityButton.visible || this.berserkButton.visible;
 		return true;
 	}
 
@@ -148,28 +188,52 @@ export class SpdToolbar extends Container {
 		if (label !== null) this.armorAbilityButton.setText(label);
 		this.armorAbilityLabel = label;
 		this.armorAbilityButton.visible = label !== null;
-		this.actions.visible = this.preparationButton.visible || this.armorAbilityButton.visible
-			|| this.quickslots.some((button) => button.visible);
+		this.actions.visible = this.preparationButton.visible || this.armorAbilityButton.visible || this.berserkButton.visible;
 		return changed;
+	}
+
+	/** Java's Berserk `ActionIndicator.Action`: available at full rage while the state is normal. */
+	setBerserkAvailable(available: boolean): boolean {
+		if (this.berserkButton.visible === available) return false;
+		this.berserkButton.visible = available;
+		this.actions.visible = this.preparationButton.visible || this.armorAbilityButton.visible || available;
+		return true;
 	}
 	private armorAbilityLabel: string | null = null;
 
-	/** Reflects the scene's four quickslot assignments. Returns whether layout must move. */
-	setQuickslots(slots: readonly (QuickslotState | null)[]): boolean {
+	/** Reflects the scene's six quickslot assignments: each cell draws its item's own sprite
+	 * (the same `items.png` frame the bag shows) with the live quantity, dimmed while the
+	 * assignment is a placeholder. Returns whether anything visible changed. */
+	setQuickslots(slots: readonly (QuickslotView | null)[]): boolean {
 		let changed = false;
-		for (let i = 0; i < 4; i++) {
+		const items = runState.sprites.items;
+		for (let i = 0; i < QUICKSLOT_SIZE; i++) {
 			const state = slots[i] ?? null;
-			const button = this.quickslots[i];
-			if (!button) continue;
-			const visible = state !== null && state.quantity > 0;
-			const label = state ? `${state.id.slice(0, 4)}${state.quantity > 1 ? `×${state.quantity}` : ''}` : `Q${i + 1}`;
-			if (button.visible !== visible) { button.visible = visible; changed = true; }
-			button.setText(label);
+			const cell = this.slotCells[i];
+			if (!cell) continue;
+			const before = this.states[i] ?? null;
+			const signature = (s: QuickslotView | null) => (s ? `${s.id}:${s.instanceId ?? ''}:${s.frame}:${s.quantity}` : 'empty');
+			if (signature(before) !== signature(state)) changed = true;
+			if (cell.icon) {
+				cell.root.removeChild(cell.icon);
+				cell.icon.destroy();
+				cell.icon = null;
+			}
+			if (state) {
+				const icon = new Sprite(new Texture({
+					source: items.source,
+					frame: new Rectangle((state.frame % 16) * 16, Math.floor(state.frame / 16) * 16, 16, 16),
+				}));
+				icon.position.set(3, 4);
+				icon.alpha = state.quantity > 0 ? 1 : 0.4;
+				cell.root.addChild(icon);
+				cell.icon = icon;
+				cell.qty.setText(state.quantity > 1 ? String(state.quantity) : '');
+			} else {
+				cell.qty.setText('');
+			}
 		}
-		if (changed) {
-			this.actions.visible = this.preparationButton.visible || this.armorAbilityButton.visible
-				|| this.quickslots.some((button) => button.visible);
-		}
+		this.states = slots.map((s) => (s ? { ...s } : null));
 		return changed;
 	}
 }

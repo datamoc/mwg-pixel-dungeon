@@ -1,5 +1,6 @@
 import type { Step } from './combatState';
 import type { SimulationRandom } from './random';
+import { chebyshevDistance } from './combatState';
 
 /** DM-300's two ability choices, kept separate from the scene's effect application. */
 export type DM300Ability = 'vent' | 'rockfall';
@@ -104,7 +105,7 @@ export function planDM300Rockfall(
 		const at = { x: center.x + dx, y: center.y + dy };
 		if (!inside(at.x, at.y) || !passable(at.x, at.y)) continue;
 		if (safe && at.x === safe.x && at.y === safe.y) continue;
-		const distance = Math.max(Math.abs(dx), Math.abs(dy));
+		const distance = chebyshevDistance(at, center);
 		if (distance <= 1 || random.int(0, distance) === 0) cells.push(at);
 	}
 	return { cells, safe };

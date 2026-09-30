@@ -48,7 +48,7 @@ npm run android:apk                         # gradle assembleDebug
 ```
 
 On Windows the last one is `cd android; .\gradlew.bat assembleDebug`. A local Android build needs
-a JDK (17+) and an Android SDK with platform 35 (`ANDROID_HOME`/`ANDROID_SDK_ROOT` set); the
+a JDK (21+, Capacitor 8) and an Android SDK with platform 36 (`ANDROID_HOME`/`ANDROID_SDK_ROOT` set); the
 workflow's `android` job installs both. The desktop build needs the .NET 8 SDK and Windows.
 
 The version step is not optional for a release: `cap add android` writes `versionCode 1` /
