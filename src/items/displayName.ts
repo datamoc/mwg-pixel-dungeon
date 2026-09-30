@@ -3,6 +3,7 @@ import { ITEM_KEYS, RING_KEYS, WAND_KEYS, has, t } from '../i18n';
 import { wandTypeFromSource, type WandType } from './wands';
 import { ARMOR_NAME_BY_CLASS, WEAPON_NAME_BY_CLASS, isClassArmorId, weaponCombat } from './catalog';
 import { tippedDartNameKey, missileDamageRange } from './missiles';
+import { getCurse } from './itemCurses';
 import { armorSTRReq, missileSTRReq, weaponSTRReq } from './strReq';
 import { TOME_SPELL_COST, type SubclassSpellId, type TalentSpellId, type TomeSpellId } from '../simulation/clericSpells';
 import { tomeSpellKey } from './holyTome';
@@ -113,6 +114,15 @@ export interface ItemDisplayContext {
 	 * bag. Optional so callers without a scene (plain bag lookups) stay valid. */
 	readonly weaponSourceClass?: string;
 	readonly armorSourceClass?: string;
+	/** Live imbuement state for the equipped-gear labels (`Weapon.name()` /
+	 * `Armor.name()`, tag `v3.3.8`): the wielded/worn affix (for the curse gate)
+	 * and whether each holy buff is up. Optional so plain bag lookups stay valid -
+	 * Java only relabels the equipped piece, so a context without these simply
+	 * never labels. */
+	readonly weaponAffix?: string | null;
+	readonly armorGlyph?: string | null;
+	readonly holyWeaponUp?: boolean;
+	readonly holyWardUp?: boolean;
 	/** Ring ids whose type stands revealed while level/curse stay hidden (Thief's Intuition rank 1). */
 	readonly ringTypesKnown: ReadonlySet<string>;
 }
@@ -261,7 +271,20 @@ export function itemDisplayName(scene: ItemDisplayContext, id: string, identifie
 		const hardened = weapon ? (hardenedFlag ?? (isEquipped(scene.weaponId, scene.weaponInstanceId) ? scene.weaponHardened : false))
 			: armor ? (hardenedFlag ?? (isEquipped(scene.armorId, scene.armorInstanceId) ? scene.armorHardened : false)) : false;
 		const hardenedNote = hardened ? ` ${t(weapon ? 'port.item.hardened.weapon' : 'port.item.hardened.armor')}` : '';
-		return `${t(classKey ?? ITEM_KEYS[id] ?? id)}${affix}${hardenedNote}`;
+		//`Weapon.name()` / `Armor.name()` (`Weapon.java` 409-411, `Armor.java` 574-576,
+		//tag `v3.3.8`): the equipped, non-cursed piece reads through the real
+		//`ench_name` / `glyph_name` keys while its holy buff is up. The slot affix
+		//answers the curse gate (the worn piece is out of the bag); a carried
+		//duplicate falls back to its own affix. The HOLY glow is unported.
+		let base = t(classKey ?? ITEM_KEYS[id] ?? id);
+		if (weapon && isEquipped(scene.weaponId, scene.weaponInstanceId) && scene.holyWeaponUp === true
+			&& getCurse(scene.weaponAffix ?? item?.affix ?? '') === undefined) {
+			base = t('actors.hero.spells.holyweapon.ench_name', { '0': base });
+		} else if (armor && isEquipped(scene.armorId, scene.armorInstanceId) && scene.holyWardUp === true
+			&& getCurse(scene.armorGlyph ?? item?.affix ?? '') === undefined) {
+			base = t('actors.hero.spells.holyward.glyph_name', { '0': base });
+		}
+		return `${base}${affix}${hardenedNote}`;
 	}
 	if (id.startsWith('potion')) return t(scene.appearances.appearanceOf('potion', id));
 	if (id.startsWith('scroll')) return t(scene.appearances.appearanceOf('scroll', id));

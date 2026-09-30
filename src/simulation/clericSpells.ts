@@ -106,9 +106,23 @@ export const TOME_SPELL_COST: Record<TomeSpellId, number> = {
 /** `Hero.heroDamageIntRange(2, 8)`: `Random.NormalIntRange` (clover is unported). */
 export const GUIDING_LIGHT_DAMAGE: readonly [number, number] = [2, 8];
 
-/** The non-Paladin holy damage/blocking (Paladin's 6/3 need the subclass). */
+/** The base (non-Paladin) holy damage/blocking. */
 export const HOLY_WEAPON_BONUS = 2;
 export const HOLY_WARD_BLOCK = 1;
+
+/** `Hero.attackProc()`'s unarmed `HolyWepBuff` arm and `Weapon.proc()`'s wielded
+ * arm (`Hero.java` 1501, `Weapon.java` 157, tag `v3.3.8`): the flat holy bonus
+ * is 6 for the Paladin, 2 otherwise. */
+export function holyWeaponBonus(subclass: string | undefined): number {
+	return subclass === 'paladin' ? 6 : HOLY_WEAPON_BONUS;
+}
+
+/** `Hero.defenseProc()`'s unarmored `HolyArmBuff` arm and `Armor.proc()`'s worn
+ * arm (`Hero.java` 1550, `Armor.java` 829, tag `v3.3.8`): the flat block is 3
+ * for the Paladin, 1 otherwise. */
+export function holyWardBlock(subclass: string | undefined): number {
+	return subclass === 'paladin' ? 3 : HOLY_WARD_BLOCK;
+}
 
 /** Talent spells (`ClericSpell.getSpellList()` tiers 1-2, tag `v3.3.8`): the tier-1
  * pair (HolyIntuition, ShieldOfLight) then the tier-2 row (RecallInscription,

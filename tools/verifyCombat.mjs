@@ -383,6 +383,23 @@ export function verifyCombat(require, check) {
 		assert.match(blastSource, /auraProtectedDamage\(c, damage\)[\s\S]*?c\.buffs\['powerOfMany'\] !== undefined[\s\S]*?powerOfManyDamageFactor\(this\.talentRank\('life_link'\)\)[\s\S]*?doomDamage\(damage, c\)/,
 			'shared dispatch reduces powered defenders between Aura and Doom');
 	});
+	check('Paladin holy halves keep the worn enchant and scale 6/3 (R029)', () => {
+		//`Weapon.proc()`'s wielding arm (`Weapon.java` 147-162) procs the worn
+		//enchant for the Paladin (or a cursed enchant for anyone) alongside the
+		//flat bonus, and suppresses it otherwise; the mirror image and the armor
+		//block scale the same way (`MirrorImage.java` 193, `Armor.java` 829).
+		const attack = readFileSync(new URL('../src/scenes/dungeon/combatResolution.ts', import.meta.url), 'utf8');
+		assert.match(attack, /const paladin = attacker === this\.hero && this\.subclass\(\) === 'paladin';/,
+			'paladin gate is computed for the holy proc seam');
+		assert.match(attack, /&& !paladin && !\(typeof rawAffix === 'string' && getCurse\(rawAffix\)\) \? null : rawAffix;/,
+			'paladin and cursed enchants survive the holy suppression');
+		assert.match(attack, /doomDamage\(Math\.round\(holyWeaponBonus\(this\.subclass\(\)\) \* this\.genericProcMultiplier\(\)\), defender\)/,
+			'wielded holy flat is Paladin ? 6 : 2');
+		assert.match(attack, /doomDamage\(holyWeaponBonus\(this\.subclass\(\)\), defender\)/,
+			'mirror-image holy flat is Paladin ? 6 : 2');
+		assert.match(attack, /scaled - Math\.round\(holyWardBlock\(this\.subclass\(\)\) \* this\.armorProcMultiplier\(this\.hero\)\)/,
+			'worn holy block is Paladin ? 3 : 1');
+	});
 	check('Mob.add(Amok) wakes sleeping mobs directly into HUNTING', () => {
 		//`Mob.add()` switches Amok targets to HUNTING (Mob.java, tag v3.3.8), bypassing
 		//Sleeping.awaken() and CrystalGuardian's reach-gated override; the port records that

@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
  * type-check plus browser verification instead.
  */
 export function verifyClericSpells(require, check) {
-	const { tomeChargeCap, tomeCastGate, spendTomeCharge, TOME_SPELL_COST, holyIntuitionCost, SHIELD_OF_LIGHT_COST, satiatedShieldAmount, searingLightBonus, shieldOfLightRange, SHIELD_OF_LIGHT_TURNS, recallTrackerDuration, recallInscriptionCost, sunrayDamage, sunrayBlindDuration, SUNRAY_COST, DIVINE_SENSE_COST, divineSenseRange, BLESS_COST, blessSelfDurations, blessOtherDurations, enlighteningMealCharge, CLEANSE_COST, cleanseImmunityTurns, cleanseShield, JUDGEMENT_COST, judgementDamageBase, DIVINE_INTERVENTION_COST, divineInterventionShield, divineInterventionExtension, flashCost, flashRange, BEAMING_RAY_COST, BEAMING_RAY_BOOST_TURNS, beamingRayRange, beamingRayBoostFactor, auraDamageFactor, auraProtectedDamage, auraProcBonus } = require('./simulation/clericSpells');
+	const { tomeChargeCap, tomeCastGate, spendTomeCharge, TOME_SPELL_COST, holyIntuitionCost, SHIELD_OF_LIGHT_COST, satiatedShieldAmount, searingLightBonus, shieldOfLightRange, SHIELD_OF_LIGHT_TURNS, recallTrackerDuration, recallInscriptionCost, sunrayDamage, sunrayBlindDuration, SUNRAY_COST, DIVINE_SENSE_COST, divineSenseRange, BLESS_COST, blessSelfDurations, blessOtherDurations, enlighteningMealCharge, CLEANSE_COST, cleanseImmunityTurns, cleanseShield, JUDGEMENT_COST, judgementDamageBase, DIVINE_INTERVENTION_COST, divineInterventionShield, divineInterventionExtension, flashCost, flashRange, BEAMING_RAY_COST, BEAMING_RAY_BOOST_TURNS, beamingRayRange, beamingRayBoostFactor, auraDamageFactor, auraProtectedDamage, auraProcBonus, holyWeaponBonus, holyWardBlock } = require('./simulation/clericSpells');
 	const { BUFF_DURATION } = require('./simulation/buffs');
 
 	check('the tome cap is min(level+3, 10)', () => {
@@ -107,6 +107,23 @@ export function verifyClericSpells(require, check) {
 	check('Searing Light adds 1+2*points on an illuminated hit: 3 at rank 1, 5 at rank 2', () => {
 		assert.equal(searingLightBonus(1), 3);
 		assert.equal(searingLightBonus(2), 5);
+	});
+
+	check('Paladin holy halves scale 6/3, anyone else 2/1 (R029)', () => {
+		assert.equal(holyWeaponBonus('paladin'), 6);
+		assert.equal(holyWeaponBonus(undefined), 2);
+		assert.equal(holyWeaponBonus('priest'), 2);
+		assert.equal(holyWardBlock('paladin'), 3);
+		assert.equal(holyWardBlock(undefined), 1);
+		assert.equal(holyWardBlock('priest'), 1);
+	});
+
+	check('imbued gear reads through the real ench_name/glyph_name keys (R029)', () => {
+		const names = readFileSync(new URL('../src/items/displayName.ts', import.meta.url), 'utf8');
+		assert.match(names, /t\('actors\.hero\.spells\.holyweapon\.ench_name', \{ '0': base \}\)/,
+			'wielded imbued weapon uses ench_name');
+		assert.match(names, /t\('actors\.hero\.spells\.holyward\.glyph_name', \{ '0': base \}\)/,
+			'worn imbued armor uses glyph_name');
 	});
 
 	check('ShieldOfLight blocks NormalIntRange(1+points, 2+2points): 2-4 at rank 1, 3-6 at rank 2', () => {

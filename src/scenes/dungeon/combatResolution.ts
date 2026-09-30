@@ -12,7 +12,7 @@ import { fieryDamageHalved } from '../../simulation/buffs';
 import { UNSTABLE_DELEGATES } from '../../items/itemAffixes';
 import { shadowCloneArmorProc, shadowCloneBladeProc } from '../../simulation/rogueAbilities';
 import { ringArcanaMultiplier, ringForceBonus, ringTenacityMultiplier } from '../../items/ringModifiers';
-import { HOLY_WARD_BLOCK, HOLY_WEAPON_BONUS, auraProcBonus, auraProtectedDamage, satiatedShieldAmount, searingLightBonus, shieldOfLightRange, trinityBodyGlyphActive } from '../../simulation/clericSpells';
+import { auraProcBonus, auraProtectedDamage, holyWardBlock, holyWeaponBonus, satiatedShieldAmount, searingLightBonus, shieldOfLightRange, trinityBodyGlyphActive } from '../../simulation/clericSpells';
 import { capitalize, has, t } from '../../i18n/index';
 import { assassinReachBonus, cleaveComboSeed, deathlessFuryTriggers, empoweredStrikeBonus, farsightMultiplier, shieldBatteryGain, weaponRechargingDamage } from '../../talentEffects';
 import { weaponRechargeWindow } from '../../items/artifactRecharge';
@@ -1025,12 +1025,13 @@ export const combatResolutionMethods: Record<string, any> = {
 		//Illuminated already detached up front at the Searing Light site (any attacker,
 		//like Java's `Char.attack()`), so there is nothing left to consume here.
 		//`MirrorImage.attackProc()` (tag `v3.3.8`): the image's own landed hits deal the
-		//holy bonus while the hero's buff is up. Arcana reads 1.0 on an image (no rings),
-		//so the `round(2 x multiplier)` is a flat 2; the later `hp <= 0` backstop credits
-		//the kill, as with every other on-hit damage block.
+		//holy bonus (Paladin ? 6 : 2) while the hero's buff is up. Java scales by the
+		//wielded-arm multiplier, which reads 1.0 on an image (no rings, no own
+		//Berserk), so the port keeps the flat value; the later `hp <= 0` backstop
+		//credits the kill, as with every other on-hit damage block.
 		if (attacker.allyKind === 'mirror' && this.hero.buffs['holyWeapon'] !== undefined
 			&& !defender.magicImmune && defender.hp > 0) {
-			const dealt = doomDamage(HOLY_WEAPON_BONUS, defender);
+			const dealt = doomDamage(holyWeaponBonus(this.subclass()), defender);
 			defender.hp -= dealt;
 			this.showDamage(defender, dealt);
 		}
@@ -1480,9 +1481,13 @@ export const combatResolutionMethods: Record<string, any> = {
 		//`Weapon.proc()` (tag `v3.3.8`): HolyWeapon overrides any beneficial enchantment -
 		//the weapon's own affix (including Unstable delegations and the Sniper share)
 		//does not proc while the buff is up. Cursed affixes still proc, and the Paladin
-		//keeping both needs the subclass - neither half is modeled beyond this gate.
+		//keeps both halves (worn enchant plus holy flat, `Weapon.java` 147-154). The
+		//port resolves one affix slot (worn else trinity), so a Paladin carrying both
+		//procs the one slot - Java would proc the worn enchant AND the trinity
+		//enchant (stated reduction).
+		const paladin = attacker === this.hero && this.subclass() === 'paladin';
 		const affix = attacker === this.hero && this.hero.buffs['holyWeapon'] !== undefined
-			&& !(typeof rawAffix === 'string' && getCurse(rawAffix)) ? null : rawAffix;
+			&& !paladin && !(typeof rawAffix === 'string' && getCurse(rawAffix)) ? null : rawAffix;
 		//`Char.damage()`'s Kinetic block: a killing blow with the tracker attached stores the
 		//overkill BEYOND this swing's conserved bonus (`-HP - tracker.conservedDamage`),
 		//scaled by `genericProcChanceMultiplier()` (Arcana, plus Berserk's
@@ -1506,15 +1511,16 @@ export const combatResolutionMethods: Record<string, any> = {
 		if (!gearDelegated && this.subclass() === 'battlemage') this.wandCharges.refund(2 + this.talentRank('mystical_charge'));
 		if (!gearDelegated && this.subclass() === 'monk_sub' && this.talentRank('combined_energy') > 0) this.tomeCharges.advance(this.talentRank('combined_energy'));
 		//`Weapon.proc()`'s `HolyWepBuff` clause (tag `v3.3.8`): a separate magical hit for
-		//`round(2 x Enchantment.genericProcChanceMultiplier())` - Arcana plus Berserk's
-		//catalyst term through the shared `genericProcMultiplier()` (Smite's +3 and the
-		//one-shot trackers need unported systems). Melee bump only (`attacker === hero`
-		//excludes the throw/shoot/zap copies, like the Force ring's own gate) on a live,
-		//non-MagicImmune defender (`Char.damage()`'s generic magical zero-out); the later
-		//`hp <= 0` backstop credits the kill, as with every other on-hit damage block.
+		//`round((Paladin ? 6 : 2) x Enchantment.genericProcChanceMultiplier())` - Arcana
+		//plus Berserk's catalyst term through the shared `genericProcMultiplier()`
+		//(Smite's +3 and the one-shot trackers need unported systems). Melee bump only
+		//(`attacker === hero` excludes the throw/shoot/zap copies, like the Force
+		//ring's own gate) on a live, non-MagicImmune defender (`Char.damage()`'s
+		//generic magical zero-out); the later `hp <= 0` backstop credits the kill, as
+		//with every other on-hit damage block.
 		if (attacker === this.hero && this.hero.buffs['holyWeapon'] !== undefined
 			&& !defender.magicImmune && defender.hp > 0) {
-			const holy = doomDamage(Math.round(HOLY_WEAPON_BONUS * this.genericProcMultiplier()), defender);
+			const holy = doomDamage(Math.round(holyWeaponBonus(this.subclass()) * this.genericProcMultiplier()), defender);
 			if (holy > 0) {
 				defender.hp -= holy;
 				this.showDamage(defender, holy);
@@ -2000,13 +2006,13 @@ export const combatResolutionMethods: Record<string, any> = {
 			const reduction = Random.normalRange(Math.round(level * multiplier), Math.round((3 + level * 1.5) * multiplier));
 			scaled = Math.max(0, scaled - reduction);
 		}
-		//`Armor.proc()`'s `HolyArmBuff` clause (tag `v3.3.8`): the imbued armor blocks 1
-		//more (3 for the unported Paladin), scaled by the defend-side proc multiplier -
-		//Arcana plus the aura term, never the attack-side Berserk term
+		//`Armor.proc()`'s `HolyArmBuff` clause (tag `v3.3.8`): the imbued armor blocks
+		//(Paladin ? 3 : 1) more, scaled by the defend-side proc multiplier - Arcana
+		//plus the aura term, never the attack-side Berserk term
 		//(`Armor.Glyph.genericProcChanceMultiplier()`, `Armor.java` 821-831). Placed
 		//pre-shield, where the armor stage sits in Java's `defenseProc()` chain.
 		if (!skipDefenseHooks.skipHolyWard && scaled > 0 && this.hero.buffs['holyWard'] !== undefined) {
-			scaled = Math.max(0, scaled - Math.round(HOLY_WARD_BLOCK * this.armorProcMultiplier(this.hero)));
+			scaled = Math.max(0, scaled - Math.round(holyWardBlock(this.subclass()) * this.armorProcMultiplier(this.hero)));
 		}
 		let viscosityDamage = Math.max(0, scaled);
 		//Viscosity.proc()/ViscosityTracker.deferDamage() (items/armor/glyphs/Viscosity.java,

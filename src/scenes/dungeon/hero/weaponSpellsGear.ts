@@ -1605,9 +1605,11 @@ export const weaponSpellsGearMethods = {
 		return { bag: this.bag, appearances: this.appearances, wandType: this.wandType,
 			weaponId: this.weaponId, weaponInstanceId: this.weaponInstanceId, weaponHardened: this.weaponHardened,
 			weaponSourceClass: this.weaponSourceClass,
+			weaponAffix: this.weaponAffix, holyWeaponUp: this.hero?.buffs['holyWeapon'] !== undefined,
 			ringTypesKnown: ringTypesKnownFor(this),
 			armorId: this.armorId, armorInstanceId: this.armorInstanceId, armorHardened: this.armorHardened,
-			armorSourceClass: this.armorSourceClass };
+			armorSourceClass: this.armorSourceClass,
+			armorGlyph: this.armorGlyph, holyWardUp: this.hero?.buffs['holyWard'] !== undefined };
 	},
 
 	worldOf(this: DungeonScene, creature: Creature): [number, number] {
