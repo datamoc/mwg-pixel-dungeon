@@ -4219,3 +4219,7 @@ Every family named in the section below is matrixed (55 matrices under `garbage/
 # R078. Seed to Potion random branch
 
 - [x] **R078** _(Weight `SeedToPotion`'s random branch like `Generator.randomUsingDefaults(POTION)`)_ **Closed 2026-10-01:** the run-scoped Healing counter, weighted outputs and reroll behavior passed the existing workflow checks and a live 30-craft toolkit run (90 seeds, 10 accepted Healing outputs, zero Strength outcomes). See `coverage/rows-items-consumables-and-crafting.md`.
+
+# R079. Meat Pie recipe classes
+
+- [x] **R079** _(Widen the `MeatPie` recipe classes)_ **Closed 2026-10-01:** browser-tested the three-slot toolkit picker with Phantom Meat and Pasty, exact Food, and Chargrilled Meat plus the `meat` MysteryMeat carrier. Both crafts consumed the selected items and charged Java's 6 energy. See `coverage/rows-items-consumables-and-crafting.md`.
