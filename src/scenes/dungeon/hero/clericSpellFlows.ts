@@ -1,11 +1,14 @@
 import type { DungeonScene } from '../../dungeonScene';
 import { Random, Roguelike } from 'mwg';
-import { addBuff, BUFF_DURATION, doomDamage, NEGATIVE_BUFFS, type BuffId } from '../../../combat';
-import { isUndeadOrDemonic } from '../../../monsters';
+import { addBuff, BUFF_DURATION, doomDamage, NEGATIVE_BUFFS, type BuffId, type Creature, type Step } from '../../../combat';
+import { IMMOVABLE_KINDS, isUndeadOrDemonic, type MonsterId } from '../../../monsters';
 import { isChallengeEnabled } from '../../../challenges';
 import { t } from '../../../i18n/index';
+import { runState } from '../../../runState';
+import { TILE } from '../../../dungeonConstants';
+import { CIRCLE8_OFFSETS } from '../../../simulation/wandering';
 import { findHolyTome } from '../../../items/holyTome';
-import { AURA_COST, DIVINE_INTERVENTION_COST, HALLOWED_GROUND_COST, HALLOWED_GROUND_HEAL, HALLOWED_GROUND_ROOTS_TURNS, HOLY_LANCE_COST, JUDGEMENT_COST, LAY_ON_HANDS_COST, LAY_ON_HANDS_SHIELD_CASTS, MNEMONIC_POSITIVE_BUFFS, PRAYER_COST, RADIANCE_COST, RADIANCE_LIGHT_DARKNESS_TURNS, RADIANCE_LIGHT_TURNS, RADIANCE_PARALYSIS_TURNS, SMITE_COST, WALL_OF_LIGHT_COST, WALL_OF_LIGHT_PARALYSIS_TURNS, WALL_OF_LIGHT_TURNS, flashCost, flashRange, hallowedGroundRadius, holyLanceDamage, judgementDamageBase, layOnHandsHeal, prayerExtension, radianceBonusDamage, smiteBonusDamage, tomeCastGate, tomeChargeCap, wallOfLightCost, wallOfLightWidth, divineInterventionShield, divineInterventionExtension } from '../../../simulation/clericSpells';
+import { AURA_COST, DIVINE_INTERVENTION_COST, HALLOWED_GROUND_COST, HALLOWED_GROUND_HEAL, HALLOWED_GROUND_ROOTS_TURNS, HOLY_LANCE_COST, JUDGEMENT_COST, LAY_ON_HANDS_COST, LAY_ON_HANDS_SHIELD_CASTS, BEAMING_RAY_COST, BEAMING_RAY_BOOST_TURNS, MNEMONIC_POSITIVE_BUFFS, PRAYER_COST, RADIANCE_COST, RADIANCE_LIGHT_DARKNESS_TURNS, RADIANCE_LIGHT_TURNS, RADIANCE_PARALYSIS_TURNS, SMITE_COST, WALL_OF_LIGHT_COST, WALL_OF_LIGHT_PARALYSIS_TURNS, WALL_OF_LIGHT_TURNS, beamingRayRange, flashCost, flashRange, hallowedGroundRadius, holyLanceDamage, judgementDamageBase, layOnHandsHeal, prayerExtension, radianceBonusDamage, smiteBonusDamage, tomeCastGate, tomeChargeCap, wallOfLightCost, wallOfLightWidth, divineInterventionShield, divineInterventionExtension } from '../../../simulation/clericSpells';
 
 /**
  * The HolyTome's Priest/Paladin subclass tier (`ClericSpell.getSpellList()`
@@ -133,6 +136,133 @@ export const clericSpellFlowsMethods = {
 		this.ascendedFlashCasts++;
 	},
 
+	/**
+	 * `BeamingRay.onCast()` (`actors/hero/spells/BeamingRay.java`, tag `v3.3.8`):
+	 * the powered ally (Java also accepts a Cleric `Stasis` ally - that spell is
+	 * unported, so the stasis arm and its LifeLink prolong stay closed) teleports
+	 * beside the target cell, acquires the cell enemy (or the farthest enemy within
+	 * 4 of the landing, measured from the ally), and gains the 10-turn
+	 * `BeamingRayBoost` carrying that
+	 * enemy id - which later swaps its 1.25x roll factor for `1.3+0.05xBEAMING_RAY`.
+	 * Range is `4*points` from the ally (halved for IMMOVABLE allies); a solid,
+	 * unseen, or occupied target falls back to the nearest free visible neighbour
+	 * to the ally. Presentation follows the port's aimed-spell precedents: the
+	 * `SunRay` beam overlay plus the `zap` cue (no `sprite.zap`), the teleport
+	 * appear plus the shared teleported-destination handling, and the turn/charge
+	 * tail. Refusals spend nothing.
+	 */
+	resolveBeamingRay(this: DungeonScene, cell: Step, instanceId?: string): void {
+		const tome = findHolyTome(this.bag, instanceId);
+		const rank = this.talentRank('beaming_ray');
+		const ally = this.poweredAlly();
+		if (!tome || rank <= 0 || !ally
+			|| tomeCastGate(tome.cursed === true, this.hero.magicImmune === true, tome.charge ?? tomeChargeCap(tome.level ?? 0), BEAMING_RAY_COST) !== 'ok') {
+			this.say(t('port.log.tomenospell'), 'negative');
+			return;
+		}
+		if (!this.level.inside(cell.x, cell.y)) {
+			this.say(t('actors.hero.spells.beamingray.no_space'), 'negative');
+			return;
+		}
+		//Landing spot: the target cell, else the nearest free visible neighbour
+		//to the ally. Java also accepts an avoid-map flyer cell; the port has no
+		//avoid map, so passable-only stands (stated simplification).
+		const occupant = this.creatureAt(cell.x, cell.y) ?? undefined;
+		//No `solid[]` map exists here; `passable` is the enterability test every port teleport uses.
+		let landing: Step | undefined = this.level.passable(cell.x, cell.y)
+			&& this.fov.isVisible(cell.x, cell.y) && !occupant ? { x: cell.x, y: cell.y } : undefined;
+		if (!landing) {
+			let best: Step | undefined;
+			let bestDist = Infinity;
+			for (const [dx, dy] of CIRCLE8_OFFSETS) {
+				const x = cell.x + dx, y = cell.y + dy;
+				if (!this.level.inside(x, y) || this.creatureAt(x, y)
+					|| !this.fov.isVisible(x, y) || !this.level.passable(x, y)) continue;
+				const d = Math.hypot(x - ally.x, y - ally.y);
+				if (d < bestDist) { bestDist = d; best = { x, y }; }
+			}
+			landing = best;
+		}
+		if (!landing) {
+			this.say(t('actors.hero.spells.beamingray.no_space'), 'negative');
+			return;
+		}
+		let range = beamingRayRange(rank);
+		if (ally.kind !== undefined && IMMOVABLE_KINDS.has(ally.kind as MonsterId)) range = range / 2;
+		if (Roguelike.chebyshevDistance(ally, landing) > range) {
+			this.say(t('actors.hero.spells.beamingray.out_of_range'), 'negative');
+			return;
+		}
+		//Enemy acquisition: the target-cell occupant when hostile, else the farthest
+		//hostile within 4 of the landing, measured Euclidean from the ally like
+		//Java's `trueDistance` scan (the 4-cell gate itself is Java's Chebyshev
+		//`Level.distance`, as elsewhere in this port).
+		let chTarget = occupant !== undefined && this.isHostileToAlly(occupant) ? occupant : undefined;
+		if (chTarget !== undefined && this.subclass() === 'priest') {
+			//Java illuminates only this directly-targeted occupant, never a fallback mark.
+			addBuff(chTarget, 'illuminated');
+			addBuff(chTarget, 'wasIlluminated');
+		}
+		if (!chTarget) {
+			let best: Creature | undefined;
+			let bestDist = -1;
+			for (const c of this.creatures) {
+				if (!this.isHostileToAlly(c)) continue;
+				if (Roguelike.chebyshevDistance(landing, c) > 4) continue;
+				const d = Math.hypot(c.x - ally.x, c.y - ally.y);
+				if (d > bestDist) { bestDist = d; best = c; }
+			}
+			chTarget = best;
+		}
+		//`Beam.SunRay` plus `Assets.Sounds.RAY`: the port's beam overlay, with the
+		//shared `zap` cue standing in (no ray asset exists here).
+		const sprite = this.sprite(ally);
+		this.zapBeams.push({
+			x1: sprite.x + sprite.width / 2, y1: sprite.y + sprite.height / 2,
+			x2: (landing.x + 0.5) * TILE, y2: (landing.y + 0.5) * TILE,
+			timeLeft: 1, duration: 1, color: 0xffff44,
+		});
+		runState.audio.cue('zap');
+		const from = { x: ally.x, y: ally.y };
+		ally.x = landing.x;
+		ally.y = landing.y;
+		sprite.x = landing.x * TILE;
+		sprite.y = landing.y * TILE;
+		this.playTeleportAppear(from, landing, ally);
+		this.occupyTeleportedCharacter(ally);
+		//Direct the ally onto its mark: the four orderable kinds take the standing
+		//attack order (Java `DirectableAlly.targetChar`); any other empowered mob
+		//is aggroed onto the mark instead (Java `Mob.aggro`, the R103 `lastSeen`
+		//precedent). With no mark the orderable kinds stand down (Java
+		//`clearDefensingPos`); nothing persists - hunt orders reset on load like
+		//every other `directAlly` order, while the boost target id below persists
+		//for the damage variant.
+		const orderable = ally.allyKind === 'ghost' || ally.allyKind === 'spiritHawk'
+			|| ally.allyKind === 'lightAlly' || ally.allyKind === 'shadowClone';
+		if (chTarget !== undefined) {
+			if (orderable) {
+				ally.allyDefendCell = undefined;
+				ally.allyMovingToDefend = false;
+				ally.allyTargetChar = chTarget;
+			} else {
+				ally.lastSeen = { x: chTarget.x, y: chTarget.y };
+			}
+		} else if (orderable) {
+			ally.allyDefendCell = undefined;
+			ally.allyMovingToDefend = false;
+			ally.allyTargetChar = undefined;
+		}
+		//`affect(ally, BeamingRayBoost.class).object = ...` (only when marked) then
+		//`prolong(ally, BeamingRayBoost.class, DURATION)` - re-cast refreshes.
+		addBuff(ally, 'beamingRayBoost', BEAMING_RAY_BOOST_TURNS);
+		if (chTarget !== undefined) ally.beamingRayTarget = chTarget.id;
+		else delete ally.beamingRayTarget;
+		if (this.hero.buffs['invisibility'] !== undefined) delete this.hero.buffs['invisibility'];
+		this.actionSpentTurn = true;
+		this.spendHeroTurn(1);
+		this.consumeSatiatedSpells();
+		this.spendTomeForCast(tome, BEAMING_RAY_COST, 'beamingRay');
+	},
 	/**
 	 * `Radiance.onCast()` (`ClericSpell`, tag `v3.3.8`): Priest only, no
 	 * targeting. Every visible non-ally takes the `Illuminated` mark (and its

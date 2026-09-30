@@ -916,7 +916,7 @@ export const inventoryQuickslotMethods = {
 							|| spell === 'cleanse' || spell === 'radiance' || spell === 'holyLance'
 							|| spell === 'hallowedGround' || spell === 'mnemonicPrayer' || spell === 'smite'
 							|| spell === 'layOnHands' || spell === 'auraOfProtection'
-							|| spell === 'wallOfLight' || spell === 'divineIntervention' || spell === 'judgement' || spell === 'flash') onPick(spell as TomeSpellId | TalentSpellId | SubclassSpellId);
+							|| spell === 'wallOfLight' || spell === 'divineIntervention' || spell === 'judgement' || spell === 'flash' || spell === 'beamingRay') onPick(spell as TomeSpellId | TalentSpellId | SubclassSpellId);
 					});
 				},
 				//`TargetedClericSpell.onCast()` opens the same `MAGIC_BOLT` selector for
@@ -962,6 +962,7 @@ export const inventoryQuickslotMethods = {
 				resolveJudgement: (instanceId) => scene.resolveJudgement(instanceId), ascendedActive: () => scene.ascendedTurns > 0,
 				ascendedDivineCast: () => scene.ascendedDivineCast, resolveDivineIntervention: (instanceId) => scene.resolveDivineIntervention(instanceId),
 				ascendedFlashCasts: () => scene.ascendedFlashCasts, resolveFlash: (cell, instanceId) => scene.resolveFlash(cell, instanceId),
+				resolveBeamingRay: (cell, instanceId) => scene.resolveBeamingRay(cell, instanceId),
 				say: scene.say.bind(scene),
 				t,
 			};

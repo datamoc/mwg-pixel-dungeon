@@ -179,7 +179,7 @@ export function itemDisplayName(scene: ItemDisplayContext, id: string, identifie
 			|| spell === 'radiance' || spell === 'holyLance' || spell === 'mnemonicPrayer'
 			|| spell === 'smite' || spell === 'layOnHands' || spell === 'auraOfProtection'
 			|| spell === 'hallowedGround' || spell === 'wallOfLight' || spell === 'divineIntervention'
-			|| spell === 'judgement' || spell === 'flash') {
+			|| spell === 'judgement' || spell === 'flash' || spell === 'beamingRay') {
 			return t(`port.spell.${tomeSpellKey(spell)}.name`);
 		}
 	}

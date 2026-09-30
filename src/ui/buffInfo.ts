@@ -67,6 +67,9 @@ const BUFF_MESSAGE_KEY: Partial<Record<BuffId, string>> = {
 	illuminated: 'port.buff.illuminated',
 	satiatedSpells: 'port.buff.satiatedspells',
 	shieldOfLight: 'port.buff.shieldoflight',
+	//`BeamingRayBoost` keeps its real bundle strings (present in every locale),
+	//so unlike the Cleric buffs above it needs no `port.*` carry.
+	beamingRayBoost: 'actors.hero.spells.beamingray$beamingrayboost',
 	divineSense: 'port.buff.divinesense',
 	recallUsed: 'port.buff.recallused',
 	//The Cleric's `Cleanse` prolongs `PotionOfCleansing.Cleanse` itself, whose

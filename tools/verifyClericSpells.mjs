@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
  * type-check plus browser verification instead.
  */
 export function verifyClericSpells(require, check) {
-	const { tomeChargeCap, tomeCastGate, spendTomeCharge, TOME_SPELL_COST, holyIntuitionCost, SHIELD_OF_LIGHT_COST, satiatedShieldAmount, searingLightBonus, shieldOfLightRange, SHIELD_OF_LIGHT_TURNS, recallTrackerDuration, recallInscriptionCost, sunrayDamage, sunrayBlindDuration, SUNRAY_COST, DIVINE_SENSE_COST, divineSenseRange, BLESS_COST, blessSelfDurations, blessOtherDurations, enlighteningMealCharge, CLEANSE_COST, cleanseImmunityTurns, cleanseShield, JUDGEMENT_COST, judgementDamageBase, DIVINE_INTERVENTION_COST, divineInterventionShield, divineInterventionExtension, flashCost, flashRange, auraDamageFactor, auraProtectedDamage, auraProcBonus } = require('./simulation/clericSpells');
+	const { tomeChargeCap, tomeCastGate, spendTomeCharge, TOME_SPELL_COST, holyIntuitionCost, SHIELD_OF_LIGHT_COST, satiatedShieldAmount, searingLightBonus, shieldOfLightRange, SHIELD_OF_LIGHT_TURNS, recallTrackerDuration, recallInscriptionCost, sunrayDamage, sunrayBlindDuration, SUNRAY_COST, DIVINE_SENSE_COST, divineSenseRange, BLESS_COST, blessSelfDurations, blessOtherDurations, enlighteningMealCharge, CLEANSE_COST, cleanseImmunityTurns, cleanseShield, JUDGEMENT_COST, judgementDamageBase, DIVINE_INTERVENTION_COST, divineInterventionShield, divineInterventionExtension, flashCost, flashRange, BEAMING_RAY_COST, BEAMING_RAY_BOOST_TURNS, beamingRayRange, beamingRayBoostFactor, auraDamageFactor, auraProtectedDamage, auraProcBonus } = require('./simulation/clericSpells');
 	const { BUFF_DURATION } = require('./simulation/buffs');
 
 	check('the tome cap is min(level+3, 10)', () => {
@@ -235,5 +235,34 @@ export function verifyClericSpells(require, check) {
 		const body = flows.slice(flows.indexOf('resolveJudgement(this'), flows.indexOf('resolveFlash(this'));
 		assert.match(body, /const rawDamage = Random\.normalRange\(base, base \* 2\);/);
 		assert.match(body, /this\.applyCharacterDamage\(victim, rawDamage, \{ pierceArmor: true/);
+	});
+	check('BeamingRay costs 1, ranges 4xrank, boosts 1.3+0.05xrank for 10 turns', () => {
+		assert.equal(BEAMING_RAY_COST, 1);
+		assert.equal(beamingRayRange(1), 4);
+		assert.equal(beamingRayRange(4), 16);
+		assert.equal(beamingRayBoostFactor(1), 1.35);
+		assert.equal(beamingRayBoostFactor(4), 1.5);
+		assert.equal(BEAMING_RAY_BOOST_TURNS, 10);
+		assert.equal(BUFF_DURATION['beamingRayBoost'], 10);
+	});
+
+	check('BeamingRay teleports the powered ally onto its mark and boosts it', () => {
+		const flows = readFileSync(new URL('../src/scenes/dungeon/hero/clericSpellFlows.ts', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+		const body = flows.slice(flows.indexOf('resolveBeamingRay(this'), flows.indexOf('resolveRadiance(this'));
+		assert.match(body, /const ally = this\.poweredAlly\(\);/);
+		assert.match(body, /tomeCastGate\(tome\.cursed === true,[\s\S]*?BEAMING_RAY_COST\) !== 'ok'/);
+		assert.match(body, /actors\.hero\.spells\.beamingray\.no_space/);
+		assert.match(body, /actors\.hero\.spells\.beamingray\.out_of_range/);
+		assert.match(body, /color: 0xffff44/);
+		assert.match(body, /let landing: Step \| undefined = this\.level\.passable\(cell\.x, cell\.y\)/);
+		assert.match(body, /if \(d > bestDist\) \{ bestDist = d; best = c; \}/);
+		assert.match(body, /addBuff\(chTarget, 'illuminated'\);[\s\S]*?if \(!chTarget\)/);
+		assert.match(body, /ally\.beamingRayTarget = chTarget\.id;/);
+		assert.match(body, /addBuff\(ally, 'beamingRayBoost', BEAMING_RAY_BOOST_TURNS\);/);
+		assert.match(body, /this\.spendTomeForCast\(tome, BEAMING_RAY_COST, 'beamingRay'\);/);
+		const tome = readFileSync(new URL('../src/items/holyTome.ts', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+		assert.match(tome, /talentRank\('beaming_ray'\) > 0\) rows\.push\(\{ spell: 'beamingRay'/);
+		assert.match(tome, /if \(spell === 'beamingRay'\) return BEAMING_RAY_COST;/);
+		assert.match(tome, /spell === 'beamingRay' \? 'beamingray'/);
 	});
 }

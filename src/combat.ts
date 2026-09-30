@@ -75,6 +75,14 @@ export interface Creature extends Combatant {
 	 */
 	shieldOfLightTarget?: string;
 	/**
+	 * `BeamingRay.BeamingRayBoost.object` (`actors/hero/spells/BeamingRay.java`,
+	 * tag `v3.3.8`): the enemy id the boosted ally answers to. Java keeps it on
+	 * the buff; this port's buff map holds durations only, so it lives here with
+	 * the other per-creature payloads. Meaningful only while
+	 * `buffs['beamingRayBoost']` is up.
+	 */
+	beamingRayTarget?: string;
+	/**
 	 * `RecallInscription.UsedItemTracker.item` (`actors/hero/spells/RecallInscription.java`,
 	 * tag `v3.3.8`): the re-castable scroll/stone sourceClass. Java keeps it on the
 	 * buff; this port's buff map holds durations only, so it lives here with the

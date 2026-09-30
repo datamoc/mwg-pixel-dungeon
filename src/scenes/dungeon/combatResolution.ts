@@ -31,7 +31,7 @@ import { BUFF_DURATION, INFINITE_ACCURACY, INFINITE_EVASION, NEGATIVE_BUFFS, abs
 import { absorbCreatureShields } from '../../simulation/allyShields';
 import { liveStats, IMMOVABLE_KINDS } from '../../monsters';
 import { imageSuperDefenseSkill } from '../../simulation/mirrorImage';
-import { POWER_OF_MANY_ATTACK_FACTOR, powerOfManyDamageFactor } from '../../simulation/clericSpells';
+import { POWER_OF_MANY_ATTACK_FACTOR, beamingRayBoostFactor, powerOfManyDamageFactor } from '../../simulation/clericSpells';
 
 /**
  * True only while a *delegated* `ShadowAlly` swing resolves in `attack()`/`heroOnHit`:
@@ -356,12 +356,15 @@ export const combatResolutionMethods: Record<string, any> = {
 			attackerWeaponStrOk: false,
 		}) === 0) defender.evasion = 0;
 		//`Char.attack()` (tag `v3.3.8`): a PowerOfMany-powered ally deals 1.25x melee
-		//damage. It folds into the roll multiplier so it lands BEFORE the armor
-		//subtraction like Java's pre-`defenseProc` chain (applying it after rounded
-		//differently whenever armor absorbed anything). Java's BeamingRay boost
-		//variant (1.3x + 0.05x/rank) needs the unported BeamingRay cast/buff.
+		//damage - or `1.3+0.05xBEAMING_RAY` when its `BeamingRayBoost` names this
+		//victim. Both fold into the roll multiplier so they land BEFORE the armor
+		//subtraction like Java's pre-`defenseProc` chain (applying either after
+		//rounded differently whenever armor absorbed anything).
+		const beamingMark = attacker.isAlly && attacker.buffs['powerOfMany'] !== undefined
+			&& attacker.buffs['beamingRayBoost'] !== undefined
+			&& attacker.beamingRayTarget !== undefined && attacker.beamingRayTarget === defender.id;
 		const powerAllyMult = attacker.isAlly && attacker.buffs['powerOfMany'] !== undefined
-			? POWER_OF_MANY_ATTACK_FACTOR : 1;
+			? (beamingMark ? beamingRayBoostFactor(this.talentRank('beaming_ray')) : POWER_OF_MANY_ATTACK_FACTOR) : 1;
 		let attackRoll;
 		try {
 			attackRoll = this.resolveHeroAbilityAttack(attacker, defender, surprise || forceHit, accFactor, damageMultiplier * powerAllyMult);

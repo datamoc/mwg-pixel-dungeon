@@ -114,7 +114,7 @@ export const HOLY_WARD_BLOCK = 1;
  * pair (HolyIntuition, ShieldOfLight) then the tier-2 row (RecallInscription,
  * Sunray, DivineSense, BlessSpell), each gated on its talent and listed in
  * `getSpellList` order. */
-export type TalentSpellId = 'holyIntuition' | 'shieldOfLight' | 'recallInscription' | 'sunray' | 'divineSense' | 'bless' | 'cleanse';
+export type TalentSpellId = 'holyIntuition' | 'shieldOfLight' | 'recallInscription' | 'sunray' | 'divineSense' | 'bless' | 'cleanse' | 'beamingRay';
 export type SubclassSpellId = 'radiance' | 'holyLance' | 'hallowedGround' | 'mnemonicPrayer' | 'smite' | 'layOnHands' | 'auraOfProtection' | 'wallOfLight' | 'divineIntervention' | 'judgement' | 'flash';
 
 /** `HolyIntuition.chargeUse()`: `4 - points` (3 at rank 1, 2 at rank 2). */
@@ -222,6 +222,22 @@ export function flashCost(priorFlashCasts: number): number {
 }
 export function flashRange(talentRank: number): number {
 	return 2 + Math.max(0, talentRank);
+}
+
+/**
+ * `BeamingRay` (`actors/hero/spells/BeamingRay.java`, tag `v3.3.8`): the `ClericSpell`
+ * default cost 1 (no `chargeUse()` override); the ally teleport range `4*points`
+ * (halved for IMMOVABLE allies); the powered-ally attack factor `1.3+0.05*points`
+ * that replaces the plain 1.25x when the boost target is the victim; the 10-turn
+ * `BeamingRayBoost` window carrying the target id.
+ */
+export const BEAMING_RAY_COST = 1;
+export const BEAMING_RAY_BOOST_TURNS = 10;
+export function beamingRayRange(talentRank: number): number {
+	return 4 * Math.max(0, talentRank);
+}
+export function beamingRayBoostFactor(talentRank: number): number {
+	return 1.3 + 0.05 * Math.max(0, talentRank);
 }
 
 /**

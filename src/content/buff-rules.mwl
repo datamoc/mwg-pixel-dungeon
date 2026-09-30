@@ -561,6 +561,14 @@
             buff: "oozeActed",
             duration: 9999,
           },
+          {
+            // `BeamingRay.BeamingRayBoost.DURATION`: the 10-turn empowered-ally
+            // window (`FlavourBuff`, so the generic countdown/fade covers it; the
+            // target id rides `Creature.beamingRayTarget`, saved alongside).
+            tag: "row",
+            buff: "beamingRayBoost",
+            duration: 10,
+          },
         ],
       },
     ],

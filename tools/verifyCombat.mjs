@@ -367,11 +367,15 @@ export function verifyCombat(require, check) {
 		//`Char.attack()` multiplies the ally 1.25x BEFORE `defenseProc`/armor; the old
 		//post-DR application rounded differently whenever armor absorbed anything.
 		const attack = readFileSync(new URL('../src/scenes/dungeon/combatResolution.ts', import.meta.url), 'utf8');
-		assert.match(attack, /const powerAllyMult = attacker\.isAlly && attacker\.buffs\['powerOfMany'\] !== undefined[\s\S]*?\? POWER_OF_MANY_ATTACK_FACTOR : 1;[\s\S]*?damageMultiplier \* powerAllyMult/,
+		assert.match(attack, /const powerAllyMult = attacker\.isAlly && attacker\.buffs\['powerOfMany'\] !== undefined[\s\S]*?beamingMark \? beamingRayBoostFactor\(this\.talentRank\('beaming_ray'\)\) : POWER_OF_MANY_ATTACK_FACTOR\) : 1;[\s\S]*?damageMultiplier \* powerAllyMult/,
 			'a powered ally folds 1.25x into the roll multiplier, ahead of armor');
 		const seam = readFileSync(new URL('../src/scenes/dungeon/attackSeams.ts', import.meta.url), 'utf8');
 		assert.doesNotMatch(attack, /Math\.round\(damage \* POWER_OF_MANY_ATTACK_FACTOR\)/,
 			'no post-armor ally multiplier may remain on the attack() tail');
+		assert.match(attack, /beamingRayBoostFactor\(this\.talentRank\('beaming_ray'\)\)/,
+			'the boost variant folds into the same pre-armor multiplier');
+		assert.match(attack, /attacker\.beamingRayTarget === defender\.id;/,
+			'the boost variant fires only on the marked victim');
 		assert.doesNotMatch(seam, /POWER_OF_MANY_ATTACK_FACTOR/,
 			'no second ally copy may live on the T61 seam tail (it would double-apply once wired)');
 		//`Char.damage()` cuts a powered defender AFTER Aura and BEFORE Doom, on every

@@ -9112,6 +9112,20 @@ export const gameData = {
 								"column": 13
 							},
 							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "beamingRayBoost",
+								"duration": "10"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 568,
+								"column": 13
+							},
+							"gettext": []
 						}
 					],
 					"location": {

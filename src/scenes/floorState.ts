@@ -154,6 +154,9 @@ export interface SavedCreature {
 	/** `DirectableAlly.storeInBundle()` (`v3.3.8`): the Rose ghost's defend cell/order state. */
 	allyDefendCell?: { x: number; y: number };
 	allyMovingToDefend?: boolean;
+	/** `BeamingRay.BeamingRayBoost.object`: the boosted ally's target enemy id
+	 * (null when the boost has no target, or the buff is down). */
+	beamingRayTarget?: string | null;
 	lightAllyClass?: 'warrior' | 'mage' | 'rogue' | 'huntress' | 'duelist';
 	powerOfManyBarrier?: number;
 	powerOfManyBarrierPartial?: number;

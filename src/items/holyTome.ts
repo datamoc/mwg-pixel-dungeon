@@ -1,6 +1,6 @@
 import type { Actors } from 'mwg';
-import type { Step } from '../combat';
-import { AURA_COST, BLESS_COST, CLEANSE_COST, DIVINE_INTERVENTION_COST, DIVINE_SENSE_COST, HALLOWED_GROUND_COST, HOLY_LANCE_COST, JUDGEMENT_COST, LAY_ON_HANDS_COST, PRAYER_COST, RADIANCE_COST, SHIELD_OF_LIGHT_COST, SMITE_COST, SUNRAY_COST, TOME_SPELL_COST, WALL_OF_LIGHT_COST, flashCost, guidingLightCost, holyIntuitionCost, recallInscriptionCost, tomeCastGate, tomeChargeCap, wallOfLightCost, type SubclassSpellId, type TalentSpellId, type TomeSpellId } from '../simulation/clericSpells';
+import type { Creature, Step } from '../combat';
+import { AURA_COST, BLESS_COST, CLEANSE_COST, DIVINE_INTERVENTION_COST, DIVINE_SENSE_COST, HALLOWED_GROUND_COST, HOLY_LANCE_COST, BEAMING_RAY_COST, JUDGEMENT_COST, LAY_ON_HANDS_COST, PRAYER_COST, RADIANCE_COST, SHIELD_OF_LIGHT_COST, SMITE_COST, SUNRAY_COST, TOME_SPELL_COST, WALL_OF_LIGHT_COST, flashCost, guidingLightCost, holyIntuitionCost, recallInscriptionCost, tomeCastGate, tomeChargeCap, wallOfLightCost, type SubclassSpellId, type TalentSpellId, type TomeSpellId } from '../simulation/clericSpells';
 
 /** The `HolyTome` fields the cast flows read and write on the bag entry. */
 export interface TomeBagItem {
@@ -32,7 +32,7 @@ export function tomeSpellKey(spell: TomeSpellId | TalentSpellId | SubclassSpellI
 		: spell === 'radiance' ? 'radiance' : spell === 'holyLance' ? 'holylance'
 		: spell === 'mnemonicPrayer' ? 'mnemonicprayer' : spell === 'smite' ? 'smite'
 		: spell === 'layOnHands' ? 'layonhands' : spell === 'hallowedGround' ? 'hallowedground'
-		: spell === 'wallOfLight' ? 'walloflight' : spell === 'divineIntervention' ? 'divineintervention' : spell === 'judgement' ? 'judgement' : spell === 'flash' ? 'flash' : 'auraofprotection';
+		: spell === 'wallOfLight' ? 'walloflight' : spell === 'divineIntervention' ? 'divineintervention' : spell === 'judgement' ? 'judgement' : spell === 'flash' ? 'flash' : spell === 'beamingRay' ? 'beamingray' : 'auraofprotection';
 }
 
 /**
@@ -60,6 +60,7 @@ export function tomePickerCost(spell: TomeSpellId | TalentSpellId | SubclassSpel
 	if (spell === 'divineIntervention') return DIVINE_INTERVENTION_COST;
 	if (spell === 'judgement') return JUDGEMENT_COST;
 	if (spell === 'flash') return flashCost(0);
+if (spell === 'beamingRay') return BEAMING_RAY_COST;
 	return TOME_SPELL_COST[spell];
 }
 
@@ -117,6 +118,8 @@ export interface HolyTomeContext {
 	beginSpellAim(onConfirm: (cell: Step) => void, range?: number): void;
 	/** The level's diagonal span - the uncapped rays borrow it like the armor-ability aim. */
 	readonly levelSpan: () => number;
+	/** The live powered ally, if any (`PowerOfMany.getPoweredAlly`). */
+	readonly poweredAlly: () => Creature | undefined;
 	openBagPicker(title: string, entries: HolyTomeBagPick[], onPick: (pick: HolyTomeBagPick) => void): void;
 	/** Scene-side GuidingLight resolution (damage/press, turn, charge). */
 	resolveGuidingLight(cell: Step, instanceId?: string): void;
@@ -154,6 +157,8 @@ export interface HolyTomeContext {
 	resolveWallOfLight(cell: Step, instanceId?: string): void;
 	resolveJudgement(instanceId?: string): void;
 	resolveFlash(cell: Step, instanceId?: string): void;
+	/** Scene-side BeamingRay resolution (ally teleport + boost, turn, charge). */
+	resolveBeamingRay(cell: Step, instanceId?: string): void;
 	say(line: string, level?: 'info' | 'positive' | 'negative' | 'warning'): void;
 	t(key: string, params?: Record<string, string | number>): string;
 }
@@ -219,6 +224,7 @@ export function useHolyTomeFlow(ctx: HolyTomeContext, instanceId?: string): void
 	if (ctx.ascendedActive() && !ctx.ascendedDivineCast() && ctx.talentRank('divine_intervention') > 0) rows.push({ spell: 'divineIntervention', affordable: charge >= DIVINE_INTERVENTION_COST });
 	if (ctx.ascendedActive() && ctx.talentRank('judgement') > 0) rows.push({ spell: 'judgement', affordable: charge >= JUDGEMENT_COST });
 	if (ctx.ascendedActive() && ctx.talentRank('flash') > 0) rows.push({ spell: 'flash', affordable: charge >= flashCost(ctx.ascendedFlashCasts()) });
+if (ctx.talentRank('beaming_ray') > 0) rows.push({ spell: 'beamingRay', affordable: charge >= BEAMING_RAY_COST });
 	ctx.openSpellPicker(rows, (spell) => {
 		if (spell === 'guidingLight') castGuidingLightFlow(ctx, instanceId);
 		else if (spell === 'holyIntuition') castHolyIntuitionFlow(ctx, instanceId);
@@ -239,6 +245,7 @@ export function useHolyTomeFlow(ctx: HolyTomeContext, instanceId?: string): void
 		else if (spell === 'divineIntervention') castDivineInterventionFlow(ctx, instanceId);
 		else if (spell === 'judgement') castJudgementFlow(ctx, instanceId);
 		else if (spell === 'flash') castFlashFlow(ctx, instanceId);
+else if (spell === 'beamingRay') castBeamingRayFlow(ctx, instanceId);
 		else ctx.castHolyBuff(spell, instanceId);
 	});
 }
@@ -424,6 +431,23 @@ export function castFlashFlow(ctx: HolyTomeContext, instanceId?: string): void {
 		return;
 	}
 	ctx.beginSpellAim((cell) => ctx.resolveFlash(cell, instanceId), 2 + ctx.talentRank('flash'));
+}
+
+/**
+ * `BeamingRay.onCast()` (`TargetedClericSpell`, tag `v3.3.8`): the talent, a live
+ * powered ally (Java also accepts a stasis ally - the Stasis spell is unported, so
+ * that half stays closed), and the purse re-check, then the cell selector. The
+ * range and target rules live at confirm time (`resolveBeamingRay`).
+ */
+export function castBeamingRayFlow(ctx: HolyTomeContext, instanceId?: string): void {
+	const tome = findHolyTome(ctx.bag, instanceId);
+	if (!tome) return;
+	if (ctx.talentRank('beaming_ray') <= 0 || !ctx.poweredAlly()
+		|| tomeCastGate(tome.cursed === true, ctx.magicImmune, tome.charge ?? tomeChargeCap(tome.level ?? 0), BEAMING_RAY_COST) !== 'ok') {
+		ctx.say(ctx.t('port.log.tomenospell'), 'negative');
+		return;
+	}
+	ctx.beginSpellAim((cell) => ctx.resolveBeamingRay(cell, instanceId), ctx.levelSpan());
 }
 
 /**
