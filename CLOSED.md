@@ -4247,3 +4247,7 @@ Every family named in the section below is matrixed (55 matrices under `garbage/
 # R099. Explicit depth monster roster
 
 - [x] **R099** _(`monsterRosterFallback` region ladder)_ **Closed 2026-10-01:** the roster verifier passed for depths 1–26 and boss-floor sharing; live depth 1 spawned Rat and Snake and rendered without browser console errors.
+
+# R072. Heap explosion item consequences
+
+- [x] **R072** _(Heap.explode() ordinary ground-item consequences)_ **Closed 2026-10-01:** the tagged Java `items/Heap.java` has specific Potion, ShatteredPot and Bomb branches, not a per-item callback; the tipped-dart premise was incorrect. The port survivor, potion and bomb rules are documented and pinned; ShatteredPot subtype behavior stays with R009.
