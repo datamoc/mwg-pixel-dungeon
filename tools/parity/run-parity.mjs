@@ -10,6 +10,7 @@
  *   node tools/parity/run-parity.mjs --stage mobdata     every Java mob class's stats/loot (v3.3.8) vs the port's monster tables
  *   node tools/parity/run-parity.mjs --stage quest       run-level Wandmaker quest type rolled during levelgen, checkout oracle vs TS
  *   node tools/parity/run-parity.mjs --stage ghost       Ghost spawn gate + reward rolls per (seed, depth), Java v3.3.8 vs TS
+ *   node tools/parity/run-parity.mjs --stage imp         Imp spawn gate + alternative flag + reward ring per seed, checkout oracle + S6 deck backport vs TS
  *   options: --spd <SPD checkout>   (default $SPD_CHECKOUT or ~/dev/shattered-pixel-dungeon; a git repo with the tags/commits)
  *            --work <dir>           scratch dir for the Java trees (default <os tmp>/mwg-parity; reused between runs)
  *            --combat-ref v3.3.8    Java ref for the combat oracle
@@ -71,13 +72,14 @@ function exportTree(dir, ref) {
 }
 
 /** Copies our harness classes in, inserts the trace hook into Random.java and makes sure the Gradle tasks exist. */
-function installHarness(dir, { combat, levelgen, loot, mobdata, ghost }) {
+function installHarness(dir, { combat, levelgen, loot, mobdata, ghost, imp }) {
 	const put = (name, rel) => { mkdirSync(dirname(join(dir, rel)), { recursive: true }); copyFileSync(join(JAVA_SRC, name), join(dir, rel)); };
 	if (combat) { put('CombatHarness.java', `${CORE}/actors/mobs/CombatHarness.java`); put('CombatHarnessLauncher.java', `${DESKTOP}/CombatHarnessLauncher.java`); }
 	if (levelgen) { put('LevelGenHarness.java', `${CORE}/levels/LevelGenHarness.java`); put('LevelGenHarnessLauncher.java', `${DESKTOP}/LevelGenHarnessLauncher.java`); }
 	if (mobdata) { put('MobDataHarness.java', `${CORE}/actors/mobs/MobDataHarness.java`); put('MobDataHarnessLauncher.java', `${DESKTOP}/MobDataHarnessLauncher.java`); }
 	if (loot) { put('LootHarness.java', `${CORE}/actors/mobs/LootHarness.java`); put('LootHarnessLauncher.java', `${DESKTOP}/LootHarnessLauncher.java`); }
 	if (ghost) { put('GhostRewardHarness.java', `${CORE}/actors/mobs/npcs/GhostRewardHarness.java`); put('GhostRewardHarnessLauncher.java', `${DESKTOP}/GhostRewardHarnessLauncher.java`); }
+	if (imp) { put('ImpRewardHarness.java', `${CORE}/actors/mobs/npcs/ImpRewardHarness.java`); put('ImpRewardHarnessLauncher.java', `${DESKTOP}/ImpRewardHarnessLauncher.java`); }
 
 	const randomFile = join(dir, 'SPD-classes/src/main/java/com/watabou/utils/Random.java');
 	let random = readFileSync(randomFile, 'utf8');
@@ -100,6 +102,7 @@ function installHarness(dir, { combat, levelgen, loot, mobdata, ghost }) {
 	if (mobdata && !gradle.includes("'runMobData'")) gradle += task('runMobData', 'MobDataHarnessLauncher');
 	if (loot && !gradle.includes("'runLootHarness'")) gradle += task('runLootHarness', 'LootHarnessLauncher');
 	if (ghost && !gradle.includes("'runGhostReward'")) gradle += task('runGhostReward', 'GhostRewardHarnessLauncher');
+	if (imp && !gradle.includes("'runImpReward'")) gradle += task('runImpReward', 'ImpRewardHarnessLauncher');
 	writeFileSync(gradleFile, gradle);
 }
 
@@ -229,6 +232,29 @@ function ghostStage() {
 	gate('ghost: spawn gate, type, tiers, classes, item level and enchant keep all match Java or are documented in ghostreward-known.json', r.status === 0, `report: ${join(outDir, 'ghost-report.txt')}`);
 }
 
+function impStage() {
+	console.log(`\n== imp: Java Imp.Quest.spawn() gate + alternative flag + reward ring per seed vs this port's gate + impQuestReward() ==`);
+	const dir = join(work, `spd-imp-${levelgenRef}`);
+	exportTree(dir, levelgenRef); installHarness(dir, { imp: true });
+	// Same S6 deck backport as levelgenStage: the Imp composition starts from a fresh
+	// fullReset, whose deck order depends on the patched static init (idempotent skip).
+	const p = run(process.execPath, [join(ROOT, 'tools', 'parity', 'patchOracleDecks.mjs'), dir]);
+	console.log(p.out.trim().split('\n').slice(0, 3).join('\n'));
+	gate('imp deck backport applied', p.status === 0, p.status === 0 ? '' : p.out.slice(-400));
+	if (p.status !== 0) return;
+	const outDir = join(work, 'imp'); mkdirSync(outDir, { recursive: true });
+	const javaOut = join(outDir, 'imp_java_out.txt');
+	rmSync(javaOut, { force: true });
+	const g = gradle(dir, 'runImpReward', { IMP_OUT: javaOut });
+	if (!existsSync(javaOut)) { gate('imp Java dump produced', false, g.out.slice(-400)); return; }
+	const cases = (readFileSync(javaOut, 'utf8').match(/"spawnDepth":/g) || []).length;
+	gate('imp Java dump produced', true, `${cases} cases`);
+	const tsRunner = tsBundle('tools/parityImpTrace.ts', 'parityImpTrace.mjs');
+	const r = run(process.execPath, [tsRunner, '--java', javaOut, '--known', join(ROOT, 'tools', 'parity', 'impReward-known.json'), '--report', join(outDir, 'imp-report.txt')]);
+	console.log(r.out.trim().split('\n').slice(0, 40).join('\n'));
+	gate('imp: spawn depth, alternative flag, ring class and level all match Java or are documented in impReward-known.json', r.status === 0, `report: ${join(outDir, 'imp-report.txt')}`);
+}
+
 function levelgenStage() {
 
 	console.log(`\n== levelgen: floor-generation RNG draws, oracle ${prebuiltLevelgenTree ? prebuiltLevelgenTree : levelgenRef} vs this port (depths 3-9, 4 seeds) ==`);
@@ -264,6 +290,7 @@ try {
 	if (stage === 'all' || stage === 'loot') lootStage();
 	if (stage === 'all' || stage === 'quest') questStage();
 	if (stage === 'all' || stage === 'ghost') ghostStage();
+	if (stage === 'all' || stage === 'imp') impStage();
 	if (stage === 'all' || stage === 'levelgen') levelgenStage();
 } catch (e) {
 	gate('runner', false, e.message);

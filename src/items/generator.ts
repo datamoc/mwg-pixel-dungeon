@@ -629,6 +629,24 @@ export function ghostQuestReward(): { weapon: GenItem; armor: GenItem } {
 }
 
 // ---------------------------------------------------------------------------------------------
+/**
+ * `Imp.Quest.spawn()` reward roll (Imp.java, tag `v3.3.8`) - `do { reward =
+ * Generator.random(RING) } while (reward.cursed); reward.upgrade(2)`. Each
+ * iteration is a full ring generation: the class pick on the RING deck
+ * substream, then `Ring.random()` level/curse rolls on the caller stream
+ * (`Int(3)` [+ `Int(5)`] for +0/+1/+2, one `Float() < 0.3` curse test, both
+ * in `ringOrWandRandom` above), and `upgrade(2)` is draw-free. The reroll
+ * loop always terminates in practice (70% pass per pass); the returned ring
+ * is always uncursed at +2..+4. Spawn gate (`Random.Int(20-depth)==0` over
+ * depths 17-19) and the depth-switched `alternative` flag live in the trace
+ * driver, same split as the Ghost slice - no NPC-dialog consumer yet.
+ */
+export function impQuestReward(): GenItem {
+	let reward = randomCategory(Cat.RING);
+	while (reward.cursed) reward = randomCategory(Cat.RING);
+	return { ...reward, level: reward.level + 2, cursed: false };
+}
+
 // The `Generator` entry points.
 // ---------------------------------------------------------------------------------------------
 
