@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { dm300SuperchargeEntry, dm300SuperchargeThreshold } from '../src/simulation/dm300Boss';
+import { dm300ChargeEndTurns, dm300SuperchargeEntry, dm300SuperchargeThreshold } from '../src/simulation/dm300Boss';
 
 // Pins the DM300 supercharge-entry seam (`src/simulation/dm300Boss.ts`) against
 // `DM300.damage()` (actors/mobs/DM300.java 496-506, tag `v3.3.8`) and pins both
@@ -26,6 +26,11 @@ assert.equal(dm300SuperchargeEntry(true, 0, 200), false, 'no re-entry while char
 assert.equal(dm300SuperchargeEntry(undefined, 200, 200), true, 'fresh DM300 has no flag set');
 assert.equal(dm300SuperchargeEntry(false, 50, 0), false, 'spent thresholds stay shut');
 
+// Charge end: `Math.min(turnsSinceLastAbility, MIN_COOLDOWN-3)` with MIN_COOLDOWN 5.
+assert.equal(dm300ChargeEndTurns(9), 2);
+assert.equal(dm300ChargeEndTurns(2), 2);
+assert.equal(dm300ChargeEndTurns(-4), -4, 'negative counters pass through untouched');
+
 // Both call sites run the seam, not a second copy of the arithmetic (paths resolve
 // from the repo root, which is the documented working directory for the run line).
 for (const rel of ['src/scenes/dungeon/attackSeams.ts', 'src/scenes/dungeon/combatResolution.ts']) {
@@ -33,6 +38,12 @@ for (const rel of ['src/scenes/dungeon/attackSeams.ts', 'src/scenes/dungeon/comb
 	assert.ok(site.includes('dm300SuperchargeThreshold'), `${rel} delegates the threshold`);
 	assert.ok(site.includes('dm300SuperchargeEntry'), `${rel} delegates the entry`);
 	assert.ok(!site.includes('maxHp / 4 * (3 - activated)'), `no duplicated threshold in ${rel}`);
+	if (rel.endsWith('combatResolution.ts')) {
+		assert.ok(site.includes('dm300ChargeEndTurns'), 'dispatch tail delegates the charge-end clamp');
+		assert.ok(!site.includes('Math.min(dm300.dmAbilityTurns'), 'no duplicated clamp remains in the tail');
+	} else {
+		assert.ok(!site.includes('dm300ChargeEndTurns'), 'charge end lives only in the dispatch tail');
+	}
 }
 
 console.log('dm300 phase seam: all checks pass');

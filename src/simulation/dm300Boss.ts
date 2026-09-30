@@ -134,3 +134,13 @@ export function dm300SuperchargeThreshold(maxHp: number, pylonsActivated: number
 export function dm300SuperchargeEntry(supercharged: boolean | undefined, hp: number, threshold: number): boolean {
 	return !supercharged && threshold > 0 && hp <= threshold;
 }
+/**
+ * DM300's ability-cycle floor (`DM300.java`, tag `v3.3.8`): `MIN_COOLDOWN` is 5.
+ */
+export const DM300_MIN_COOLDOWN = 5;
+
+/** `DM300.loseSupercharge()`'s counter clamp: the boss cannot fire the very turn the
+ * charge ends (`Math.min(turnsSinceLastAbility, MIN_COOLDOWN-3)`). */
+export function dm300ChargeEndTurns(turnsSinceLastAbility: number): number {
+	return Math.min(turnsSinceLastAbility, DM300_MIN_COOLDOWN - 3);
+}

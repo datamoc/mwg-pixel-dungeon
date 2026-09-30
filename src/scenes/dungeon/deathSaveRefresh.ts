@@ -22,7 +22,7 @@ import { SKELETON_BONE_NEIGHBOURS, skeletonBoneEarthrootDamage, skeletonBoneExpl
 import { CLASS_AMMO } from '../../classes';
 import { applyDM300DeathUnseal, applyGooDeathUnseal, applyKingDeathUnseal, applyYogDeathUnseal } from '../bossUnseal';
 import { processSacrifice } from '../../simulation/environmentalBlobs';
-import { buildYogMinionDeck, chooseYogSpawnCell, yogBossChallengeQualified } from '../../simulation/yogBoss';
+import { buildYogMinionDeck, chooseYogSpawnCell, yogBossChallengeQualified, yogFinalPhase } from '../../simulation/yogBoss';
 import { deathBurstsFor } from '../../simulation/deathBursts';
 import { colorblind, highContrast } from '../../settings';
 import { ringTypesKnownFor } from '../../simulation/ringKnow';
@@ -749,7 +749,8 @@ export const deathSaveRefreshMethods = {
 		//damage over time).
 		if (creature.kind === 'yogFist') {
 			const yog = this.creatures.find((c) => c.kind === 'yog' && c.hp > 0);
-			if (yog && (yog.yogPhase ?? 1) === 4 && !this.creatures.some((c) => c.kind === 'yogFist' && c.hp > 0)) {
+			const liveFists = this.creatures.filter((c) => c.kind === 'yogFist' && c.hp > 0).length;
+			if (yog && yogFinalPhase(yog.yogPhase ?? 1, liveFists)) {
 				yog.yogPhase = 5;
 				yog.yogSummonCd = -15;
 				this.bossBleedLatched = true;

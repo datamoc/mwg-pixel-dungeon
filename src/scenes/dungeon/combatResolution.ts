@@ -6,7 +6,7 @@ import { preparationCanKo } from '../../simulation/preparation';
 import { planHiddenMimicContact } from '../../simulation/hiddenMimicContact';
 import { planShockElementalArc } from '../../simulation/shockArc';
 import { applyDefenderDamageCurves } from '../../simulation/defenderDamageCurves';
-import { dm300SuperchargeEntry, dm300SuperchargeThreshold } from '../../simulation/dm300Boss';
+import { dm300ChargeEndTurns, dm300SuperchargeEntry, dm300SuperchargeThreshold } from '../../simulation/dm300Boss';
 import { weaponHitDisqualifiesDwarfKingChallenge } from '../../simulation/bossChallenge';
 import { fishingSpearPiranhaDamage } from '../../simulation/fishingSpearProc';
 import { fieryDamageHalved } from '../../simulation/buffs';
@@ -1909,7 +1909,7 @@ export const combatResolutionMethods: Record<string, any> = {
 		dm300.dmSupercharged = false;
 		//`DM300.loseSupercharge()`: clamp the ability counter so the boss cannot fire the
 		//very turn the charge ends (`Math.min(turnsSinceLastAbility, MIN_COOLDOWN-3)`).
-		if ((dm300.dmAbilityTurns ?? -1) >= 0) dm300.dmAbilityTurns = Math.min(dm300.dmAbilityTurns ?? 0, 2);
+		if ((dm300.dmAbilityTurns ?? -1) >= 0) dm300.dmAbilityTurns = dm300ChargeEndTurns(dm300.dmAbilityTurns ?? 0);
 		const remaining = this.creatures.filter((creature) => creature.kind === 'pylon' && creature.hp > 0).length;
 		const finalPylons = isChallengeEnabled('stronger_bosses') ? 1 : 2;
 		if (remaining > finalPylons) this.cavesBossEnergyCells.clear();

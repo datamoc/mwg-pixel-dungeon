@@ -182,3 +182,10 @@ export function yogPhaseAdvance(phase: number, hp: number, maxHp: number): boole
 export function fistHalfHpCrossed(preHp: number, hp: number, maxHp: number): boolean {
 	return preHp > maxHp / 2 && hp <= maxHp / 2;
 }
+/**
+ * Yog's final phase gate - the pure decision half of `YogDzewa.processFistDeath()`
+ * (actors/mobs/YogDzewa.java 356-368, tag `v3.3.8`): the last fist's death at phase 4 opens
+ * phase 5 (hope yell, the -15 summon burst debt, the bleed latch - all scene-side). */
+export function yogFinalPhase(phase: number, liveFists: number): boolean {
+	return phase === 4 && liveFists === 0;
+}
