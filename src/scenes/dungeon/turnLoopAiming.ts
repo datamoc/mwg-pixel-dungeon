@@ -689,6 +689,9 @@ export const turnLoopAimingMethods = {
 				const dr = Random.normalRange(target.armor[0], target.armor[1]);
 				const momentum = projectileMomentumBonus(this.subclass(), this.talentRank('projectile_momentum'), this.projectileMomentumReady);
 				let preArmorDamage = Math.round(base * multiplier * (this.subclass() === 'sniper' ? 1.15 : 1));
+				//Java's `Char.attack()` applies AuraOfProtection before `defenseProc()` and `drRoll()`.
+				//The shared damage dispatch skips that step below because the bow resolves it here.
+				preArmorDamage = this.auraProtectedDamage(target, preArmorDamage);
 				//Java's `Char.attack()` calls `defender.defenseProc()` before subtracting `drRoll()`.
 				//Earthroot's armor pool therefore absorbs the scaled bow hit before target armor,
 				//rather than being skipped as it was on this direct-shot path.
@@ -718,7 +721,7 @@ export const turnLoopAimingMethods = {
 				//a landed arrow against DwarfKing therefore clears the no-weapon challenge.
 				if (weaponHitDisqualifiesDwarfKingChallenge(target.kind, 'shoot', this.weaponId,
 					this.equippedRing?.id === 'ring_force')) this.disqualifyBossChallenge(target);
-				this.applyCharacterDamage(target, damage, { pierceArmor: true, cause: 'foe', magical: false });
+				this.applyCharacterDamage(target, damage, { pierceArmor: true, cause: 'foe', magical: false, skipAura: true });
 				if (target.hp > 0) this.sprite(target).setColorAdd(1, 1, 1);
 				this.say(t('port.log.shoot', { target: target.name, damage }), 'positive');
 				if (this.talentRank('followup_strike') > 0) { this.followupTarget = target; this.followupDamage = this.talentRank('followup_strike') === 1 ? 2 : 3; }
