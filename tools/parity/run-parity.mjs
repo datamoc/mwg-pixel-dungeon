@@ -6,14 +6,14 @@
  *   node tools/parity/run-parity.mjs                     both stages
  *   node tools/parity/run-parity.mjs --stage combat      Char.attack() rounds, Java v3.3.8 vs TS (~4 min)
  *   node tools/parity/run-parity.mjs --stage loot        derived Mob.lootChance() drop chance, Java v3.3.8 vs TS
- *   node tools/parity/run-parity.mjs --stage levelgen    floor generation RNG draws, checkout oracle vs TS
+ *   node tools/parity/run-parity.mjs --stage levelgen    floor generation RNG draws, checkout oracle + S6 deck backport vs TS
  *   node tools/parity/run-parity.mjs --stage mobdata     every Java mob class's stats/loot (v3.3.8) vs the port's monster tables
  *   node tools/parity/run-parity.mjs --stage quest       run-level Wandmaker quest type rolled during levelgen, checkout oracle vs TS
  *   node tools/parity/run-parity.mjs --stage ghost       Ghost spawn gate + reward rolls per (seed, depth), Java v3.3.8 vs TS
  *   options: --spd <SPD checkout>   (default $SPD_CHECKOUT or ~/dev/shattered-pixel-dungeon; a git repo with the tags/commits)
  *            --work <dir>           scratch dir for the Java trees (default <os tmp>/mwg-parity; reused between runs)
  *            --combat-ref v3.3.8    Java ref for the combat oracle
- *            --levelgen-ref 0fdcf2b2b   Java ref for the levelgen oracle (B2 decision 2026-09-26: the checkout's own tables)
+ *            --levelgen-ref 0fdcf2b2b   Java ref for the levelgen oracle (B2 decision 2026-09-26: the checkout's own tables; S6 2026-09-30: v3.3.8 deck draw-sequence backported at build time by tools/parity/patchOracleDecks.mjs)
  *            --scripts 2,3,4  --seeds 123456789,1,42   combat matrix
  *            --levelgen-tree <dir>  use an already-prepared Java tree instead of exporting one (skips export + hook install)
  *
@@ -62,9 +62,12 @@ function exportTree(dir, ref) {
 	let r = run('git', ['-C', spd, 'archive', '--format=tar', '-o', tarFile, ref]);
 	if (r.status !== 0) throw new Error(`git archive ${ref} failed: ${r.out.slice(0, 300)}`);
 	// Relative paths + cwd: GNU tar on Windows reads "C:" in an absolute path as a remote host.
+	// Judge by result, not exit code: tar exits nonzero on git-archive pax-header entries
+	// ("empty or unreadable filename") that carry no content - the tree still extracts whole
+	// (S6 2026-09-30: a warning-extracted tree compiled and traced 28/28).
 	r = run('tar', ['-xf', `../${tarFile.split(/[\\/]/).pop()}`], { cwd: dir });
 	rmSync(tarFile, { force: true });
-	if (r.status !== 0) throw new Error(`tar failed: ${r.out.slice(0, 300)}`);
+	if (!existsSync(join(dir, 'gradlew.bat'))) throw new Error(`tar failed: ${r.out.slice(0, 300)}`);
 }
 
 /** Copies our harness classes in, inserts the trace hook into Random.java and makes sure the Gradle tasks exist. */
@@ -230,7 +233,16 @@ function levelgenStage() {
 
 	console.log(`\n== levelgen: floor-generation RNG draws, oracle ${prebuiltLevelgenTree ? prebuiltLevelgenTree : levelgenRef} vs this port (depths 3-9, 4 seeds) ==`);
 	const dir = prebuiltLevelgenTree ? resolve(prebuiltLevelgenTree) : join(work, `spd-levelgen-${levelgenRef}`);
-	if (!prebuiltLevelgenTree) { exportTree(dir, levelgenRef); installHarness(dir, { levelgen: true }); }
+	if (!prebuiltLevelgenTree) {
+		exportTree(dir, levelgenRef); installHarness(dir, { levelgen: true });
+		// S6 (2026-09-30): the checkout oracle predates the v3.3.8 deck mechanics the port
+		// now models, so backport the draw sequence into the exported tree (idempotent skip
+		// when already patched). --levelgen-tree users run patchOracleDecks.mjs themselves.
+		const p = run(process.execPath, [join(ROOT, 'tools', 'parity', 'patchOracleDecks.mjs'), dir]);
+		console.log(p.out.trim().split('\n').slice(0, 14).join('\n'));
+		gate('levelgen deck backport applied', p.status === 0, p.status === 0 ? '' : p.out.slice(-400));
+		if (p.status !== 0) return;
+	}
 	const desktop = join(dir, 'desktop');
 	for (const f of ['levelgen_java_dump.txt']) rmSync(join(desktop, f), { force: true });
 	const g = gradle(dir, 'runHarness', { LEVELGEN_TRACE: 'true' });
