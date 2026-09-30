@@ -6,6 +6,7 @@ import { preparationCanKo } from '../../simulation/preparation';
 import { planHiddenMimicContact } from '../../simulation/hiddenMimicContact';
 import { planShockElementalArc } from '../../simulation/shockArc';
 import { applyDefenderDamageCurves } from '../../simulation/defenderDamageCurves';
+import { weaponHitDisqualifiesDwarfKingChallenge } from '../../simulation/bossChallenge';
 import { fishingSpearPiranhaDamage } from '../../simulation/fishingSpearProc';
 import { fieryDamageHalved } from '../../simulation/buffs';
 import { UNSTABLE_DELEGATES } from '../../items/itemAffixes';
@@ -215,12 +216,6 @@ export const combatResolutionMethods: Record<string, any> = {
 		//`Crossbow.ChargedShot`: the next fired dart always hits (consumed in the throw
 		//branch below, which also spreads the on-hit effects over the 5x5 area).
 		const chargedShotHit = attacker.attackMode === 'throw' && this.chargedShotArmed;
-		//`DwarfKing.damage()` 459-467: an unarmed hit without `RingOfForce.fightingUnarmed`
-		//clears the boss-challenge flag (a weapon hit keeps it; thrown hits keep it too).
-		if (attacker.isHero && attacker.attackMode !== 'throw' && this.weaponId === 'startingWeapon'
-			&& this.equippedRing?.id !== 'ring_force') {
-			this.disqualifyBossChallenge(defender);
-		}
 		const surprise = attacker.isHero === true && gate
 			&& (defender.sleeping === true || (!defender.isHero && !defender.seesHero) || attacker.buffs['invisibility'] !== undefined);
 		// Invisibility is dispelled by an aggressive action (Invisibility.dispel()).
@@ -372,6 +367,14 @@ export const combatResolutionMethods: Record<string, any> = {
 			defender.sleeping = false;
 			this.say(t(attacker.isHero ? 'port.log.misshero' : 'port.log.miss', { subject, object }), 'negative');
 			return false;
+		}
+		//`DwarfKing.damage()` (tag `v3.3.8`) checks the source only after a landed hit:
+		//armed melee, thrown weapons and a RingOfForce buff disqualify; bare hands without
+		//that buff preserve the badge. This port has no Force-buff instance, so its equipped
+		//RingOfForce record is the available proxy. Other bosses do not use this weapon rule.
+		if (attacker.isHero && weaponHitDisqualifiesDwarfKingChallenge(defender.kind,
+			attacker.attackMode, this.weaponId, this.equippedRing?.id === 'ring_force')) {
+			this.disqualifyBossChallenge(defender);
 		}
 		//Java's `Mimic.defenseProc()` reveals ordinary hits here; do not reveal on a miss.
 		if (mimicContact.revealWhen === 'onHit') revealMimic();

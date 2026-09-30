@@ -9,6 +9,7 @@ import { runHeroTurn } from '../../adapters/gameSimulation';
 import { usePreparationBlink, type PreparationBlinkContext } from '../../simulation/preparation';
 import { confirmDisintegrationWand, livingEarthZapRange, useDisintegrationWand, wandChargesPerCast, wandDamageRange, wandTargetRange, type DisintegrationWandScene, type WandType } from '../../items/wands';
 import { ringElementsMultiplier, ringEnergyMultiplier, ringSharpshootingBonus } from '../../items/ringModifiers';
+import { weaponHitDisqualifiesDwarfKingChallenge } from '../../simulation/bossChallenge';
 import { has, t } from '../../i18n/index';
 import { onZoomChanged, screenShake, setZoomOffset, zoomForOffset, zoomOffset } from '../../settings';
 import { EMPOWERING_SCROLLS_BONUS, arcaneVisionDuration, canImproviseProjectile, enragedCatalystBonus, ironStomachReduction, lightReadingWandMult, monasticVigorShield, preservationChance, projectileMomentumBonus } from '../../talentEffects';
@@ -696,6 +697,10 @@ export const turnLoopAimingMethods = {
 				//`skipAura` runs each step once. Gained over the old `doomDamage`/`hp -=`/`showDamage`
 				//tail: gates, Doom, curves, Viscosity, barriers, shields, floater, wake and death;
 				//`attack()`-side steps (`defenseProc`, mirror fade) still run nowhere on this path.
+				// Hero.shoot() passes SpiritBow through Belongings.attackingWeapon().
+				// A landed arrow against DwarfKing clears the no-weapon challenge.
+				if (weaponHitDisqualifiesDwarfKingChallenge(target.kind, 'shoot', this.weaponId,
+					this.equippedRing?.id === 'ring_force')) this.disqualifyBossChallenge(target);
 				this.applyCharacterDamage(target, damage, { pierceArmor: true, cause: 'foe', magical: false });
 				if (target.hp > 0) this.sprite(target).setColorAdd(1, 1, 1);
 				this.say(t('port.log.shoot', { target: target.name, damage }), 'positive');
