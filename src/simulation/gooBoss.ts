@@ -22,6 +22,45 @@ export interface GooBossContext {
 	readonly onWaterHeal?: (healInc: number) => void;
 }
 
+/**
+ * Goo pump-up decision predicates - the pure decision half of `Goo.doAttack()`'s pump
+ * branches (actors/mobs/Goo.java 178-225, tag `v3.3.8`). Extracted from `takeGooTurn` so
+ * the Java-vs-TS parity kit (BACKLOG B3, boss transitions) checks the *same* predicates the
+ * game runs rather than a second copy of them. Behavior-identical: the same comparisons in
+ * the same order.
+ *
+ * Java: `pumpedUp == 1` charges on; `pumpedUp >= 2` slams; otherwise
+ * `Random.Int(HP*2 <= HT ? 2 : 5) == 0` starts the pump (`pumpedUp += 2` on STRONGER_BOSSES,
+ * else `pumpedUp++`). The port drives the roll through its float-chance random (`chance(p)`),
+ * so the seam pins the Int fractions as their exact chance equivalents (1/2 enraged, 1/5
+ * healthy) rather than re-plumbing the draw.
+ */
+
+/** Enrage gate: `HP*2 <= HT` doubles the pump roll. */
+export function gooEnraged(hp: number, maxHp: number): boolean {
+	return hp * 2 <= maxHp;
+}
+
+/** Pump-roll chance: `Random.Int(bound) == 0` with bound 2 enraged, 5 healthy. */
+export function gooPumpChance(enraged: boolean): number {
+	return enraged ? 0.5 : 0.2;
+}
+
+/** Pump target on entry: straight to the second charge turn on the bosses challenge. */
+export function gooPumpTarget(strongerBosses: boolean): number {
+	return strongerBosses ? 2 : 1;
+}
+
+/** Slam entry: a fully-charged Goo discharges instead of acting. */
+export function gooSlamReady(pumped: number): boolean {
+	return pumped >= 2;
+}
+
+/** First charge turn steps to the second. */
+export function gooChargeStep(pumped: number): boolean {
+	return pumped === 1;
+}
+
 /** Goo's actor turn: healing, pump-up charge turns, and the final amplified slam. */
 export function takeGooTurn(goo: Creature, context: GooBossContext): void {
 	const inWater = context.inWater(goo.x, goo.y);
@@ -37,7 +76,7 @@ export function takeGooTurn(goo: Creature, context: GooBossContext): void {
 	} else goo.gooHealInc = 1;
 
 	const pumped = goo.pumped ?? 0;
-	if (pumped >= 2) {
+	if (gooSlamReady(pumped)) {
 		goo.pumped = 0;
 		const { accuracy, damage } = context.stats(goo);
 		context.say(context.messages.slam, 'warning');
@@ -45,18 +84,18 @@ export function takeGooTurn(goo: Creature, context: GooBossContext): void {
 		context.attack({ ...goo, kind: undefined, accuracy: accuracy * 2, damage: [damage[0] * 3, damage[1] * 3] }, context.hero);
 		return;
 	}
-	if (pumped === 1) {
+	if (gooChargeStep(pumped)) {
 		goo.pumped = 2;
 		context.say(context.messages.pumpMore, 'warning');
 		return;
 	}
-	const enraged = goo.hp * 2 <= goo.maxHp;
-	if (context.random.chance(enraged ? 0.5 : 0.2)) {
+	const enraged = gooEnraged(goo.hp, goo.maxHp);
+	if (context.random.chance(gooPumpChance(enraged))) {
 		//`doAttack()`'s else branch: on the bosses challenge the pump jumps straight to 2
 		//(`pumpedUp += 2`), so the slam lands after one charge turn, not two. Java also
 		//spends a gated turn cost here (`gate(attackDelay, ceil(enemy.cooldown), 3x)`) that
 		//this port's uniform 1-turn boss turns do not reproduce - stated timing simplification.
-		goo.pumped = context.strongerBosses ? 2 : 1;
+		goo.pumped = gooPumpTarget(context.strongerBosses);
 		context.say(context.messages.pump, 'warning');
 		return;
 	}
