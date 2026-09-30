@@ -6,7 +6,7 @@ import { takeGooTurn as runGooTurn } from '../../../simulation/gooBoss';
 import { runVertigoStep } from '../../../adapters/gameSimulation';
 import { planRatKingWave, ratKingP1Summon, type RatKingAddKind, type RatKingWavePlan } from '../../../simulation/ratKingBoss';
 import { chooseDM300Ability, dm300VentPath, planDM300Knockback, planDM300Rockfall } from '../../../simulation/dm300Boss';
-import { aimYogDeathGaze } from '../../../simulation/yogBoss';
+import { kingLosingYell, kingPhase2Entry, kingPhase2Threshold, kingPhase3Entry } from '../../../simulation/dwarfKingPhase';import { aimYogDeathGaze } from '../../../simulation/yogBoss';
 import { preparationLevel } from '../../../simulation/preparation';
 import { isOpenSpace } from '../../../simulation/crystalSpire';
 import { CLASS_KEYS, has, t, titleCase } from '../../../i18n/index';
@@ -755,7 +755,9 @@ if (monster.hp <= 0) {
 	 * `ReactionTable` rules instead of hand-rolled `if (...) { ...; phase = X; }` transition
 	 * blocks each guarded by its own ad-hoc latch field. `once: true` matches Java's actual
 	 * one-way transitions exactly - the same "boss entering phase two" shape `ReactionTable`'s
-	 * own doc comment uses as its worked example. Rules close over this specific `king`
+	 * own doc comment uses as its worked example. The entry predicates are the pure
+ * `dwarfKingPhase` seam (`src/simulation/dwarfKingPhase.ts`); the table owns the latch
+ * and the effects. Rules close over this specific `king`
 	 * instance (built fresh per King, not shared), so `action` mutates it directly rather than
 	 * through the (`Readonly`-typed) `state` parameter `check()` passes.
 	 */
@@ -763,9 +765,9 @@ if (monster.hp <= 0) {
 		return [
 			{
 				id: 'kingPhase2',
-				when: (k) => (k.kingPhase ?? 1) === 1 && k.hp <= (isChallengeEnabled('stronger_bosses') ? 100 : 50),
+				when: (k) => kingPhase2Entry(k.kingPhase ?? 1, k.hp, isChallengeEnabled('stronger_bosses')),
 				action: () => {
-					const threshold = isChallengeEnabled('stronger_bosses') ? 100 : 50;
+					const threshold = kingPhase2Threshold(isChallengeEnabled('stronger_bosses'));
 					king.hp = threshold;
 					king.kingPhase = 2;
 					king.kingSummonsMade = 0;
@@ -797,7 +799,7 @@ if (monster.hp <= 0) {
 			},
 			{
 				id: 'kingPhase3',
-				when: (k) => (k.kingPhase ?? 1) === 2 && (k.kingShield ?? 0) <= 0,
+				when: (k) => kingPhase3Entry(k.kingPhase ?? 1, k.kingShield ?? 0),
 				action: () => {
 					king.kingPhase = 3;
 					king.kingSummonsMade = 1;
@@ -810,7 +812,7 @@ if (monster.hp <= 0) {
 			},
 			{
 				id: 'kingLosingYell',
-				when: (k) => k.hp < 20,
+				when: (k) => kingLosingYell(k.hp),
 				action: () => this.say(t('actors.mobs.dwarfking.losing'), 'warning'),
 				once: true,
 			},
