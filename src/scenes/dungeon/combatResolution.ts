@@ -6,6 +6,7 @@ import { preparationCanKo } from '../../simulation/preparation';
 import { planHiddenMimicContact } from '../../simulation/hiddenMimicContact';
 import { planShockElementalArc } from '../../simulation/shockArc';
 import { applyDefenderDamageCurves } from '../../simulation/defenderDamageCurves';
+import { fishingSpearPiranhaDamage } from '../../simulation/fishingSpearProc';
 import { fieryDamageHalved } from '../../simulation/buffs';
 import { UNSTABLE_DELEGATES } from '../../items/itemAffixes';
 import { shadowCloneArmorProc, shadowCloneBladeProc } from '../../simulation/rogueAbilities';
@@ -650,6 +651,13 @@ export const combatResolutionMethods: Record<string, any> = {
 		//the attacker's multipliers and procs, before shields and HP. One call rather than four
 		//inline blocks, and the `Pylon` curve is now in the same place as the rest instead of
 		//above the multiplier chain where it under-reduced every charged-pylon hit.
+		//`FishingSpear.proc()` (`FishingSpear.java`, tag `v3.3.8`) raises damage after defense
+		//has already subtracted the target's `drRoll()` and after Hero/Talent attack procs, but
+		//before `enemy.damage()` runs defender-side reductions. The former range-minimum patch
+		//ran before DR and could miss the guarantee by exactly the armor roll.
+		if (attacker.isHero && attacker.attackMode === 'throw') {
+			damage = fishingSpearPiranhaDamage(this.ammoSourceClass, defender.kind, defender.hp, damage);
+		}
 		//`Char.attack()`'s `AuraOfProtection` clause (tag `v3.3.8`) runs after the attacker's
 		//multiplier/proc chain and before the defender's damage override. Same-alignment
 		//characters within distance 2 take 10/20/30% less damage. The port has no separate

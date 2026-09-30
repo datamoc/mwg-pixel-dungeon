@@ -555,15 +555,7 @@ export const turnLoopAimingMethods = {
 				true,
 				this.talentRank('point_blank'),
 			);
-			//`FishingSpear.proc()` is a *damage floor*, not an after-hit effect: against a piranha
-			//the throw deals at least half the piranha's remaining HP
-			//(`damage = max(damage, defender.HP/2)`). Java raises the rolled damage; this port rolls
-			//inside `attack()`, so the floor goes on the range's minimum, which the roll cannot go
-			//below - the same outcome for every possible roll.
-			if (this.ammoSourceClass === 'FishingSpear' && (target.kind === 'piranha' || target.kind === 'phantomPiranha')) {
-				thrownDamage[0] = Math.max(thrownDamage[0], Math.floor(target.hp / 2));
-			}
-			const hit = this.attack({ ...this.hero, kind: undefined, attackMode: 'throw', damage: thrownDamage }, target, thrownAccFactor);
+			//`			const hit = this.attack({ ...this.hero, kind: undefined, attackMode: 'throw', damage: thrownDamage }, target, thrownAccFactor);
 			//`Crossbow.ChargedShot`: the forced hit above is the "always hits" half; the dart
 			//also applies on-hit effects to enemies in a 5x5 area around the target (tipped
 			//darts last longer than that area's ordinary coverage - see `TippedDart`).

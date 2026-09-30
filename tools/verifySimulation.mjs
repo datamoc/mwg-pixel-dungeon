@@ -56,7 +56,7 @@ try {
 	for (const file of ['simulation/movement', 'simulation/heroTurn', 'simulation/hunger', 'simulation/turns', 'simulation/mobLoot', 'adapters/sceneSimulation',
 		'adapters/hungerSimulation', 'simulation/random', 'simulation/combatState', 'simulation/mwlBuffDurations', 'simulation/mwlStatusImmunities', 'simulation/mwlMonsterImmunities', 'simulation/mwlMonsterStateStats', 'simulation/buffs', 'simulation/combat', 'simulation/entityId', 'talentEffects',
 		'adapters/combatSimulation', 'adapters/mwgRandom', 'combat', 'simulation/heroActions', 'adapters/heroActionSimulation', 'adapters/heroActions',
-	'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/warriorAbilities', 'simulation/huntressAbilities', 'simulation/duelistAbilities', 'simulation/mageAbilities', 'simulation/rogueAbilities', 'simulation/ratmogrify', 'talents', 'armorAbilities', 'simulation/tenguAbility', 'simulation/tenguBeam', 'simulation/gooBoss', 'simulation/ratKingBoss', 'simulation/dm300Boss', 'simulation/gnollGeomancer', 'simulation/yogBoss', 'simulation/defenderDamageCurves', 'simulation/preparation', 'simulation/disintegration', 'items/wands', 'items/missiles', 'mechanics/cone', 'dungeonConstants',
+	'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/warriorAbilities', 'simulation/huntressAbilities', 'simulation/duelistAbilities', 'simulation/mageAbilities', 'simulation/rogueAbilities', 'simulation/ratmogrify', 'simulation/fishingSpearProc', 'talents', 'armorAbilities', 'simulation/tenguAbility', 'simulation/tenguBeam', 'simulation/gooBoss', 'simulation/ratKingBoss', 'simulation/dm300Boss', 'simulation/gnollGeomancer', 'simulation/yogBoss', 'simulation/defenderDamageCurves', 'simulation/preparation', 'simulation/disintegration', 'items/wands', 'items/missiles', 'mechanics/cone', 'dungeonConstants',
 	'simulation/javaBlob', 'simulation/prismaticWandLight', 'simulation/swarmIntelligence', 'simulation/crystalSpire', 'simulation/fireSpread', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops', 'simulation/plantTriggers', 'simulation/teleport', 'simulation/trapAreas', 'simulation/tenguDart', 'simulation/teleportAppear', 'simulation/timeBubble', 'simulation/targeting', 'simulation/ripperLeap', 'simulation/succubusBlink', 'simulation/prismatic', 'simulation/mirrorImage', 'simulation/sentryTurn', 'simulation/brews', 'simulation/levelPopulation', 'simulation/smoke', 'simulation/deathBursts', 'simulation/pourAuras', 'simulation/skeletonExplosion', 'simulation/vertigo', 'simulation/ringKnow', 'simulation/actorCollision', 'simulation/wandering', 'simulation/zoomStep', 'simulation/chasmJump', 'simulation/spareWands', 'simulation/clericSpells', 'simulation/shockArc', 'simulation/geyserTrap', 'simulation/cursedWand', 'ui/buffOverlays', 'settings',
 	// `actors/monsterSpawn` (plus its `monsters`/`challenges`/i18n chain) for the spawn-profile
 	// checks: the chaos-elemental roll, the rare-alt table, and the unported-mob absences.
@@ -106,6 +106,7 @@ try {
 	const { runHungerStep } = require('./adapters/hungerSimulation');
 	const { runMovement } = require('./adapters/movementSimulation');
 	const { resolveAttack } = require('./simulation/attackResolution');
+	const { fishingSpearPiranhaDamage } = require('./simulation/fishingSpearProc');
 	const { runAttackResolution } = require('./adapters/attackSimulation');
 	const { stepTenguAbility, tenguTargetAbilityUses, tenguAbilityCost } = require('./simulation/tenguAbility');
 	const { planDisintegration } = require('./simulation/disintegration');
@@ -144,6 +145,22 @@ const { selectRangedTarget, findEnemyAlly, pursueTarget } = require('./simulatio
 		assert.match(death, /this\.applyCharacterDamage\(target, damage, \{ pierceArmor: true, cause: 'foe', skipAura: true, deferKill: true/);
 		const damageBoundary = readFileSync(new URL('../src/scenes/dungeon/combatResolution.ts', import.meta.url), 'utf8');
 		assert.match(damageBoundary, /skipDefenseHooks: \{ skipEarthroot\?: boolean; skipHolyWard\?: boolean \}/);
+	});
+	check('Fishing Spear applies its Piranha damage floor after armor reduction', () => {
+		assert.equal(fishingSpearPiranhaDamage('FishingSpear', 'piranha', 11, 1), 5);
+		assert.equal(fishingSpearPiranhaDamage('FishingSpear', 'phantomPiranha', 10, 3), 5);
+		assert.equal(fishingSpearPiranhaDamage('FishingSpear', 'piranha', 11, 8), 8);
+		assert.equal(fishingSpearPiranhaDamage('ThrowingSpear', 'piranha', 11, 1), 1);
+		assert.equal(fishingSpearPiranhaDamage('FishingSpear', 'bat', 11, 1), 1);
+		const resolution = readFileSync(new URL('../src/scenes/dungeon/combatResolution.ts', import.meta.url), 'utf8');
+		assert.ok(resolution.includes('fishingSpearPiranhaDamage(this.ammoSourceClass, defender.kind, defender.hp, damage)'),
+			'thrown hero attacks apply the proc to post-DR damage in the shared attack resolution');
+		assert.ok(resolution.indexOf('fishingSpearPiranhaDamage(this.ammoSourceClass, defender.kind, defender.hp, damage)')
+			< resolution.indexOf('damage = this.auraProtectedDamage(defender, damage)'),
+			'the proc runs before damage() overrides, after the shared attack procs');
+		assert.ok(!readFileSync(new URL('../src/scenes/dungeon/turnLoopAiming.ts', import.meta.url), 'utf8')
+			.includes('thrownDamage[0] = Math.max(thrownDamage[0], Math.floor(target.hp / 2))'),
+			'the pre-armor range-floor approximation is removed');
 	});
 	// The four coefficients `HighGrass.trample` reads, as the port's MWL rows carry them.
 	const grassRules = { seedChanceBase: 25, seedChancePerLevel: 4, dewChanceBase: 6, dewChanceLevelDivisor: 2 };
