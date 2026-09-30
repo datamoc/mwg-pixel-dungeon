@@ -3755,6 +3755,7 @@ three fixes plus doc rows landed.
       **Complexity: L.**
 
 #### B7. from ROADMAP 11. Architecture refactor toward the v3 target
+- **Progress 2026-09-30:** extracted the landed-hit pre-armor modifier calculation to simulation/attackModifiers.ts, the ordered numeric hero talent chain to simulation/attackTalentBonuses.ts, and the Polarized/Sacrificial/Displacing attack-time decisions to simulation/attackWeaponAffixes.ts. The scene supplies current state and applies tracker, bleed, and displacement effects. Remaining attack procs and event outcomes are still scene-coupled.
 
 - [ ] Extract `main.ts`'s `attack()` pure resolution (hit/damage rolls, weapon-affix/talent branches,
       event-worthy outcomes like mimic reveal/displacement) from its presentation calls (sprite tint,
