@@ -1,7 +1,6 @@
 import { Roguelike } from 'mwg';
 import { isChallengeEnabled } from '../challenges';
-import { addBuff, applyElementalBacklash, buffBlocked, icyBuffImmune, reigniteBuff, resistedBuffDuration, type BuffId, type Creature } from '../combat';
-import { applyChillFreeze } from '../simulation/buffs';
+import { addBuff, buffBlocked, reigniteBuff, type BuffId, type Creature } from '../combat';
 import { brewNeighbourSeedPlan, SHROUDING_FOG_VOLUME } from '../simulation/brews';
 import { WALL } from '../dungeonConstants';
 import { t } from '../i18n';
@@ -21,6 +20,8 @@ export interface PotionEffectsContext {
 	readonly syncHeroFromStats: () => void;
 	readonly grantExperience: (amount: number) => void;
 	readonly seedFire: (x: number, y: number, volume: number) => void;
+	/** `PotionOfFrost.shatter()` seeds volume 10 into each non-solid `NEIGHBOURS9` cell. */
+	readonly seedFreeze: (x: number, y: number, volume: number) => void;
 	readonly clearFire: (x: number, y: number) => void;
 	readonly seedToxicGas: (x: number, y: number, volume: number) => void;
 	readonly seedParalyticGas: (x: number, y: number, volume: number) => void;
@@ -233,31 +234,16 @@ export function shatterPotionAt(scene: PotionEffectsContext, id: string, cx: num
 			return;
 		}
 		case 'potionFrost': {
-			let touchesFire = false;
-			const radius = mwlItemEffectValue('potionFrost', 'radius');
-			for (let dy = -radius; dy <= radius; dy++) for (let dx = -radius; dx <= radius; dx++) {
+			//`items/potions/PotionOfFrost.java:shatter()` (tag `v3.3.8`) seeds volume 10
+			//into each non-solid `PathFinder.NEIGHBOURS9` cell. `actors/blobs/Freezing.java:evolve()` then clears Fire and
+			//calls `Freezing.freeze()` on each live cell over subsequent blob ticks.
+			//The former direct radius-2 chill was an approximation that skipped this
+			//persistent cadence and affected cells Java never seeds.
+			//`Potion.splash()` clears ordinary Fire immediately at the impact cell.
+			scene.clearFire(cx, cy);
+			for (const [dx, dy] of Roguelike.neighbourOffsets(8).concat([[0, 0]])) {
 				const x = cx + dx, y = cy + dy;
-				if (scene.eternalFireVolumeAt(x, y) >= 1) touchesFire = true;
-				//`Freezing.evolve()` clears ordinary Fire at every affected cell; its seeds cover NEIGHBOURS9
-				//only, so the clear runs at Chebyshev 1 even though the loop scans the MWL radius.
-				if (scene.level.inside(x, y) && Roguelike.chebyshevDistance({ x, y }, { x: cx, y: cy }) <= 1) { scene.clearFire(x, y); scene.freezeHeapAt(x, y); }
-			}
-			if (touchesFire) {
-				scene.clearEternalFire();
-				scene.say(t('port.log.frostfire'), 'positive');
-			}
-			const targetRadius = mwlItemEffectValue('potionFrost', 'targetRadius');
-			//No Java source deals direct frost damage: `Freezing` only chills (see the 15th matrix).
-			for (const target of new Set<Creature>([scene.hero, ...scene.creatures])) {
-				if (target.hp <= 0 || Roguelike.chebyshevDistance(target, { x: cx, y: cy }) > targetRadius) continue;
-				if (target !== scene.hero && !scene.level.passable(target.x, target.y)) continue;
-				delete target.buffs['burning'];
-				//`Elemental.add()`'s hate-listed chill backslashes instead of attaching - a fire-typed target takes the backlash.
-				if (target === scene.hero || (applyElementalBacklash(target, 'chill') === 0
-					&& !icyBuffImmune(target.kind, target.elementalType, 'chill'))) target.buffs = applyChillFreeze(
-					target.buffs, 3, resistedBuffDuration(target, 'chill', 1),
-				).buffs;
-				if (target.hp <= 0) scene.kill(target);
+				if (scene.level.inside(x, y) && scene.level.passable(x, y)) scene.seedFreeze(x, y, 10);
 			}
 			return;
 		}

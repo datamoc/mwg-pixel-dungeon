@@ -5334,9 +5334,9 @@ function healingDrive(overrides = {}) {
 	const potionSource = readFileSync(join(root, 'src/items/potionEffects.ts'), 'utf8');
 	assert.match(potionSource, /function applyPotionPurity[\s\S]*?reigniteBuff\(hero, 'blobImmunity', 20\)/);
 	assert.doesNotMatch(potionSource, /function applyPotionPurity[\s\S]*?delete hero\.buffs\[/);
-	// `Freezing` seeds cover NEIGHBOURS9 only, so the frost fire-clear runs at
-	// Chebyshev 1 even though the scan loop uses the MWL radius (ACP #390).
-	assert.match(potionSource, /Roguelike\.chebyshevDistance\(\{ x, y \}, \{ x: cx, y: cy \}\) <= 1\) \{ scene\.clearFire\(x, y\); scene\.freezeHeapAt\(x, y\); \}/);
+	// `PotionOfFrost.shatter()` must seed persistent Freezing at Java's exact
+	// non-solid NEIGHBOURS9 cells; the blob tick owns fire, Chill and heap effects.
+	assert.match(potionSource, /case 'potionFrost':[\s\S]*?Roguelike\.neighbourOffsets\(8\)\.concat\(\[\[0, 0\]\]\)[\s\S]*?scene\.seedFreeze\(x, y, 10\)/);
 }
 // Dew-drop collection moved to `items/consumables.ts` as `collectDewdrop` (the
 // file-size refactor's thirtieth extraction, behavior-identical): driven headlessly

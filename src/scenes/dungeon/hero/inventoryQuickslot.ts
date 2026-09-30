@@ -94,6 +94,7 @@ export const inventoryQuickslotMethods = {
 			syncHeroFromStats: this.syncHeroFromStats.bind(this),
 			grantExperience: this.grantExperience.bind(this),
 			seedFire: (x: number, y: number, volume: number) => scene.fire.seed(x, y, volume),
+			seedFreeze: (x: number, y: number, volume: number) => scene.plantFreeze.seed(x, y, volume),
 			clearFire: (x: number, y: number) => scene.fire.clear(x, y),
 			seedToxicGas: (x: number, y: number, volume: number) => scene.toxicGas.seed(x, y, volume),
 			seedParalyticGas: (x: number, y: number, volume: number) => scene.paralyticGas.seed(x, y, volume),
