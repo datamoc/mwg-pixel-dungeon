@@ -43,7 +43,11 @@ import { BOSSES, IMMOVABLE_KINDS, heroSheet, isLargeCreature, liveStats, type Mo
 import { isOpenSpace } from '../../../simulation/crystalSpire';
 import { HARMFUL_PLANTS, NATURES_POWER_DURATION } from '../shared';
 
-const TRINITY_BODY_GLYPH_CLASSES: Readonly<Record<string, string>> = { stone: 'Stone', repulsion: 'Repulsion', antimagic: 'AntiMagic', viscosity: 'Viscosity', thorns: 'Thorns' };
+/** Positive defend-proc glyphs with live Trinity hooks (`Armor.proc()` runs the worn glyph
+ * and Java's `BodyForm` glyph independently - `Armor.java`, tag `v3.3.8` - so the port gates
+ * each hook the same way). Passives (Flow, Swiftness, Camouflage, Bulk) and the no-op
+ * Brimstone/Obfuscation procs have no hook to gate, and curses stay unoffered. */
+const TRINITY_BODY_GLYPH_CLASSES: Readonly<Record<string, string>> = { stone: 'Stone', repulsion: 'Repulsion', antimagic: 'AntiMagic', viscosity: 'Viscosity', thorns: 'Thorns', affection: 'Affection', entanglement: 'Entanglement', potential: 'Potential' };
 
 /** A flow context whose item lookup (`chainsOf`, `armbandOf`, ...) returns `item` for any instance id. */
 function trinitySyntheticFlow<C extends object>(ctx: C, lookup: string, item: object): C {

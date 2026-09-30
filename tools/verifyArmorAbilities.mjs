@@ -68,6 +68,9 @@ export function verifyArmorAbilities(require, check) {
 		assert.equal(trinityChargeUsePerEffect(25, 'Corrupting', 'body'), 50);
 		assert.equal(trinityChargeUsePerEffect(25, 'AntiMagic', 'body'), 50);
 		assert.equal(trinityChargeUsePerEffect(25, 'Thorns', 'body'), 50);
+		assert.equal(trinityChargeUsePerEffect(25, 'Affection', 'body'), 50);
+		assert.equal(trinityChargeUsePerEffect(25, 'Entanglement', 'body'), 25);
+		assert.equal(trinityChargeUsePerEffect(25, 'Potential', 'body'), 25);
 		assert.equal(trinityChargeUsePerEffect(25, 'WandOfFireblast', 'mind'), 50);
 		assert.equal(trinityChargeUsePerEffect(25, 'DriedRose', 'spirit'), 50);
 		assert.equal(trinityChargeUsePerEffect(25, 'EtherealChains', 'spirit'), 35);
@@ -82,7 +85,7 @@ export function verifyArmorAbilities(require, check) {
 	check('Stench armor curse seeds Java ToxicGas, while FetidRat keeps StenchGas', () => {
 		const mobOnHit = readFileSync(new URL('../src/scenes/mobOnHit.ts', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
 		const branch = mobOnHit.slice(mobOnHit.indexOf('//Stench.proc()'), mobOnHit.indexOf("if (attacker.kind === 'bat'", mobOnHit.indexOf('//Stench.proc()')));
-		assert.match(branch, /ctx\.toxicGas\.seed\(ctx\.hero\.x, ctx\.hero\.y, 250\)/,
+		assert.match(branch, /ctx\.toxicGas\.seed\(defender\.x, defender\.y, 250\)/,
 			'Armor.java Stench imports ToxicGas and seeds it at the defender\'s cell');
 		assert.doesNotMatch(branch, /ctx\.stenchGas\.seed/,
 			'armor Stench must not use the separate FetidRat StenchGas blob');
@@ -194,7 +197,7 @@ export function verifyArmorAbilities(require, check) {
 		const save = readFileSync(new URL('../src/scenes/dungeon/deathSaveRefresh.ts', import.meta.url), 'utf8');
 		const restore = readFileSync(new URL('../src/scenes/dungeon/panelsSingleUse.ts', import.meta.url), 'utf8');
 		const turns = readFileSync(new URL('../src/scenes/dungeon/turnLoopAiming.ts', import.meta.url), 'utf8');
-		assert.match(ability, /const TRINITY_BODY_GLYPH_CLASSES[\s\S]*stone: 'Stone'[\s\S]*repulsion: 'Repulsion'[\s\S]*antimagic: 'AntiMagic'[\s\S]*viscosity: 'Viscosity'[\s\S]*thorns: 'Thorns'/);
+		assert.match(ability, /const TRINITY_BODY_GLYPH_CLASSES[\s\S]*stone: 'Stone'[\s\S]*repulsion: 'Repulsion'[\s\S]*antimagic: 'AntiMagic'[\s\S]*viscosity: 'Viscosity'[\s\S]*thorns: 'Thorns'[\s\S]*affection: 'Affection'[\s\S]*entanglement: 'Entanglement'[\s\S]*potential: 'Potential'/);
 		assert.match(ability, /MWL_ARMOR_GLYPHS\.filter[\s\S]*id in TRINITY_BODY_GLYPH_CLASSES/);
 		assert.ok(ability.includes("this.commitTrinityBodyGlyph(id, cost)"), 'picker commits the selected glyph');
 		const glyphStart = ability.indexOf('commitTrinityBodyGlyph(this: DungeonScene');
@@ -208,12 +211,18 @@ export function verifyArmorAbilities(require, check) {
 		assert.ok(combat.includes("this.trinityBodyGlyphIs('repulsion')"), 'Repulsion uses Trinity glyph dispatch');
 		assert.ok(combat.includes("this.trinityBodyGlyphIs('antimagic')"), 'AntiMagic uses Trinity glyph dispatch');
 		assert.ok(combat.includes("this.trinityBodyGlyphIs('viscosity')"), 'Viscosity uses Trinity glyph dispatch');
-		assert.match(combat, /armorProcMultiplier\(this: DungeonScene, defender: Creature\): number \{[\s\S]*?const arcana = ringArcanaMultiplier\([\s\S]*?return arcana \+ auraProcBonus/,
+		assert.match(combat, /armorProcMultiplier\(this: DungeonScene, defender: Creature\): number \{[\s\S]*?const arcana = [\s\S]*?ringArcanaMultiplier\([\s\S]*?return arcana \+ auraProcBonus/,
 			'defend-side glyph chances use Arcana and Aura, never the weapon-only Berserk catalyst');
 		assert.match(combat, /armorProcMultiplier: \(defender\) => scene\.armorProcMultiplier\(defender\)/,
 			'the mob hit adapter forwards the defend-side proc multiplier');
 		assert.match(mobOnHit, /armorGlyph\('thorns'\) \|\| ctx\.trinityBodyGlyphIs\('thorns'\)/,
 			'Thorns can proc as worn armor or as the temporary Trinity glyph');
+		assert.match(mobOnHit, /armorGlyph\('affection'\) \|\| ctx\.trinityBodyGlyphIs\('affection'\)/,
+			'Affection can proc as worn armor or as the temporary Trinity glyph');
+		assert.match(mobOnHit, /armorGlyph\('entanglement'\) \|\| ctx\.trinityBodyGlyphIs\('entanglement'\)/,
+			'Entanglement can proc as worn armor or as the temporary Trinity glyph');
+		assert.match(mobOnHit, /armorGlyph\('potential'\) \|\| ctx\.trinityBodyGlyphIs\('potential'\)/,
+			'Potential can proc as worn armor or as the temporary Trinity glyph');
 		assert.match(mobOnHit, /\(\(level \+ 2\) \/ \(level \+ 12\)\) \* ctx\.armorProcMultiplier\(defender\)/,
 			'Thorns uses Java\'s level chance with the armor-side multiplier');
 		assert.match(mobOnHit, /setBleeding\(attacker, Math\.round\(\(4 \+ level\) \* Math\.max\(1, procChance\)\)\)/,
@@ -670,7 +679,7 @@ export function verifyArmorAbilities(require, check) {
 		const cloneCombat = readFileSync(new URL('../src/scenes/dungeon/combatResolution.ts', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
 		assert.match(cloneCombat, /const cloneGearSwing = attacker !== this\.hero && attacker\.allyKind === 'shadowClone'\s*&& shadowCloneBladeProc\(Random\.int\(4\), this\.talentRank\('shadow_blade'\), this\.weaponId != null\)/,
 			'attack() draws Java Int(4) before testing the hero weapon');
-		assert.match(cloneCombat, /if \(cloneGearSwing\) \{\s*this\.heroOnHit\(attacker, defender, damage, true\)/,
+		assert.match(cloneCombat, /if \(cloneGearSwing \|\| roseWeaponSwing\) \{\s*this\.heroOnHit\(attacker, defender, damage, true\)/,
 			'the delegated Weapon.proc half runs through heroOnHit');
 		assert.match(cloneCombat, /if \(delegatedGearSwing\) return 1;/,
 			'a delegated swing rolls at Java base proc chance and keeps the hero trackers armed');

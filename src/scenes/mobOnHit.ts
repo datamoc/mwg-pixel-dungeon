@@ -90,7 +90,7 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	//(level+3)/(level+20) x Arcana chance, for round(10 x max(1, chance)).
 	//The existing charm target map supplies Java's object payload; direct map
 	//assignment preserves the level-scaled duration that addBuff alone cannot set.
-	if (glyphDefender && armorGlyph('affection') && attacker.hp > 0
+	if (glyphDefender && (armorGlyph('affection') || ctx.trinityBodyGlyphIs('affection')) && attacker.hp > 0
 		&& Random.chance(((Math.max(0, ctx.degradedLevel(ctx.armorLevel)) + 3) / (Math.max(0, ctx.degradedLevel(ctx.armorLevel)) + 20)) * ctx.genericProcMultiplier())) {
 		const level = Math.max(0, ctx.degradedLevel(ctx.armorLevel));
 		const chance = ((level + 3) / (level + 20)) * ctx.genericProcMultiplier();
@@ -335,7 +335,7 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	//plant grants, at `round((5 + 2 * armorLevel) * max(1, chance))`. This port used to give the
 	//*attacker* a `cripple` movement lock instead, which was wrong twice over: Java's glyph
 	//protects its wearer rather than disabling the enemy, and it protects by blocking damage.
-	if (defender.isHero && armorGlyph('entanglement') && !attacker.isHero) {
+	if (defender.isHero && (armorGlyph('entanglement') || ctx.trinityBodyGlyphIs('entanglement')) && !attacker.isHero) {
 		const level = Math.max(0, ctx.degradedLevel(ctx.armorLevel));
 		const procChance = 0.25 * ctx.genericProcMultiplier();
 		if (Random.chance(procChance)) {
@@ -354,7 +354,7 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	//and `belongings.charge(powerMulti)` adds fractional charge progress, with
 	//`powerMulti = max(1, procChance)`. `Charges.advance()` already accepts fractional
 	//progress and retains it through save/load, so it is the correct generic seam here.
-	if (defender.isHero && armorGlyph('potential')) {
+	if (defender.isHero && (armorGlyph('potential') || ctx.trinityBodyGlyphIs('potential'))) {
 		const level = Math.max(0, ctx.degradedLevel(ctx.armorLevel));
 		const procChance = ((level + 1) / (level + 6)) * ctx.genericProcMultiplier();
 		if (Random.float() < procChance) {
