@@ -355,9 +355,16 @@ export const combatResolutionMethods: Record<string, any> = {
 			// their illumination branch is already zero and hero-facing images are zero too.
 			attackerWeaponStrOk: false,
 		}) === 0) defender.evasion = 0;
+		//`Char.attack()` (tag `v3.3.8`): a PowerOfMany-powered ally deals 1.25x melee
+		//damage. It folds into the roll multiplier so it lands BEFORE the armor
+		//subtraction like Java's pre-`defenseProc` chain (applying it after rounded
+		//differently whenever armor absorbed anything). Java's BeamingRay boost
+		//variant (1.3x + 0.05x/rank) needs the unported BeamingRay cast/buff.
+		const powerAllyMult = attacker.isAlly && attacker.buffs['powerOfMany'] !== undefined
+			? POWER_OF_MANY_ATTACK_FACTOR : 1;
 		let attackRoll;
 		try {
-			attackRoll = this.resolveHeroAbilityAttack(attacker, defender, surprise || forceHit, accFactor, damageMultiplier);
+			attackRoll = this.resolveHeroAbilityAttack(attacker, defender, surprise || forceHit, accFactor, damageMultiplier * powerAllyMult);
 		} finally {
 			if (imageEvasion !== undefined) defender.evasion = imageEvasion;
 			if (daggerSurpriseFrac > 0) this.hero.damage = heroDamageBefore;
@@ -380,11 +387,6 @@ export const combatResolutionMethods: Record<string, any> = {
 		if (mimicContact.revealWhen === 'onHit') revealMimic();
 
 		let damage = attackRoll.damage;
-		// `Char.attack()` (tag `v3.3.8`): a PowerOfMany-powered ally deals 1.25x melee
-		// damage. The multiplier applies on the ordinary attack() exchange here.
-		if (attacker.isAlly && attacker.buffs['powerOfMany'] !== undefined) {
-			damage = Math.round(damage * POWER_OF_MANY_ATTACK_FACTOR);
-		}
 		//Charm.recover()/Charm.object: an actor charmed toward this specific target
 		//does not harm it. This also makes Affection's armor-glyph charm usable by
 		//ordinary monsters, not only by the already-portable Friendly weapon path.
@@ -748,8 +750,8 @@ export const combatResolutionMethods: Record<string, any> = {
 		if (this.deferMonsterDamage(defender, damage)) return true;
 		// `Char.damage()` (tag `v3.3.8`): PowerOfMany reduces damage taken by 25%, or
 		// by `30% + 5% per LIFE_LINK rank` while the powered ally has that talent.
-		// This scene seam represents the attack() path; direct damage sources still need
-		// a shared actor-damage entry point before they can all use the reduction.
+		// This scene seam represents the attack() path; every other source shares the
+		// same reduction through `applyCharacterDamage` (R105).
 		if (defender.buffs['powerOfMany'] !== undefined) {
 			damage = Math.round(damage * powerOfManyDamageFactor(this.talentRank('life_link')));
 		}

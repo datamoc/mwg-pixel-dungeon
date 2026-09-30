@@ -24,7 +24,7 @@ import { EMBERS, FLOOR, GRASS, HIGH_GRASS, VIEW_RADIUS, WATER } from '../../dung
 import { BUFF_DURATION, INFINITE_ACCURACY, INFINITE_EVASION, NEGATIVE_BUFFS, absorbShield, addBuff, applyElementalBacklash, buffBlocked, electricDamageHalved, reigniteBuff, rollDamage, rollHit, setBleeding, stoneGlyphReduction, type Creature } from '../../combat';
 import { absorbCreatureShields } from '../../simulation/allyShields';
 import { liveStats, IMMOVABLE_KINDS } from '../../monsters';
-import { POWER_OF_MANY_ATTACK_FACTOR, powerOfManyDamageFactor } from '../../simulation/clericSpells';
+import { powerOfManyDamageFactor } from '../../simulation/clericSpells';
 
 export const attackSeamMethods = {
 	/**
@@ -73,11 +73,11 @@ export const attackSeamMethods = {
 	},
 
 	scaleAttackDamage(this: DungeonScene, attacker: Creature, defender: Creature, damage: number): number {
-		// `Char.attack()` (tag `v3.3.8`): a PowerOfMany-powered ally deals 1.25x melee
-		// damage. The multiplier applies on the ordinary attack() exchange here.
-		if (attacker.isAlly && attacker.buffs['powerOfMany'] !== undefined) {
-			damage = Math.round(damage * POWER_OF_MANY_ATTACK_FACTOR);
-		}
+		//`Char.attack()` (tag `v3.3.8`): a PowerOfMany-powered ally deals 1.25x melee
+		//damage. It folds into the roll multiplier at the `attack()` call site
+		//(`combatResolution.ts`, R105), so it lands BEFORE the armor subtraction
+		//like Java's pre-`defenseProc` chain - no copy may live on this tail, or a
+		//wired T61 world would apply it twice (once in the roll, once here).
 		//This also makes Affection's armor-glyph charm usable by ordinary monsters,
 		//not only by the already-portable Friendly weapon path.
 		if (this.isCharmedToward(attacker, defender)) damage = 0;
@@ -455,8 +455,8 @@ export const attackSeamMethods = {
 		if (this.deferMonsterDamage(defender, damage)) return { damage, finished: true };
 		// `Char.damage()` (tag `v3.3.8`): PowerOfMany reduces damage taken by 25%, or
 		// by `30% + 5% per LIFE_LINK rank` while the powered ally has that talent.
-		// This scene seam represents the attack() path; direct damage sources still need
-		// a shared actor-damage entry point before they can all use the reduction.
+		// This scene seam represents the attack() path; every other source shares the
+		// same reduction through `applyCharacterDamage` (R105).
 		if (defender.buffs['powerOfMany'] !== undefined) {
 			damage = Math.round(damage * powerOfManyDamageFactor(this.talentRank('life_link')));
 		}

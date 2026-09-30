@@ -40,7 +40,7 @@ import { resetPortedRun } from '../../spdLevelGen/gameBridge';
 import { runState } from '../../runState';
 import { isChallengeEnabled, restoreRunChallenges } from '../../challenges';
 import { CLASS_TALENTS, TALENT_TIERS, armorTalentDefinitions, hasClassTier3Row, subclassTalentDefinitions, talentDescKey, talentTitleKey, type TalentDefinition } from '../../talents';
-import { recallTrackerDuration } from '../../simulation/clericSpells';
+import { powerOfManyDamageFactor, recallTrackerDuration } from '../../simulation/clericSpells';
 import { ARMOR_CHARGE_START, armorAbilitiesFor, armorAbilityDef, armorAbilityKey, isKnownArmorAbility } from '../../armorAbilities';
 import { prismaticGuardMaxHp } from '../../simulation/prismatic';
 import { ignoresCrystalGuardianBeckon } from '../../simulation/crystalSpire';
@@ -1578,6 +1578,13 @@ export const panelsSingleUseMethods = {
 		//`AuraOfProtection.AuraBuff` is a defender-side `Char.damage()` modifier (tag `v3.3.8`),
 		//so blast damage must pass through the same nearby same-alignment reduction as attacks.
 		if (!options.skipAura) damage = this.auraProtectedDamage(c, damage);
+//`Char.damage()` (tag `v3.3.8`): a PowerOfMany-powered defender takes 25% less
+		//damage, or `30% + 5% per LIFE_LINK rank` with that talent - the same reduction
+		//the attack() tails apply, now shared by every source through this dispatch,
+		//in Java's own Aura-then-PowerBuff-then-Doom order.
+		if (c.buffs['powerOfMany'] !== undefined) {
+			damage = Math.round(damage * powerOfManyDamageFactor(this.talentRank('life_link')));
+		}
 		//This shared blast/bomb/ability path models Char.damage() for non-hero targets;
 		//apply Doom after Aura and before the target-specific curve and shields.
 		if (!options.skipDoom) damage = doomDamage(damage, c);

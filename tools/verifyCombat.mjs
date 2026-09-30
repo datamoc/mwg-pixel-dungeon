@@ -350,6 +350,22 @@ export function verifyCombat(require, check) {
 		facade.addBuff(ordinary, 'poison');
 		assert.equal(ordinary.buffs.poison, facade.BUFF_DURATION.poison, 'other directable allies do not gain the immunity');
 	});
+	check('PowerOfMany factors sit at Java pre/post-DR order on every attack path (R105)', () => {
+		//`Char.attack()` multiplies the ally 1.25x BEFORE `defenseProc`/armor; the old
+		//post-DR application rounded differently whenever armor absorbed anything.
+		const attack = readFileSync(new URL('../src/scenes/dungeon/combatResolution.ts', import.meta.url), 'utf8');
+		assert.match(attack, /const powerAllyMult = attacker\.isAlly && attacker\.buffs\['powerOfMany'\] !== undefined[\s\S]*?\? POWER_OF_MANY_ATTACK_FACTOR : 1;[\s\S]*?damageMultiplier \* powerAllyMult/,
+			'a powered ally folds 1.25x into the roll multiplier, ahead of armor');
+		const seam = readFileSync(new URL('../src/scenes/dungeon/attackSeams.ts', import.meta.url), 'utf8');
+		assert.doesNotMatch(attack, /Math\.round\(damage \* POWER_OF_MANY_ATTACK_FACTOR\)/,
+			'no post-armor ally multiplier may remain on the attack() tail');
+		assert.doesNotMatch(seam, /POWER_OF_MANY_ATTACK_FACTOR/,
+			'no second ally copy may live on the T61 seam tail (it would double-apply once wired)');
+		//`Char.damage()` cuts a powered defender AFTER Aura and BEFORE Doom, on every
+		//source - the shared dispatch carries it, not just the two attack tails.
+		assert.match(blastSource, /auraProtectedDamage\(c, damage\)[\s\S]*?c\.buffs\['powerOfMany'\] !== undefined[\s\S]*?powerOfManyDamageFactor\(this\.talentRank\('life_link'\)\)[\s\S]*?doomDamage\(damage, c\)/,
+			'shared dispatch reduces powered defenders between Aura and Doom');
+	});
 	check('Mob.add(Amok) wakes sleeping mobs directly into HUNTING', () => {
 		//`Mob.add()` switches Amok targets to HUNTING (Mob.java, tag v3.3.8), bypassing
 		//Sleeping.awaken() and CrystalGuardian's reach-gated override; the port records that
