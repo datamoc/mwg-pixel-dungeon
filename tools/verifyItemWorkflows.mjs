@@ -4032,6 +4032,21 @@ function alchemizeDrive(overrides = {}, pickIndex = 0) {
 		targetIlluminated: false, searingLightRank: 0, searingLightCooldown: false, sunrayRank: 2 }).sunrayChance, 5,
 	'Sunray rank 2 uses Random.Int(20) < 5 (25%)');
 	assert.equal(require('./simulation/buffs.js').BUFF_DURATION.searingLightCooldown, 20, 'Searing Light cooldown duration comes from MWL');
+	// `Wand.wandProc()`'s first two lines (tag `v3.3.8`, R036-a): Arcane Vision
+	// marks the victim aware for `5+5*points`, and a Warlock marks a non-hero
+	// victim for `10+level` when `Random.Float()` beats `0.92^((level*charges)+1)`
+	// minus 0.07 (the standard `1 - 0.92^x` chance plus 7%, starting at 15%).
+	const { arcaneVisionDuration, soulMarkProcThreshold, soulMarkDuration } = require('./talentEffects.js');
+	assert.equal(arcaneVisionDuration(2), 15);
+	assert.equal(Math.round(soulMarkProcThreshold(0, 1) * 100) / 100, 0.85, 'level-0 single-charge starts at 15%');
+	assert.equal(soulMarkDuration(3), 13);
+	const wandAim = readFileSync(join(root, 'src/scenes/dungeon/turnLoopAiming.ts'), 'utf8');
+	assert.match(wandAim, /talentRank\('arcane_vision'\) > 0[\s\S]*?awareCreatures\.set\(victim/,
+		'fireWandShot marks zapped victims aware');
+	assert.match(wandAim, /subclass\(\) === 'warlock'[\s\S]*?Random\.float\(\) > soulMarkProcThreshold\(zapLevel, chargesPerCast\)/,
+		'fireWandShot rolls the warlock mark per victim');
+	assert.match(wandAim, /addBuff\(victim, 'soulmark', soulMarkDuration\(zapLevel\)\)/,
+		'the mark lasts 10 + wand level');
 	const leveling = { level: 0, exp: 99 };
 	assert.equal(talismanApplyExp(leveling, 1), true, '100 exp levels a +0 talisman');
 	assert.equal(leveling.level, 1);

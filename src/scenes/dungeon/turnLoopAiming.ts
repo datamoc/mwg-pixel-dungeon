@@ -12,7 +12,7 @@ import { ringElementsMultiplier, ringEnergyMultiplier, ringSharpshootingBonus } 
 import { weaponHitDisqualifiesDwarfKingChallenge } from '../../simulation/bossChallenge';
 import { has, t } from '../../i18n/index';
 import { onZoomChanged, screenShake, setZoomOffset, zoomForOffset, zoomOffset } from '../../settings';
-import { EMPOWERING_SCROLLS_BONUS, arcaneVisionDuration, canImproviseProjectile, enragedCatalystBonus, ironStomachReduction, lightReadingWandMult, monasticVigorShield, preservationChance, projectileMomentumBonus } from '../../talentEffects';
+import { EMPOWERING_SCROLLS_BONUS, arcaneVisionDuration, canImproviseProjectile, enragedCatalystBonus, ironStomachReduction, lightReadingWandMult, monasticVigorShield, preservationChance, projectileMomentumBonus, soulMarkDuration, soulMarkProcThreshold } from '../../talentEffects';
 import { directTomeCharge, findHolyTome } from '../../items/holyTome';
 import { talismanArtifactProcPlan } from '../../items/talisman';
 import { tomeChargeCap, tomeTickRate } from '../../simulation/clericSpells';
@@ -285,6 +285,19 @@ export const turnLoopAimingMethods = {
 			//The corpse gate is this port's: Java procs the dying target too,
 			//observably a no-op once `kill()` has run.
 			if (victim.hp > 0) {
+				//`Wand.wandProc()`'s first two lines (tag `v3.3.8`): any hero with
+				//Arcane Vision marks the victim aware for `5+5*points`, and a
+				//Warlock marks a non-hero victim with SoulMark for `10+level` on
+				//the standard `1-0.92^x` chance (+7%, starting at 15%). They run
+				//ahead of the Priest/Searing/Sunray tail below, Java's own order.
+				if (this.talentRank('arcane_vision') > 0) {
+					this.awareCreatures.set(victim, Math.max(this.awareCreatures.get(victim) ?? 0,
+						arcaneVisionDuration(this.talentRank('arcane_vision'))));
+				}
+				if (!victim.isHero && this.subclass() === 'warlock'
+					&& Random.float() > soulMarkProcThreshold(zapLevel, chargesPerCast)) {
+					addBuff(victim, 'soulmark', soulMarkDuration(zapLevel));
+				}
 				const zapPlan = talismanArtifactProcPlan({
 					heroClass: this.heroClass,
 					heroSubclass: this.subclass() ?? undefined,

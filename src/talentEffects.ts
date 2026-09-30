@@ -140,6 +140,19 @@ export function arcaneVisionDuration(rank: number): number {
 	return 5 + 5 * rank;
 }
 
+/** `Wand.wandProc()`'s SoulMark line (tag `v3.3.8`): the Warlock-only mark
+ * lands when `Random.Float()` beats `0.92^((level*charges)+1) - 0.07` (the
+ * standard `1 - 0.92^x` chance plus 7%, starting at 15%). Returns that
+ * threshold so the roll itself stays caller-side. */
+export function soulMarkProcThreshold(wandLevel: number, chargesUsed: number): number {
+	return Math.pow(0.92, wandLevel * chargesUsed + 1) - 0.07;
+}
+
+/** `SoulMark.DURATION` (tag `v3.3.8`): the mark lasts `10 + wandLevel` turns. */
+export function soulMarkDuration(wandLevel: number): number {
+	return 10 + wandLevel;
+}
+
 /** `NECROMANCERS_MINIONS` roll (`Mob.die()`): `0.4*points/3` on a soul-marked victim's
  * death. Kept as a formula reference only - no call site remains until SoulMark, Wraith,
  * and ally combat exist (see the removed kill-site stand-in's note in main.ts). */
