@@ -4239,3 +4239,7 @@ Every family named in the section below is matrixed (55 matrices under `garbage/
 # R084. Scroll to Stone identification
 
 - [x] **R084** _(`ScrollToStone` should identify the scroll kind)_ **Closed 2026-10-01:** the live picker converted one unknown Teleportation scroll into two Stones of Blink and identified the remaining same-kind scroll.
+
+# R085. Alchemy recipe manifest
+
+- [x] **R085** _(Fix `alchemyRecipeManifest`)_ **Closed 2026-10-01:** production import validation ran on startup and the toolkit recipe picker opened with no browser console errors. Typecheck, build and item workflow verification passed.
