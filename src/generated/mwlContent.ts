@@ -13360,12 +13360,26 @@ export const gameData = {
 							"tag": "effect",
 							"attributes": {
 								"apply_to": "default_probs",
-								"set": "0,6,4,3,3,3,2,2,2,2,2,1"
+								"set": "0,3,2,1,2,1,1,1,1,1,1,1"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\decks.mwl",
 								"line": 12,
+								"column": 13
+							},
+							"gettext": []
+						},
+						{
+							"tag": "effect",
+							"attributes": {
+								"apply_to": "second_probs",
+								"set": "0,3,2,2,1,2,1,1,1,1,1,0"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\decks.mwl",
+								"line": 17,
 								"column": 13
 							},
 							"gettext": []
@@ -13379,7 +13393,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\decks.mwl",
-								"line": 17,
+								"line": 22,
 								"column": 13
 							},
 							"gettext": []
@@ -13395,6 +13409,49 @@ export const gameData = {
 				{
 					"tag": "trait",
 					"attributes": {
+						"id": "trinketDeck",
+						"name": "Generator.Category.TRINKET"
+					},
+					"children": [
+						{
+							"tag": "effect",
+							"attributes": {
+								"apply_to": "default_probs",
+								"set": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\decks.mwl",
+								"line": 34,
+								"column": 13
+							},
+							"gettext": []
+						},
+						{
+							"tag": "effect",
+							"attributes": {
+								"apply_to": "classes",
+								"set": "RatSkull,ParchmentScrap,PetrifiedSeed,ExoticCrystals,MossyClump,DimensionalSundial,ThirteenLeafClover,TrapMechanism,MimicTooth,WondrousResin,EyeOfNewt,SaltCube,VialOfBlood,ShardOfOblivion,ChaoticCenser,FerretTuft,CrackedSpyglass"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\decks.mwl",
+								"line": 39,
+								"column": 13
+							},
+							"gettext": []
+						}
+					],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\decks.mwl",
+						"line": 29,
+						"column": 9
+					},
+					"gettext": []
+				},
+				{
+					"tag": "trait",
+					"attributes": {
 						"id": "scrollDeck",
 						"name": "Generator.Category.SCROLL"
 					},
@@ -13403,12 +13460,26 @@ export const gameData = {
 							"tag": "effect",
 							"attributes": {
 								"apply_to": "default_probs",
-								"set": "0,6,4,3,3,3,2,2,2,2,2,1"
+								"set": "0,3,2,1,2,1,1,1,1,1,1,1"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\decks.mwl",
-								"line": 29,
+								"line": 51,
+								"column": 13
+							},
+							"gettext": []
+						},
+						{
+							"tag": "effect",
+							"attributes": {
+								"apply_to": "second_probs",
+								"set": "0,3,2,2,1,2,1,1,1,1,1,0"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\decks.mwl",
+								"line": 56,
 								"column": 13
 							},
 							"gettext": []
@@ -13422,7 +13493,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\decks.mwl",
-								"line": 34,
+								"line": 61,
 								"column": 13
 							},
 							"gettext": []
@@ -13430,7 +13501,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\decks.mwl",
-						"line": 24,
+						"line": 46,
 						"column": 9
 					},
 					"gettext": []

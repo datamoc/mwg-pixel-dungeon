@@ -9,6 +9,7 @@
  *   node tools/parity/run-parity.mjs --stage levelgen    floor generation RNG draws, checkout oracle vs TS
  *   node tools/parity/run-parity.mjs --stage mobdata     every Java mob class's stats/loot (v3.3.8) vs the port's monster tables
  *   node tools/parity/run-parity.mjs --stage quest       run-level Wandmaker quest type rolled during levelgen, checkout oracle vs TS
+ *   node tools/parity/run-parity.mjs --stage ghost       Ghost spawn gate + reward rolls per (seed, depth), Java v3.3.8 vs TS
  *   options: --spd <SPD checkout>   (default $SPD_CHECKOUT or ~/dev/shattered-pixel-dungeon; a git repo with the tags/commits)
  *            --work <dir>           scratch dir for the Java trees (default <os tmp>/mwg-parity; reused between runs)
  *            --combat-ref v3.3.8    Java ref for the combat oracle
@@ -67,12 +68,13 @@ function exportTree(dir, ref) {
 }
 
 /** Copies our harness classes in, inserts the trace hook into Random.java and makes sure the Gradle tasks exist. */
-function installHarness(dir, { combat, levelgen, loot, mobdata }) {
+function installHarness(dir, { combat, levelgen, loot, mobdata, ghost }) {
 	const put = (name, rel) => { mkdirSync(dirname(join(dir, rel)), { recursive: true }); copyFileSync(join(JAVA_SRC, name), join(dir, rel)); };
 	if (combat) { put('CombatHarness.java', `${CORE}/actors/mobs/CombatHarness.java`); put('CombatHarnessLauncher.java', `${DESKTOP}/CombatHarnessLauncher.java`); }
 	if (levelgen) { put('LevelGenHarness.java', `${CORE}/levels/LevelGenHarness.java`); put('LevelGenHarnessLauncher.java', `${DESKTOP}/LevelGenHarnessLauncher.java`); }
 	if (mobdata) { put('MobDataHarness.java', `${CORE}/actors/mobs/MobDataHarness.java`); put('MobDataHarnessLauncher.java', `${DESKTOP}/MobDataHarnessLauncher.java`); }
 	if (loot) { put('LootHarness.java', `${CORE}/actors/mobs/LootHarness.java`); put('LootHarnessLauncher.java', `${DESKTOP}/LootHarnessLauncher.java`); }
+	if (ghost) { put('GhostRewardHarness.java', `${CORE}/actors/mobs/npcs/GhostRewardHarness.java`); put('GhostRewardHarnessLauncher.java', `${DESKTOP}/GhostRewardHarnessLauncher.java`); }
 
 	const randomFile = join(dir, 'SPD-classes/src/main/java/com/watabou/utils/Random.java');
 	let random = readFileSync(randomFile, 'utf8');
@@ -94,6 +96,7 @@ function installHarness(dir, { combat, levelgen, loot, mobdata }) {
 	if (levelgen && !/runHarness/.test(gradle)) gradle += task('runHarness', 'LevelGenHarnessLauncher');
 	if (mobdata && !gradle.includes("'runMobData'")) gradle += task('runMobData', 'MobDataHarnessLauncher');
 	if (loot && !gradle.includes("'runLootHarness'")) gradle += task('runLootHarness', 'LootHarnessLauncher');
+	if (ghost && !gradle.includes("'runGhostReward'")) gradle += task('runGhostReward', 'GhostRewardHarnessLauncher');
 	writeFileSync(gradleFile, gradle);
 }
 
@@ -200,6 +203,29 @@ function questStage() {
 	gate('quest: the port rolls the same Wandmaker quest type as Java', r.status === 0, `report: ${join(outDir, 'quest-report.txt')}`);
 }
 
+/** B3, Ghost quest domain: `Ghost.Quest.spawn()`'s spawn gate (`Random.Int(5-depth)==0`,
+ * depths 2-4, `type = depth-1`) plus every reward roll (armor/weapon tiers and classes,
+ * the shared item level, the enchant keep) per (seed, depth) - Java v3.3.8 (fresh decks
+ * per case) vs the port's gate composition + `ghostQuestReward()`. The room/position
+ * loop is not walked on either side: its draws depend on level geometry. */
+function ghostStage() {
+	console.log(`\n== ghost: Java ${combatRef} Ghost.Quest.spawn() gate + reward rolls vs this port's gate + ghostQuestReward() ==`);
+	const dir = join(work, `spd-${combatRef}`);
+	exportTree(dir, combatRef);
+	installHarness(dir, { ghost: true });
+	const outDir = join(work, 'ghost'); mkdirSync(outDir, { recursive: true });
+	const javaOut = join(outDir, 'ghost_java_out.txt');
+	rmSync(javaOut, { force: true });
+	const g = gradle(dir, 'runGhostReward', { GHOST_OUT: javaOut });
+	if (!existsSync(javaOut)) { gate('ghost Java dump produced', false, g.out.slice(-400)); return; }
+	const cases = (readFileSync(javaOut, 'utf8').match(/"depth":/g) || []).length;
+	gate('ghost Java dump produced', true, `${cases} cases`);
+	const tsRunner = tsBundle('tools/parityGhostRewardTrace.ts', 'parityGhostRewardTrace.mjs');
+	const r = run(process.execPath, [tsRunner, '--java', javaOut, '--known', join(ROOT, 'tools', 'parity', 'ghostreward-known.json'), '--report', join(outDir, 'ghost-report.txt')]);
+	console.log(r.out.trim().split('\n').slice(0, 40).join('\n'));
+	gate('ghost: spawn gate, type, tiers, classes, item level and enchant keep all match Java or are documented in ghostreward-known.json', r.status === 0, `report: ${join(outDir, 'ghost-report.txt')}`);
+}
+
 function levelgenStage() {
 
 	console.log(`\n== levelgen: floor-generation RNG draws, oracle ${prebuiltLevelgenTree ? prebuiltLevelgenTree : levelgenRef} vs this port (depths 3-9, 4 seeds) ==`);
@@ -225,6 +251,7 @@ try {
 	if (stage === 'all' || stage === 'mobdata') mobdataStage();
 	if (stage === 'all' || stage === 'loot') lootStage();
 	if (stage === 'all' || stage === 'quest') questStage();
+	if (stage === 'all' || stage === 'ghost') ghostStage();
 	if (stage === 'all' || stage === 'levelgen') levelgenStage();
 } catch (e) {
 	gate('runner', false, e.message);

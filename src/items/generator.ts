@@ -46,6 +46,7 @@ import { MWL_TABLE_ROWS, MWL_TRAIT_NODES } from '../mwlContent';
  *  `LinkedHashMap` populated by iterating `Category.values()`, so `Random.chances()` sees the
  *  weights in exactly this order. */
 export const enum Cat {
+	TRINKET,
 	WEAPON, WEP_T1, WEP_T2, WEP_T3, WEP_T4, WEP_T5,
 	ARMOR,
 	MISSILE, MIS_T1, MIS_T2, MIS_T3, MIS_T4, MIS_T5,
@@ -70,11 +71,13 @@ interface CatDef {
 	defaultProbs: number[] | null;
 	/** Java's `probs`, which for non-deck categories is set directly in the static initializer. */
 	initialProbs: number[];
+	/** Java's `defaultProbs2` (the potion/scroll second deck variant); absent everywhere else. */
+	secondProbs?: number[] | null;
 	/** Concrete class names, for faithful (if cosmetic) reporting of what got picked. */
 	classes: string[];
 }
 
-function mwlDeck(id: string): { classes: string[]; probabilities: number[] } {
+function mwlDeck(id: string): { classes: string[]; probabilities: number[]; secondProbs: number[] | null } {
 	const deck = MWL_TRAIT_NODES.find((node) => node.attributes.id === id)
 		?? (() => { throw new Error(`MWL generator deck is missing ${id}`); })();
 	const value = (key: string): string => {
@@ -87,9 +90,18 @@ function mwlDeck(id: string): { classes: string[]; probabilities: number[] } {
 	if (classes.length !== probabilities.length || probabilities.some((entry) => !Number.isFinite(entry))) {
 		throw new Error(`MWL generator deck ${id} has invalid class/probability data`);
 	}
-	return { classes, probabilities };
+	const second = deck.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === 'second_probs');
+	let secondProbs: number[] | null = null;
+	if (second?.attributes.set !== undefined) {
+		secondProbs = second.attributes.set.split(',').map((entry) => entry.trim()).filter(Boolean).map(Number);
+		if (secondProbs.length !== classes.length || secondProbs.some((entry) => !Number.isFinite(entry))) {
+			throw new Error(`MWL generator deck ${id} has invalid second-probability data`);
+		}
+	}
+	return { classes, probabilities, secondProbs };
 }
 
+const TRINKET_DECK = mwlDeck('trinketDeck');
 const POTION_DECK = mwlDeck('potionDeck');
 const SCROLL_DECK = mwlDeck('scrollDeck');
 const RUNESTONE_DECK = mwlDeck('runestoneDeck');
@@ -126,6 +138,12 @@ const FLOOR_SET_TIER_PROBS = mwlMatrix('floorSetTierProbs');
 /** Exactly `Generator.java`'s static initializer. Weights and class order both matter: the
  *  weights drive `Random.chances`, and the order decides which class an index maps to. */
 const CATS: CatDef[] = [
+	{
+		name: 'TRINKET', firstProb: 0, secondProb: 0, superKind: 'item',
+		defaultProbs: TRINKET_DECK.probabilities,
+		initialProbs: [...TRINKET_DECK.probabilities],
+		classes: TRINKET_DECK.classes,
+	},
 	{ name: 'WEAPON', firstProb: 2, secondProb: 2, superKind: 'weapon', defaultProbs: null, initialProbs: [], classes: [] },
 	{
 		name: 'WEP_T1', firstProb: 0, secondProb: 0, superKind: 'weapon',
@@ -221,6 +239,7 @@ const CATS: CatDef[] = [
 		name: 'POTION', firstProb: 8, secondProb: 8, superKind: 'item',
 		defaultProbs: POTION_DECK.probabilities,
 		initialProbs: [...POTION_DECK.probabilities],
+		secondProbs: POTION_DECK.secondProbs,
 		classes: POTION_DECK.classes,
 	},
 	{
@@ -232,6 +251,7 @@ const CATS: CatDef[] = [
 		name: 'SCROLL', firstProb: 8, secondProb: 8, superKind: 'item',
 		defaultProbs: SCROLL_DECK.probabilities,
 		initialProbs: [...SCROLL_DECK.probabilities],
+		secondProbs: SCROLL_DECK.secondProbs,
 		classes: SCROLL_DECK.classes,
 	},
 	{
@@ -349,6 +369,8 @@ export function generatorItemOrder(sourceClass?: string, id?: string, fallbackFr
 // ---------------------------------------------------------------------------------------------
 
 let usingFirstDeck = false;
+/** Per-category second-deck flag (`Category.using2ndProbs`), potion/scroll only. */
+let usingSecondDeck: boolean[] = [];
 /** `Generator.categoryProbs`, indexed by `Cat`. Decremented by `random()` on the level stream. */
 let categoryProbs: number[] = [];
 /** `Generator.defaultCatProbs`, indexed by `Cat`. */
@@ -377,10 +399,19 @@ function generalReset(): void {
 	defaultCatProbs = CATS.map(c => c.firstProb + c.secondProb);
 }
 
-/** `Generator.reset(cat)`. No RNG. */
+/** `Generator.reset(cat)`. No RNG - but a refill toggles the second deck when the
+ *  category has one (`using2ndProbs = !using2ndProbs`), including inside `fullReset()`, which
+ *  sets the flag from its own Int(2) immediately before calling reset, so the just-rolled
+ *  sense is inverted there by design. */
 function resetCat(cat: Cat): void {
 	const def = CATS[cat];
-	if (def.defaultProbs !== null) probs[cat] = def.defaultProbs.slice();
+	if (def.defaultProbs === null) return;
+	if (def.secondProbs != null) {
+		usingSecondDeck[cat] = !usingSecondDeck[cat];
+		probs[cat] = (usingSecondDeck[cat] ? def.secondProbs : def.defaultProbs).slice();
+	} else {
+		probs[cat] = def.defaultProbs.slice();
+	}
 }
 
 /**
@@ -396,6 +427,10 @@ function resetCat(cat: Cat): void {
  *   substream. Their values never reach the level stream, but reproducing them lets the
  *   concrete class picks be faithful too, and their *count* keeps this function's position in
  *   the run-init stream correct for anything added after it later.
+ * - Potion and scroll also carry Java's `defaultProbs2` second deck: one `Random.Int(2)`
+ *   each decides the starting deck, and every deck refill toggles it. Those two draws sit
+ *   between the `usingFirstDeck` roll and the substream seeds, so omitting them shifts
+ *   every seed after them.
  */
 export function generatorFullReset(): void {
 	probs = CATS.map(c => c.initialProbs.slice());
@@ -404,7 +439,9 @@ export function generatorFullReset(): void {
 
 	usingFirstDeck = SpdRandom.int(2) === 0;
 	generalReset();
+	usingSecondDeck = CATS.map(() => false);
 	for (let cat = 0; cat < CATS.length; cat++) {
+		if (CATS[cat].secondProbs != null) usingSecondDeck[cat] = SpdRandom.int(2) === 0;
 		resetCat(cat);
 		if (CATS[cat].defaultProbs !== null) {
 			catSeeds[cat] = SpdRandom.long();
@@ -427,17 +464,26 @@ function weaponOrArmorRandom(cat: Cat, cls: string, enchantThreshold: number): G
 	}
 	let cursed = false;
 	let hasGoodEnchant = false;
-	const effectRoll = SpdRandom.float();
-	if (effectRoll < 0.3) {
-		// `enchant(Enchantment.randomCurse())` -> `Random.element(curses)`.
-		SpdRandom.int(CURSE_POOL_SIZE);
-		cursed = true;
-	} else if (effectRoll >= enchantThreshold) {
-		// `enchant()` -> `Enchantment.random()` -> `chances(typeChances)` then
-		// `Random.element(common|uncommon|rare)`.
-		const type = SpdRandom.chances(ENCH_TYPE_CHANCES);
-		SpdRandom.int(ENCH_POOL_SIZES[type < 0 ? 0 : type]);
-		hasGoodEnchant = true;
+	//Both `Weapon.random()` and `Armor.random()` roll curse/enchant on a private
+	//Long-seeded substream (so parchment-scrap variance never touches the calling stream);
+	//the level rolls above stay on the caller stream. Ghost quest code then discards the
+	//rolled level/curse/enchant, but the draws must still burn in Java order.
+	SpdRandom.pushGenerator(SpdRandom.long());
+	try {
+		const effectRoll = SpdRandom.float();
+		if (effectRoll < 0.3) {
+			// `enchant(Enchantment.randomCurse())` -> `Random.element(curses)`.
+			SpdRandom.int(CURSE_POOL_SIZE);
+			cursed = true;
+		} else if (effectRoll >= enchantThreshold) {
+			// `enchant()` -> `Enchantment.random()` -> `chances(typeChances)` then
+			// `Random.element(common|uncommon|rare)`.
+			const type = SpdRandom.chances(ENCH_TYPE_CHANCES);
+			SpdRandom.int(ENCH_POOL_SIZES[type < 0 ? 0 : type]);
+			hasGoodEnchant = true;
+		}
+	} finally {
+		SpdRandom.popGenerator();
 	}
 	return { cat, cls, cursed, level: n, quantity: 1, hasGoodEnchant };
 }
@@ -738,6 +784,14 @@ export function randomUsingDefaults(cat: Cat): GenItem {
 	if (cat === Cat.MISSILE) return randomMissile(Math.floor(currentDepth / 5), true);
 	const def = CATS[cat];
 	if (def.defaultProbs === null || cat === Cat.ARTIFACT) return randomCategory(cat);
+	if (def.secondProbs != null) {
+		//Java's `defaultProbsTotal` (element-wise deck sum): picked directly, with no
+		//exotic-swap check - Java returns from that branch before reaching regToExo.
+		const second: number[] = def.secondProbs;
+	const total = def.defaultProbs.map((p, idx) => p + (second[idx] ?? 0));
+		const pick = SpdRandom.chances(total);
+		return itemRandom(cat, def.classes[pick < 0 ? 0 : pick] ?? def.name);
+	}
 	const i = SpdRandom.chances(def.defaultProbs);
 	if (cat === Cat.POTION) {
 		//`Generator.randomUsingDefaults(Category)` (`items/Generator.java:758-759`) checks the

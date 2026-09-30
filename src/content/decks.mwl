@@ -11,12 +11,34 @@
           {
             tag: "effect",
             apply_to: "default_probs",
-            set: "0,6,4,3,3,3,2,2,2,2,2,1",
+            set: "0,3,2,1,2,1,1,1,1,1,1,1",
+          },
+          {
+            tag: "effect",
+            apply_to: "second_probs",
+            set: "0,3,2,2,1,2,1,1,1,1,1,0",
           },
           {
             tag: "effect",
             apply_to: "classes",
             set: "PotionOfStrength,PotionOfHealing,PotionOfMindVision,PotionOfFrost,PotionOfLiquidFlame,PotionOfToxicGas,PotionOfHaste,PotionOfInvisibility,PotionOfLevitation,PotionOfParalyticGas,PotionOfPurity,PotionOfExperience",
+          },
+        ],
+      },
+      {
+        tag: "trait",
+        id: "trinketDeck",
+        name: "Generator.Category.TRINKET",
+        children: [
+          {
+            tag: "effect",
+            apply_to: "default_probs",
+            set: "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1",
+          },
+          {
+            tag: "effect",
+            apply_to: "classes",
+            set: "RatSkull,ParchmentScrap,PetrifiedSeed,ExoticCrystals,MossyClump,DimensionalSundial,ThirteenLeafClover,TrapMechanism,MimicTooth,WondrousResin,EyeOfNewt,SaltCube,VialOfBlood,ShardOfOblivion,ChaoticCenser,FerretTuft,CrackedSpyglass",
           },
         ],
       },
@@ -28,7 +50,12 @@
           {
             tag: "effect",
             apply_to: "default_probs",
-            set: "0,6,4,3,3,3,2,2,2,2,2,1",
+            set: "0,3,2,1,2,1,1,1,1,1,1,1",
+          },
+          {
+            tag: "effect",
+            apply_to: "second_probs",
+            set: "0,3,2,2,1,2,1,1,1,1,1,0",
           },
           {
             tag: "effect",
