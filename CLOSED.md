@@ -4215,3 +4215,7 @@ Every family named in the section below is matrixed (55 matrices under `garbage/
 # R077. Identified alchemy ingredients
 
 - [x] **R077** _(Add the identified-ingredient gate)_ **Closed 2026-10-01:** simple recipes now carry the Java identification requirement in MWL and enforce it at both recipe listing and craft time. Browser verification showed Magical Infusion hidden for an unknown Upgrade Scroll, no consumption through the guarded craft path, and successful craft for 12 energy after identification. See `coverage/rows-items-consumables-and-crafting.md`.
+
+# R078. Seed to Potion random branch
+
+- [x] **R078** _(Weight `SeedToPotion`'s random branch like `Generator.randomUsingDefaults(POTION)`)_ **Closed 2026-10-01:** the run-scoped Healing counter, weighted outputs and reroll behavior passed the existing workflow checks and a live 30-craft toolkit run (90 seeds, 10 accepted Healing outputs, zero Strength outcomes). See `coverage/rows-items-consumables-and-crafting.md`.
