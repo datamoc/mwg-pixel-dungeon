@@ -2029,6 +2029,9 @@ export const inventoryQuickslotMethods = {
 	updateEffectBursts(this: DungeonScene, dt: number): void {
 			for (let i = this.effectBursts.length - 1; i >= 0; i--) {
 				const burst = this.effectBursts[i]!;
+				//ParticleEmitter is manually advanced by the scene (as in wallDecorations.ts); without
+				//this update, one-shot effects were added and tracked but never rendered.
+				if (burst.emitter.visible && dt > 0) burst.emitter.update(dt);
 				burst.remaining -= dt;
 				if (burst.remaining > 0) continue;
 				burst.emitter.destroy();
