@@ -4259,7 +4259,7 @@ function talismanDrive(overrides = {}) {
 		isExit: () => false, hasHeap: () => false, roomCanPlaceItem: () => true, hasMob: () => false,
 		trapDestroysItems: () => false,
 	}), null, 'without a StandardRoom Java returns no drop cell');
-	const { wealthEquipBonus, wealthConsumableTier, wealthDeathRolls, initialiseWealthTrackers,
+	const { wealthEquipBonus, wealthConsumableTier, wealthDeathRolls, wealthDropFlareColor, initialiseWealthTrackers,
 		planWealthDrops } = require('./items/wealthDrops.js');
 	// `RingOfWealth.tryForBonusDrop` (tag `v3.3.8`): the capped equip-bonus loop, the consumable
 	// tier thresholds and the per-kill roll counts.
@@ -4274,6 +4274,7 @@ function talismanDrive(overrides = {}) {
 	assert.equal(wealthConsumableTier(0, 0.95), 3);
 	assert.equal(wealthConsumableTier(15, 0.5), 2, 'the low tier is gone by +15');
 	assert.equal(wealthConsumableTier(15, 0.7), 3, 'and the high tier has grown to 40%');
+	assert.deepEqual([1, 2, 3, 4].map(wealthDropFlareColor), [0x00ff00, 0x00aaff, 0xaa00ff, 0xffaa00], 'Java\'s four bonus-drop flare colors');
 	assert.equal(wealthDeathRolls(true, false), 15);
 	assert.equal(wealthDeathRolls(false, true), 5);
 	assert.equal(wealthDeathRolls(false, false), 1);
@@ -4294,6 +4295,7 @@ function talismanDrive(overrides = {}) {
 	// `Random.Float()` 0.5 takes the low tier, whose `Int(4)` of 2 is a potion, and `bonus - 1` = 0.
 	const one = planWealthDrops({ triesToDrop: 7, dropsToEquip: 6 }, 8, 1, 1, scripted([0.5, 2, 4]));
 	assert.deepEqual(one.plans, [{ kind: 'potion' }]);
+	assert.deepEqual(one.tiers, [1], 'the consumable plan retains the low-tier flare selection');
 	assert.deepEqual(one.trackers, { triesToDrop: 3, dropsToEquip: 5 });
 	// Two payouts from one boss-sized call: the consumable first (`dropsToEquip` still had one left),
 	// then an equipment drop, then the refill lifts the counter out of the loop. The scripted draws
@@ -4306,11 +4308,13 @@ function talismanDrive(overrides = {}) {
 		{ kind: 'doubled', inner: { kind: 'doubled', inner: { kind: 'potion' } } },
 		{ kind: 'equip', slot: 'ring', level: 2 },
 	], 'a doubly-doubled potion, then the equip payout at equipBonus - 1');
+	assert.deepEqual(boss.tiers, [3, null], 'the high consumable tier is retained and equipment waits for its generated level');
 	assert.deepEqual(boss.trackers, { triesToDrop: 2, dropsToEquip: 8 }, 'the equip counter refilled by the drawn 8');
 	// The mid tier's Bomb case becomes a DoubleBomb when the high tier doubles it, exactly as
 	// Java's `if (i instanceof Bomb) return new Bomb.DoubleBomb();` does.
 	const doubleBomb = planWealthDrops({ triesToDrop: 0, dropsToEquip: 5 }, 1, 1, 1, scripted([0.95, 0, 4, 7]));
 	assert.deepEqual(doubleBomb.plans, [{ kind: 'doubleBomb' }]);
+	assert.deepEqual(doubleBomb.tiers, [3]);
 	assert.deepEqual(doubleBomb.trackers, { triesToDrop: 6, dropsToEquip: 4 });
 	const { artifactRechargeAmount, artifactRechargeEffect, bankArtifactCharge, chaliceRechargeHeal, roseRechargeGhostHeal, weaponRechargeWindow } = require('./items/artifactRecharge.js');
 	// `ArtifactRecharge.chargeArtifacts()` (tag `v3.3.8`): every artifact's own `charge()` override,

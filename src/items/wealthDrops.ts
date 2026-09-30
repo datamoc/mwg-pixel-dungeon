@@ -43,6 +43,13 @@ export type WealthDropPlan =
 	| { kind: 'doubled'; inner: WealthDropPlan }
 	| { kind: 'equip'; slot: 'weapon' | 'armor' | 'ring' | 'artifact'; level: number };
 
+export type WealthDropTier = 1 | 2 | 3 | 4;
+
+/** Java's `RingOfWealth.showFlareForBonusDrop` tier colors (`v3.3.8`). */
+export function wealthDropFlareColor(tier: WealthDropTier): number {
+	return tier === 1 ? 0x00ff00 : tier === 2 ? 0x00aaff : tier === 3 ? 0xaa00ff : 0xffaa00;
+}
+
 /**
  * Java's `equipBonus` loop, verbatim - including the odd-looking branch that caps *later* rings:
  * "A second ring of wealth can be at most +1 when calculating wealth bonus for equips ... to
@@ -139,9 +146,9 @@ function planHighValue(rng: WealthRng): WealthDropPlan {
 }
 
 /** `genConsumableDrop(level)`: one `Random.Float()` and then the tier's own generator. */
-function planConsumable(level: number, rng: WealthRng): WealthDropPlan {
+function planConsumable(level: number, rng: WealthRng): { plan: WealthDropPlan; tier: 1 | 2 | 3 } {
 	const tier = wealthConsumableTier(level, rng.float());
-	return tier === 1 ? planLowValue(rng) : tier === 2 ? planMidValue(rng) : planHighValue(rng);
+	return { plan: tier === 1 ? planLowValue(rng) : tier === 2 ? planMidValue(rng) : planHighValue(rng), tier };
 }
 
 /**
@@ -171,17 +178,23 @@ export function planWealthDrops(
 	bonus: number,
 	equipBonus: number,
 	rng: WealthRng,
-): { plans: WealthDropPlan[]; trackers: WealthTrackers } {
+): { plans: WealthDropPlan[]; tiers: (WealthDropTier | null)[]; trackers: WealthTrackers } {
 	const plans: WealthDropPlan[] = [];
+	const tiers: (WealthDropTier | null)[] = [];
 	let triesToDrop = trackers.triesToDrop - tries;
 	let dropsToEquip = trackers.dropsToEquip;
 	let guard = 0;
 	while (triesToDrop <= 0) {
 		if (dropsToEquip <= 0) {
 			plans.push(planEquipment(equipBonus - 1, rng));
+			//The final equipment tier depends on the generated item's post-minimum level, so 0
+			//marks it for the scene to resolve after materialisation.
+			tiers.push(null);
 			dropsToEquip += rng.normalIntRange(mwlItemEffectValue('wealth', 'dropsToEquipMin'), mwlItemEffectValue('wealth', 'dropsToEquipMax'));
 		} else {
-			plans.push(planConsumable(bonus - 1, rng));
+			const consumable = planConsumable(bonus - 1, rng);
+			plans.push(consumable.plan);
+			tiers.push(consumable.tier);
 			dropsToEquip -= 1;
 		}
 		triesToDrop += rng.normalIntRange(0, mwlItemEffectValue('wealth', 'triesToDropMax'));
@@ -189,7 +202,7 @@ export function planWealthDrops(
 		//mis-authored MWL value of 0 would, so the bound is explicit rather than assumed.
 		if (++guard > 1000) break;
 	}
-	return { plans, trackers: { triesToDrop, dropsToEquip } };
+	return { plans, tiers, trackers: { triesToDrop, dropsToEquip } };
 }
 
 /** `Rolls` for a mob's death: Java's `rolls = 1`, `15` for a boss and `5` for a miniboss. */

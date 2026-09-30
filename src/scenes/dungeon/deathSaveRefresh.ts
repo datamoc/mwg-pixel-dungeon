@@ -30,7 +30,8 @@ import { staffImbueFor } from '../../items/wands';
 import { Banner } from '../../ui/banner';
 import { bruteLootArmor, randomArmor, randomMissile, randomUsingDefaults, randomUsingDefaultsAnyCategory, Cat, type GenItem } from '../../items/generator';
 import { generatedInventoryItem } from '../../items/generatedItems';
-import { initialiseWealthTrackers, planWealthDrops, wealthEquipBonus, type WealthTrackers } from '../../items/wealthDrops';
+import { initialiseWealthTrackers, planWealthDrops, wealthDropFlareColor, wealthEquipBonus, type WealthTrackers } from '../../items/wealthDrops';
+import { spawnFlare } from '../../ui/effectBursts';
 import { wandmakerQuestType, wandmakerQuestWands } from '../../spdLevelGen/wandmaker';
 import { FLOOR, SOLID, TILE, WALL, WATER, WATERSKIN_MAX } from '../../dungeonConstants';
 import { regionForDepth } from '../../genericDungeon';
@@ -903,10 +904,19 @@ export const deathSaveRefreshMethods = {
 			//ring slot, so it sees a single level, but the cap rule is kept in the helper because it is
 			//what makes the number for a hero wearing two.
 			const trackers: WealthTrackers = { triesToDrop: this.wealthTriesToDrop, dropsToEquip: this.wealthDropsToEquip };
-			const { plans, trackers: next } = planWealthDrops(trackers, rolls, bonus, wealthEquipBonus([bonus]), rng);
+			const { plans, tiers, trackers: next } = planWealthDrops(trackers, rolls, bonus, wealthEquipBonus([bonus]), rng);
 			this.wealthTriesToDrop = next.triesToDrop;
 			this.wealthDropsToEquip = next.dropsToEquip;
-			for (const plan of plans) this.materialiseWealthDrop(plan, { x: creature.x, y: creature.y });
+			for (let i = 0; i < plans.length; i++) {
+				const drop = this.materialiseWealthDrop(plans[i]!, { x: creature.x, y: creature.y });
+				if (!drop) continue;
+				//Java's RingOfWealth.genConsumableDrop()/genEquipmentDrop() sets latestDropTier,
+				//then Mob.die() calls showFlareForBonusDrop(sprite) (RingOfWealth.java:172-187,
+				//Mob.java:971). The port uses its shared flare burst at the defeated mob's cell;
+				//the framework sprite-specific radius/timing is not represented by this effect API.
+				const tier = tiers[i] ?? ((drop.item?.level ?? 0) >= 2 ? 4 : 3);
+				spawnFlare(this.effectLayer, this.effectBursts, creature.x, creature.y, wealthDropFlareColor(tier));
+			}
 		},
 
 	/** The six Yog fist zaps (`YogFist.doAttack`'s ranged branch + each subclass's `zap()`).
