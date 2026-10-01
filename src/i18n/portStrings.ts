@@ -2161,6 +2161,8 @@ export const PORT_STRINGS_DE: Record<string, string> = {
 	'port.confirm.sealtransfer.no': 'nein',
 	'port.item.hardened.weapon': 'Sie wurde _verhärtet._',
 	'port.item.hardened.armor': 'Der Gegenstand wurde _verhärtet._',
+	// MT: tier label added 2026-10-01; unreviewed.
+	'port.item.wealth_drop_tier': 'Stufe {tier}',
 	'port.blacksmith.upgrade': '_Verbessern ({favor} Gunst):_ Falls du einen Gegenstand mit weniger als einer +2-Verbesserung hast, kann ich ihn für dich verbessern.',
 	'port.blacksmith.cashout': '_Auszahlen (alle Gunst):_ Ich kann dir auch etwas normales Gold geben, das ich hier herumliegen habe. 1 für jeden Punkt Gunst.',
 	'port.blacksmith.cashout.verify': 'Okay, das gibt {favor} Gold. Danach mach ich aber keine Arbeit mehr für dich!',
@@ -2855,6 +2857,8 @@ export const PORT_STRINGS_ES: Record<string, string> = {
 	'port.confirm.sealtransfer.no': 'no',
 	'port.item.hardened.weapon': 'Ha sido _fortalecida._',
 	'port.item.hardened.armor': 'Ha sido _fortalecida._',
+	// MT: tier label added 2026-10-01; unreviewed.
+	'port.item.wealth_drop_tier': 'Nivel {tier}',
 	'port.blacksmith.upgrade': '_Mejorar ({favor} favor):_ Si tienes un ítem por debajo de +2 puedo mejorarlo por ti.',
 	'port.blacksmith.cashout': '_Efectivo (favor actual):_ Puedo darte algo de oro que tengo por ahí.',
 	'port.blacksmith.cashout.verify': 'Bien, eso sería {favor} de oro. ¡Y no haré más herrería para ti después de esto!',
@@ -3516,6 +3520,8 @@ export const PORT_STRINGS_PT: Record<string, string> = {
 	'port.confirm.sealtransfer.no': 'não',
 	'port.item.hardened.weapon': 'Foi _endurecido._',
 	'port.item.hardened.armor': 'Foi _endurecido._',
+	// MT: tier label added 2026-10-01; unreviewed.
+	'port.item.wealth_drop_tier': 'Nível {tier}',
 	'port.blacksmith.upgrade': '_Aprimorar ({favor} favor):_ Se tiver um item inferior a +2, eu posso aprimorá-lo pra você.',
 	'port.blacksmith.cashout': '_Retirar ouro (todo o favor):_ Eu posso te dar um pouco de ouro normal que eu consegui por aí. 1 por cada ponto de favor.',
 	'port.blacksmith.cashout.verify': 'Certo, isso dá {favor} de ouro. Mas eu não vou mais fazer nenhum trabalho pra você depois disso!',
@@ -4176,6 +4182,8 @@ export const PORT_STRINGS_IT: Record<string, string> = {
 	'port.confirm.sealtransfer.no': 'no',
 	'port.item.hardened.weapon': 'È stato _indurito._',
 	'port.item.hardened.armor': 'È stata _rinforzata._',
+	// MT: tier label added 2026-10-01; unreviewed.
+	'port.item.wealth_drop_tier': 'Livello {tier}',
 	'port.blacksmith.upgrade': '_Migliora ({favor} favore):_ Se hai un oggetto inferiore a +2, posso migliorarlo per te.',
 	'port.blacksmith.cashout': '_Incassare (tutti i favori):_ Posso semplicemente darti dell\'oro normale che ho in giro. 1 per ogni punto di favore.',
 	'port.blacksmith.cashout.verify': 'Ok, quindi è {favor} oro. Però non lavorerò più per te dopo questo!',
@@ -4836,6 +4844,8 @@ export const PORT_STRINGS_PL: Record<string, string> = {
 	'port.confirm.sealtransfer.no': 'Nie',
 	'port.item.hardened.weapon': 'Ten przedmiot został _zahartowany_.',
 	'port.item.hardened.armor': 'Ten przedmiot został _zahartowany_.',
+	// MT: tier label added 2026-10-01; unreviewed.
+	'port.item.wealth_drop_tier': 'Poziom {tier}',
 	'port.blacksmith.upgrade': '_Ulepszenie ({favor} pkt. przysługi):_ Jeżeli masz przedmiot poniżej +2, mogę ci go ulepszyć.',
 	'port.blacksmith.cashout': '_Wypłata (wszystkie punkty przysługi):_ Mogę dać ci po prostu trochę zwyczajnego złota, które gdzieś mi się wala. 1 za każdy punkt przysługi.',
 	'port.blacksmith.cashout.verify': 'Dobra, to będzie {favor} złota. Nie będę nic więcej dla ciebie robił, jeśli się na to zdecydujesz!',
@@ -5474,6 +5484,8 @@ export const PORT_STRINGS_RU: Record<string, string> = {
 	'port.confirm.sealtransfer.no': 'Нет',
 	'port.item.hardened.weapon': 'Подверглось _закалке._',
 	'port.item.hardened.armor': 'Подверглось _закалке_.',
+	// MT: tier label added 2026-10-01; unreviewed.
+	'port.item.wealth_drop_tier': 'Уровень {tier}',
 	'port.blacksmith.upgrade': '_Улучшение ({favor} уважения):_ Если у тебя имеется предмет ниже +2, я могу улучшить его.',
 	'port.blacksmith.cashout': '_Злато (все уважение):_ Еcли хочешь, я могу просто отдать тебе немного обычного золота, которое у меня лежит тут без дела. Каждое очко уважения дает 1 золото.',
 	'port.blacksmith.cashout.verify': 'Итого {favor} золота. Но смотри, потом я тебе уже ничего не должен!',
@@ -6112,6 +6124,8 @@ export const PORT_STRINGS_TR: Record<string, string> = {
 	'port.confirm.sealtransfer.no': 'hayır',
 	'port.item.hardened.weapon': '_Sertleştirilmiş._',
 	'port.item.hardened.armor': '_Sertleştirildi._',
+	// MT: tier label added 2026-10-01; unreviewed.
+	'port.item.wealth_drop_tier': 'Kademe {tier}',
 	'port.blacksmith.upgrade': '_Yükseltme ({favor} minnet):_ Eğer +2\'nin altında bir eşyaya sahipseniz onu sizin için yükseltebilirim.',
 	'port.blacksmith.cashout': '_Nakit Ödeme (bütün minnetler):_ Sana şu kenarda duran normal altınlardan vereyim. Her minnet puanı için 1.',
 	'port.blacksmith.cashout.verify': 'Tamam, bu {favor} altın eder. Bundan sonra senin için başka bir iş yapmayacağım!',
@@ -6748,6 +6762,8 @@ export const PORT_STRINGS_UK: Record<string, string> = {
 	'port.confirm.sealtransfer.no': 'ні',
 	'port.item.hardened.weapon': 'Вона була _загартована._',
 	'port.item.hardened.armor': 'Це було _загартовано._',
+	// MT: tier label added 2026-10-01; unreviewed.
+	'port.item.wealth_drop_tier': 'Рівень {tier}',
 	'port.blacksmith.upgrade': '_Поліпшення ({favor} жетонів):_ Якщо у тебе є предмет нижче 2-го рівня, я міг би поліпшити його для тебе.',
 	'port.blacksmith.cashout': '_Золото (всі жетони):_ Можу розрахуватися з тобою звичайним золотом, яке тут у мене завалялось. За кожен жетон 1 золотий.',
 	'port.blacksmith.cashout.verify': 'Добре, ось {favor} золотих. Але знай, на цьому наша угода закінчиться!',
@@ -7384,6 +7400,8 @@ export const PORT_STRINGS_HU: Record<string, string> = {
 	'port.confirm.sealtransfer.no': 'nem',
 	'port.item.hardened.weapon': 'Ez már _keményített._',
 	'port.item.hardened.armor': 'Ez a páncél már _keményített._',
+	// MT: tier label added 2026-10-01; unreviewed.
+	'port.item.wealth_drop_tier': 'Szint {tier}',
 	'port.blacksmith.upgrade': '_Fejlesztés ({favor} szívesség):_ Ha van egy +2 szint alatti tárgyad, akkor fel tudom fejleszteni neked.',
 	'port.blacksmith.cashout': '_Készpénz (minden szívesség):_ Adhatok neked rendes aranyat is abbó\', ami van itt nekem. 1-et minden egyes szívességpontért.',
 	'port.blacksmith.cashout.verify': 'Oké, ez {favor} aranyat ér. De ezutá\' nem csinálok több munkát neked!',
@@ -8019,6 +8037,8 @@ export const PORT_STRINGS_NL: Record<string, string> = {
 	'port.confirm.sealtransfer.no': 'nee',
 	'port.item.hardened.weapon': 'Het is _verhard._',
 	'port.item.hardened.armor': 'Het is _verhard._',
+	// MT: tier label added 2026-10-01; unreviewed.
+	'port.item.wealth_drop_tier': 'Niveau {tier}',
 	'port.blacksmith.upgrade': '_Verbeteren ({favor} gunstpunten):_ Als je een item onder +2 hebt, kan ik het voor je verbeteren.',
 	'port.blacksmith.cashout': '_Uitbetalen (alle gunsten):_ Ik kan je gewoon wat gewoon goud geven dat ik heb liggen. 1 voor elk gunstpunt.',
 	'port.blacksmith.cashout.verify': 'Oké, dus dat is {favor} goud. Maar daarna doe ik geen werk meer voor je!',
@@ -8654,6 +8674,8 @@ export const PORT_STRINGS_IN: Record<string, string> = {
 	'port.confirm.sealtransfer.no': 'tidak',
 	'port.item.hardened.weapon': 'Sudah _dikeraskan._',
 	'port.item.hardened.armor': 'Sudah _dikeraskan._',
+	// MT: tier label added 2026-10-01; unreviewed.
+	'port.item.wealth_drop_tier': 'Tingkat {tier}',
 	'port.blacksmith.upgrade': '_Tingkatkan ({favor} bantuan):_ Jika kau memiliki item yang di bawah +2, aku dapat meningkatkannya untukmu.',
 	'port.blacksmith.cashout': '_Uang Keluar (semua bantuan):_ Aku hanya bisa memberimu beberapa emas biasa yang kupunya. 1 untuk setiap poin bantuan.',
 	'port.blacksmith.cashout.verify': 'Oke jadi itu {favor} emas. Aku tidak akan bekerja lagi untukmu setelah ini!',
@@ -9288,6 +9310,8 @@ export const PORT_STRINGS_JA: Record<string, string> = {
 	'port.confirm.sealtransfer.no': 'いいえ',
 	'port.item.hardened.weapon': 'それは_硬化_されている。',
 	'port.item.hardened.armor': 'それは_硬化_されている。',
+	// MT: tier label added 2026-10-01; unreviewed.
+	'port.item.wealth_drop_tier': '階層 {tier}',
 	'port.blacksmith.upgrade': '_強化 (好意度 {favor}):_ +2未満の識別済みのアイテムを持っているなら、強化してやるぜ。',
 	'port.blacksmith.cashout': '_清算 (好意度を全て消費):_ その辺に転がっている普通の金貨をやるよ。好意度1ポイントにつき1ゴールドだ。',
 	'port.blacksmith.cashout.verify': 'よし、これで{favor}ゴールドだ。だが、この後は何もしてやれねぇぞ！',
@@ -9922,6 +9946,8 @@ export const PORT_STRINGS_CS: Record<string, string> = {
 	'port.confirm.sealtransfer.no': 'Ne',
 	'port.item.hardened.weapon': 'Předmět byl _vytvrzen_.',
 	'port.item.hardened.armor': 'Předmět byl _vytvrzen_.',
+	// MT: tier label added 2026-10-01; unreviewed.
+	'port.item.wealth_drop_tier': 'Úroveň {tier}',
 	'port.blacksmith.upgrade': '_Vylepšení ({favor} přízně):_ Jestli máš nějakej předmět pod úrovní +2, můžu ti ho vylepšit.',
 	'port.blacksmith.cashout': '_Výběr peněz (všechna přízeň):_ Můžu ti prostě dát trochu normálního zlata, co se mi tu válí. Jeden zlaťák za každý bod přízně.',
 	'port.blacksmith.cashout.verify': 'Dobře, dělá to {favor} zlatých. Pak už pro tebe ale nehnu ani prstem, jasný?',
@@ -10556,6 +10582,8 @@ export const PORT_STRINGS_VI: Record<string, string> = {
 	'port.confirm.sealtransfer.no': 'không',
 	'port.item.hardened.weapon': 'Nó đã được _gia cố._',
 	'port.item.hardened.armor': 'Nó đã được _gia cố._',
+	// MT: tier label added 2026-10-01; unreviewed.
+	'port.item.wealth_drop_tier': 'Bậc {tier}',
 	'port.blacksmith.upgrade': '_Nâng cấp ({favor} sự hỗ trợ):_ Nếu ngươi có một vật phẩm dưới +2 thì ta có thể nâng cấp nó cho ngươi.',
 	'port.blacksmith.cashout': '_Đổi tiền (tất cả sự hỗ trợ):_ Ta cho ngươi ít vàng thường ta để ở quanh đây cũng được. Mỗi sự hỗ trợ đổi lấy 1.',
 	'port.blacksmith.cashout.verify': 'Được rồi vậy là {favor} vàng. Nhưng xong là ta không làm thêm việc gì cho ngươi nữa đâu đấy!',
@@ -11190,6 +11218,8 @@ export const PORT_STRINGS_EL: Record<string, string> = {
 	'port.confirm.sealtransfer.no': 'Όχι',
 	'port.item.hardened.weapon': 'Έχει _σκληρυνθεί._',
 	'port.item.hardened.armor': 'Έχει _σκληρυνθεί._',
+	// MT: tier label added 2026-10-01; unreviewed.
+	'port.item.wealth_drop_tier': 'Βαθμίδα {tier}',
 	'port.blacksmith.upgrade': '_Αναβάθμιση ({favor} εύνοια):_ Άμα έχεις εφόδιο κάτω από το +2, θα σ\' το αναβαθμίσω.',
 	'port.blacksmith.cashout': '_Εξαργύρωση (όλη την εύνοια):_ Θα σου δώσω κανονικό χρυσό που τον έχω εδώ να βρίσκεται. 1 για κάθε πόντο εύνοιας.',
 	'port.blacksmith.cashout.verify': 'Καλά, οπότε σου δίνω {favor} χρυσό. Αλλά δε σου κάνω άλλη δουλειά μετά απ\' αυτό!',
@@ -11824,6 +11854,8 @@ export const PORT_STRINGS_KO: Record<string, string> = {
 	'port.confirm.sealtransfer.no': '아니오',
 	'port.item.hardened.weapon': '이 무기는 _경화_되었습니다.',
 	'port.item.hardened.armor': '이 갑옷은 _경화_되었습니다.',
+	// MT: tier label added 2026-10-01; unreviewed.
+	'port.item.wealth_drop_tier': '등급 {tier}',
 	'port.blacksmith.upgrade': '_강화 ({favor} 우호도):_ +2 미만의 장비를 강화해 줄 수 있어.',
 	'port.blacksmith.cashout': '_환전(모든 우호도):_ 원한다면 내가 숨겨 둔 골드를 그냥 줄 수도 있어. 1 우호도당 1골드야.',
 	'port.blacksmith.cashout.verify': '좋아, 여기 {favor}골드라고. 이제 더 이상 널 위해 일할 필요는 없겠지!',
@@ -12458,6 +12490,8 @@ export const PORT_STRINGS_ZH: Record<string, string> = {
 	'port.confirm.sealtransfer.no': '否',
 	'port.item.hardened.weapon': '它被_硬化_了。',
 	'port.item.hardened.armor': '它被_硬化_了。',
+	// MT: tier label added 2026-10-01; unreviewed.
+	'port.item.wealth_drop_tier': '阶级 {tier}',
 	'port.blacksmith.upgrade': '_升级({favor}人情)：_如果你有+2以下的物品，我可以帮你给它升级一下。',
 	'port.blacksmith.cashout': '_折现(全部人情)：_我可以给你点我平时捡到的金币，一点人情一枚金币。',
 	'port.blacksmith.cashout.verify': '行，这是{favor}金币。之后你就别再来找我干活了！',
