@@ -35,6 +35,27 @@ assert.equal(gooChargeStep(1), true);
 assert.equal(gooChargeStep(0), false);
 assert.equal(gooChargeStep(2), false);
 
+// `Goo.doAttack()` spends the gated action cost only on the STRONGER_BOSSES pump.
+{
+	const goo = { x: 1, y: 1, hp: 100, maxHp: 100, pumped: 0 };
+	let challengePumpCosts = 0;
+	const context = {
+		hero: { x: 2, y: 1, hp: 20, maxHp: 20 }, inWater: () => false, strongerBosses: true,
+		stats: () => ({ accuracy: 10, damage: [1, 2] }), attack: () => assert.fail('pump roll must not attack'),
+		showHeal: () => {}, say: () => {}, foulBossChallenge: () => {},
+		onChallengePump: () => challengePumpCosts++, random: { chance: () => true },
+		messages: { slam: 'slam', pump: 'pump', pumpMore: 'pump-more' },
+	};
+	takeGooTurn(goo, context);
+	assert.equal(goo.pumped, 2);
+	assert.equal(challengePumpCosts, 1, 'challenge pump signals the Java spend exactly once');
+	goo.pumped = 0;
+	context.strongerBosses = false;
+	takeGooTurn(goo, context);
+	assert.equal(goo.pumped, 1);
+	assert.equal(challengePumpCosts, 1, 'ordinary pump keeps its one-turn default cost');
+}
+
 // `takeGooTurn` runs these predicates, not a second copy of the arithmetic.
 const turn = readFileSync(source, 'utf8').split('export function takeGooTurn')[1];
 for (const name of ['gooEnraged', 'gooPumpChance', 'gooPumpTarget', 'gooSlamReady', 'gooChargeStep']) {
@@ -66,5 +87,8 @@ const bossScene = readFileSync(new URL('../src/scenes/dungeon/bosses/bossLogic.t
 assert.match(bossScene,
 	/showHeal: \(target, amount\) => \{ if \(this\.fov\.isVisible\(target\.x, target\.y\)\) this\.showHeal\(target, amount\); \}/,
 	'Goo water-heal status is shown only in hero FOV, like Java Goo.showStatusWithIcon');
+assert.match(bossScene,
+	/onChallengePump: \(\) => \{[\s\S]*?pendingMonsterTurnCost = Math\.min\(3, Math\.max\(1, Math\.ceil\(this\.getAttackTurnCostMod\(\)\)\)\);/,
+	'Goo challenge pump maps Java gated spend through the scene scheduler');
 
 console.log('goo phase seam: all checks pass');

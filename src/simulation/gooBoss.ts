@@ -20,6 +20,10 @@ export interface GooBossContext {
 	readonly foulBossChallenge: () => void;
 	/** `Goo.act()`'s water heal also calls `LockedFloor.removeTime` with the heal increment. */
 	readonly onWaterHeal?: (healInc: number) => void;
+	/** STRONGER_BOSSES pump-up spends `gate(attackDelay, ceil(hero.cooldown), 3*attackDelay)`.
+	 * There is no actor cooldown field here; the scene maps the hero's attack cost through the
+	 * same clamped one-to-three turn window used by other telegraphed actors. */
+	readonly onChallengePump?: () => void;
 }
 
 /**
@@ -92,10 +96,10 @@ export function takeGooTurn(goo: Creature, context: GooBossContext): void {
 	const enraged = gooEnraged(goo.hp, goo.maxHp);
 	if (context.random.chance(gooPumpChance(enraged))) {
 		//`doAttack()`'s else branch: on the bosses challenge the pump jumps straight to 2
-		//(`pumpedUp += 2`), so the slam lands after one charge turn, not two. Java also
-		//spends a gated turn cost here (`gate(attackDelay, ceil(enemy.cooldown), 3x)`) that
-		//this port's uniform 1-turn boss turns do not reproduce - stated timing simplification.
+		//(`pumpedUp += 2`), so the slam lands after one charge turn, not two. Its gated action
+		//cost is applied by the scene at the same point as Java's `spend(...)`.
 		goo.pumped = gooPumpTarget(context.strongerBosses);
+		if (context.strongerBosses) context.onChallengePump?.();
 		context.say(context.messages.pump, 'warning');
 		return;
 	}

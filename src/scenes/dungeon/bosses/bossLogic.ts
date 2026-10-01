@@ -1452,6 +1452,13 @@ if (monster.hp <= 0) {
 			say: (message, level) => this.say(message, level),
 			foulBossChallenge: () => this.foulBossChallenge(),
 			onWaterHeal: (healInc) => this.lockedFloorGooHeal(healInc),
+			onChallengePump: () => {
+				//`Goo.doAttack()` (`Goo.java:210-213`, tag `v3.3.8`) spends
+				//`gate(attackDelay(), ceil(hero.cooldown()), 3*attackDelay())` on this
+				//STRONGER_BOSSES charge. Goo's attackDelay is one; the port has no actor
+				//cooldown, so map the hero's attack cost through the same clamped window.
+				this.pendingMonsterTurnCost = Math.min(3, Math.max(1, Math.ceil(this.getAttackTurnCostMod())));
+			},
 			random: simulationRandom,
 			messages: { slam: t('port.log.gooslam'), pump: t('port.log.goopump'), pumpMore: t('port.log.goopumpmore') },
 		});
