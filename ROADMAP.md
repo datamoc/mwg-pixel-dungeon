@@ -54,7 +54,6 @@ the correction to the row's file) when it turns out to be closed. Find the sourc
 - [ ] **R008** _(the unmodeled-slow and Java's own no-op sharing the silent 40%. Pinned in test:)_ `Blandfruit` remains **Not ported**;
 - [ ] **R009** _(and Java's full heap/occupant subtype rules remain **Not ported** and are kept o)_ and Java's full heap/occupant subtype rules remain **Not ported** and are kept out of the coarse
 - [ ] **R010** _(eat path. Region decorations remain unported; ordinary fire now propagates ortho)_ Region decorations remain unported; ordinary fire now propagates orthogonally onto
-- [ ] **R011** _(plus chalice (real SPD content, correct chaliceofblood key, not yet implemen)_ plus `chalice` (real SPD content, correct `chaliceofblood` key, not yet implemented - kept as an
 - [ ] **R012** _(exotic/elixir item families and alchemy slot-window chrome)_ Exotic and elixir item families remain open, as does the port's simplified slot window. The spell-result items already exist; their recipe status is tracked separately in R081.
 - [ ] **R013** _(generated-vs-Java parity fixtures remain open.)_ generated-vs-Java parity fixtures remain open.
 - [x] **R014** _(Blacksmith Crystal mine roster / `FungalCore`)_ **Closed 2026-10-01:** v3.3.8 `Blacksmith.Quest.spawn()` explicitly says FUNGI cannot roll and assigns new quests with `Random.IntRange(1, 2)`. Its partial Fungi room and `FungalCore` branches are unreachable for new quests; the port already covers both active CRYSTAL and GNOLL mine rosters. The evidence row records this source correction.

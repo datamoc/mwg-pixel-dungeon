@@ -87,7 +87,7 @@ ported content. A seventh, `artifact_chronometer`, was a confused near-duplicate
 Timekeeper's Hourglass under a typo'd key (`timekeeperhourglass`, missing the required "s").
 **Fixed**: `artifacts.mwl` now authors exactly three entries - the two with real, live TS
 implementations (`cloak`, `hourglass`, both name/desc keys verified against the real catalogue)
-(open residual moved to `ROADMAP.md` R011)
+(the `chalice` clause this residual pointed to - real SPD content, correct `chaliceofblood` key - was implemented 2026-09-14, see below)
 honest placeholder, not removed, since it is genuine). `ArtifactDef` dropped
 `baseCharge`/`maxCharge`/`rechargeRate` entirely, since no real artifact's mechanic reduces to that
 shape (each is its own bespoke formula - see above). **`ARTIFACTS` is now a real consumer**: wired
