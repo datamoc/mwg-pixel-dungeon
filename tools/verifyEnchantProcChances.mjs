@@ -41,6 +41,15 @@ assert.equal(seam.vampiricHealChance(0, 0, 1), 0.05);
 // Explosive fuse wear takes the rolled draw.
 assert.equal(seam.explosiveFuseWear(7, 1), 7);
 assert.equal(seam.explosiveFuseWear(7, 0.5), 4);
+// Grim execute: (0.5 + 0.05 x level) x arcana, rolled against missing-HP-fraction squared.
+assert.equal(seam.grimExecuteChance(0, 1, 50, 100), 0.125);
+assert.equal(seam.grimExecuteChance(0, 1, 100, 100), 0, 'full HP never executes');
+assert.equal(seam.grimExecuteChance(0, 1, 0, 0), 0, 'zero max HP guards the fraction');
+assert.ok(Math.abs(seam.grimExecuteChance(2, 1, 0, 100) - 0.6) < 1e-12, 'level 2 full-missing is 60%');
+// Corrupting conversion: (level+5)/(level+25) x arcana, 20% at 0.
+assert.equal(seam.corruptingProcChance(0, 1), 5 / 25);
+assert.equal(seam.corruptingProcChance(1, 1), 6 / 26);
+assert.equal(seam.corruptingProcChance(2, 1.5), 7 / 27 * 1.5);
 // Hero weapon-proc decisions: Spirit Blades arming, Kinetic conserve/store, holy magnitude.
 assert.equal(seam.spiritBladesFires(true, true, 2, 1), true, 'Int(10) < 3*points');
 assert.equal(seam.spiritBladesFires(true, true, 3, 1), false, 'boundary is strict');
@@ -60,9 +69,14 @@ assert.ok(Math.abs(seam.dazzlingProcChance(1.5) - 0.15) < 1e-12);
 const chain = readFileSync(new URL('../src/scenes/dungeon/combatResolution.ts', import.meta.url), 'utf8');
 for (const name of ['blazingProcChance', 'bloomingProcChance', 'chillingProcChance', 'elasticProcChance',
 	'luckyProcChance', 'blockingProcChance', 'shockingProcChance', 'vampiricHealChance',
-	'explosiveFuseWear', 'dazzlingProcChance', 'annoyingProcChance', 'waywardProcChance']) {
+	'explosiveFuseWear', 'dazzlingProcChance', 'annoyingProcChance', 'waywardProcChance',
+	'grimExecuteChance', 'corruptingProcChance']) {
 	assert.ok(chain.includes(name), `affix chain delegates to ${name}`);
 }
+// Grim/Corrupting resolve outside the blazing chain (hero path + Shockwave mirrors),
+// so their no-duplicate gate covers the whole file, not just the chain region.
+assert.ok(!chain.includes('(0.5 + 0.05 * level) * this.enchantProcMultiplier()'), 'no duplicated grim maxChance');
+assert.ok(!chain.includes('((Math.max(0, this.degradedLevel(this.weaponLevel)) + 5) / (Math.max(0, this.degradedLevel(this.weaponLevel)) + 25))'), 'no duplicated corrupting fraction');
 // Absence is scoped to the post-hit affix chain (other 1/10-style rolls elsewhere -
 // sacrificial mirrors, spirit blades - are different mechanics, not copies).
 const chainStart = chain.indexOf("if (affix === 'blazing'");

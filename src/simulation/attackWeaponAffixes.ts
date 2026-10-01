@@ -117,6 +117,24 @@ export function waywardProcChance(multiplier: number): number {
 export function friendlyProcChance(multiplier: number): number {
 	return (1 / 10) * multiplier;
 }
+
+/** `Grim` execute chance: `Grim.proc()` banks `maxChance = (0.5 + 0.05 x level) x arcana`
+ * on the defender's `GrimTracker`, and `Char.damage()` (`actors/Char.java`, tag `v3.3.8`)
+ * rolls `Random.Float() < maxChance x missing-HP-fraction-squared` for the execute.
+ * Takes the clamped weapon level and the defender's surviving HP; the living/immunity/boss
+ * gates and the execute payload stay scene-side. */
+export function grimExecuteChance(level: number, multiplier: number, defenderHp: number, defenderMaxHp: number): number {
+	const maxChance = (0.5 + 0.05 * level) * multiplier;
+	const missing = defenderMaxHp > 0 ? (defenderMaxHp - defenderHp) / defenderMaxHp : 0;
+	return maxChance * missing * missing;
+}
+
+/** `Corrupting.proc()` (`items/weapon/enchantments/Corrupting.java`, tag `v3.3.8`):
+ * `(level+5)/(level+25) x arcana`, 20% at 0. Takes the clamped weapon level; the
+ * lethal-hit, living-mob and immunity gates plus the conversion payload stay scene-side. */
+export function corruptingProcChance(level: number, multiplier: number): number {
+	return ((level + 5) / (level + 25)) * multiplier;
+}
 /**
  * Hero weapon-proc decisions - the pure decision half of the Kinetic conserve/store
  * (`items/weapon/enchantments/Kinetic.java`), Spirit Blades arming (`Talent.java` 896-901)

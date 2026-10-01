@@ -7,7 +7,7 @@ import { planHiddenMimicContact } from '../../simulation/hiddenMimicContact';
 import { planShockElementalArc } from '../../simulation/shockArc';
 import { applyDefenderDamageCurves } from '../../simulation/defenderDamageCurves';
 import { dm300ChargeEndTurns, dm300SuperchargeEntry, dm300SuperchargeThreshold } from '../../simulation/dm300Boss';
-import { annoyingProcChance, blazingProcChance, blockingProcChance, bloomingProcChance, chillingProcChance, dazzlingProcChance, elasticProcChance, explosiveFuseWear, friendlyProcChance, holyWeaponHitDamage, kineticConserveRelease, kineticOverkillStore, luckyProcChance, shockingProcChance, spiritBladesFires, vampiricHealChance, waywardProcChance } from '../../simulation/attackWeaponAffixes';
+import { annoyingProcChance, blazingProcChance, blockingProcChance, bloomingProcChance, chillingProcChance, corruptingProcChance, dazzlingProcChance, elasticProcChance, explosiveFuseWear, friendlyProcChance, grimExecuteChance, holyWeaponHitDamage, kineticConserveRelease, kineticOverkillStore, luckyProcChance, shockingProcChance, spiritBladesFires, vampiricHealChance, waywardProcChance } from '../../simulation/attackWeaponAffixes';
 import { weaponHitDisqualifiesDwarfKingChallenge } from '../../simulation/bossChallenge';
 import { displacementProcChance, repulsionProcChance } from '../../simulation/combat';
 import { fishingSpearPiranhaDamage } from '../../simulation/fishingSpearProc';
@@ -628,8 +628,7 @@ export const combatResolutionMethods: Record<string, any> = {
 		//the target, fully heal it, clear negative buffs, and mark it as an ally.
 		if (gearAttacker && (this.weaponAffix === 'corrupting' || this.unstableDelegated === 'corrupting') && damage >= defender.hp
 			&& !defender.isHero && !defender.isNPC && !defender.isAlly && Random.chance(
-			((Math.max(0, this.degradedLevel(this.weaponLevel)) + 5) / (Math.max(0, this.degradedLevel(this.weaponLevel)) + 25))
-				* this.enchantProcMultiplier())) {
+			corruptingProcChance(Math.max(0, this.degradedLevel(this.weaponLevel)), this.enchantProcMultiplier()))) {
 			defender.hp = defender.maxHp;
 			for (const buff of NEGATIVE_BUFFS) delete defender.buffs[buff];
 			this.sprite(defender);
@@ -953,10 +952,8 @@ export const combatResolutionMethods: Record<string, any> = {
 		//(`Statue.java`, tag `v3.3.8` - inherited by `ArmoredStatue`), each halving it - so a
 		//statue takes half the execute, not the full `round(currentHP)`.
 		if (gearAttacker && (this.weaponAffix === 'grim' || this.unstableDelegated === 'grim') && defender.hp > 0 && !defender.magicImmune && defender.boss !== true) {
-			const level = Math.max(0, this.degradedLevel(this.weaponLevel));
-			const maxChance = (0.5 + 0.05 * level) * this.enchantProcMultiplier();
-			const missingFraction = (defender.maxHp - defender.hp) / defender.maxHp;
-			if (Random.chance(maxChance * missingFraction * missingFraction)) {
+			const chance = grimExecuteChance(Math.max(0, this.degradedLevel(this.weaponLevel)), this.enchantProcMultiplier(), defender.hp, defender.maxHp);
+			if (Random.chance(chance)) {
 				const resisted = defender.kind === 'statue' || defender.kind === 'armoredStatue';
 				const extra = doomDamage(resisted ? Math.round(defender.hp * 0.5) : Math.round(defender.hp), defender);
 				defender.hp -= extra;
@@ -1398,8 +1395,7 @@ export const combatResolutionMethods: Record<string, any> = {
 	corruptingEnchantProc(this: DungeonScene, attacker: Creature, defender: Creature, damage: number, gearAttacker: boolean): number {
 		if (gearAttacker && (this.weaponAffix === 'corrupting' || this.unstableDelegated === 'corrupting') && damage >= defender.hp
 			&& !defender.isHero && !defender.isNPC && !defender.isAlly && Random.chance(
-			((Math.max(0, this.degradedLevel(this.weaponLevel)) + 5) / (Math.max(0, this.degradedLevel(this.weaponLevel)) + 25))
-				* this.enchantProcMultiplier())) {
+			corruptingProcChance(Math.max(0, this.degradedLevel(this.weaponLevel)), this.enchantProcMultiplier()))) {
 			defender.hp = defender.maxHp;
 			for (const buff of NEGATIVE_BUFFS) delete defender.buffs[buff];
 			this.sprite(defender);
@@ -1434,10 +1430,8 @@ export const combatResolutionMethods: Record<string, any> = {
 		//(`Statue.java`, tag `v3.3.8` - inherited by `ArmoredStatue`), each halving it - so a
 		//statue takes half the execute, not the full `round(currentHP)`.
 		if (gearAttacker && (this.weaponAffix === 'grim' || this.unstableDelegated === 'grim') && defender.hp > 0 && !defender.magicImmune && defender.boss !== true) {
-			const level = Math.max(0, this.degradedLevel(this.weaponLevel));
-			const maxChance = (0.5 + 0.05 * level) * this.enchantProcMultiplier();
-			const missingFraction = (defender.maxHp - defender.hp) / defender.maxHp;
-			if (Random.chance(maxChance * missingFraction * missingFraction)) {
+			const chance = grimExecuteChance(Math.max(0, this.degradedLevel(this.weaponLevel)), this.enchantProcMultiplier(), defender.hp, defender.maxHp);
+			if (Random.chance(chance)) {
 				const resisted = defender.kind === 'statue' || defender.kind === 'armoredStatue';
 				return doomDamage(resisted ? Math.round(defender.hp * 0.5) : Math.round(defender.hp), defender);
 			}

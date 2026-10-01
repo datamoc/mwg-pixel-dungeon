@@ -83,7 +83,7 @@ B9's coord tasks are T159 (residuals, re-filed after T18-T21 were cancelled as d
     (Empowered Strike, Sucker Punch, physical bonus, Patient Strike, Followup, Deadly Followup) resolve in
     `simulation/attackTalentBonuses.ts`; Polarized, Sacrificial, and Displacing proc decisions now resolve in
     `simulation/attackWeaponAffixes.ts`. The scene supplies live state and applies returned tracker, bleed, and
-    displacement effects. Remaining: other weapon/defender procs and attack event outcomes are still scene-coupled.
+    displacement effects. Progress 2026-10-01 (T54/B7): Grim execute (`grimExecuteChance`: `(0.5 + 0.05 x level) x arcana` vs missing-HP-fraction squared, `Char.damage()` GrimTracker block) and Corrupting conversion (`corruptingProcChance`: `(level+5)/(level+25) x arcana`) now resolve in the seam with all four scene sites (hero path + Shockwave mirrors) delegating, pinned by the extended `verifyEnchantProcChances.mjs` (values, delegation, whole-file no-duplicate gates). Remaining: other weapon/defender procs and attack event outcomes are still scene-coupled.
 
 ## B9. Armor-ability residuals
 
