@@ -106,7 +106,8 @@ export function usableForMagicalInfusion(item: CarriedItem): boolean {
 /** `CurseInfusion.usableOnItem`: an upgradable equipable, or a wand or the spirit bow. Over this
  * port's id vocabulary that resolves to the same set as above - the port's artifacts are all
  * non-upgradable, so the `&& isUpgradable()` half excludes them here too, and the two explicit
- * clauses add nothing (no bow item exists; wands are already upgradable). Stated separately
+ * clauses add nothing (the bow - granted by `coreSpawnTiles` - reaches the set through this
+ * fallback since it has no slot entry, and wands are already upgradable). Stated separately
  * anyway: the two Java methods are separate, and a future port item could part them. */
 export function usableForCurseInfusion(item: CarriedItem): boolean {
 	if (MWL_ITEM_SLOTS.get(item.id) === 'wand') return true;
