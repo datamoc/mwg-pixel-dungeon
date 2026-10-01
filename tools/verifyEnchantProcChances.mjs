@@ -86,6 +86,12 @@ const region = chain.slice(chainStart, chainEnd);
 for (const name of ['spiritBladesFires', 'kineticConserveRelease', 'kineticOverkillStore', 'holyWeaponHitDamage']) {
 	assert.ok(chain.includes(name), `hero blocks delegate to ${name}`);
 }
+// Lethal Momentum arming: Java's 0.34+0.33/point (Mob.die), not the old 2/3 rounding.
+assert.equal(seam.lethalMomentumChance(0), 0.34);
+assert.ok(Math.abs(seam.lethalMomentumChance(1) - 0.67) < 1e-12, 'rank 1 is 0.67');
+assert.ok(Math.abs(seam.lethalMomentumChance(2) - 1.0) < 1e-12, 'rank 2 is certain');
+assert.ok(chain.includes('lethalMomentumChance'), 'kill hook delegates to lethalMomentumChance');
+assert.ok(!chain.includes("this.talentRank('lethal_momentum') >= 2 ? 1 : 2 / 3"), 'no duplicated momentum tiers');
 assert.ok(!chain.includes("Random.int(0, 10) < 3 * this.talentRank('spirit_blades')"), 'no duplicated blades roll');
 assert.ok(!chain.includes('Math.ceil(this.kineticStored)'), 'no duplicated conserve release');
 assert.ok(!chain.includes('Math.max(0, -defender.hp - this.kineticConservedAdded)'), 'no duplicated overkill');

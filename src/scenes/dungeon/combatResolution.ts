@@ -7,7 +7,7 @@ import { planHiddenMimicContact } from '../../simulation/hiddenMimicContact';
 import { planShockElementalArc } from '../../simulation/shockArc';
 import { applyDefenderDamageCurves } from '../../simulation/defenderDamageCurves';
 import { dm300ChargeEndTurns, dm300SuperchargeEntry, dm300SuperchargeThreshold } from '../../simulation/dm300Boss';
-import { annoyingProcChance, blazingProcChance, blockingProcChance, bloomingProcChance, chillingProcChance, corruptingProcChance, dazzlingProcChance, elasticProcChance, explosiveFuseWear, friendlyProcChance, grimExecuteChance, holyWeaponHitDamage, kineticConserveRelease, kineticOverkillStore, luckyProcChance, shockingProcChance, spiritBladesFires, vampiricHealChance, waywardProcChance } from '../../simulation/attackWeaponAffixes';
+import { annoyingProcChance, blazingProcChance, blockingProcChance, bloomingProcChance, chillingProcChance, corruptingProcChance, dazzlingProcChance, elasticProcChance, explosiveFuseWear, friendlyProcChance, grimExecuteChance, holyWeaponHitDamage, kineticConserveRelease, kineticOverkillStore, lethalMomentumChance, luckyProcChance, shockingProcChance, spiritBladesFires, vampiricHealChance, waywardProcChance } from '../../simulation/attackWeaponAffixes';
 import { weaponHitDisqualifiesDwarfKingChallenge } from '../../simulation/bossChallenge';
 import { displacementProcChance, repulsionProcChance } from '../../simulation/combat';
 import { fishingSpearPiranhaDamage } from '../../simulation/fishingSpearProc';
@@ -1224,12 +1224,13 @@ export const combatResolutionMethods: Record<string, any> = {
 			//Mob.die()'s kill triggers gate on the *cause* (`hero || Weapon || Enchantment`),
 			//so missile kills count too - `isHero` (true for the hero and its thrown-missile
 			//copy alike) rather than the melee-only `attacker === this.hero` reference check.
-			//Lethal Momentum's own chance (0.34+0.33/point: 2/3 at rank 1, certain at 2) was
-			//already exact, only its trigger was narrowed to melee; fixed the same way here.
+			//Lethal Momentum's own chance resolves in the seam (`lethalMomentumChance`:
+			//Java's `0.34+0.33/point`, 0.67 at rank 1, certain at 2); only its trigger was
+			//narrowed to melee, fixed the same way here.
 			//Endless Rage's old free-turn line is gone outright: real `ENDLESS_RAGE` only raises
 			//the Berserk rage cap (`1+0.1667x` max power), which needs the rage gain/decay clock
 			//this port doesn't model (see the Berserk row) - a free turn had no Java basis.
-			if (attacker.isHero && this.heroClass === 'warrior' && this.talentRank('lethal_momentum') > 0 && Random.chance(this.talentRank('lethal_momentum') >= 2 ? 1 : 2 / 3)) this.freeTurnNext = true;
+			if (attacker.isHero && this.heroClass === 'warrior' && this.talentRank('lethal_momentum') > 0 && Random.chance(lethalMomentumChance(this.talentRank('lethal_momentum')))) this.freeTurnNext = true;
 			if (attacker.isHero) this.lethalHasteOnKill();
 			this.kill(defender);
 			return true;

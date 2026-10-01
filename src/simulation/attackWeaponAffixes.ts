@@ -166,3 +166,11 @@ export function kineticOverkillStore(defenderHp: number, conservedAdded: number,
 export function holyWeaponHitDamage(subclassBonus: number, multiplier: number): number {
 	return Math.round(subclassBonus * multiplier);
 }
+
+/** Lethal Momentum arming (`Mob.die()`, tag `v3.3.8`): `0.34 + 0.33 x points`
+ * (0.67 at rank 1, certain at 2). Takes the talent rank; the kill/hero gates and
+ * the free-turn tracker payload stay scene-side. This replaces the old `2/3`
+ * rounding with Java's own two-decimal formula. */
+export function lethalMomentumChance(talentPoints: number): number {
+	return 0.34 + 0.33 * talentPoints;
+}
