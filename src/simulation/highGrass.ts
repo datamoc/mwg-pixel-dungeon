@@ -177,6 +177,16 @@ export function applyHighGrassTrample(context: HighGrassApplyContext, x: number,
 		context.hero.buffs['invisibility'] = Math.max(context.hero.buffs['invisibility'] ?? 0, context.camouflageDuration);
 		context.say('port.log.camouflage', 'positive');
 	}
+	//`Talent.NATURES_AID`'s real Java home is `Plant.trigger()` (`plants/Plant.java`:68-70,
+	//tag `v3.3.8`: `heroFOV[pos] && hasTalent` -> `Barkskin.conditionallyAppend(hero, 2,
+	//1 + 2*points)`, fired when a plant's effect activates in the hero's vision) - a full
+	//Java-source scan finds NATURES_AID in no trample code at all, and its barkskin there is
+	//a fixed level 2, not this random 0-2 roll. This grant has been the port's misplaced
+	//home for the talent since the initial commit; the plant-trigger seam it belongs in
+	//(`actorTurnsHazards`' plant prelude) cannot take it while that file is under active
+	//peer edits, so both the move and the removal here stay tracked as R070's first open
+	//half rather than landing half a fix. See the Plant.trigger row's 2026-10-01 correction
+	//in `coverage/rows-architecture-mwg-and-simulation.md`.
 	if (context.heroClass === 'huntress' && context.talentRank('natures_aid') > 0) context.grantShield(context.rollInt(0, 3), 2);
 	context.afterTerrainChange(x, y);
 
