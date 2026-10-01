@@ -222,8 +222,12 @@ Historical audit narrative (closed). Row tables live in `rows-*.md`. Closed poin
   features layer is redrawn when a plant withers, the same redraw every grass change already
   performs - without it the terrain changed in the model only. The generic MWG Blob remains
   intentionally uninvolved in this SPD-specific transition. Sewer region wall decoration, webs,
-  (open residual moved to `ROADMAP.md` R009)
-  terrain model. **Ported 2026-09-23:** `Burning.act()`'s ground-ignition tail - a burning
+  and Java's full heap/occupant subtype rules remain **Not ported** and are kept out of the coarse
+  terrain model. **Corrected 2026-10-01**: the first two subjects are historical - sewer wall
+  decoration is ported (`wallDecorations.ts`, `SewerLevel.addSewerVisuals`' `Sink` at every painted
+  `WALL_DECO` cell) and webs are ported (the `scene.web` blob, seeded at `dungeonScene.ts:2006`,
+  consume-on-touch and `spreadFire`'s webbed-cell ignition) - so R009 now tracks only the
+  heap/occupant subtype half. **Ported 2026-09-23:** `Burning.act()`'s ground-ignition tail - a burning
   hero (`turnLoopAiming.ts`) or monster (`actorTurnsHazards.ts`) on flammable ground (webbed
   cells included, like `spreadFire`'s own predicate) with zero fire volume seeds `Fire` at
   volume 4, gated on the pre-tick burning flag since Java fires it even on the tick the buff
@@ -403,8 +407,12 @@ Historical audit narrative (closed). Row tables live in `rows-*.md`. Closed poin
   scrolls/dewdrops are destroyed, bombs detonate, and plants wither while a fire cell is active.
   Meat-to-chargrilled conversion is now ported for the compact Mystery Meat heap: active fire
   replaces it with the authored `chargrilledMeat` identity, preserving the heap and ordinary-food
-  eat path. (open residual moved to `ROADMAP.md` R010)
-  representable grass/door terrain with Java's volume-4 seed. The
+  eat path. Region decorations remain unported; ordinary fire now propagates orthogonally onto
+  representable grass/door terrain with Java's volume-4 seed. **Corrected 2026-10-01**: region
+  decorations are no longer wholly unported - `gameBridge.ts` maps `REGION_DECO`/`REGION_DECO_ALT`
+  to `wall` with Java's SOLID passability since 2026-09-16 and `isFireFlammableTerrain` burns the
+  sewer ones - so R010's remaining scope is their distinct sprite, the per-region examine text and
+  the flamable-model completeness. The
   full scoping, both sides read, is
   `tools/scratch/mwg-proposal/GEOMETRY-AND-FIRE.md`, which also corrects two claims of mine in
   ROADMAP.md: `TerrainKind.flags`/`extras` and the `Scheduler` priority are **not** in the
