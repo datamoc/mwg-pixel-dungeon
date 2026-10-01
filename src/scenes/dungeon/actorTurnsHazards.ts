@@ -132,6 +132,24 @@ export const actorTurnsHazardsMethods = {
 		this.say(t('actors.buffs.burning.burnsup', { 0: this.itemDisplayName(item.id, item.identified ?? true, item.instanceId) }), 'warning');
 	},
 
+	/**
+	 * Java's `Hero.ready()` after an interaction that spends no time: a free
+	 * handled outcome of a bump (`takeHeroTurn`'s interact dispatch - Ally Warp,
+	 * ShadowAlly's swap, a refused default swap, Sheep). The action dispatch's
+	 * `beginTurn` already cleared `awaitingInput`, and no `spendHeroTurn` runs on
+	 * these paths, so nothing else would re-arm it - without this the hero waits
+	 * on input that never arrives. Marks the step handled too, so the move adapter
+	 * neither attack-charges nor lets the action dispatch blanket-charge it, and
+	 * re-runs the two follow-ups `coreSpawnTiles`' `awaitHeroInput` twin does
+	 * (refresh, queued travel).
+	 */
+	finishFreeHeroAction(this: DungeonScene): void {
+		this.actionSpentTurn = true;
+		this.awaitingInput = true;
+		this.refresh();
+		if (this.travelTarget) this.stepTravel();
+	},
+
 	takeHeroTurn(this: DungeonScene, move: Step): void {
 		//Weapon.Projecting.reachFactor() (Weapon.java, tag 4.0.0-beta): a projecting
 		//weapon reaches its normal melee range plus round(Arcana). The port's input
@@ -183,14 +201,33 @@ export const actorTurnsHazardsMethods = {
 			// - so neither is Vertigo-gated here. The default Char.interact place-swap
 			// (non-ALLY_WARP / non-PERFECT_COPY allies, with that Vertigo refusal at
 			// Char.java 284-288) uses the normal restriction gates after those overrides.
-			if (occupant!.isAlly && !occupant!.isNPC && this.tryShadowCloneSwap(occupant!)) return;
-			if (occupant!.isAlly && !occupant!.isNPC && this.tryAllyWarp(occupant!)) return;
+			if (occupant!.isAlly && !occupant!.isNPC && this.tryShadowCloneSwap(occupant!)) {
+				this.finishFreeHeroAction();
+				return;
+			}
+			if (occupant!.isAlly && !occupant!.isNPC && this.tryAllyWarp(occupant!)) {
+				this.finishFreeHeroAction();
+				return;
+			}
 			if (occupant!.isAlly && !occupant!.isNPC) {
 				//Sheep overrides Char.interact() with its neutral speech action, so it does
-				//not use the inherited place-swap.
+				//not use the inherited place-swap. Its baa lines and flat `spendAndNext(1f)`
+				//(Sheep.interact) stay unported - coreSpawnTiles' standing no-seam note - so
+				//a sheep bump is a free handled no-op.
 				if (occupant!.allyKind !== 'sheep') {
 					this.tryDefaultAllyPlaceSwap(occupant!);
 				}
+				//Java's interact tail owns this bump's time: a successful default swap
+				//spends `1/c.speed()` on the hero inside `tryDefaultAllyPlaceSwap`
+				//(Char.java 298-306), which sets `actionSpentTurn` and lets
+				//`awaitHeroInput` re-arm input after the world ticks. Every other
+				//outcome - a refused default swap, Sheep, and the two overrides above -
+				//is free in Java too (`actInteract` calls `ready()` first and interact
+				//returns with no spend when it refuses or warps - Char.java 247-288), so
+				//`finishFreeHeroAction` both marks the step handled (the move adapter
+				//must not blanket- or attack-charge it) and readies the hero itself,
+				//since no spend will.
+				if (!this.actionSpentTurn) this.finishFreeHeroAction();
 				return;
 			}
 			this.interactWithNPC(occupant!);
@@ -1773,20 +1810,13 @@ export const actorTurnsHazardsMethods = {
 		}
 	},
 
-	/** The hatch half of the guard turn: returns true when an image spawned (the
-	 * pool is spent). Closest live visible enemy first, Java's three state
-	 * exclusions as this port's proxies (sleeping; unalerted wanderers via
-	 * `seesHero`/`lastSeen`/fleeing - the hunting row's own alerted notion;
-	 * `invulnerability` for `isInvulnerable(PrismaticImage.class)`), hatching
-	 * inside Chebyshev 5, into the free passable non-chasm neighbour closest
-	 * (Euclidean, Java's `trueDistance`) to that enemy. Mind-vision-only enemies
-	 * are NOT excluded: the hero FOV carries potion reveals indistinguishably
-	 * (stated in PORT_COVERAGE.md).
-	 */
 	tryDefaultAllyPlaceSwap(this: DungeonScene, ally: Creature): boolean {
-		//Java's Char.interact() refuses this swap for an unsafe destination, either
-		//IMMOVABLE character, or either character's Paralysis/Roots/Vertigo. The app
-		//spends its ordinary hero bump cost; Java spends 1/speed on the ally actor.
+		//Java's Char.interact() refuses this swap for an unsafe destination: the
+		//hazard gate (`canDefaultPlaceSwap`, Char.java 247-251), either IMMOVABLE
+		//character (264-267), or either character's Paralysis/Roots/Vertigo
+		//(284-288). The LARGE/openSpace gate at 253-257 has no counterpart here -
+		//this port has no LARGE property (documented Divergence, R066). A refusal
+		//returns true with no spend, exactly like Java's bare `return true`.
 		const allowed = canDefaultPlaceSwap({
 			allyCellPassable: this.level.passable(ally.x, ally.y),
 			heroFlying: this.hero.buffs['levitation'] !== undefined,
@@ -1811,9 +1841,30 @@ export const actorTurnsHazardsMethods = {
 		this.sprite(ally).position.set(heroFrom.x * TILE, heroFrom.y * TILE);
 		this.fov.update(this.hero.x, this.hero.y, this.viewRadius());
 		this.refresh();
+		//Char.java 298: `c.spend(1 / c.speed())` - the hero pays its ordinary action
+		//cost (this port's blanket `1/speed()` model, the same expression a plain
+		//step pays), NOT the adapter's attack rate: Furor/augment/weapon delay never
+		//touch non-attacks in Java either. 305's `hero.busy()` (`ready = false`) is
+		//what a consumed turn implies here already; 300-303's Freerunner Momentum
+		//credit needs the system R115 opens. The flag marks the step handled so the
+		//move adapter reports it spent, and tells the interact dispatch (in
+		//`takeHeroTurn`) to skip `finishFreeHeroAction`: `awaitHeroInput` re-arms
+		//input after the spend instead.
+		this.actionSpentTurn = true;
+		this.spendHeroTurn(this.getActionTurnCostMod());
 		return true;
 	},
 
+	/** The hatch half of the guard turn: returns true when an image spawned (the
+	 * pool is spent). Closest live visible enemy first, Java's three state
+	 * exclusions as this port's proxies (sleeping; unalerted wanderers via
+	 * `seesHero`/`lastSeen`/fleeing - the hunting row's own alerted notion;
+	 * `invulnerability` for `isInvulnerable(PrismaticImage.class)`), hatching
+	 * inside Chebyshev 5, into the free passable non-chasm neighbour closest
+	 * (Euclidean, Java's `trueDistance`) to that enemy. Mind-vision-only enemies
+	 * are NOT excluded: the hero FOV carries potion reveals indistinguishably
+	 * (stated in PORT_COVERAGE.md).
+	 */
 	hatchPrismaticImage(this: DungeonScene, pool: number): boolean {
 		let closest: Creature | undefined;
 		let best = Infinity;

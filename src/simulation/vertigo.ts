@@ -23,7 +23,12 @@ export interface PlaceSwapRestrictions {
 }
 
 /** `Char.interact()`'s default place-swap gates (`Char.java`, tag `v3.3.8`),
- * after the earlier ALLY_WARP override. */
+ * after the earlier ALLY_WARP override: the hazard gate
+ * `!passable[allyCell] && !heroFlying` (Char.java 247-251), IMMOVABLE on
+ * either side (264-267) and paralysis/Roots/Vertigo on either side (284-288).
+ * Not modeled: the LARGE/`openSpace` room gate (253-257) - this port has no
+ * LARGE property or open-space map and none of its bumpable allies can be
+ * LARGE, so that refusal is unreachable (documented Divergence, R066). */
 export function canDefaultPlaceSwap(state: PlaceSwapRestrictions): boolean {
 	if (!state.allyCellPassable && !state.heroFlying) return false;
 	if (state.heroImmovable || state.allyImmovable) return false;

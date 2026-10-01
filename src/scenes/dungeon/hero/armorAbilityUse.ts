@@ -1487,14 +1487,39 @@ export const armorAbilityUseMethods = {
 	},
 
 	/**
-	 * `Talent.ALLY_WARP` (Battlemage/Warlock T3): the Mage bumps an ally to swap places instantly, 2/4/6 tiles by rank, never with an immovable ally. Always adjacent so the range check is belt-and-braces Java states. Free; true on swap, false falls through to NPC interact. Java's tap is a range cell selector; the bump is the tap. Java's `Char.interact` runs ALLY_WARP *before* its restricted-movement check (paralysed/rooted/Vertigo; `Char.java` 264-282 then 284-288), so ally warp is intentionally not Vertigo-gated - only IMMOVABLE blocks it.
+	 * `Talent.ALLY_WARP` (Battlemage/Warlock T3): the Mage swaps places with an ally
+	 * instantly, 2/4/6 tiles by rank - Java's `canInteract` warp distance (Char.java
+	 * 234-238), reached from both seams that run `Char.interact`: the bump dispatch
+	 * (`actorTurnsHazards`) and the map tap (`turnLoopAiming.handleMapPointer`),
+	 * mirroring `Hero.handle` + `actInteract` warping at range instead of walking
+	 * there first. Never with an immovable ally. Java runs ALLY_WARP *before* its
+	 * restricted-movement check (paralysed/rooted/Vertigo; `Char.java` 264-282 then
+	 * 284-288), so ally warp is intentionally not Vertigo-gated - only IMMOVABLE
+	 * blocks it, and that refusal returns false so the default place-swap behind it
+	 * refuses on the same gate (Char.java 264-267 handles it before the warp branch).
+	 * In-range refusals - the hazard cell (247-251, a flying hero passes) and the
+	 * unreachable flood (271-274) - return true like Java's bare `return true`, i.e.
+	 * handled with no default swap behind them; the flood's passable-only map where
+	 * Java floods `passable|avoid` is the same stated nuance as the shadow clone's.
+	 * Out of class/rank/range returns false: the bump falls through to the default
+	 * swap, the tap falls through to travel (`Hero.getCloser` walking over). Free:
+	 * the step adapter never attack-charges an ally occupant. Not modeled: Java's
+	 * LARGE/open-space gate (this port has no large ally size).
 	 */
 	tryAllyWarp(this: DungeonScene, ally: Creature): boolean {
 		if (this.heroClass !== 'mage') return false;
 		const range = allyWarpRange(this.talentRank('ally_warp'));
 		if (range <= 0) return false;
-		if (ally.kind !== undefined && IMMOVABLE_KINDS.has(ally.kind as MonsterId)) return false;
 		if (Roguelike.chebyshevDistance(this.hero, ally) > range) return false;
+		//Char.java 247-251: an ally on a non-passable cell swaps only for a flying
+		//hero, and Java checks it before the warp branch - handled refusal here so
+		//no default place-swap runs behind it.
+		if (!this.level.passable(ally.x, ally.y) && this.hero.buffs['levitation'] === undefined) return true;
+		if (ally.kind !== undefined && IMMOVABLE_KINDS.has(ally.kind as MonsterId)) return false;
+		//Char.java 271-274: an ally unreachable from the hero refuses as a handled
+		//interaction (Java's warp branch returns true with no default swap behind).
+		const reach = this.pathfinder.distanceMap({ x: this.hero.x, y: this.hero.y });
+		if ((reach[this.level.index(ally.x, ally.y)] ?? -1) < 0) return true;
 		const from = { x: this.hero.x, y: this.hero.y };
 		const to = { x: ally.x, y: ally.y };
 		this.hero.x = to.x; this.hero.y = to.y;

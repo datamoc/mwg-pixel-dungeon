@@ -416,13 +416,18 @@ export class DungeonScene extends Scene2D {
 			//Furor's attack-only cost (`Hero.attackDelay()` vs `Char.speed()`): when the
 			//step leads into a hostile creature, `takeHeroTurn` resolves a bump-attack, so
 			//spend that turn here at the attack rate and report it spent - the adapter must
-			//not also spend the blanket cost. Movement/door/NPC steps fall through to the
-			//adapter's own blanket-cost spend, matching Java's split where Furor never
-			//speeds non-attacks. The occupant test mirrors `takeHeroTurn`'s own
-			//`occupantAt` query (same `creatureAt`, same NPC exclusion).
+			//not also spend the blanket cost. Movement/NPC steps report below and let the
+			//action dispatch charge its blanket move cost, matching Java's split where
+			//Furor never speeds non-attacks. The occupant test mirrors `takeHeroTurn`'s
+			//own `occupantAt` query exactly (same `creatureAt`, same NPC AND ally
+			//exclusion): an ally bump's time belongs to `Char.interact`'s own tail - the
+			//default swap spends the blanket `1/speed()` inside
+			//`tryDefaultAllyPlaceSwap`, while Ally Warp, ShadowAlly's swap and a
+			//refusal are free (Char.java 270-288) - so it reports through
+			//`actionSpentTurn` instead of this attack-rate charge.
 			const target = { x: this.hero.x + step.x, y: this.hero.y + step.y };
 			const occupant = this.creatureAt(target.x, target.y);
-			if (occupant && !occupant.isNPC) {
+			if (occupant && !occupant.isNPC && !occupant.isAlly) {
 				this.takeHeroTurn(step);
 				if (!this.justDescended && !this.actionSpentTurn) {
 					this.actionSpentTurn = true;

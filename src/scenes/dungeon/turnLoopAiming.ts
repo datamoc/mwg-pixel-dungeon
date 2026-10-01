@@ -1021,6 +1021,21 @@ export const turnLoopAimingMethods = {
 			this.travelTarget = null;
 			return;
 		}
+		//Java's `Hero.handle` + `actInteract` interact at range when `canInteract`
+		//allows it - with ALLY_WARP that is 2/4/6 cells by rank (Char.java 234-238),
+		//so the tap warps instantly instead of walking there first. An in-range
+		//refusal (hazard cell, unreachable flood) consumes the tap like Java's
+		//handled `return true` (247-251/271-274); out of class/rank/range or an
+		//immovable ally returns false and falls through to travel, which is
+		//`Hero.getCloser` walking next to the ally (Java refuses those legs of
+		//`canInteract` too and walks in `actInteract`).
+		if (clickAlly && clickAlly.isAlly && !clickAlly.isNPC
+			&& this.fov.isVisible(target.x, target.y)
+			&& this.tryAllyWarp(clickAlly)) {
+			this.travelOverlay?.clear();
+			this.travelTarget = null;
+			return;
+		}
 		const dx = Math.sign(target.x - this.hero.x);
 		const dy = Math.sign(target.y - this.hero.y);
 		if (Roguelike.chebyshevDistance(target, this.hero) <= 1) {
