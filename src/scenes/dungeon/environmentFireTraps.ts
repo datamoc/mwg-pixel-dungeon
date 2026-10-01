@@ -923,6 +923,28 @@ export const environmentFireTrapsMethods = {
 		return true;
 	},
 
+	/**
+	 * R023 (Goo-level locked exit, tag `v3.3.8`): bumping the `LOCKED_EXIT` with a
+	 * depth-matched worn key consumes the key and opens the way out - the paint becomes
+	 * `UNLOCKED_EXIT` (frame 76), the coarse cell becomes floor, and the stairs anchor
+	 * moves onto it so the ordinary stairs path descends. Without the key the hero is
+	 * told the way is locked, like a locked door.
+	 */
+	bumpLockedExit(this: DungeonScene, x: number, y: number): boolean {
+		const key = this.bag.items.find((it) => it.id === 'wornKey' && (it as { depth?: number }).depth === this.depth);
+		if (!key) {
+			this.say(t('port.log.locked'), 'negative');
+			return true;
+		}
+		this.bag.remove('wornKey', 1, key.instanceId);
+		if (this.portedPaint) this.portedPaint.map[this.level.index(x, y)] = Terrain.UNLOCKED_EXIT;
+		this.level.set(x, y, FLOOR);
+		this.openBossExitStairs({ x, y });
+		this.restitchTilesAround(x, y);
+		this.say(t('port.log.unlock'), 'positive');
+		return true;
+	},
+
 	/** `Door.leave()` (`levels/features/Door.java`, tag `v3.3.8`), called from `Char.move()`
 	 * BEFORE `pos = step`, so the mover still counts as standing on the old cell: an open
 	 * door left behind shuts again unless a heap lies on it or another creature is still

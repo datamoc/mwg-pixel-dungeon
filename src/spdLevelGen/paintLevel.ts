@@ -46,6 +46,7 @@ export const Terrain = {
 	EMPTY_DECO: 20,
 	/** SOLID in Java; no room this port paints places it, but `canMerge` must still stop at it. */
 	LOCKED_EXIT: 21,
+	UNLOCKED_EXIT: 22,
 	SIGN: 23,
 	WELL: 24,
 	STATUE: 25,
@@ -71,7 +72,7 @@ export const Terrain = {
  */
 const PASSABLE_TERRAIN = new Set<number>([
 	Terrain.EMPTY, Terrain.GRASS, Terrain.EMPTY_WELL, Terrain.WATER, Terrain.DOOR,
-	Terrain.ENTRANCE, Terrain.EXIT, Terrain.EMBERS, Terrain.PEDESTAL, Terrain.EMPTY_SP,
+	Terrain.ENTRANCE, Terrain.EXIT, Terrain.UNLOCKED_EXIT, Terrain.EMBERS, Terrain.PEDESTAL, Terrain.EMPTY_SP,
 	Terrain.HIGH_GRASS, Terrain.SECRET_TRAP, Terrain.INACTIVE_TRAP, Terrain.EMPTY_DECO,
 ]);
 
