@@ -27,6 +27,8 @@ export interface MobOnHitContext {
 	readonly charmTargets: Map<string, string>;
 	readonly manualPlants: Map<number, string>;
 	readonly stenchGas: Blob;
+	/** R015: quest-score writes; optional so headless callers keep their slim contexts. */
+	addQuestScore?: (index: number, delta: number) => void;
 	readonly toxicGas: Blob;
 	readonly wandCharges: Actors.Charges;
 	creatureAt(x: number, y: number): Creature | null | undefined;
@@ -219,6 +221,10 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	//caustic proc above, not damage-gated like Albino's).
 	if (attacker.kind === 'rotLasher') {
 		addBuff(defender, 'cripple', 2);
+		//`RotLasher.attack()` (tag `v3.3.8`): `questScores[1] -= 100` when it attacks the
+		//hero. Java fires on the attempt; this hook only sees landed hits, so a dodged
+		//lash scores nothing here.
+		if (defender.isHero) ctx.addQuestScore?.(1, -100);
 	}
 	//RotHeart.defenseProc() (RotHeart.java, tag v3.3.8): a struck heart seeds ToxicGas
 	//at its own cell with volume `5 + 3 * openNearby`, where openness counts non-solid
@@ -246,8 +252,11 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 		addBuff(attacker, 'ooze');
 		ctx.say(t(attacker.isHero ? 'port.log.oozedhero' : 'port.log.oozed', { who: capitalize(attacker.name) }), 'negative');
 	}
+	//`FetidRat.attackProc()` (tag `v3.3.8`): the 1/3 ooze scores `questScores[0] -= 50`
+	//when it lands on the hero outside water.
 	if (attacker.kind === 'fetidRat' && Random.chance(1 / 3)) {
 		addBuff(defender, 'ooze');
+		if (defender.isHero && ctx.level.get(defender.x, defender.y) !== WATER) ctx.addQuestScore?.(0, -50);
 		ctx.say(t(defender.isHero ? 'port.log.oozedhero' : 'port.log.oozed', { who: capitalize(defender.name) }), 'negative');
 	}
 	//`Goo.attackProc()` (`Goo.java`, tag `v3.3.8`): a third of landed hits
@@ -276,6 +285,10 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	//real magnitude this port's poison buff has no field for (a pre-existing, documented
 	//simplification elsewhere), so only the ignite-vs-poison-vs-nothing threshold is fixed here.
 	if (attacker.kind === 'gnollTrickster') {
+		//`GnollTrickster.attackProc()` (tag `v3.3.8`): `questScores[0] -= 50` from the
+		//second consecutive hit on (`combo >= 1` reads pre-increment, like Java), with
+		//no hero gate - Java scores the combo whoever the victim is.
+		if ((attacker.combo ?? 0) >= 1) ctx.addQuestScore?.(0, -50);
 		attacker.combo = (attacker.combo ?? 0) + 1;
 		const effect = Random.int(4) + attacker.combo;
 		if (effect >= 6 && !defender.buffs['burning']) {

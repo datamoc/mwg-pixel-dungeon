@@ -416,6 +416,12 @@ export interface SaveShape {
 	attackSkill: number;
 	defenseSkill: number;
 	gold: number;
+	/** R015: endgame score tables (`Statistics` score half) - absent on older saves,
+	 * which start them fresh on load. */
+	questScores?: number[];
+	bossScores?: number[];
+	goldCollected?: number;
+	floorsExplored?: Record<number, number>;
 	str: number;
 	heroStatsState?: { base: Record<string, number> };
 	weaponLevel: number;

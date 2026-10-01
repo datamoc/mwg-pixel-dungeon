@@ -36,6 +36,7 @@ import { absorbCreatureShields } from '../../simulation/allyShields';
 import { liveStats, IMMOVABLE_KINDS } from '../../monsters';
 import { imageSuperDefenseSkill } from '../../simulation/mirrorImage';
 import { POWER_OF_MANY_ATTACK_FACTOR, beamingRayBoostFactor, powerOfManyDamageFactor } from '../../simulation/clericSpells';
+import { addQuestScore } from '../../rankings';
 
 /**
  * True only while a *delegated* `ShadowAlly` swing resolves in `attack()`/`heroOnHit`:
@@ -2136,6 +2137,7 @@ export const combatResolutionMethods: Record<string, any> = {
 			get earthrootArmor() { return scene.earthrootArmor; }, set earthrootArmor(value) { scene.earthrootArmor = value; },
 			hero: scene.hero, level: scene.level, charmTargets: scene.charmTargets, manualPlants: scene.manualPlants,
 			stenchGas: scene.stenchGas, toxicGas: scene.toxicGas, wandCharges: scene.wandCharges,
+			addQuestScore: (index, delta) => { addQuestScore(scene, index, delta); },
 			creatureAt: (x, y) => scene.creatureAt(x, y), degradedLevel: (level) => scene.degradedLevel(level),
 			genericProcMultiplier: () => defender.allyKind === 'ghost' ? scene.armorProcMultiplier(defender) : scene.genericProcMultiplier(), armorProcMultiplier: (defender) => scene.armorProcMultiplier(defender),
 			trinityBodyGlyphIs: (glyph) => defender.isHero && scene.trinityBodyGlyphIs(glyph), grantHeroShield: (amount, cap) => scene.grantHeroShield(amount, cap),

@@ -443,7 +443,7 @@ export const gnollMineMethods = {
 	 * One boulder or falling rock striking a character: `NormalIntRange(6, 12)` straight into
 	 * `damage()` (no armour), then `Paralysis` 3 - 10 for a guard - on a survivor, an invulnerable
 	 * geomancer included (Java's `damage()` is negated but the `Buff.prolong` still runs). Returns true
-	 * when it killed the hero. Not ported: `Statistics.questScores[2] -= 100` (no quest scores).
+	 * when it killed the hero. Not ported: `Statistics.questScores[2] -= 100` (no `[2]` write yet - R055).
 	 */
 	gnollRockStrike(this: DungeonScene, target: Creature, killKey: string): boolean {
 		const dmg = Random.normalRange(6, 12);

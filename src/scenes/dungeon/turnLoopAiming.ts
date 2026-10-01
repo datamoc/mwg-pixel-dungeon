@@ -39,6 +39,8 @@ import { beaconChargeCap } from '../../items/beacon';
 import type { ChainsItem } from '../../items/chains';
 import { TILE, WATER } from '../../dungeonConstants';
 import { BUFF_DURATION, addBuff, buffBlocked, electricDamageHalved, icyDamageHalved, rollHit, tickBuffs, type Creature, type Step } from '../../combat';
+import { addQuestScore } from '../../rankings';
+import { crabDodgesMelee } from '../../simulation/combat';
 import { NEGATIVE_BUFFS, corruptionImmune, tickMonsterTurnEnd, type BuffId } from '../../simulation/buffs';
 import { corruptingPower, corruptionResistance, resolveCorruptionZap } from '../../simulation/wandCorruption';
 import { MONSTERS, BOSSES, isUndeadOrDemonic, type AnyMonsterId } from '../../monsters';
@@ -105,6 +107,8 @@ export const turnLoopAimingMethods = {
 		//still parry every wand hit.
 		if (targetCreature?.kind === 'greatCrab' && !targetCreature.sleeping && targetCreature.seesHero && targetCreature.buffs['paralysis'] === undefined) {
 			this.say(t('port.log.crabparries'), 'negative');
+			//`GreatCrab.damage()` (tag `v3.3.8`): negating the hero's bolt scores `questScores[0] -= 50`.
+			addQuestScore(this, 0, -50);
 			return false;
 		}
 		//`Beam` (`effects/Beam.java`, tag `v3.3.8`): every wand zap in Java draws its own
@@ -731,6 +735,8 @@ export const turnLoopAimingMethods = {
 			);
 			if (!rollHit(this.hero, target, false, false, bowAccFactor)) {
 				this.say(t('port.log.arrowmisses', { target: target.name }), 'negative');
+				//`GreatCrab.defenseSkill()`: the point-blank dodged bolt scores like a dodged swing.
+				if (crabDodgesMelee(this.hero, target)) addQuestScore(this, 0, -50);
 			} else {
 				const distance = Roguelike.chebyshevDistance(this.hero, target);
 				const multiplier = Math.min(3, 1.2 * Math.pow(1.125, distance - 1));

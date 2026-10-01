@@ -340,7 +340,7 @@ export const actorTurnsHazardsMethods = {
 			this.say(t('scenes.amuletscene.exit'), 'positive');
 			this.awaitingInput = false;
 			this.gameOver = true;
-			recordRun({ result: 'won', depth: this.depth, level: this.progression.level, gold: this.heroStats.base('gold'), highestAscent: this.highestAscent });
+			recordRun({ result: 'won', depth: this.depth, level: this.progression.level, gold: this.heroStats.base('gold'), highestAscent: this.highestAscent }, this.runScoreInput(true, true));
 			this.showVictoryPanel();
 			this.justDescended = true;
 			return;

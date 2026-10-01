@@ -61,6 +61,7 @@ import { artifactRechargeAmount, artifactRechargeEffect, bankArtifactCharge, cha
 import { getAllArtifactIds } from '../../../items/artifacts';
 import { openClassArmorTransfer as openInventoryClassArmorTransfer } from '../../../items/equipment';
 import { DOOR, DOOR_CLOSED, FLOOR, GRASS, HIGH_GRASS, SOLID, TILE, WALL, WATER } from '../../../dungeonConstants';
+import { addQuestScore } from '../../../rankings';
 import { BUFF_DURATION, NEGATIVE_BUFFS, addBuff, buffBlocked, doomDamage, reigniteBuff, type BuffId, type Creature, type GroundItem, type Step } from '../../../combat';
 import { BOSSES, IMMOVABLE_KINDS, LIMITED_DROP_DECAY, MOB_LOOT, MONSTERS, isLargeCreature, isUndeadOrDemonic, type MonsterId } from '../../../monsters';
 import { APPEARANCE_TABLES, SPD_LEVEL_CURVE, effectMarkSheet } from '../shared';
@@ -95,6 +96,8 @@ function applyArtifactProc(scene: DungeonScene, actor: Creature): void {
 		const parried = actor.kind === 'greatCrab' && !actor.sleeping && actor.seesHero
 			&& actor.buffs['paralysis'] === undefined;
 		if (parried) scene.say(t('port.log.crabparries'), 'negative');
+		//`GreatCrab.damage()` (tag `v3.3.8`): the parried hit scores `questScores[0] -= 50`.
+		if (parried) addQuestScore(scene, 0, -50);
 		else scene.applyCharacterDamage(actor, plan.illuminatedDamage, {
 			pierceArmor: true, cause: 'foe',
 			onNonWeaponBossDamage: (victim) => scene.disqualifyBossChallenge(victim),
@@ -1011,13 +1014,15 @@ export const inventoryQuickslotMethods = {
 				if (damage > 0) this.disqualifyBossChallenge(victim);
 				//`GreatCrab.damage()` (tag `v3.3.8`): the aware crab parries ClericSpell
 				//direct damage exactly like wand damage (same gate as the wand branch),
-				//but add-on effects go through - the Illuminated below still lands. No
-				//`questScores` penalty (no scoring system) and no parry sample (no audio
-				//seam), like the wand half.
+				//but add-on effects go through - the Illuminated below still lands. The
+				//parried hit scores `questScores[0] -= 50` (R015); there is still no parry
+				//sample (no audio seam), like the wand half.
 				const parried = victim.kind === 'greatCrab' && !victim.sleeping && victim.seesHero
 					&& victim.buffs['paralysis'] === undefined;
 				if (parried) this.say(t('port.log.crabparries'), 'negative');
 				//`Char.damage()` seam: Doom, defender overrides, shields, hooks, wake and death.
+				//`GreatCrab.damage()` (tag `v3.3.8`): the parried hit scores `questScores[0] -= 50`.
+				if (parried) addQuestScore(this, 0, -50);
 				else this.applyCharacterDamage(victim, damage, { pierceArmor: true, cause: 'foe', skipAura: true });
 				victim.sleeping = false;
 				if (victim.hp > 0) {
@@ -1283,6 +1288,8 @@ export const inventoryQuickslotMethods = {
 				const parried = victim.kind === 'greatCrab' && !victim.sleeping && victim.seesHero
 					&& victim.buffs['paralysis'] === undefined;
 				if (parried) this.say(t('port.log.crabparries'), 'negative');
+				//`GreatCrab.damage()` (tag `v3.3.8`): the parried hit scores `questScores[0] -= 50`.
+				if (parried) addQuestScore(this, 0, -50);
 				else this.applyCharacterDamage(victim, damage, { pierceArmor: true, cause: 'foe', skipAura: true });
 				victim.sleeping = false;
 				if (victim.hp > 0) {

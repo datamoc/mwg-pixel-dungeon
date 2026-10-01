@@ -444,7 +444,7 @@ export const crystalMineMethods = {
 	 * character there but a wisp or the spire takes `NormalIntRange(6, 15)` (`SpireSpike`, no
 	 * armour) - 12 more and `Cripple` 30 (prolonged) on a guardian - and is knocked one cell: a
 	 * guardian away from the hero, anyone else (not `IMMOVABLE`) away from the spire. Returns true
-	 * when it killed the hero. Not ported: `Statistics.questScores[2] -= 100` (no quest scores).
+	 * when it killed the hero. Not ported: `Statistics.questScores[2] -= 100` (no `[2]` write yet - R056).
 	 */
 	landSpireWave(this: DungeonScene, spire: Creature, wave: readonly number[]): boolean {
 		const w = this.level.width;

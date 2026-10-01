@@ -35,6 +35,7 @@ import { NEGATIVE_BUFFS, addBuff, applyElementalBacklash, buffBlocked, doomDamag
 import { applyChillFreeze } from '../../../simulation/buffs';
 import { IMMOVABLE_KINDS, liveStats } from '../../../monsters';
 import { TENGU_CIRCLE8 } from '../shared';
+import { addQuestScore } from '../../../rankings';
 
 /** Java's ShamanSprite selects both its shared-sheet colour block and MagicMissile particle family by subtype. */
 const SHAMAN_BOLT_TINT: Record<NonNullable<Creature['shamanType']>, number> = {
@@ -1164,9 +1165,10 @@ export const monsterAiMethods = {
 	 * hunting, adjacent melee turns included (the decrement now sits in the per-turn pre-dispatch
 	 * beside the golem cooldowns, matching `Elemental.act()`'s `if (state == HUNTING) rangedCooldown--`).
 	 * What remains: no zap *animation* (Java's `sprite.zap()`/`zap()` pair, and this port has no
-	 * per-sprite zap art for it), no quest-score/music side effects on spawn or death (neither system
-	 * exists), and the elemental's own `FIERY` immunity lives at its own call site, shared with the
-	 * base elemental. */
+	 * per-sprite zap art for it), no music side effects on spawn or death (no such system),
+	 * and the elemental's own `FIERY` immunity lives at its own call site, shared with the
+	 * base elemental. The quest score sides now call through (`addQuestScore`: blast burn
+	 * above, `Elemental.die()` in `deathSaveRefresh`). */
 	newbornElementalTurn(this: DungeonScene, monster: Creature): boolean {
 		const pending = monster.newbornTarget;
 		if (pending) {
@@ -1190,7 +1192,13 @@ export const monsterAiMethods = {
 					if (Math.abs(target.x - pending.x) > 1 || Math.abs(target.y - pending.y) > 1) continue;
 					if (target.buffs['burning']) continue;
 					addBuff(target, 'burning');
-					if (target.isHero) this.say(t('port.log.firecatches'), 'negative');
+					if (target.isHero) {
+						//`Elemental.zap()` (tag `v3.3.8`): a burned hero scores `questScores[1] -= 200`.
+						//It follows the port's burn, which skips an already-burning hero where
+						//Java reignites (and scores) regardless.
+						addQuestScore(this, 1, -200);
+						this.say(t('port.log.firecatches'), 'negative');
+					}
 				}
 			}
 			monster.rangedCooldown = Random.normalRange(3, 5);

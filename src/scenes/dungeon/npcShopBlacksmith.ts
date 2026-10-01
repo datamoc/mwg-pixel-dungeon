@@ -34,7 +34,7 @@ import { CLASSES } from '../../classes';
 import { showChoiceWindow, showConfirmWindow, showInfoWindow } from '../../ui/portWindows';
 import { confirmBlacksmithCashout, confirmBlacksmithSmith, openBlacksmithWindow, type BlacksmithWindowContext } from '../../ui/blacksmithWindow';
 import { getCurse } from '../../items/itemCurses';
-import { recordRun } from '../../rankings';
+import { addQuestScore, noteGoldCollected, recordRun, setQuestScore } from '../../rankings';
 import { Cat, blacksmithSmithRewards, generatorRandom, ghostQuestReward, randomArmor, randomArtifact, randomCategory, randomUsingDefaults, randomWeapon, setGeneratorDepth, type GenItem } from '../../items/generator';
 import { mwlItemEffectValue } from '../../mwlContent';
 import { hallsDemonSpawnerFloorFrames } from '../regions/halls';
@@ -1088,6 +1088,9 @@ export const npcShopBlacksmithMethods = {
 				const item = this.bag.find(ringId)!;
 				Actors.applyAffix(item, { id: 'cursed', trigger: 'passive', weight: 1, curse: true });
 				this.gameState.setSwitch('impDone', true);
+				//`Imp.Quest.complete()` (tag `v3.3.8`): `questScores[3] = 4000` - assigned,
+				//not added, so a replayed turn-in cannot stack it.
+				setQuestScore(this, 3, 4000);
 				return t('port.npc.imp.reward', { ring: t(RING_KEYS[ringId.slice(5)]) });
 			},
 			flee: () => {
@@ -1170,6 +1173,10 @@ export const npcShopBlacksmithMethods = {
 		const item = this.wandmakerQuestItem();
 		if (!item) return;
 		this.bag.remove(item.id, 1, item.instanceId);
+		//`Wandmaker.Quest.complete()` (tag `v3.3.8`): `questScores[1] += 2000`, but only
+		//for the corpse-dust type - the ember/berry types score on their kills instead
+		//(Elemental/RotHeart deaths above).
+		if (this.wandmakerType === 1) addQuestScore(this, 1, 2000);
 		if (item.id === 'corpseDust') {
 			//`DustGhostSpawner.dispel()` on handover: every DustWraith dies with the curse
 			//(the music fade has no layer here; the score penalties no system).
@@ -1390,6 +1397,7 @@ export const npcShopBlacksmithMethods = {
 			stock: this.shopStockFor(this.depth),
 			buyback: this.buybackFor(this.depth),
 			depth: this.depth,
+			noteGold: (amount) => { noteGoldCollected(this, amount); },
 			openItemPicker: (title, entries, onPick) => this.openItemPicker(title, entries, (entry) => onPick({ ...entry, quantity: 1 })),
 			itemDisplayName: (id, identified) => this.itemDisplayName(id, identified),
 			say: (message, level) => this.say(message, level),
@@ -1808,7 +1816,7 @@ export const npcShopBlacksmithMethods = {
 					{ label: t('scenes.amuletscene.exit'), onPick: () => {
 						this.say(t('scenes.amuletscene.exit'), 'positive');
 						this.awaitingInput = false; this.gameOver = true;
-						recordRun({ result: 'won', depth: this.depth, level: this.progression.level, gold: this.heroStats.base('gold'), highestAscent: this.highestAscent });
+						recordRun({ result: 'won', depth: this.depth, level: this.progression.level, gold: this.heroStats.base('gold'), highestAscent: this.highestAscent }, this.runScoreInput(true, false));
 						this.showVictoryPanel(false); this.justDescended = true;
 					} },
 					{ label: t('scenes.amuletscene.stay'), onPick: () => undefined },

@@ -9,6 +9,7 @@ import { TILE } from '../../../dungeonConstants';
 import { CIRCLE8_OFFSETS } from '../../../simulation/wandering';
 import { findHolyTome } from '../../../items/holyTome';
 import { AURA_COST, DIVINE_INTERVENTION_COST, HALLOWED_GROUND_COST, HALLOWED_GROUND_HEAL, HALLOWED_GROUND_ROOTS_TURNS, HOLY_LANCE_COST, JUDGEMENT_COST, LAY_ON_HANDS_COST, LAY_ON_HANDS_SHIELD_CASTS, BEAMING_RAY_COST, BEAMING_RAY_BOOST_TURNS, MNEMONIC_POSITIVE_BUFFS, PRAYER_COST, RADIANCE_COST, RADIANCE_LIGHT_DARKNESS_TURNS, RADIANCE_LIGHT_TURNS, RADIANCE_PARALYSIS_TURNS, SMITE_COST, WALL_OF_LIGHT_COST, WALL_OF_LIGHT_PARALYSIS_TURNS, WALL_OF_LIGHT_TURNS, beamingRayRange, flashCost, flashRange, hallowedGroundRadius, holyLanceDamage, judgementDamageBase, layOnHandsHeal, prayerExtension, radianceBonusDamage, smiteBonusDamage, tomeCastGate, tomeChargeCap, wallOfLightCost, wallOfLightWidth, divineInterventionShield, divineInterventionExtension } from '../../../simulation/clericSpells';
+import { addQuestScore } from '../../../rankings';
 
 /**
  * The HolyTome's Priest/Paladin subclass tier (`ClericSpell.getSpellList()`
@@ -343,6 +344,8 @@ export const clericSpellFlowsMethods = {
 			const parried = victim.kind === 'greatCrab' && !victim.sleeping && victim.seesHero
 				&& victim.buffs['paralysis'] === undefined;
 			if (parried) this.say(t('port.log.crabparries'), 'negative');
+			//`GreatCrab.damage()` (tag `v3.3.8`): the parried bolt scores `questScores[0] -= 50`.
+			if (parried) addQuestScore(this, 0, -50);
 			else this.applyCharacterDamage(victim, rawDamage, { pierceArmor: true, cause: 'foe', skipAura: true });
 			victim.sleeping = false;
 		}
@@ -442,6 +445,8 @@ export const clericSpellFlowsMethods = {
 		const parried = target.kind === 'greatCrab' && !target.sleeping && target.seesHero
 			&& target.buffs['paralysis'] === undefined;
 		if (parried) this.say(t('port.log.crabparries'), 'negative');
+		//`GreatCrab.damage()` (tag `v3.3.8`): the parried bolt scores `questScores[0] -= 50`.
+		if (parried) addQuestScore(this, 0, -50);
 		//`Char.damage()` seam: Doom, defender overrides, shields, hooks, wake and death.
 		else this.applyCharacterDamage(target, damage, { pierceArmor: true, cause: 'foe', skipAura: true });
 		target.sleeping = false;

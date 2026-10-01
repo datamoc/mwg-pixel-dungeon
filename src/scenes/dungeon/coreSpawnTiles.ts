@@ -45,11 +45,12 @@ import { visualGrid } from '../../settings';
 import { mineTileFrames, foregroundGrassFrames as buildForegroundGrassFrames, terrainFrameAt as buildTerrainFrameAt, terrainFrames as buildTerrainFrames, wallFrameAt as buildWallFrameAt, wallFrames as buildWallFrames, waterFrames as buildWaterFrames, type DungeonTileFrameContext } from '../dungeonTileFrames';
 import { bindZoomShortcuts } from './zoomShortcuts';
 import { STARTING_WEAPON_CLASS, armorReductionRange, isClassArmorId, weaponCombat } from '../../items/catalog';
-import { MWL_HERO_BASE_STATS, MWL_HERO_LEVEL_GROWTH } from '../../mwlContent';
+import { MWL_HERO_BASE_STATS, MWL_HERO_LEVEL_GROWTH, MWL_SCENARIO_CHAPTERS } from '../../mwlContent';
 import { dungeonRegion } from '../regions';
 import { applyArmbandGainCharge, applyChainsGainExp, applyHornGainCharge, applyToolkitGainCharge } from '../../items/artifactActions';
 import { applyRoseGhostEquipment } from '../../items/rose';
 import { type FloorState, type SavedCreature } from '../floorState';
+import { heldItemValue, noteFloorExplored, scoreStateFor, type RunEndScore, type ScoredBelonging } from '../../rankings';
 import { monsterSpawnProfile } from '../../actors/monsterSpawn';
 import { ritualSiteState } from '../../spdLevelGen/rooms/standard/ritualSiteRoom';
 import { DOOR, GAME_KIND_CODES, HIGH_GRASS, SOLID, TERRAIN_KINDS, TILE, WALL, WATER, type GroundItemKind } from '../../dungeonConstants';
@@ -815,8 +816,82 @@ export const coreSpawnTilesMethods = {
 		return lotus;
 	},
 
+	/**
+	 * R015 (`Dungeon.updateLevelExplored()`, tag `v3.3.8`): remember the floor being
+	 * left as explored-fraction = seen cells over non-wall cells. Java scores rooms
+	 * (unexplored rooms over all rooms, boss/branch floors excluded); this port keeps no
+	 * room ledger at runtime, so the `fov.explored` cell fraction stands in, and the MWL
+	 * chapter arenas plus the mining branch stand in for Java's non-Regular/boss levels.
+	 * Runs at every floor capture (transitions and saves) plus explicitly before each
+	 * `recordRun`, mirroring Java's saveAll/fail/win call sites.
+	 */
+	snapshotFloorExplored(this: DungeonScene): void {
+		const depth = this.activeFloorDepth ?? this.depth;
+		if (this.miningBranchActive) return;
+		if (MWL_SCENARIO_CHAPTERS.some((chapter) => chapter.bossDepth === depth)) return;
+		let open = 0;
+		for (let y = 0; y < this.level.height; y++) {
+			for (let x = 0; x < this.level.width; x++) {
+				if (this.level.get(x, y) !== WALL) open++;
+			}
+		}
+		if (open <= 0) return;
+		noteFloorExplored(this, depth, this.fov.explored.size / open);
+	},
+
+	/**
+	 * R015: every belonging Java's `heldItemValue` loop would see - the bag plus the worn
+	 * weapon and armor descriptors. The worn cloth armor never left the bag (see
+	 * `equipArmor`), so only a non-cloth worn piece needs its own descriptor; the wielded
+	 * weapon always does (the starter is a scene phantom, swaps leave the bag on equip).
+	 * The starter's class travels as `sourceClass`, so a Mage staff zeroes exactly like
+	 * Java's `MagesStaff.value() == 0`.
+	 */
+	scoreBelongings(this: DungeonScene): ScoredBelonging[] {
+		type BagItem = { id: string; quantity?: number; identified?: boolean; tier?: number; level?: number; affix?: string; cursed?: boolean; cursedKnown?: boolean; seal?: boolean; sourceClass?: string };
+		const items: ScoredBelonging[] = (this.bag.items as BagItem[]).map((item) => ({
+			id: item.id, quantity: item.quantity, identified: item.identified, tier: item.tier,
+			level: item.level, affix: item.affix, cursed: item.cursed, cursedKnown: item.cursedKnown,
+			seal: item.seal, sourceClass: item.sourceClass,
+		}));
+		items.push({
+			id: this.weaponId === 'startingWeapon' ? 'weaponReward' : this.weaponId,
+			quantity: 1, identified: this.weaponIdentified, tier: this.weaponTier, level: this.weaponLevel,
+			affix: this.weaponAffix, cursed: this.weaponCursed, cursedKnown: this.weaponCursedKnown,
+			sourceClass: this.weaponSourceClass ?? (this.weaponId === 'startingWeapon' ? STARTING_WEAPON_CLASS[this.heroClass] : undefined),
+		});
+		if (this.armorId !== 'clothArmor') {
+			items.push({
+				id: this.armorId, quantity: 1, identified: this.armorIdentified, tier: this.armorTier,
+				level: this.armorLevel, affix: this.armorGlyph, cursed: this.armorCursed,
+				cursedKnown: this.armorCursedKnown, seal: this.armorSealed, sourceClass: this.armorSourceClass ?? undefined,
+			});
+		}
+		return items;
+	},
+
+	/** R015: assemble the run-end score inputs (snapshotting the floor first, like Java's fail/win). */
+	runScoreInput(this: DungeonScene, gameWon: boolean, ascended: boolean): RunEndScore {
+		this.snapshotFloorExplored();
+		const state = scoreStateFor(this);
+		const belongings = this.scoreBelongings();
+		return {
+			heroLevel: this.progression.level,
+			deepestFloor: this.deepestDepth,
+			goldCollected: state.goldCollected,
+			heldItemValue: heldItemValue(belongings),
+			corpseDustKept: belongings.some((item) => item.id === 'corpseDust'),
+			floorsExplored: { ...state.floorsExplored },
+			questScores: [...state.questScores],
+			bossScores: [...state.bossScores],
+			gameWon,
+			ascended,
+		};
+	},
+
 	captureActiveFloor(this: DungeonScene): void {
 		if (this.activeFloorDepth === null) return;
+		this.snapshotFloorExplored();
 		const creatures: SavedCreature[] = [];
 		const savedIndex = new Map<Creature, number>();
 		for (const creature of this.creatures) {

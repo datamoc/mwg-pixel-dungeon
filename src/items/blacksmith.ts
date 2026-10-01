@@ -25,8 +25,9 @@ export const BLACKSMITH_QUEST_BOSS_BONUS = 1000;
 export const BLACKSMITH_FREE_PICKAXE_FAVOR = 2500;
 
 /** `Blacksmith.Quest.complete()`'s favor arithmetic, without the pickaxe/belongings
- * handling the scene owns. `Statistics.questScores[2] += favor` has no counterpart:
- * this port tracks no quest-score table (endgame/Rankings work, not a forge gap). */
+ * handling the scene owns. `Statistics.questScores[2] += favor` has no call site yet:
+ * the R015 score table exists, but the turn-in writes no questScores[2] (residual -
+ * the favor itself is computed here). */
 export function blacksmithTurnInFavor(darkGoldQuantity: number, bossBeaten: boolean): number {
 	let favor = Math.min(BLACKSMITH_FAVOR_CAP, darkGoldQuantity * 50);
 	if (bossBeaten) favor += BLACKSMITH_QUEST_BOSS_BONUS;

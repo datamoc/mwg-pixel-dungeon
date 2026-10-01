@@ -66,6 +66,7 @@ import { useStoneById as routeStoneAction, type StoneActionContext } from '../..
 import { setWandmakerQuestType, setWandmakerQuestWands, wandmakerQuestType } from '../../spdLevelGen/wandmaker';
 import { WATER } from '../../dungeonConstants';
 import { BUFF_DURATION, absorbShield, addBuff, doomDamage, setAnnounceBuff, setAttachBacklash, setBuffDurationModifier, type BuffId, type Creature, type GroundItem, type Step } from '../../combat';
+import { scoreStateFor } from '../../rankings';
 import { BOSSES } from '../../monsters';
 import { APPEARANCE_TABLES, AUGMENT_OPTIONS, BLACKSMITH_QUEST, IMP_QUEST, SAD_GHOST_QUEST, SPD_LEVEL_CURVE, SUBCLASS_OPTIONS, SUBCLASS_TRACK, WANDMAKER_QUEST } from './shared';
 
@@ -282,6 +283,12 @@ export const panelsSingleUseMethods = {
 		this.shopkeeperWarned = s.shopkeeperWarned ?? false;
 		this.blacksmithSpawned = s.blacksmithSpawned ?? this.blacksmithSpawned;
 		this.impSpawned = s.impSpawned ?? this.impSpawned;
+		//R015: older saves predate the score tables and start them fresh.
+		const scores = scoreStateFor(this);
+		scores.questScores = [0, 1, 2, 3, 4].map((i) => s.questScores?.[i] ?? 0);
+		scores.bossScores = [0, 1, 2, 3, 4].map((i) => s.bossScores?.[i] ?? 0);
+		scores.goldCollected = s.goldCollected ?? 0;
+		scores.floorsExplored = { ...(s.floorsExplored ?? {}) };
 		this.limitedDrops = Object.fromEntries(s.limitedDrops ?? []);
 		//Pre-bag saves carry no flags; velvet is the `initHero()` invariant, and any shop
 		//already visited will not rebuild its shelf (see the load path above), so it cannot

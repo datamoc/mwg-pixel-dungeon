@@ -162,6 +162,16 @@ function rollFactors32(base: number, c: Readonly<Combatant>): number {
 	return fround(r * fround(ascensionModFor(c)));
 }
 
+/**
+ * The GreatCrab melee-dodge condition, shared by the hit roll and the quest-score
+ * hook: an awake crab dodges adjacent non-magic attacks. One predicate so the two
+ * can never disagree about what dodged.
+ */
+export function crabDodgesMelee(attacker: Readonly<Combatant>, defender: Readonly<Combatant>): boolean {
+	return defender.kind === 'greatCrab' && !defender.sleeping
+		&& chebyshevDistance(attacker, defender) <= 1;
+}
+
 export function rollHit(attacker: Readonly<Combatant>, defender: Readonly<Combatant>, random: SimulationRandom, magic = false, surprise = false, accFactor = 1): boolean {
 	if (liveStats(defender).evasion >= INFINITE_EVASION) return false;
 	let acu = liveStats(attacker).accuracy;
@@ -179,10 +189,7 @@ export function rollHit(attacker: Readonly<Combatant>, defender: Readonly<Combat
 	//GreatCrab.defenseSkill: INFINITE_EVASION against its seen target's melee - simplified to
 	//range-based (adjacent = melee, blocked; anything further = throwable, lands on evasion 0)
 	//so the quest stays completable; Java also negates wand damage when seen (kept in useSpecial)
-	if (defender.kind === 'greatCrab' && !defender.sleeping && !magic) {
-		const adjacent = chebyshevDistance(attacker, defender) <= 1;
-		if (adjacent) return false;
-	}
+	if (!magic && crabDodgesMelee(attacker, defender)) return false;
 	//Java computes both rolls in float32, one multiplication at a time (`acuRoll *= 1.25f` ...), and the
 	//parity harness (tools/parity, B1/T55) found real last-ulp flips against the float64 product this used
 	//to take: `Random.Float(stat)` is `Float() * stat` rounded to float32, then every buff/champion/ascension

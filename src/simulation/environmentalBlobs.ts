@@ -36,6 +36,8 @@ export interface EnvironmentalBlobsContext {
 	 *  (prismatic light, fists, plants) still lands, since those are not Vertigo. Optional
 	 *  so headless callers keep working. */
 	isVertigoImmune?: (target: Creature) => boolean;
+	/** R015: quest-score writes; optional so headless callers keep their slim contexts. */
+	addQuestScore?: (index: number, delta: number) => void;
 	applyDamage: (target: Creature, damage: number, cause?: 'poison' | 'electricity') => boolean;
 	/** Cell charge of a blob volume (mirrors `Blob.volumeAt`); needed for electricity's odd-charge damage. */
 	amountAt: (blob: EnvironmentalBlob, x: number, y: number) => number;
@@ -140,7 +142,13 @@ export function applyEnvironmentalBlobs(context: EnvironmentalBlobsContext): voi
 	}
 	for (const cell of context.cellsAbove('stenchGas', 0.0001)) {
 		const target = context.creatureAt(cell.x, cell.y);
-		if (target && !context.isBlobImmune?.(target)) context.addBuff(target, 'paralysis', STENCH_PARALYSIS_DURATION);
+		if (target && !context.isBlobImmune?.(target)) {
+			//`StenchGas.evolve()` (tag `v3.3.8`): a still-unparalysed hero breathing the
+			//gas while its rat lives scores `questScores[0] -= 100`.
+			if (target.isHero && target.buffs?.['paralysis'] === undefined
+				&& context.creatures.some((mob) => mob.kind === 'fetidRat' && mob.hp > 0)) context.addQuestScore?.(0, -100);
+			context.addBuff(target, 'paralysis', STENCH_PARALYSIS_DURATION);
+		}
 	}
 	for (const cell of context.cellsAbove('corrosiveGas', 0.0001)) {
 		const target = context.creatureAt(cell.x, cell.y);

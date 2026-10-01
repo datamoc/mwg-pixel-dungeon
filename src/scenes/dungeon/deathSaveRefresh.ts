@@ -12,7 +12,7 @@ import { GROUND_ITEM_KEYS, MOB_KEYS, REGION_KEYS, capitalize, has, t } from '../
 import { lethalHasteDuration, soulSiphonCharge } from '../../talentEffects';
 import { SpdRandom } from '../../spdRng';
 import { runState } from '../../runState';
-import { recordRun } from '../../rankings';
+import { addQuestScore, noteGoldCollected, recordRun, scoreStateFor } from '../../rankings';
 import { isChallengeEnabled, isItemBlocked, runChallengeIds } from '../../challenges';
 import { PRISMATIC_FADE_TURNS } from '../../simulation/prismatic';
 import { shieldOfLightRange } from '../../simulation/clericSpells';
@@ -259,7 +259,7 @@ export const deathSaveRefreshMethods = {
 			);
 			this.awaitingInput = false;
 			this.gameOver = true;
-			recordRun({ result: 'lost', depth: this.depth, level: this.progression.level, gold: this.heroStats.base('gold'), highestAscent: this.highestAscent });
+			recordRun({ result: 'lost', depth: this.depth, level: this.progression.level, gold: this.heroStats.base('gold'), highestAscent: this.highestAscent }, this.runScoreInput(false, false));
 			this.showDefeatPanel();
 			//`GameScene.gameOver()`: the GAME_OVER banner with Java's own `show(0x000000, 2f)` -
 			//an infinite hold, so it stays up behind the defeat panel until a restart leaves the
@@ -665,7 +665,10 @@ export const deathSaveRefreshMethods = {
 				this.say(t('port.log.guardkey'));
 			}
 			//NewbornFireElemental.die(): an enemy newborn always drops its `Embers` where it
-			//died (plus quest-score/music effects neither system here exists to play). No
+			//died (plus the music effect, which no system here exists to play). No
+				//`Elemental.die()` (tag `v3.3.8`): `questScores[1] += 2000` on an enemy kill -
+				//assigned here, since the player may keep the embers instead of turning them in.
+				if (!creature.isAlly) addQuestScore(this, 1, 2000);
 			//MOB_LOOT roll - guaranteed, outside the decay/wealth machinery above.
 			if (creature.kind === 'newbornElemental') {
 				this.spawnGroundItem('embers', creature.x, creature.y, { id: 'embers', quantity: 1, identified: true, sourceClass: 'Embers' });
@@ -677,12 +680,12 @@ export const deathSaveRefreshMethods = {
 			//Bandit's stolen item vanished for good instead of being recoverable.
 			if ((creature.kind === 'thief' || creature.kind === 'bandit') && creature.stolen) {
 				if (creature.stolen.startsWith('gold:')) {
-					this.heroStats.setBase('gold', this.heroStats.base('gold') + 10);
+					this.heroStats.setBase('gold', this.heroStats.base('gold') + 10); noteGoldCollected(this, 10);
 				} else {
 					this.bag.add({ id: creature.stolen, quantity: 1, stackable: true, identified: true });
 				}
 				this.say(t('port.log.thiefloot'), 'positive');
-				this.heroStats.setBase('gold', this.heroStats.base('gold') + 5);
+				this.heroStats.setBase('gold', this.heroStats.base('gold') + 5); noteGoldCollected(this, 5);
 			}
 			//GreatCrab's 2x meat is a real 1.0 lootChance roll, so the `maxLvl + 2` gate
 			//applies to it like every other loot roll (unlike the recovery/payload drops).
@@ -737,8 +740,10 @@ export const deathSaveRefreshMethods = {
 			//RotHeart.die() (RotHeart.java, tag v3.3.8) also drops a Rotberry.Seed at its
 			//cell - but only on a real die(): Burning destroys the heart through destroy(),
 			//skipping death processing entirely (no seed, and none of the +2000 quest score
-			//either - the score itself stays unmodeled, this port tracks no quest-score
-			//table). The kill cause carries the distinction (`fire` for the burn path).
+			//either). The kill cause carries the distinction (`fire` for the burn path).
+				//`RotHeart.die()`: `questScores[1] += 2000` - the player may keep the seed,
+				//so the score lands on the kill, not the turn-in.
+				addQuestScore(this, 1, 2000);
 			if (cause !== 'fire') {
 				this.spawnGroundItem('seed', creature.x, creature.y, sourceInventoryItem('seed', 'Rotberry', (kind) => this.newItemInstanceId(kind)));
 			}
@@ -872,6 +877,11 @@ export const deathSaveRefreshMethods = {
 		}
 
 		//Ghost.Quest.process() on any of the three minibosses' deaths
+		//`Ghost.Quest.process()` (tag `v3.3.8`): `questScores[0] += 1000` when the quest
+		//mob dies while given and unprocessed - `active` here, so neither an ungiven
+		//nor an already-turned-in quest scores.
+		const ghostActive = this.quests.status('sadGhost') === 'active';
+		if (ghostActive) addQuestScore(this, 0, 1000);
 		if (creature.kind === 'fetidRat' || creature.kind === 'gnollTrickster' || creature.kind === 'greatCrab') {
 			this.gameState.setSwitch('ghostTargetSlain', true);
 			this.quests.advanceStage('sadGhost', this.gameState);
@@ -1507,6 +1517,11 @@ export const deathSaveRefreshMethods = {
 			droppedBags: [...this.droppedBags],
 			reclaimedTrap: this.reclaimedTrap,
 			wealthTriesToDrop: this.wealthTriesToDrop,
+			//R015: Java `Statistics` persists the score tables with the run.
+			questScores: [...scoreStateFor(this).questScores],
+			bossScores: [...scoreStateFor(this).bossScores],
+			goldCollected: scoreStateFor(this).goldCollected,
+			floorsExplored: { ...scoreStateFor(this).floorsExplored },
 			wealthDropsToEquip: this.wealthDropsToEquip,
 			suckerPunchTargets: [...this.suckerPunchTargets],
 			upgradeScrollDrops: this.upgradeScrollDrops,

@@ -16,6 +16,8 @@ export interface ShopActionsContext {
 	readonly stock: Actors.Inventory;
 	readonly buyback: ShopEntry[];
 	readonly depth: number;
+	/** R015: lifetime-gold hook for the sell proceeds (`Statistics.goldCollected`). */
+	noteGold?: (amount: number) => void;
 	readonly openItemPicker: (title: string, entries: ShopEntry[], onPick: (entry: ShopEntry) => void) => void;
 	readonly itemDisplayName: (id: string, identified: boolean) => string;
 	readonly say: (message: string, level?: 'positive' | 'negative' | 'warning') => void;
@@ -89,7 +91,7 @@ export function sellFood(context: ShopActionsContext): void {
 			const price = getSellPrice(item.id, context.depth, units, item.identified ?? true, item);
 			if (price <= 0) return;
 			context.bag.remove(item.id, units, item.instanceId);
-			context.heroStats.setBase('gold', context.heroStats.base('gold') + price);
+			context.heroStats.setBase('gold', context.heroStats.base('gold') + price); context.noteGold?.(price); 
 			context.buyback.push({ ...item, quantity: units });
 			while (context.buyback.length > 3) context.buyback.shift();
 			context.say(t('port.log.solditem', { item: context.itemDisplayName(item.id, item.identified ?? true), price }), 'positive');
