@@ -277,14 +277,14 @@ export const deathSaveRefreshMethods = {
 			this.skeletonBoneExplosion(creature, cause);
 		}
 		//ChampionEnemy.Blazing.detach() (tag v3.3.8): a grounded blazing champion seeds
-		//Fire volume 2 in each of the eight neighbouring non-solid, non-water cells when it
+		//Fire volume 2 in each eligible cell of NEIGHBOURS9 (the champion plus its eight neighbours) when it
 		//dies. The Java hook suppresses this only when the champion is flying over a pit; use
 		//the port's chasm predicate for that pit test and the existing floor Fire blob for the
 		//same short-lived environmental effect. This runs before ordinary hostile-death
 		//bookkeeping, while the dead creature's last position is still available.
 		if (creature.champion === 'blazing'
 			&& (!creature.flying || !this.isChasmCell(creature.x, creature.y))) {
-			for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
+			for (const [dx, dy] of [[0, 0] as const, ...Roguelike.neighbourOffsets(8)]) {
 				const x = creature.x + dx;
 				const y = creature.y + dy;
 				if (!this.level.inside(x, y) || this.level.get(x, y) === WALL || this.level.get(x, y) === WATER) continue;
