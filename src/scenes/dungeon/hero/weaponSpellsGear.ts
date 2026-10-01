@@ -24,7 +24,7 @@ import { weaponCombat } from '../../../items/catalog';
 import { roseGhostAttackSkill } from '../../../items/rose';
 import { gainSpareWandCharge } from '../../../simulation/spareWands';
 import { equipWand as equipInventoryWand, type EquipWandContext } from '../../../items/equipWand';
-import { imbueStaffLevel, setStaffImbue, staffImbueFor, wandTypeFromSource } from '../../../items/wands';
+import { imbueStaffLevel, setStaffImbue, staffCurseChargePool, staffImbueFor, wandTypeFromSource } from '../../../items/wands';
 import { WAND_KEYS } from '../../../i18n/spdKeys';
 import { showChoiceWindow, showConfirmWindow } from '../../../ui/portWindows';
 import { useChalice as useArtifactChalice, useCloak as useArtifactCloak, useHourglass as useArtifactHourglass, useKingsCrown as useArtifactKingsCrown, type ArtifactActionContext } from '../../../items/artifactActions';
@@ -1049,7 +1049,10 @@ export const weaponSpellsGearMethods = {
 	 * upgrade systems have no separate temporary-bonus field, so the marker is represented by
 	 * one persistent level. Java removes that bonus when the curse is cleansed; this port's
 	 * cleanse path removes the curse affix but does not yet reverse the level marker. Both
-	 * omissions are recorded in PORT_COVERAGE.md rather than hidden in the action. */
+	 * omissions are recorded in PORT_COVERAGE.md rather than hidden in the action. A cursed
+ * staff also runs Java's `MagesStaff.updateWand(true)` charge half through
+ * `infuseStaffCharges` (the level sync is a shared-`weaponLevel` no-op); the
+ * Ring-of-Might `updateHT` half stays not ported (R004 sub-clause (c)). */
 	useCurseInfusion(this: DungeonScene, instanceId?: string): void {
 		useCurseInfusionFlow(this.curseInfusionContext(), instanceId);
 	},
@@ -1065,13 +1068,16 @@ export const weaponSpellsGearMethods = {
 			...scene.infusionBase(),
 			relabelAfterInfusion: (item) => { scene.relabelMissileStack(item); },
 			burstShadowUp: () => { scene.burstShadowUp({ x: scene.hero.x, y: scene.hero.y }); },
+			//`MagesStaff.updateWand(true)`: the cursed staff's embedded wand grows the
+			//shared wielded pool (see `staffCurseChargePool` for the sharing divergences).
+			infuseStaffCharges: () => { scene.wandCharges = staffCurseChargePool(scene.wandCharges); },
 		};
 	},
 
 	/** The seams both infusion pickers share: the carried spell, the picker, the bag. */
 	infusionBase(this: DungeonScene): InfusionBase {
 		const scene = this;
-		type Infusable = { id: string; quantity: number; instanceId?: string; affix?: string; cursed?: boolean; level?: number; identified?: boolean; curseInfusionBonus?: boolean };
+		type Infusable = { id: string; quantity: number; instanceId?: string; affix?: string; cursed?: boolean; level?: number; identified?: boolean; curseInfusionBonus?: boolean; sourceClass?: string };
 		const carried = () => scene.bag.items as Infusable[];
 		return {
 			onScrollUsed: (factor, chance) => scene.onScrollUsed(factor, chance),

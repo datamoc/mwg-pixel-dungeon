@@ -69,6 +69,10 @@ export function isMissileStack(item: CarriedItem): boolean {
  * The one id that needs its payload and not just its name is `'stone'`, above.
  */
 export function isUpgradableItem(item: CarriedItem): boolean {
+	//`weapon/SpiritBow.isUpgradable()` is false (tag `v3.3.8`) - one of the 42
+	//overrides listed above. The bow reaches `CurseInfusion` through that spell's
+	//explicit clause, not through here.
+	if (item.id === 'spiritBow') return false;
 	const slot = MWL_ITEM_SLOTS.get(item.id);
 	if (slot !== undefined) return slot !== 'artifact' && slot !== 'consumable';
 	if (item.id === 'stone') return isMissileStack(item);
@@ -87,8 +91,8 @@ export function isUpgradableItem(item: CarriedItem): boolean {
  * It is **not** implemented by `Wand`, which extends `Item` directly - which is exactly why Java's
  * predicate needs its explicit `|| item instanceof Wand` clause even though a wand *is* upgradable.
  * `SpiritBow` is a `Weapon` whose `isUpgradable()` is false and which Java adds back explicitly;
- * this port has no bow *item* (the Huntress's bow is class state, not `belongings`), so that clause
- * has nothing to match here and is recorded rather than modeled.
+ * the Huntress's bow is a real bag item here (`coreSpawnTiles` grants `spiritBow`), so the
+ * spell-side predicate below re-adds exactly that id.
  */
 export function isEquipableItem(item: CarriedItem): boolean {
 	const slot = MWL_ITEM_SLOTS.get(item.id);
@@ -103,14 +107,14 @@ export function usableForMagicalInfusion(item: CarriedItem): boolean {
 	return isUpgradableItem(item);
 }
 
-/** `CurseInfusion.usableOnItem`: an upgradable equipable, or a wand or the spirit bow. Over this
- * port's id vocabulary that resolves to the same set as above - the port's artifacts are all
- * non-upgradable, so the `&& isUpgradable()` half excludes them here too, and the two explicit
- * clauses add nothing (the bow - granted by `coreSpawnTiles` - reaches the set through this
- * fallback since it has no slot entry, and wands are already upgradable). Stated separately
- * anyway: the two Java methods are separate, and a future port item could part them. */
+/** `CurseInfusion.usableOnItem`: an upgradable equipable, or a wand or the spirit bow
+ * (`CurseInfusion.java`, tag `v3.3.8`). The bow is NOT upgradable here either, so only
+ * the explicit clause below admits it - the `&& isUpgradable()` half refuses it exactly
+ * like Java's first half does. Wands take the explicit clause too, the way Java's second
+ * clause does, even though they would pass as upgradable anyway. */
 export function usableForCurseInfusion(item: CarriedItem): boolean {
 	if (MWL_ITEM_SLOTS.get(item.id) === 'wand') return true;
+	if (item.id === 'spiritBow') return true;
 	return isEquipableItem(item) && isUpgradableItem(item);
 }
 

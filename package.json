@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "vite",
     "build": "npm run mwl:compile && tsc --noEmit && vite build && node tools/emit.mjs",
-    "verify": "npm run check && npm run test:simulation && npm run test:items && npm run test:lua && npm run test:mwg && npm run test:settings && npm run test:ui && npm run test:bossunseal && npm run test:skeletonkey && npm run test:dropthrow && npm run test:cloak && npm run test:beacon && npm run test:mining && npm run test:visual && npm run build",
+    "verify": "npm run check && npm run test:simulation && npm run test:items && npm run test:lua && npm run test:mwg && npm run test:settings && npm run test:ui && npm run test:bossunseal && npm run test:skeletonkey && npm run test:dropthrow && npm run test:cloak && npm run test:curseinfusion && npm run test:beacon && npm run test:mining && npm run test:visual && npm run build",
     "browser:test": "node tools/browserTest.mjs",
     "check": "npm run mwl:compile && tsc --noEmit && npm run i18n:verify && node tools/check-file-budget.mjs && node tools/audit-undefined.mjs",
     "mwl:compile": "node tools/compile-mwl.mjs",
@@ -22,6 +22,7 @@
     "test:ui": "node tools/verifyBagLayout.mjs && node tools/verifyInterfaceMode.mjs",
     "test:beacon": "esbuild tools/verifyBeaconPush.ts --bundle --platform=node --format=esm --outfile=tools/scratch/verifyBeaconPush.mjs && node tools/scratch/verifyBeaconPush.mjs",
     "test:cloak": "esbuild tools/verifyCloak.ts --bundle --platform=node --format=esm --outfile=tools/scratch/verifyCloak.mjs && node tools/scratch/verifyCloak.mjs",
+    "test:curseinfusion": "esbuild tools/verifyCurseInfusion.ts --bundle --platform=node --format=esm --outfile=tools/scratch/verifyCurseInfusion.mjs && node tools/scratch/verifyCurseInfusion.mjs",
     "test:dropthrow": "esbuild tools/verifyDropThrow.ts --bundle --platform=node --format=esm --outfile=tools/scratch/verifyDropThrow.mjs && node tools/scratch/verifyDropThrow.mjs",
     "test:skeletonkey": "esbuild tools/verifySkeletonKey.ts --bundle --platform=node --format=esm --outfile=tools/scratch/verifySkeletonKey.mjs && node tools/scratch/verifySkeletonKey.mjs",
     "test:bossunseal": "esbuild tools/verifyBossUnseal.ts --bundle --platform=node --format=esm --outfile=tools/scratch/verifyBossUnseal.mjs && node tools/scratch/verifyBossUnseal.mjs",

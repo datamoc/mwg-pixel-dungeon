@@ -1,5 +1,5 @@
 import { MWL_WAND_CHARGE_RULES, MWL_WAND_DAMAGE_RULES, MWL_WAND_DEFINITIONS, MWL_WAND_RANGE_RULES } from '../mwlContent';
-import { Roguelike, Random } from 'mwg';
+import { Actors, Roguelike, Random } from 'mwg';
 import { planDisintegration } from '../simulation/disintegration';
 import { preservationChance } from '../talentEffects';
 import { SOLID } from '../dungeonConstants';
@@ -98,6 +98,26 @@ export function imbueStaffLevel(staffLevel: number, wandLevel: number): number {
 	let target = Math.max(safeStaff, safeWand);
 	if (safeWand >= safeStaff && safeStaff > 0) target += 1;
 	return target;
+}
+
+/**
+ * `MagesStaff.updateWand(true)`'s charge half (`MagesStaff.java`, tag `v3.3.8`):
+ * the embedded wand gains one max charge (capped at 10, like Java) and one current
+ * charge (capped at the new max). The level-sync half needs nothing here - the staff's
+ * level and its wand's level are the same shared `weaponLevel` - so only charges move.
+ *
+ * The pool is the wielded wand/staff's shared `Actors.Charges`, rebuilt because `max` is
+ * readonly; `regenRate: 1` is what every `wandCharges` construction in this repo uses
+ * (`dungeonScene`, `equipWand`, the blacksmith grant, the save loader). The banked regen
+ * progress survives through `toJSON`/`fromJSON`, the way a save/load carries it. Two
+ * divergences from Java's per-staff wand object: the grown pool also serves a
+ * currently-wielded different wand, and a later spare-wand equip resets the pool to 4/4
+ * (`equipWand`), discarding the staff bonus the way it discards everything else.
+ */
+export function staffCurseChargePool(pool: Actors.Charges): Actors.Charges {
+	const saved = pool.toJSON();
+	const max = Math.min(pool.max + 1, 10);
+	return Actors.Charges.fromJSON({ max, regenRate: 1 }, { current: Math.min(saved.current + 1, max), progress: saved.progress });
 }
 
 /** `Wand.chargesPerCast()`; only Regrowth and Fireblast scale cost with current charges. */

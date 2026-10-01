@@ -336,6 +336,8 @@ export function useAlchemizeFlow(ctx: AlchemizeContext, instanceId?: string): vo
  *  the way the rose flow stats its ghost. */
 export interface InfusableView {
 	id: string;
+	/** `sourceClass: 'MagesStaff'` marks a staff `weaponReward` (see `transmutation`). */
+	sourceClass?: string | undefined;
 	quantity: number;
 	instanceId?: string | undefined;
 	affix?: string | undefined;
@@ -369,6 +371,8 @@ export interface InfusionBase {
 export interface CurseInfusionContext extends InfusionBase {
 	relabelAfterInfusion(item: InfusableView): void;
 	burstShadowUp(): void;
+	/** `MagesStaff.updateWand(true)`'s charge half for a cursed staff. */
+	infuseStaffCharges(): void;
 }
 
 /** `MagicalInfusion.onItemSelected()`/`upgradeItem()` (tag `v3.3.8`): upgrade one
@@ -406,11 +410,14 @@ export function useMagicalInfusionFlow(ctx: InfusionBase, instanceId?: string): 
  * upgrade systems have no separate temporary-bonus field, so the marker is represented by
  * one persistent level. Java removes that bonus when the curse is cleansed; this port's
  * cleanse path removes the curse affix but does not yet reverse the level marker. Both
- * omissions are recorded in PORT_COVERAGE.md rather than hidden in the action. */
+ * omissions are recorded in PORT_COVERAGE.md rather than hidden in the action. A cursed
+ * staff also runs Java's `MagesStaff.updateWand(true)` charge half through
+ * `infuseStaffCharges` (the level sync is a shared-`weaponLevel` no-op); the
+ * Ring-of-Might `updateHT` half stays not ported (R004 sub-clause (c)). */
 export function useCurseInfusionFlow(ctx: CurseInfusionContext, instanceId?: string): void {
 	if (!ctx.hasSpell('curseInfusion', instanceId)) return;
-	//`CurseInfusion.usableOnItem`: an upgradable equipable, or a wand. The predicate covers the
-	//missile stacks Java's `Weapon` reaches as well - `usableOnItem` is the same rule for both
+	//`CurseInfusion.usableOnItem`: an upgradable equipable, or a wand or the spirit bow.
+	//The predicate covers the missile stacks Java's `Weapon` reaches as well - `usableOnItem` is the same rule for both
 	//infusion spells, so both pickers run it rather than hand-rolling the id list.
 	const candidates = ctx.infusables().filter((item) => item.quantity > 0
 		&& usableForCurseInfusion(item));
@@ -437,6 +444,9 @@ export function useCurseInfusionFlow(ctx: CurseInfusionContext, instanceId?: str
 			//`Item.upgrade()` (not `MissileWeapon.upgrade()`): the infusion's level is the
 			//ordinary one, so the stack is relabelled but its wear and count are left alone.
 			ctx.relabelAfterInfusion(item);
+		//`CurseInfusion.onItemSelected()`'s `MagesStaff.updateWand(true)` leg (tag `v3.3.8`):
+		//unconditional, like Java - it fires even when the marker was already set.
+		if (item.sourceClass === 'MagesStaff') ctx.infuseStaffCharges();
 		}
 		ctx.consumeSpell('curseInfusion', instanceId);
 		// CurseInfusion uses the spell recipe's 1/3 talent chance (v3.3.8).
