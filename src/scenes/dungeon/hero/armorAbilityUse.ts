@@ -1422,9 +1422,10 @@ export const armorAbilityUseMethods = {
 					//applies, as it does in Java.
 					const selfDamage = Math.min(5 * telefrag, this.hero.hp + this.heroBarrier.total - 1);
 					if (selfDamage > 0) {
-						//`Telefrag` self-hit -> `Hero.damage()`: shared dispatch hero branch. Capped at `hp - 1`
-						//above, so it cannot kill; `deferKill` makes that explicit.
-						this.applyCharacterDamage(this.hero, selfDamage, { pierceArmor: true, cause: 'foe', magical: true, skipAura: true, deferKill: true });
+						//`Telefrag` self-hit -> `Hero.damage()`: shared dispatch hero branch. Java clamps before
+						//the Hero.damage() call, so Doom's later x1.67 multiplier can still make the hit fatal.
+						//Keep the dispatch's normal death booking, as Java's Char.damage() does.
+						this.applyCharacterDamage(this.hero, selfDamage, { pierceArmor: true, cause: 'foe', magical: true, skipAura: true });
 					}
 					this.applyAbilityDamage(occupant, Random.normalRange(10 * telefrag, 15 * telefrag));
 				}
