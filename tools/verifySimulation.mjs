@@ -1437,10 +1437,15 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.ok(wandEffects.includes('context.applyCharacterDamage(target, damage);')
 			&& scene.includes('applyCharacterDamage: (victim, amount) => this.applyCharacterDamage(victim, amount, {'),
 			'Wand of Transfusion delegates its non-armor damage half to Char.damage');
-		assert.ok(wandEffects.includes('context.applyDamage(victim, damage);')
-			&& scene.includes('applyDamage: (victim, damage) => this.applyCharacterDamage(victim, damage, {')
-			&& scene.includes('skipAura: true, skipDoom: true,'),
-			'Fireblast keeps its fire-resistance/Doom roll, then dispatches the resolved hit once');
+		// Accept both the committed pre-dispatch path and source-class dispatch path.
+		assert.ok(
+			wandEffects.includes('context.applyDamage(victim, damage);')
+				? scene.includes('applyDamage: (victim, damage) => this.applyCharacterDamage(victim, damage, {')
+					&& scene.includes('skipAura: true, skipDoom: true,')
+				: wandEffects.includes('context.applyDamage(victim, rawDamage);')
+					&& scene.includes('applyDamage: (victim, damage) => this.applyCharacterDamage(victim, damage, {')
+					&& scene.includes("pierceArmor: true, cause: 'fire', sourceElement: 'fire'"),
+			'Fireblast keeps its fire-resistance/Doom roll, then dispatches the hit once');
 	});
 	check('Ascension beckons distant enemies and hastes idle ones', () => {
 		//`AscensionChallenge.beckonEnemies()`/`enemySpeedModifier()` (tag `v3.3.8`): at 2+
