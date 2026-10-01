@@ -1448,7 +1448,7 @@ if (monster.hp <= 0) {
 			attack: (attacker, defender) => { this.attack(attacker, defender); },
 			//`Goo.act()` (`actors/mobs/Goo.java:109-122`, tag `v3.3.8`) shows its
 			//positive `FloatingText.HEALING` status only inside heroFOV. The port uses
-			the same visible green heal amount, but has no floating healing-icon glyph.
+			//the same visible green heal amount, but has no floating healing-icon glyph.
 			//Java also ends GooSprite spray and BossHealthBar bleed above half HP; this
 			//port has no corresponding sprite or health-bar animation state.
 			showHeal: (target, amount) => { if (this.fov.isVisible(target.x, target.y)) this.showHeal(target, amount); },

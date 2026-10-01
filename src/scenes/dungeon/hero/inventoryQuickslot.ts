@@ -937,6 +937,7 @@ export const inventoryQuickslotMethods = {
 				resolveGuidingLight: (cell, instanceId) => scene.resolveGuidingLight(cell, instanceId),
 				castHolyBuff: (spell, instanceId) => scene.castHolyBuff(spell, instanceId),
 				talentRank: (id) => scene.talentRank(id),
+				poweredAlly: () => scene.poweredAlly(),
 				openBagPicker: (title, entries, onPick) => scene.openItemPicker(title, entries.map((entry) => ({
 					...entry, identified: entry.identified ?? true, quantity: entry.quantity ?? 1,
 				})), onPick),
