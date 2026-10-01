@@ -3,17 +3,31 @@ import { PORT_MINE_STRINGS } from './portMineStrings';
  * The strings this port invented, which have no SPD original to borrow a translation from.
  *
  * Everything the real game also says is looked up under its own SPD key instead (see
- * `spdKeys.ts`), so it arrives already translated into all 18 of SPD's languages. What is
+ * `spdKeys.ts`), so it arrives already translated into all 23 of SPD's languages. What is
  * left here is prose this port wrote itself: its own log lines, its own NPC dialogue for
  * quests it simplified, its own hints, and the handful of names SPD's message files in this
  * checkout do not carry.
  *
  * English and French are human-written, as are the Spanish and German badge descriptions (marked below). Every other catalogue here is a machine translation,
  * explicitly marked `MT` below and in `PORT_TRANSLATION_ORIGIN`: each is a complete first draft,
- * not native-speaker work. `PORT_STRINGS` at the foot of this file is the authoritative list of
- * which languages have one - an SPD language missing from it still falls back to English for
- * port-only prose, and this comment deliberately does not enumerate them, because a hand-kept
- * list here is exactly what let five catalogues drift 24-31 keys behind English unnoticed.
+ * not native-speaker work.
+ *
+ * Badge descriptions were additionally reviewed line by line against SPD's own translations in
+ * `src/generated/spdMessages.ts` (the `badges$badge.*.desc` keys plus `actors.mobs.*.name`,
+ * `items.bags.*.name`, `items.scrolls.scrollofupgrade.name` and `items.amulet.name`) on
+ * 2026-10-01: 166 values were corrected so boss names, bag/item names and Amulet-of-Yendor
+ * renderings match what the game itself displays in that language, plus a handful of
+ * grammatical fixes (IT plural agreement, PT preposition, HU hazard phrasing, FR/TR count
+ * placement). Sentence structure and tense stay each catalogue's own - SPD's badge texts are
+ * command-style, this port's are achievement-style. Where SPD's own wording is internally
+ * inconsistent (RU/UK/BE journal `Йендор`/`Єндор` vs badge+item `Индора`/`Єндера`), the badge
+ * follows `items.amulet.name`, the string the player actually sees on the item; port-owned
+ * references that still use the journal spelling are tracked as R114. This is an SPD-authority
+ * review, not a native-speaker proofread, so `PORT_TRANSLATION_ORIGIN` still reports `machine`
+ * where it did before. `PORT_STRINGS` at the foot of this file lists the full prose catalogs
+ * plus badge-only catalogs for the four remaining SPD locales; any other missing port-only prose
+ * falls back to English. Keeping that fallback explicit is better than implying full catalogs
+ * exist for every SPD language.
  *
  * `{token}` placeholders are `mwg/i18n`'s own interpolation form. They are named rather than
  * positional here, unlike the generated SPD catalog, because these strings are written and
@@ -807,13 +821,13 @@ export const PORT_STRINGS_FR: Record<string, string> = {
 	'port.badges.enemy_hazards.description': '10 éliminations aidées par des dangers',
 	'port.badges.piranhas.description': 'Tuer 6 piranhas',
 	'port.badges.bag_velvet.description': 'Posséder la bourse de velours',
-	'port.badges.bag_holder.description': 'Posséder le porte-parchemins',
-	'port.badges.bag_bandolier.description': 'Posséder la bandoulière à potions',
-	'port.badges.bag_holster.description': 'Posséder l’étui magique',
+	'port.badges.bag_holder.description': 'Posséder l\'étui à parchemins',
+	'port.badges.bag_bandolier.description': 'Posséder la cartouchière pour potions',
+	'port.badges.bag_holster.description': 'Posséder le carquois magique',
 	'port.badges.bags_all.description': 'Posséder les quatre sacs',
 	'port.badges.unlock_mage.description': 'Utiliser un parchemin d’amélioration',
 	'port.badges.unlock_rogue.description': 'Effectuer 10 attaques surprises',
-	'port.badges.unlock_huntress.description': 'Toucher un ennemi avec 10 armes de jet',
+	'port.badges.unlock_huntress.description': '10 attaques avec des armes de jet',
 	'port.badges.unlock_duelist.description': 'Améliorer une arme au niveau +2',
 	'port.badges.death_trap.description': 'Mourir à cause d’un piège',
 	'port.badges.death_fire.description': 'Mourir dans les flammes',
@@ -2198,12 +2212,12 @@ export const PORT_STRINGS_ES: Record<string, string> = {
 	// SPD's own ES catalogue (Goo/Tengu/DM-300/Yog-Dzewa kept, "Rey de los Enanos",
 	// "Amuleto de Yendor", "pergamino de mejora", "ataques sorpresa", "armas
 	// arrojadizas", and SPD's bag names). The rest of this catalogue is MT.
-	'port.badges.boss1.description': 'Derrotar a Goo',
+	'port.badges.boss1.description': 'Derrotar a Gú',
 	'port.badges.boss2.description': 'Derrotar a Tengu',
 	'port.badges.boss3.description': 'Derrotar a DM-300',
 	'port.badges.boss4.description': 'Derrotar al Rey de los Enanos',
 	'port.badges.victory.description': 'Escapar con el Amuleto',
-	'port.badges.boss_challenge_1.description': 'Derrotar a Goo solo con armas',
+	'port.badges.boss_challenge_1.description': 'Derrotar a Gú solo con armas',
 	'port.badges.boss_challenge_2.description': 'Derrotar a Tengu solo con armas',
 	'port.badges.boss_challenge_3.description': 'Derrotar a DM-300 solo con armas',
 	'port.badges.boss_challenge_4.description': 'Derrotar al Rey de los Enanos solo con armas',
@@ -2891,6 +2905,37 @@ export const PORT_STRINGS_ES: Record<string, string> = {
  */
 
 export const PORT_STRINGS_PT: Record<string, string> = {
+	// Machine-translated draft of the 30 port-authored badge descriptions; this catalog is unreviewed.
+	'port.badges.boss1.description': 'Derrotou Goo',
+	'port.badges.boss2.description': 'Derrotou Tengu',
+	'port.badges.boss3.description': 'Derrotou DM-300',
+	'port.badges.boss4.description': 'Derrotou o Rei Anão',
+	'port.badges.victory.description': 'Escapou com o Amuleto',
+	'port.badges.boss_challenge_1.description': 'Derrotou Goo usando apenas armas',
+	'port.badges.boss_challenge_2.description': 'Derrotou Tengu usando apenas armas',
+	'port.badges.boss_challenge_3.description': 'Derrotou DM-300 usando apenas armas',
+	'port.badges.boss_challenge_4.description': 'Derrotou o Rei Anão usando apenas armas',
+	'port.badges.boss_challenge_5.description': 'Derrotou Yog-Dzewa usando apenas armas',
+	'port.badges.enemy_hazards.description': '10 mortes de inimigos auxiliadas por perigos',
+	'port.badges.piranhas.description': 'Derrotou 6 piranhas',
+	'port.badges.bag_velvet.description': 'Possuiu a Bolsa de Veludo',
+	'port.badges.bag_holder.description': 'Possuiu o canudo de pergaminhos',
+	'port.badges.bag_bandolier.description': 'Possuiu a Bandoleira de Poções',
+	'port.badges.bag_holster.description': 'Possuiu o Coldre Mágico',
+	'port.badges.bags_all.description': 'Possuiu as quatro bolsas',
+	'port.badges.unlock_mage.description': 'Usou um Pergaminho de Aprimoramento',
+	'port.badges.unlock_rogue.description': '10 ataques surpresa',
+	'port.badges.unlock_huntress.description': '10 ataques com armas arremessadas',
+	'port.badges.unlock_duelist.description': 'Elevou uma arma a +2',
+	'port.badges.death_trap.description': 'Morreu numa armadilha',
+	'port.badges.death_fire.description': 'Morreu pelo fogo',
+	'port.badges.death_poison.description': 'Morreu por envenenamento',
+	'port.badges.death_hunger.description': 'Morreu de fome',
+	'port.badges.death_falling.description': 'Morreu em uma queda',
+	'port.badges.death_foe.description': 'Foi morto por um inimigo',
+	'port.badges.happy_end.description': 'Leve o Amuleto de Yendor até a superfície',
+	'port.badges.happy_end_remains.description': 'Leve até a superfície o item característico de um herói caído',
+	'port.badges.pacifist_ascent.description': 'Leve o Amuleto de Yendor até a superfície sem jamais reduzir a força de sua maldição',
 	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
 	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
 	// markers are carried as `{0}`, the token `buffInfo()` fills.
@@ -3553,6 +3598,37 @@ export const PORT_STRINGS_PT: Record<string, string> = {
  */
 
 export const PORT_STRINGS_IT: Record<string, string> = {
+	// Human-reviewed Italian translations of the 30 port-authored badge descriptions (R074).
+	'port.badges.boss1.description': 'Sconfitto Goo',
+	'port.badges.boss2.description': 'Sconfitto Tengu',
+	'port.badges.boss3.description': 'Sconfitto DM-300',
+	'port.badges.boss4.description': 'Sconfitto il Re dei Nani',
+	'port.badges.victory.description': 'Fuggito con l\'Amuleto',
+	'port.badges.boss_challenge_1.description': 'Sconfitto Goo usando solo armi',
+	'port.badges.boss_challenge_2.description': 'Sconfitto Tengu usando solo armi',
+	'port.badges.boss_challenge_3.description': 'Sconfitto DM-300 usando solo armi',
+	'port.badges.boss_challenge_4.description': 'Sconfitto il Re dei Nani usando solo armi',
+	'port.badges.boss_challenge_5.description': 'Sconfitto Yog-Dzewa usando solo armi',
+	'port.badges.enemy_hazards.description': '10 uccisioni assistite dai pericoli',
+	'port.badges.piranhas.description': 'Sconfitti 6 piranha',
+	'port.badges.bag_velvet.description': 'Posseduto il sacchetto di velluto',
+	'port.badges.bag_holder.description': 'Posseduto il tubo per pergamene',
+	'port.badges.bag_bandolier.description': 'Posseduta la cintura per pozioni',
+	'port.badges.bag_holster.description': 'Posseduto il fodero magico',
+	'port.badges.bags_all.description': 'Posseduti tutti e quattro i contenitori',
+	'port.badges.unlock_mage.description': 'Usata una pergamena del miglioramento',
+	'port.badges.unlock_rogue.description': '10 attacchi a sorpresa',
+	'port.badges.unlock_huntress.description': '10 attacchi con armi da lancio',
+	'port.badges.unlock_duelist.description': 'Portata un\'arma a +2',
+	'port.badges.death_trap.description': 'Morto a causa di una trappola',
+	'port.badges.death_fire.description': 'Morto a causa del fuoco',
+	'port.badges.death_poison.description': 'Morto a causa del veleno',
+	'port.badges.death_hunger.description': 'Morto di fame',
+	'port.badges.death_falling.description': 'Morto per una caduta',
+	'port.badges.death_foe.description': 'Ucciso da un nemico',
+	'port.badges.happy_end.description': 'Porta l\'Amuleto di Yendor in superficie',
+	'port.badges.happy_end_remains.description': 'Porta in superficie l\'oggetto distintivo di un eroe caduto',
+	'port.badges.pacifist_ascent.description': 'Porta l\'Amuleto di Yendor in superficie senza mai attenuare la maledizione',
 	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
 	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
 	// markers are carried as `{0}`, the token `buffInfo()` fills.
@@ -4215,6 +4291,37 @@ export const PORT_STRINGS_IT: Record<string, string> = {
  */
 
 export const PORT_STRINGS_PL: Record<string, string> = {
+	// Machine-translated draft of the 30 port-authored badge descriptions; this catalog is unreviewed.
+	'port.badges.boss1.description': 'Pokonał Wielkiego Szlama',
+	'port.badges.boss2.description': 'Pokonał Tengu',
+	'port.badges.boss3.description': 'Pokonał DM-300',
+	'port.badges.boss4.description': 'Pokonał Króla Krasnoludów',
+	'port.badges.victory.description': 'Uciekł z Amuletem',
+	'port.badges.boss_challenge_1.description': 'Pokonał Wielkiego Szlama, używając tylko broni',
+	'port.badges.boss_challenge_2.description': 'Pokonał Tengu, używając tylko broni',
+	'port.badges.boss_challenge_3.description': 'Pokonał DM-300, używając tylko broni',
+	'port.badges.boss_challenge_4.description': 'Pokonał Króla Krasnoludów, używając tylko broni',
+	'port.badges.boss_challenge_5.description': 'Pokonał Yog-Dzewę, używając tylko broni',
+	'port.badges.enemy_hazards.description': '10 zabójstw wrogów wspomaganych przez zagrożenia',
+	'port.badges.piranhas.description': 'Pokonał 6 piranii',
+	'port.badges.bag_velvet.description': 'Posiadał aksamitną sakiewkę',
+	'port.badges.bag_holder.description': 'Posiadał tubę na zwoje',
+	'port.badges.bag_bandolier.description': 'Posiadał bandolier na mikstury',
+	'port.badges.bag_holster.description': 'Posiadał magiczny pokrowiec',
+	'port.badges.bags_all.description': 'Posiadał wszystkie cztery torby',
+	'port.badges.unlock_mage.description': 'Użył zwoju ulepszenia',
+	'port.badges.unlock_rogue.description': '10 ataków z zaskoczenia',
+	'port.badges.unlock_huntress.description': '10 ataków bronią miotaną',
+	'port.badges.unlock_duelist.description': 'Ulepszył broń do +2',
+	'port.badges.death_trap.description': 'Zginął od pułapki',
+	'port.badges.death_fire.description': 'Zginął od ognia',
+	'port.badges.death_poison.description': 'Zginął od trucizny',
+	'port.badges.death_hunger.description': 'Zmarł z głodu',
+	'port.badges.death_falling.description': 'Zginął podczas upadku',
+	'port.badges.death_foe.description': 'Zabity przez wroga',
+	'port.badges.happy_end.description': 'Wyniósł Amulet Yendoru na powierzchnię',
+	'port.badges.happy_end_remains.description': 'Wyniósł na powierzchnię charakterystyczny przedmiot poległego bohatera',
+	'port.badges.pacifist_ascent.description': 'Wyniósł Amulet Yendoru na powierzchnię, ani razu nie osłabiając jego klątwy',
 	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
 	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
 	// markers are carried as `{0}`, the token `buffInfo()` fills.
@@ -4879,6 +4986,37 @@ export const PORT_STRINGS_PL: Record<string, string> = {
  */
 
 export const PORT_STRINGS_RU: Record<string, string> = {
+	// Machine-translated draft of the 30 port-authored badge descriptions; this catalog is unreviewed.
+	'port.badges.boss1.description': 'Победил Слизня',
+	'port.badges.boss2.description': 'Победил Тенгу',
+	'port.badges.boss3.description': 'Победил DM-300',
+	'port.badges.boss4.description': 'Победил Короля Дворфов',
+	'port.badges.victory.description': 'Сбежал с Амулетом',
+	'port.badges.boss_challenge_1.description': 'Победил Слизня, используя только оружие',
+	'port.badges.boss_challenge_2.description': 'Победил Тенгу, используя только оружие',
+	'port.badges.boss_challenge_3.description': 'Победил DM-300, используя только оружие',
+	'port.badges.boss_challenge_4.description': 'Победил Короля Дворфов, используя только оружие',
+	'port.badges.boss_challenge_5.description': 'Победил Йог-Джеву, используя только оружие',
+	'port.badges.enemy_hazards.description': '10 убийств врагов с помощью опасностей',
+	'port.badges.piranhas.description': 'Убил 6 пираний',
+	'port.badges.bag_velvet.description': 'Получил бархатный мешочек',
+	'port.badges.bag_holder.description': 'Получил футляр для свитков',
+	'port.badges.bag_bandolier.description': 'Получил пояс для зелий',
+	'port.badges.bag_holster.description': 'Получил волшебный чехол',
+	'port.badges.bags_all.description': 'Получил все четыре сумки',
+	'port.badges.unlock_mage.description': 'Использовал свиток Улучшения',
+	'port.badges.unlock_rogue.description': '10 внезапных атак',
+	'port.badges.unlock_huntress.description': '10 атак метательным оружием',
+	'port.badges.unlock_duelist.description': 'Улучшил оружие до +2',
+	'port.badges.death_trap.description': 'Погиб от ловушки',
+	'port.badges.death_fire.description': 'Погиб от огня',
+	'port.badges.death_poison.description': 'Погиб от яда',
+	'port.badges.death_hunger.description': 'Умер от голода',
+	'port.badges.death_falling.description': 'Погиб при падении',
+	'port.badges.death_foe.description': 'Убит врагом',
+	'port.badges.happy_end.description': 'Вынес Амулет Индора на поверхность',
+	'port.badges.happy_end_remains.description': 'Вынес памятный предмет павшего героя на поверхность',
+	'port.badges.pacifist_ascent.description': 'Вынес Амулет Индора на поверхность, ни разу не ослабив его проклятие',
 	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
 	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
 	// markers are carried as `{0}`, the token `buffInfo()` fills.
@@ -5519,6 +5657,37 @@ export const PORT_STRINGS_RU: Record<string, string> = {
  */
 
 export const PORT_STRINGS_TR: Record<string, string> = {
+	// Machine-translated draft of the 30 port-authored badge descriptions; this catalog is unreviewed.
+	'port.badges.boss1.description': 'Goo\'yu öldürdü',
+	'port.badges.boss2.description': 'Tengu\'yu öldürdü',
+	'port.badges.boss3.description': 'DM-300\'ü öldürdü',
+	'port.badges.boss4.description': 'Cüce Kral\'ı öldürdü',
+	'port.badges.victory.description': 'Muska ile kaçtı',
+	'port.badges.boss_challenge_1.description': 'Goo\'yu yalnızca silahlarla öldürdü',
+	'port.badges.boss_challenge_2.description': 'Tengu\'yu yalnızca silahlarla öldürdü',
+	'port.badges.boss_challenge_3.description': 'DM-300\'ü yalnızca silahlarla öldürdü',
+	'port.badges.boss_challenge_4.description': 'Cüce Kral\'ı yalnızca silahlarla öldürdü',
+	'port.badges.boss_challenge_5.description': 'Yog-Dzewa\'yı yalnızca silahlarla öldürdü',
+	'port.badges.enemy_hazards.description': 'Tehlikelerin yardımıyla 10 düşman öldürdü',
+	'port.badges.piranhas.description': '6 pirana öldürdü',
+	'port.badges.bag_velvet.description': 'Kadife Keseyi edindi',
+	'port.badges.bag_holder.description': 'Parşömen tutacağını edindi',
+	'port.badges.bag_bandolier.description': 'İksir palaskasını edindi',
+	'port.badges.bag_holster.description': 'Büyülü Kılıfı edindi',
+	'port.badges.bags_all.description': 'Dört çantanın tamamını edindi',
+	'port.badges.unlock_mage.description': 'Bir Yükseltme Parşömeni kullandı',
+	'port.badges.unlock_rogue.description': '10 sürpriz saldırı',
+	'port.badges.unlock_huntress.description': 'Fırlatılan silahlarla 10 saldırı',
+	'port.badges.unlock_duelist.description': 'Bir silahı +2 seviyesine yükseltti',
+	'port.badges.death_trap.description': 'Bir tuzak yüzünden öldü',
+	'port.badges.death_fire.description': 'Ateş yüzünden öldü',
+	'port.badges.death_poison.description': 'Zehir yüzünden öldü',
+	'port.badges.death_hunger.description': 'Açlıktan öldü',
+	'port.badges.death_falling.description': 'Düşerek öldü',
+	'port.badges.death_foe.description': 'Bir düşman tarafından öldürüldü',
+	'port.badges.happy_end.description': 'Yendor\'un Muskasını yeryüzüne çıkardı',
+	'port.badges.happy_end_remains.description': 'Düşmüş bir kahramanın imza eşyasını yeryüzüne çıkardı',
+	'port.badges.pacifist_ascent.description': 'Laneti hiç hafifletmeden Yendor\'un Muskasını yeryüzüne çıkardı',
 	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
 	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
 	// markers are carried as `{0}`, the token `buffInfo()` fills.
@@ -6159,6 +6328,37 @@ export const PORT_STRINGS_TR: Record<string, string> = {
  */
 
 export const PORT_STRINGS_UK: Record<string, string> = {
+	// Machine-translated draft of the 30 port-authored badge descriptions; this catalog is unreviewed.
+	'port.badges.boss1.description': 'Переміг Хлюпня',
+	'port.badges.boss2.description': 'Переміг Тенгу',
+	'port.badges.boss3.description': 'Переміг ЗМ-300',
+	'port.badges.boss4.description': 'Переміг Короля Дварфів',
+	'port.badges.victory.description': 'Утік з Амулетом',
+	'port.badges.boss_challenge_1.description': 'Переміг Хлюпня, використовуючи лише зброю',
+	'port.badges.boss_challenge_2.description': 'Переміг Тенгу, використовуючи лише зброю',
+	'port.badges.boss_challenge_3.description': 'Переміг ЗМ-300, використовуючи лише зброю',
+	'port.badges.boss_challenge_4.description': 'Переміг Короля Дварфів, використовуючи лише зброю',
+	'port.badges.boss_challenge_5.description': 'Переміг Йог-Джеву, використовуючи лише зброю',
+	'port.badges.enemy_hazards.description': '10 убивств ворогів за допомогою небезпек',
+	'port.badges.piranhas.description': 'Переміг 6 піраній',
+	'port.badges.bag_velvet.description': 'Отримав оксамитовий мішечок',
+	'port.badges.bag_holder.description': 'Отримав футляр для сувоїв',
+	'port.badges.bag_bandolier.description': 'Отримав пояс для зілля',
+	'port.badges.bag_holster.description': 'Отримав магічну кобуру',
+	'port.badges.bags_all.description': 'Отримав усі чотири сумки',
+	'port.badges.unlock_mage.description': 'Використав сувій покращення',
+	'port.badges.unlock_rogue.description': '10 раптових атак',
+	'port.badges.unlock_huntress.description': '10 атак метальною зброєю',
+	'port.badges.unlock_duelist.description': 'Підвищив рівень зброї до +2',
+	'port.badges.death_trap.description': 'Загинув від пастки',
+	'port.badges.death_fire.description': 'Загинув від вогню',
+	'port.badges.death_poison.description': 'Загинув від отрути',
+	'port.badges.death_hunger.description': 'Помер від голоду',
+	'port.badges.death_falling.description': 'Загинув під час падіння',
+	'port.badges.death_foe.description': 'Убитий ворогом',
+	'port.badges.happy_end.description': 'Виніс Амулет Єндера на поверхню',
+	'port.badges.happy_end_remains.description': 'Виніс пам’ятну річ полеглого героя на поверхню',
+	'port.badges.pacifist_ascent.description': 'Виніс Амулет Єндера на поверхню, жодного разу не послабивши його прокляття',
 	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
 	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
 	// markers are carried as `{0}`, the token `buffInfo()` fills.
@@ -6797,6 +6997,37 @@ export const PORT_STRINGS_UK: Record<string, string> = {
  */
 
 export const PORT_STRINGS_HU: Record<string, string> = {
+	// Machine-translated draft of the 30 port-authored badge descriptions; this catalog is unreviewed.
+	'port.badges.boss1.description': 'Legyőzte a Ragacsot',
+	'port.badges.boss2.description': 'Legyőzte Tengut',
+	'port.badges.boss3.description': 'Legyőzte a DM-300-at',
+	'port.badges.boss4.description': 'Legyőzte a Törpekirályt',
+	'port.badges.victory.description': 'Megszökött az Amulettel',
+	'port.badges.boss_challenge_1.description': 'Legyőzte a Ragacsot, kizárólag fegyverrel',
+	'port.badges.boss_challenge_2.description': 'Legyőzte Tengut, kizárólag fegyverrel',
+	'port.badges.boss_challenge_3.description': 'Legyőzte a DM-300-at, kizárólag fegyverrel',
+	'port.badges.boss_challenge_4.description': 'Legyőzte a Törpekirályt, kizárólag fegyverrel',
+	'port.badges.boss_challenge_5.description': 'Legyőzte Yog-Dzewát, kizárólag fegyverrel',
+	'port.badges.enemy_hazards.description': '10 ellenség megölése a veszélyek segítségével',
+	'port.badges.piranhas.description': 'Legyőzött 6 piranhát',
+	'port.badges.bag_velvet.description': 'Megszerezte a bársonyzacskót',
+	'port.badges.bag_holder.description': 'Megszerezte a tekercstartót',
+	'port.badges.bag_bandolier.description': 'Megszerezte az italos válltáskát',
+	'port.badges.bag_holster.description': 'Megszerezte a mágikus tegezet',
+	'port.badges.bags_all.description': 'Megszerezte mind a négy táskát',
+	'port.badges.unlock_mage.description': 'Felhasznált egy fejlesztéstekercset',
+	'port.badges.unlock_rogue.description': '10 meglepetésszerű támadás',
+	'port.badges.unlock_huntress.description': '10 hajítófegyveres támadás',
+	'port.badges.unlock_duelist.description': '+2-re fejlesztett egy fegyvert',
+	'port.badges.death_trap.description': 'Csapda végzett vele',
+	'port.badges.death_fire.description': 'Tűz végzett vele',
+	'port.badges.death_poison.description': 'Méreg végzett vele',
+	'port.badges.death_hunger.description': 'Éhen halt',
+	'port.badges.death_falling.description': 'Lezuhanás következtében halt meg',
+	'port.badges.death_foe.description': 'Egy ellenség végzett vele',
+	'port.badges.happy_end.description': 'Felvitte Yendor Amulettjét a felszínre',
+	'port.badges.happy_end_remains.description': 'Felvitte egy elesett hős jellegzetes tárgyát a felszínre',
+	'port.badges.pacifist_ascent.description': 'Úgy vitte fel Yendor Amulettjét, hogy egyszer sem enyhítette az átkát',
 	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
 	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
 	// markers are carried as `{0}`, the token `buffInfo()` fills.
@@ -7434,6 +7665,37 @@ export const PORT_STRINGS_HU: Record<string, string> = {
  */
 
 export const PORT_STRINGS_NL: Record<string, string> = {
+	// Machine-translated draft of the 30 port-authored badge descriptions; this catalog is unreviewed.
+	'port.badges.boss1.description': 'Versloeg de smurrie',
+	'port.badges.boss2.description': 'Versloeg Tengu',
+	'port.badges.boss3.description': 'Versloeg DM-300',
+	'port.badges.boss4.description': 'Versloeg de Dwergkoning',
+	'port.badges.victory.description': 'Ontsnapte met het Amulet',
+	'port.badges.boss_challenge_1.description': 'Versloeg de smurrie alleen met wapens',
+	'port.badges.boss_challenge_2.description': 'Versloeg Tengu alleen met wapens',
+	'port.badges.boss_challenge_3.description': 'Versloeg DM-300 alleen met wapens',
+	'port.badges.boss_challenge_4.description': 'Versloeg de Dwergkoning alleen met wapens',
+	'port.badges.boss_challenge_5.description': 'Versloeg Yog-Dzewa alleen met wapens',
+	'port.badges.enemy_hazards.description': '10 vijanden gedood met hulp van gevaren',
+	'port.badges.piranhas.description': 'Versloeg 6 piranha\'s',
+	'port.badges.bag_velvet.description': 'Bezat de fluwelen buidel',
+	'port.badges.bag_holder.description': 'Bezat de rolhouder',
+	'port.badges.bag_bandolier.description': 'Bezat de toverdrank patroontas',
+	'port.badges.bag_holster.description': 'Bezat het magische holster',
+	'port.badges.bags_all.description': 'Bezat alle vier de tassen',
+	'port.badges.unlock_mage.description': 'Gebruikte een rol van opwaardering',
+	'port.badges.unlock_rogue.description': '10 verrassingsaanvallen',
+	'port.badges.unlock_huntress.description': '10 aanvallen met werpwapens',
+	'port.badges.unlock_duelist.description': 'Verbeterde een wapen tot +2',
+	'port.badges.death_trap.description': 'Stierf door een val',
+	'port.badges.death_fire.description': 'Stierf door vuur',
+	'port.badges.death_poison.description': 'Stierf door vergif',
+	'port.badges.death_hunger.description': 'Hongerde dood',
+	'port.badges.death_falling.description': 'Stierf door een val van hoogte',
+	'port.badges.death_foe.description': 'Gedood door een vijand',
+	'port.badges.happy_end.description': 'Bracht het Amulet van Yendor naar het oppervlak',
+	'port.badges.happy_end_remains.description': 'Bracht het kenmerkende voorwerp van een gevallen held naar het oppervlak',
+	'port.badges.pacifist_ascent.description': 'Bracht het Amulet van Yendor naar het oppervlak zonder de vloek ooit te verzwakken',
 	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
 	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
 	// markers are carried as `{0}`, the token `buffInfo()` fills.
@@ -8071,6 +8333,37 @@ export const PORT_STRINGS_NL: Record<string, string> = {
  */
 
 export const PORT_STRINGS_IN: Record<string, string> = {
+	// Machine-translated draft of the 30 port-authored badge descriptions; this catalog is unreviewed.
+	'port.badges.boss1.description': 'Mengalahkan Goo',
+	'port.badges.boss2.description': 'Mengalahkan Tengu',
+	'port.badges.boss3.description': 'Mengalahkan DM-300',
+	'port.badges.boss4.description': 'Mengalahkan Raja Kurcaci',
+	'port.badges.victory.description': 'Melarikan diri dengan Jimat',
+	'port.badges.boss_challenge_1.description': 'Mengalahkan Goo hanya dengan senjata',
+	'port.badges.boss_challenge_2.description': 'Mengalahkan Tengu hanya dengan senjata',
+	'port.badges.boss_challenge_3.description': 'Mengalahkan DM-300 hanya dengan senjata',
+	'port.badges.boss_challenge_4.description': 'Mengalahkan Raja Kurcaci hanya dengan senjata',
+	'port.badges.boss_challenge_5.description': 'Mengalahkan Yog-Dzewa hanya dengan senjata',
+	'port.badges.enemy_hazards.description': '10 pembunuhan musuh yang dibantu bahaya',
+	'port.badges.piranhas.description': 'Mengalahkan 6 piranha',
+	'port.badges.bag_velvet.description': 'Memiliki kantong kecil',
+	'port.badges.bag_holder.description': 'Memiliki Tempat Gulungan',
+	'port.badges.bag_bandolier.description': 'Memiliki bandolier ramuan',
+	'port.badges.bag_holster.description': 'Memiliki Sarung Ajaib',
+	'port.badges.bags_all.description': 'Memiliki keempat tas',
+	'port.badges.unlock_mage.description': 'Menggunakan Gulungan Peningkatan',
+	'port.badges.unlock_rogue.description': '10 serangan kejutan',
+	'port.badges.unlock_huntress.description': '10 serangan senjata lempar',
+	'port.badges.unlock_duelist.description': 'Meningkatkan senjata ke +2',
+	'port.badges.death_trap.description': 'Mati karena jebakan',
+	'port.badges.death_fire.description': 'Mati karena api',
+	'port.badges.death_poison.description': 'Mati karena racun',
+	'port.badges.death_hunger.description': 'Mati kelaparan',
+	'port.badges.death_falling.description': 'Mati karena jatuh',
+	'port.badges.death_foe.description': 'Dibunuh oleh musuh',
+	'port.badges.happy_end.description': 'Membawa Jimat Yendor ke permukaan',
+	'port.badges.happy_end_remains.description': 'Membawa barang khas pahlawan yang gugur ke permukaan',
+	'port.badges.pacifist_ascent.description': 'Membawa Jimat Yendor ke permukaan tanpa pernah mengurangi kutukannya',
 	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
 	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
 	// markers are carried as `{0}`, the token `buffInfo()` fills.
@@ -8707,6 +9000,37 @@ export const PORT_STRINGS_IN: Record<string, string> = {
  */
 
 export const PORT_STRINGS_JA: Record<string, string> = {
+	// Machine-translated draft of the 30 port-authored badge descriptions; this catalog is unreviewed.
+	'port.badges.boss1.description': 'グゥを倒した',
+	'port.badges.boss2.description': '天狗を倒した',
+	'port.badges.boss3.description': 'DM-300を倒した',
+	'port.badges.boss4.description': 'ドワーフキングを倒した',
+	'port.badges.victory.description': 'イェンダーの魔除けを持って脱出した',
+	'port.badges.boss_challenge_1.description': '武器だけでグゥを倒した',
+	'port.badges.boss_challenge_2.description': '武器だけで天狗を倒した',
+	'port.badges.boss_challenge_3.description': '武器だけでDM-300を倒した',
+	'port.badges.boss_challenge_4.description': '武器だけでドワーフキングを倒した',
+	'port.badges.boss_challenge_5.description': '武器だけでヨグ＝ゼーヴァを倒した',
+	'port.badges.enemy_hazards.description': '罠などを利用して敵を10体倒した',
+	'port.badges.piranhas.description': 'ピラニアを6体倒した',
+	'port.badges.bag_velvet.description': 'ベルベットのポーチを所持した',
+	'port.badges.bag_holder.description': '巻物入れを所持した',
+	'port.badges.bag_bandolier.description': 'ポーション入れを所持した',
+	'port.badges.bag_holster.description': '魔法のホルスターを所持した',
+	'port.badges.bags_all.description': '4種類のバッグをすべて所持した',
+	'port.badges.unlock_mage.description': '強化の巻物を使った',
+	'port.badges.unlock_rogue.description': '奇襲攻撃を10回行った',
+	'port.badges.unlock_huntress.description': '投擲武器で10回攻撃した',
+	'port.badges.unlock_duelist.description': '武器を+2に強化した',
+	'port.badges.death_trap.description': '罠で死亡した',
+	'port.badges.death_fire.description': '炎で死亡した',
+	'port.badges.death_poison.description': '毒で死亡した',
+	'port.badges.death_hunger.description': '飢えで死亡した',
+	'port.badges.death_falling.description': '落下して死亡した',
+	'port.badges.death_foe.description': '敵に倒された',
+	'port.badges.happy_end.description': 'イェンダーの魔除けを地上へ持ち帰った',
+	'port.badges.happy_end_remains.description': '倒れた英雄の形見を地上へ持ち帰った',
+	'port.badges.pacifist_ascent.description': '呪いを一度も弱めずにイェンダーの魔除けを地上へ持ち帰った',
 	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
 	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
 	// markers are carried as `{0}`, the token `buffInfo()` fills.
@@ -9343,6 +9667,37 @@ export const PORT_STRINGS_JA: Record<string, string> = {
  */
 
 export const PORT_STRINGS_CS: Record<string, string> = {
+	// Machine-translated draft of the 30 port-authored badge descriptions; this catalog is unreviewed.
+	'port.badges.boss1.description': 'Porazil Slizáka',
+	'port.badges.boss2.description': 'Porazil Tengu',
+	'port.badges.boss3.description': 'Porazil DM-300',
+	'port.badges.boss4.description': 'Porazil Trpasličího krále',
+	'port.badges.victory.description': 'Utekl s Amuletem',
+	'port.badges.boss_challenge_1.description': 'Porazil Slizáka pouze se zbraněmi',
+	'port.badges.boss_challenge_2.description': 'Porazil Tengu pouze se zbraněmi',
+	'port.badges.boss_challenge_3.description': 'Porazil DM-300 pouze se zbraněmi',
+	'port.badges.boss_challenge_4.description': 'Porazil Trpasličího krále pouze se zbraněmi',
+	'port.badges.boss_challenge_5.description': 'Porazil Yog-Dzewu pouze se zbraněmi',
+	'port.badges.enemy_hazards.description': '10 zabití nepřátel s pomocí nebezpečí',
+	'port.badges.piranhas.description': 'Porazil 6 piraní',
+	'port.badges.bag_velvet.description': 'Vlastnil sametový váček',
+	'port.badges.bag_holder.description': 'Vlastnil tubu na svitky',
+	'port.badges.bag_bandolier.description': 'Vlastnil pás na lektvary',
+	'port.badges.bag_holster.description': 'Vlastnil magické pouzdro',
+	'port.badges.bags_all.description': 'Vlastnil všechny čtyři brašny',
+	'port.badges.unlock_mage.description': 'Použil svitek vylepšení',
+	'port.badges.unlock_rogue.description': '10 překvapivých útoků',
+	'port.badges.unlock_huntress.description': '10 útoků vrhacími zbraněmi',
+	'port.badges.unlock_duelist.description': 'Vylepšil zbraň na +2',
+	'port.badges.death_trap.description': 'Zemřel v pasti',
+	'port.badges.death_fire.description': 'Zemřel v ohni',
+	'port.badges.death_poison.description': 'Zemřel na otravu',
+	'port.badges.death_hunger.description': 'Zemřel hlady',
+	'port.badges.death_falling.description': 'Zemřel při pádu',
+	'port.badges.death_foe.description': 'Zabil ho nepřítel',
+	'port.badges.happy_end.description': 'Vynesl Amulet Yendoru na povrch',
+	'port.badges.happy_end_remains.description': 'Vynesl na povrch charakteristický předmět padlého hrdiny',
+	'port.badges.pacifist_ascent.description': 'Vynesl Amulet Yendoru na povrch, aniž by kdy oslabil jeho kletbu',
 	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
 	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
 	// markers are carried as `{0}`, the token `buffInfo()` fills.
@@ -9979,6 +10334,37 @@ export const PORT_STRINGS_CS: Record<string, string> = {
  */
 
 export const PORT_STRINGS_VI: Record<string, string> = {
+	// Machine-translated draft of the 30 port-authored badge descriptions; this catalog is unreviewed.
+	'port.badges.boss1.description': 'Đánh bại Goo',
+	'port.badges.boss2.description': 'Đánh bại Tengu',
+	'port.badges.boss3.description': 'Đánh bại DM-300',
+	'port.badges.boss4.description': 'Đánh bại Vua Người Lùn',
+	'port.badges.victory.description': 'Thoát ra cùng Tấm bùa',
+	'port.badges.boss_challenge_1.description': 'Đánh bại Goo chỉ bằng vũ khí',
+	'port.badges.boss_challenge_2.description': 'Đánh bại Tengu chỉ bằng vũ khí',
+	'port.badges.boss_challenge_3.description': 'Đánh bại DM-300 chỉ bằng vũ khí',
+	'port.badges.boss_challenge_4.description': 'Đánh bại Vua Người Lùn chỉ bằng vũ khí',
+	'port.badges.boss_challenge_5.description': 'Đánh bại Yog-Dzewa chỉ bằng vũ khí',
+	'port.badges.enemy_hazards.description': '10 lần tiêu diệt địch nhờ hiểm họa hỗ trợ',
+	'port.badges.piranhas.description': 'Đánh bại 6 cá hổ',
+	'port.badges.bag_velvet.description': 'Sở hữu Túi Nhung',
+	'port.badges.bag_holder.description': 'Sở hữu ống đựng cuộn giấy',
+	'port.badges.bag_bandolier.description': 'Sở hữu băng thuốc',
+	'port.badges.bag_holster.description': 'Sở hữu bao da thần kì',
+	'port.badges.bags_all.description': 'Sở hữu cả bốn túi',
+	'port.badges.unlock_mage.description': 'Đã dùng Cuộn Giấy Nâng Cấp',
+	'port.badges.unlock_rogue.description': '10 đòn đánh bất ngờ',
+	'port.badges.unlock_huntress.description': '10 đòn tấn công bằng vũ khí ném',
+	'port.badges.unlock_duelist.description': 'Nâng cấp vũ khí lên +2',
+	'port.badges.death_trap.description': 'Chết vì bẫy',
+	'port.badges.death_fire.description': 'Chết vì lửa',
+	'port.badges.death_poison.description': 'Chết vì chất độc',
+	'port.badges.death_hunger.description': 'Chết đói',
+	'port.badges.death_falling.description': 'Chết do ngã',
+	'port.badges.death_foe.description': 'Bị kẻ thù giết',
+	'port.badges.happy_end.description': 'Đưa Tấm bùa Yendor lên mặt đất',
+	'port.badges.happy_end_remains.description': 'Đưa vật phẩm đặc trưng của một anh hùng đã ngã xuống lên mặt đất',
+	'port.badges.pacifist_ascent.description': 'Đưa Tấm bùa Yendor lên mặt đất mà chưa từng làm suy yếu lời nguyền',
 	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
 	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
 	// markers are carried as `{0}`, the token `buffInfo()` fills.
@@ -10615,6 +11001,37 @@ export const PORT_STRINGS_VI: Record<string, string> = {
  */
 
 export const PORT_STRINGS_EL: Record<string, string> = {
+	// Machine-translated draft of the 30 port-authored badge descriptions; this catalog is unreviewed.
+	'port.badges.boss1.description': 'Νίκησε τον Γκου',
+	'port.badges.boss2.description': 'Νίκησε τον Τένγκου',
+	'port.badges.boss3.description': 'Νίκησε τον DM-300',
+	'port.badges.boss4.description': 'Νίκησε τον Βασιλιά των Νάνων',
+	'port.badges.victory.description': 'Δραπέτευσε με το Φυλακτό',
+	'port.badges.boss_challenge_1.description': 'Νίκησε τον Γκου μόνο με όπλα',
+	'port.badges.boss_challenge_2.description': 'Νίκησε τον Τένγκου μόνο με όπλα',
+	'port.badges.boss_challenge_3.description': 'Νίκησε τον DM-300 μόνο με όπλα',
+	'port.badges.boss_challenge_4.description': 'Νίκησε τον Βασιλιά των Νάνων μόνο με όπλα',
+	'port.badges.boss_challenge_5.description': 'Νίκησε τον Yog-Dzewa μόνο με όπλα',
+	'port.badges.enemy_hazards.description': '10 σκοτωμοί εχθρών με βοήθεια από κινδύνους',
+	'port.badges.piranhas.description': 'Νίκησε 6 πιράνχας',
+	'port.badges.bag_velvet.description': 'Είχε το Βελούδινο Πουγκί',
+	'port.badges.bag_holder.description': 'Είχε τη θήκη παπύρων',
+	'port.badges.bag_bandolier.description': 'Είχε τη Ζώνη Φίλτρων',
+	'port.badges.bag_holster.description': 'Είχε τη Μαγική Θήκη',
+	'port.badges.bags_all.description': 'Είχε και τις τέσσερις τσάντες',
+	'port.badges.unlock_mage.description': 'Χρησιμοποίησε πάπυρο αναβάθμισης',
+	'port.badges.unlock_rogue.description': '10 αιφνιδιαστικές επιθέσεις',
+	'port.badges.unlock_huntress.description': '10 επιθέσεις με όπλα ρίψης',
+	'port.badges.unlock_duelist.description': 'Αναβάθμισε ένα όπλο στο +2',
+	'port.badges.death_trap.description': 'Πέθανε από παγίδα',
+	'port.badges.death_fire.description': 'Πέθανε από φωτιά',
+	'port.badges.death_poison.description': 'Πέθανε από δηλητήριο',
+	'port.badges.death_hunger.description': 'Πέθανε από πείνα',
+	'port.badges.death_falling.description': 'Πέθανε από πτώση',
+	'port.badges.death_foe.description': 'Σκοτώθηκε από εχθρό',
+	'port.badges.happy_end.description': 'Έφερε το Φυλακτό του Γέντορ στην επιφάνεια',
+	'port.badges.happy_end_remains.description': 'Έφερε στην επιφάνεια το χαρακτηριστικό αντικείμενο ενός πεσμένου ήρωα',
+	'port.badges.pacifist_ascent.description': 'Έφερε το Φυλακτό του Γέντορ στην επιφάνεια χωρίς ποτέ να μειώσει τη δύναμη της κατάρας του',
 	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
 	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
 	// markers are carried as `{0}`, the token `buffInfo()` fills.
@@ -11251,6 +11668,37 @@ export const PORT_STRINGS_EL: Record<string, string> = {
  */
 
 export const PORT_STRINGS_KO: Record<string, string> = {
+	// Machine-translated draft of the 30 port-authored badge descriptions; this catalog is unreviewed.
+	'port.badges.boss1.description': '구를 처치함',
+	'port.badges.boss2.description': '텐구 암살자를 처치함',
+	'port.badges.boss3.description': 'DM-300을 처치함',
+	'port.badges.boss4.description': '드워프 제왕을 처치함',
+	'port.badges.victory.description': '부적을 가지고 탈출함',
+	'port.badges.boss_challenge_1.description': '무기만 사용해 구를 처치함',
+	'port.badges.boss_challenge_2.description': '무기만 사용해 텐구 암살자를 처치함',
+	'port.badges.boss_challenge_3.description': '무기만 사용해 DM-300을 처치함',
+	'port.badges.boss_challenge_4.description': '무기만 사용해 드워프 제왕을 처치함',
+	'port.badges.boss_challenge_5.description': '무기만 사용해 요그제바를 처치함',
+	'port.badges.enemy_hazards.description': '위험 요소의 도움을 받아 적 10명 처치',
+	'port.badges.piranhas.description': '피라냐 6마리 처치',
+	'port.badges.bag_velvet.description': '벨벳 주머니를 소유함',
+	'port.badges.bag_holder.description': '주문서 보관함을 소유함',
+	'port.badges.bag_bandolier.description': '물약 보관대를 소유함',
+	'port.badges.bag_holster.description': '마법 보관집을 소유함',
+	'port.badges.bags_all.description': '가방 네 개를 모두 소유함',
+	'port.badges.unlock_mage.description': '강화의 주문서를 사용함',
+	'port.badges.unlock_rogue.description': '기습 공격 10회',
+	'port.badges.unlock_huntress.description': '투척 무기로 공격 10회',
+	'port.badges.unlock_duelist.description': '무기를 +2까지 강화함',
+	'port.badges.death_trap.description': '덫에 걸려 사망함',
+	'port.badges.death_fire.description': '화염으로 사망함',
+	'port.badges.death_poison.description': '독으로 사망함',
+	'port.badges.death_hunger.description': '굶어 죽음',
+	'port.badges.death_falling.description': '추락으로 사망함',
+	'port.badges.death_foe.description': '적에게 처치당함',
+	'port.badges.happy_end.description': '옌더의 부적을 지상으로 가져감',
+	'port.badges.happy_end_remains.description': '쓰러진 영웅의 상징적인 물건을 지상으로 가져감',
+	'port.badges.pacifist_ascent.description': '저주를 한 번도 약화시키지 않고 옌도르의 부적을 지상으로 가져감',
 	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
 	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
 	// markers are carried as `{0}`, the token `buffInfo()` fills.
@@ -11887,6 +12335,37 @@ export const PORT_STRINGS_KO: Record<string, string> = {
  */
 
 export const PORT_STRINGS_ZH: Record<string, string> = {
+	// Machine-translated draft of the 30 port-authored badge descriptions; this catalog is unreviewed.
+	'port.badges.boss1.description': '击败粘咕',
+	'port.badges.boss2.description': '击败天狗',
+	'port.badges.boss3.description': '击败 DM-300',
+	'port.badges.boss4.description': '击败矮人国王',
+	'port.badges.victory.description': '带着护符逃出生天',
+	'port.badges.boss_challenge_1.description': '只用武器击败粘咕',
+	'port.badges.boss_challenge_2.description': '只用武器击败天狗',
+	'port.badges.boss_challenge_3.description': '只用武器击败 DM-300',
+	'port.badges.boss_challenge_4.description': '只用武器击败矮人国王',
+	'port.badges.boss_challenge_5.description': '只用武器击败 Yog-Dzewa',
+	'port.badges.enemy_hazards.description': '借助环境危害击杀 10 名敌人',
+	'port.badges.piranhas.description': '击败 6 条食人鱼',
+	'port.badges.bag_velvet.description': '拥有绒布袋',
+	'port.badges.bag_holder.description': '拥有卷轴筒',
+	'port.badges.bag_bandolier.description': '拥有药剂挎带',
+	'port.badges.bag_holster.description': '拥有魔法筒袋',
+	'port.badges.bags_all.description': '拥有全部四种背包',
+	'port.badges.unlock_mage.description': '使用升级卷轴',
+	'port.badges.unlock_rogue.description': '发动 10 次偷袭',
+	'port.badges.unlock_huntress.description': '使用投掷武器攻击 10 次',
+	'port.badges.unlock_duelist.description': '将一件武器升级至 +2',
+	'port.badges.death_trap.description': '死于陷阱',
+	'port.badges.death_fire.description': '死于火焰',
+	'port.badges.death_poison.description': '死于中毒',
+	'port.badges.death_hunger.description': '死于饥饿',
+	'port.badges.death_falling.description': '死于坠落',
+	'port.badges.death_foe.description': '被敌人杀死',
+	'port.badges.happy_end.description': '将Yendor护符带到地表',
+	'port.badges.happy_end_remains.description': '将阵亡英雄的标志性物品带到地表',
+	'port.badges.pacifist_ascent.description': '从未削弱护符诅咒，仍将Yendor护符带到地表',
 	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
 	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
 	// markers are carried as `{0}`, the token `buffInfo()` fills.
@@ -12518,6 +12997,40 @@ export const PORT_STRINGS_ZH: Record<string, string> = {
  * Assembled here rather than in `index.ts`; `tools/i18nCheck.ts` compares every catalogue's keys and placeholders.
  */
 const PORT_CLERIC_ARMOR_FALLBACK = { 'port.buff.powerofmany.name': PORT_STRINGS_EN['port.buff.powerofmany.name'], 'port.buff.powerofmany.desc': PORT_STRINGS_EN['port.buff.powerofmany.desc'], 'port.spell.hallowedground.name': PORT_STRINGS_EN['port.spell.hallowedground.name'], 'port.spell.hallowedground.short_desc': PORT_STRINGS_EN['port.spell.hallowedground.short_desc'], 'port.spell.walloflight.name': PORT_STRINGS_EN['port.spell.walloflight.name'], 'port.spell.walloflight.short_desc': PORT_STRINGS_EN['port.spell.walloflight.short_desc'], 'port.spell.divineintervention.name': PORT_STRINGS_EN['port.spell.divineintervention.name'], 'port.spell.divineintervention.short_desc': PORT_STRINGS_EN['port.spell.divineintervention.short_desc'], 'port.spell.judgement.name': PORT_STRINGS_EN['port.spell.judgement.name'], 'port.spell.judgement.short_desc': PORT_STRINGS_EN['port.spell.judgement.short_desc'], 'port.spell.flash.name': PORT_STRINGS_EN['port.spell.flash.name'], 'port.spell.flash.short_desc': PORT_STRINGS_EN['port.spell.flash.short_desc'] };
+// These SPD locales lack full port prose catalogs, but badge-only translations override EN for R074.
+// All other port-written text continues to fall back to English in these four catalogs.
+export const PORT_STRINGS_BE: Record<string, string> = {
+	// Machine-translated draft; this locale remains unreviewed.
+	'port.badges.boss1.description': 'Перамог Смоўжа', 'port.badges.boss2.description': 'Перамог Тэнгу', 'port.badges.boss3.description': 'Перамог DM-300', 'port.badges.boss4.description': 'Перамог Караля Дварфаў', 'port.badges.victory.description': 'Збег з Кудменем',
+	'port.badges.boss_challenge_1.description': 'Перамог Смоўжа толькі зброяй', 'port.badges.boss_challenge_2.description': 'Перамог Тэнгу толькі зброяй', 'port.badges.boss_challenge_3.description': 'Перамог DM-300 толькі зброяй', 'port.badges.boss_challenge_4.description': 'Перамог Караля Дварфаў толькі зброяй', 'port.badges.boss_challenge_5.description': 'Перамог Ёг-Джаву толькі зброяй',
+	'port.badges.enemy_hazards.description': '10 забойстваў ворагаў з дапамогай небяспек', 'port.badges.piranhas.description': 'Перамог 6 піранняў', 'port.badges.bag_velvet.description': 'Валодаў аксамітным мяшочкам', 'port.badges.bag_holder.description': 'Атрымаў футляр для скруткаў', 'port.badges.bag_bandolier.description': 'Валодаў поясам для зелляў', 'port.badges.bag_holster.description': 'Атрымаў чароўны чахол', 'port.badges.bags_all.description': 'Валодаў усімі чатырма торбамі',
+	'port.badges.unlock_mage.description': 'Выкарыстаў скрутак Паляпшэння', 'port.badges.unlock_rogue.description': '10 раптоўных нападаў', 'port.badges.unlock_huntress.description': '10 нападаў кідальнай зброяй', 'port.badges.unlock_duelist.description': 'Палепшыў зброю да +2', 'port.badges.death_trap.description': 'Загінуў ад пасткі', 'port.badges.death_fire.description': 'Загінуў ад агню', 'port.badges.death_poison.description': 'Загінуў ад атруты', 'port.badges.death_hunger.description': 'Памёр ад голаду', 'port.badges.death_falling.description': 'Загінуў пры падзенні', 'port.badges.death_foe.description': 'Забіты ворагам',
+	'port.badges.happy_end.description': 'Вынес Кудмень Эндора на паверхню', 'port.badges.happy_end_remains.description': 'Вынес памятную рэч загінулага героя на паверхню', 'port.badges.pacifist_ascent.description': 'Вынес Кудмень Эндора на паверхню, ні разу не аслабіўшы яго праклён',
+};
+export const PORT_STRINGS_EO: Record<string, string> = {
+	// Machine-translated draft; this locale remains unreviewed.
+	'port.badges.boss1.description': 'Venis Ŝmiraĵegon', 'port.badges.boss2.description': 'Venis Tengon', 'port.badges.boss3.description': 'Venis DM-300', 'port.badges.boss4.description': 'Venis la Gnomreĝon', 'port.badges.victory.description': 'Eskapis kun la Amuleto',
+	'port.badges.boss_challenge_1.description': 'Venis Ŝmiraĵegon nur per armiloj', 'port.badges.boss_challenge_2.description': 'Venis Tengon nur per armiloj', 'port.badges.boss_challenge_3.description': 'Venis DM-300 nur per armiloj', 'port.badges.boss_challenge_4.description': 'Venis la Gnomreĝon nur per armiloj', 'port.badges.boss_challenge_5.description': 'Venis Jog-Dzevan nur per armiloj',
+	'port.badges.enemy_hazards.description': '10 mortigoj de malamikoj helpitaj de danĝeroj', 'port.badges.piranhas.description': 'Venis 6 piranojn', 'port.badges.bag_velvet.description': 'Posedis la veluran sakon', 'port.badges.bag_holder.description': 'Posedis la skribrulaĵujon', 'port.badges.bag_bandolier.description': 'Posedis la flakoningon', 'port.badges.bag_holster.description': 'Posedis la magian sagujon', 'port.badges.bags_all.description': 'Posedis ĉiujn kvar sakojn',
+	'port.badges.unlock_mage.description': 'Uzis skribrulaĵon de plibonigo', 'port.badges.unlock_rogue.description': '10 surprizaj atakoj', 'port.badges.unlock_huntress.description': '10 atakoj per ĵetarmiloj', 'port.badges.unlock_duelist.description': 'Plibonigis armilon ĝis +2', 'port.badges.death_trap.description': 'Mortis pro kaptilo', 'port.badges.death_fire.description': 'Mortis pro fajro', 'port.badges.death_poison.description': 'Mortis pro veneno', 'port.badges.death_hunger.description': 'Mortis pro malsato', 'port.badges.death_falling.description': 'Mortis pro falo', 'port.badges.death_foe.description': 'Mortigita de malamiko',
+	'port.badges.happy_end.description': 'Portis la Amuleton de Jendor al la surfaco', 'port.badges.happy_end_remains.description': 'Portis la karakterizan objekton de falinta heroo al la surfaco', 'port.badges.pacifist_ascent.description': 'Portis la Amuleton de Jendor al la surfaco sen iam malfortigi ĝian malbenon',
+};
+export const PORT_STRINGS_SV: Record<string, string> = {
+	// Machine-translated draft; this locale remains unreviewed.
+	'port.badges.boss1.description': 'Besegrade Klegget', 'port.badges.boss2.description': 'Besegrade Tengun', 'port.badges.boss3.description': 'Besegrade DM-300', 'port.badges.boss4.description': 'Besegrade Dvärgakungen', 'port.badges.victory.description': 'Flydde med amuletten',
+	'port.badges.boss_challenge_1.description': 'Besegrade Klegget enbart med vapen', 'port.badges.boss_challenge_2.description': 'Besegrade Tengun enbart med vapen', 'port.badges.boss_challenge_3.description': 'Besegrade DM-300 enbart med vapen', 'port.badges.boss_challenge_4.description': 'Besegrade Dvärgakungen enbart med vapen', 'port.badges.boss_challenge_5.description': 'Besegrade Yog-Dzewa enbart med vapen',
+	'port.badges.enemy_hazards.description': '10 fiendedödanden med hjälp av faror', 'port.badges.piranhas.description': 'Besegrade 6 pirayor', 'port.badges.bag_velvet.description': 'Ägde sammetspåsen', 'port.badges.bag_holder.description': 'Ägde skriftrullehållaren', 'port.badges.bag_bandolier.description': 'Ägde en potionbandolier', 'port.badges.bag_holster.description': 'Ägde det magiska hölstret', 'port.badges.bags_all.description': 'Ägde alla fyra väskor',
+	'port.badges.unlock_mage.description': 'Använde en skriftrulle av uppgradering', 'port.badges.unlock_rogue.description': '10 överraskningsattacker', 'port.badges.unlock_huntress.description': '10 attacker med kastvapen', 'port.badges.unlock_duelist.description': 'Uppgraderade ett vapen till +2', 'port.badges.death_trap.description': 'Dog av en fälla', 'port.badges.death_fire.description': 'Dog av eld', 'port.badges.death_poison.description': 'Dog av gift', 'port.badges.death_hunger.description': 'Svalt ihjäl', 'port.badges.death_falling.description': 'Dog av ett fall', 'port.badges.death_foe.description': 'Dödad av en fiende',
+	'port.badges.happy_end.description': 'Tog Yendors amulett till ytan', 'port.badges.happy_end_remains.description': 'Tog en fallen hjältes signaturföremål till ytan', 'port.badges.pacifist_ascent.description': 'Tog Yendors amulett till ytan utan att någonsin försvaga dess förbannelse',
+};
+export const PORT_STRINGS_ZH_HANT: Record<string, string> = {
+	// Machine-translated draft; this locale remains unreviewed.
+	'port.badges.boss1.description': '擊敗黏咕', 'port.badges.boss2.description': '擊敗天狗', 'port.badges.boss3.description': '擊敗 DM-300', 'port.badges.boss4.description': '擊敗矮人國王', 'port.badges.victory.description': '帶著護符逃出生天',
+	'port.badges.boss_challenge_1.description': '只用武器擊敗黏咕', 'port.badges.boss_challenge_2.description': '只用武器擊敗天狗', 'port.badges.boss_challenge_3.description': '只用武器擊敗 DM-300', 'port.badges.boss_challenge_4.description': '只用武器擊敗矮人國王', 'port.badges.boss_challenge_5.description': '只用武器擊敗 Yog-Dzewa',
+	'port.badges.enemy_hazards.description': '借助環境危害擊殺 10 名敵人', 'port.badges.piranhas.description': '擊敗 6 條食人魚', 'port.badges.bag_velvet.description': '擁有絨布袋', 'port.badges.bag_holder.description': '擁有卷軸筒', 'port.badges.bag_bandolier.description': '擁有藥瓶挎帶', 'port.badges.bag_holster.description': '擁有魔法筒袋', 'port.badges.bags_all.description': '擁有全部四種背包',
+	'port.badges.unlock_mage.description': '使用升級卷軸', 'port.badges.unlock_rogue.description': '發動 10 次偷襲', 'port.badges.unlock_huntress.description': '使用投擲武器攻擊 10 次', 'port.badges.unlock_duelist.description': '將一件武器升級至 +2', 'port.badges.death_trap.description': '死於陷阱', 'port.badges.death_fire.description': '死於火焰', 'port.badges.death_poison.description': '死於中毒', 'port.badges.death_hunger.description': '死於飢餓', 'port.badges.death_falling.description': '死於墜落', 'port.badges.death_foe.description': '被敵人殺死',
+	'port.badges.happy_end.description': '將Yendor護符帶到地表', 'port.badges.happy_end_remains.description': '將陣亡英雄的標誌性物品帶到地表', 'port.badges.pacifist_ascent.description': '從未削弱護符詛咒，仍將Yendor護符帶到地表',
+};
 const PORT_BADGE_ENGLISH_FALLBACK = Object.fromEntries(Object.entries(PORT_STRINGS_EN).filter(([key]) => key.startsWith('port.badges.')));
 Object.assign(PORT_CLERIC_ARMOR_FALLBACK, {
 	'port.ally.lightally.name': PORT_STRINGS_EN['port.ally.lightally.name'], 'port.ally.already_powered': PORT_STRINGS_EN['port.ally.already_powered'],
@@ -12546,6 +13059,10 @@ const completePortStrings = (catalog: Record<string, string>): Readonly<Record<s
 	el: completePortStrings({ ...PORT_STRINGS_EL, ...PORT_MINE_STRINGS.el }),
 	ko: completePortStrings({ ...PORT_STRINGS_KO, ...PORT_MINE_STRINGS.ko }),
 	zh: completePortStrings({ ...PORT_STRINGS_ZH, ...PORT_MINE_STRINGS.zh }),
+	be: completePortStrings(PORT_STRINGS_BE),
+	eo: completePortStrings(PORT_STRINGS_EO),
+	sv: completePortStrings(PORT_STRINGS_SV),
+	'zh-hant': completePortStrings(PORT_STRINGS_ZH_HANT),
 };
 
 /**
@@ -12575,4 +13092,8 @@ export const PORT_TRANSLATION_ORIGIN: Readonly<Record<string, PortTranslationOri
 	el: 'machine',
 	ko: 'machine',
 	zh: 'machine',
+	be: 'machine',
+	eo: 'machine',
+	sv: 'machine',
+	'zh-hant': 'machine',
 };
