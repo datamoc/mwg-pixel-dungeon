@@ -31,6 +31,14 @@ assert.equal(dm300ChargeEndTurns(9), 2);
 assert.equal(dm300ChargeEndTurns(2), 2);
 assert.equal(dm300ChargeEndTurns(-4), -4, 'negative counters pass through untouched');
 
+// Java's `DM300.supercharge()` spends 2 ticks under STRONGER_BOSSES and 3 otherwise.
+// This runs during a hero damage action, so the scene must postpone DM300 specifically.
+const superchargeScene = readFileSync(join(process.cwd(), 'src/scenes/dungeon/combatResolution.ts'), 'utf8');
+const supercharge = /dm300Supercharge\(this: DungeonScene, dm300: Creature\): void \{[\s\S]*?\n\t\},/.exec(superchargeScene);
+assert.ok(supercharge, 'scene supercharge adapter still exists');
+assert.ok(supercharge[0].includes("this.scheduler.postpone(dm300, isChallengeEnabled('stronger_bosses') ? 2 : 3)"),
+	'DM300 receives Java\'s challenge-specific actor cooldown at charge activation');
+
 // Both call sites run the seam, not a second copy of the arithmetic (paths resolve
 // from the repo root, which is the documented working directory for the run line).
 for (const rel of ['src/scenes/dungeon/attackSeams.ts', 'src/scenes/dungeon/combatResolution.ts']) {

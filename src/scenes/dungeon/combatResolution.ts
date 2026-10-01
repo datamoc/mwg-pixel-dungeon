@@ -1878,6 +1878,11 @@ export const combatResolutionMethods: Record<string, any> = {
 				placeCharacterArt(sprite);
 			}
 		}
+		//`DM300.supercharge()` (`actors/mobs/DM300.java:522-527`, tag `v3.3.8`)
+		//calls `spend(STRONGER_BOSSES ? 2f : 3f)` after activating its pylon.
+		//The scheduler can postpone this actor even though the spend is triggered
+		//inside the hero's damage action, preserving the actor-specific cooldown.
+		this.scheduler.postpone(dm300, isChallengeEnabled('stronger_bosses') ? 2 : 3);
 		//The eligible cells come from the untranslated `PaintLevel`, because the live level's
 		//coarse terrain mapping collapses `INACTIVE_TRAP` (and gates) to plain floor - reading
 		//`this.level.get` here would never match a single seeded cell.
