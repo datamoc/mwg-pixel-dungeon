@@ -33,9 +33,10 @@ since neither is a RESISTS member. `useTransfusionWand`'s undead-damage branch,
 `scrollRetribution`'s blast (`scrollEffects.ts`), `takeWardTurn`'s own zap (`WandOfWarding.Ward`),
 and `Bomb.MagicalBomb` (`ArcaneBomb`/`HolyBomb` - both the shared base blast every bomb type runs
 through and each one's own bonus effect, gated by `variant` before the payload switch since the
-base-blast loop runs before the per-payload one) complete the set. **Genuinely not applicable, not
-(open residual moved to `ROADMAP.md` R017)
-scroll), `CursedWand` (**correction 2026-09-21**: a real, if scoped, cursed-wand mechanic now exists - see its own dedicated row. None of its ported Common effects apply raw `Char.damage()`-equivalent hp loss directly (buffs only, or damage routed through `fireWandShot`'s own existing guard), so none needed a new guard; the Uncommon tier's `HealthTransfer` does write damage directly and is now `magicImmune`-gated, closing what this note used to flag), `ElementalBlast`/
+base-blast loop runs before the per-payload one) complete the set. **Genuinely not applicable, not merely unguarded** - no code exists to add a guard to:
+`ScrollOfPsionicBlast` (unported exotic scroll; the exotic-scroll recipes were decided Not
+ported 2026-09-29 under R082, so no guard target can arise - R017 closed as a non-gap
+2026-10-01), `CursedWand` (**correction 2026-09-21**: a real, if scoped, cursed-wand mechanic now exists - see its own dedicated row. None of its ported Common effects apply raw `Char.damage()`-equivalent hp loss directly (buffs only, or damage routed through `fireWandShot`'s own existing guard), so none needed a new guard; the Uncommon tier's `HealthTransfer` does write damage directly and is now `magicImmune`-gated, closing what this note used to flag), `ElementalBlast`/
 (open residual moved to `ROADMAP.md` R018) `ElementalStrike` ported 2026-09-19 with its strike/grim damage routed through the guard below), `DisintegrationTrap` (this
 port's five hidden trap kinds don't include one). **Left deliberately unguarded**: the six
 monster-bolt entries (DM100/Shaman/Warlock/Eye/YogFist x2) - real Java's generic `isImmune()` only
