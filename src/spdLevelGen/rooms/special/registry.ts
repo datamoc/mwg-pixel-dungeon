@@ -65,6 +65,7 @@ const POTION_SPAWN_ROOMS = specialRoomList('specialRoomRules', 'potionSpawnRooms
 let runSpecials: SpecialRoomKind[] = [];
 let floorSpecials: SpecialRoomKind[] = [];
 let pitNeededDepth = -1;
+let labRoomCount = 0;
 
 /** `SpecialRoom.initForRun()`. See module comment - not auto-invoked; callers opt in. */
 export function resetSpecialRoomRunState(): void {
@@ -79,14 +80,22 @@ export function resetSpecialRoomRunState(): void {
 		if (cons.length > 0) runSpecials.push(cons.shift()!);
 	}
 	pitNeededDepth = -1;
+	labRoomCount = 0;
 }
 
-/** `SpecialRoom.initForFloor()`. `runSeed % 3` matches Java's `Dungeon.seed % 3` (no RNG - a
- *  deterministic property of the run seed, not a generator draw). */
-export function initSpecialRoomFloor(depth: number, runSeed: bigint): void {
+/** `SpecialRoom.initForFloor()` and `Dungeon.labRoomNeeded()` (`Dungeon.java:589-599`,
+ * `SpecialRoom.java:126-137`, tag `v3.3.8`). Java checks once when the floor queue is initialized:
+ * at most one lab per region, with a 1/2 level-stream roll on the region's third floor and a
+ * guaranteed lab on its fourth floor. The run-scoped count corresponds to
+ * `Dungeon.LimitedDrops.LAB_ROOM.count`; floors are generated in ascending order by gameBridge. */
+export function initSpecialRoomFloor(depth: number): void {
 	floorSpecials = runSpecials.slice();
-	const mod3 = Number(((runSeed % 3n) + 3n) % 3n);
-	if (depth % 5 === mod3 + 2) floorSpecials.unshift('laboratory');
+	const region = 1 + Math.floor(depth / 5);
+	const floorInRegion = depth % 5;
+	if (region > labRoomCount && (floorInRegion >= 4 || (floorInRegion === 3 && SpdRandom.int(2) === 0))) {
+		labRoomCount++;
+		floorSpecials.unshift('laboratory');
+	}
 }
 
 function useType(kind: SpecialRoomKind): void {

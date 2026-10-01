@@ -94,7 +94,7 @@ function standardRoomChances(depth: number): number[] {
  * ever constructed - a real ordering bug found via the Phase 2 Java-fixture comparison, alongside
  * the builder-before-counts bug this function's caller (`buildRoomGraph`) already documents.
  */
-function initRooms(depth: number, feelingLarge: boolean, feelingSecrets: boolean, runSeedForFloor: bigint): Room[] {
+function initRooms(depth: number, feelingLarge: boolean, feelingSecrets: boolean): Room[] {
 	const rooms: Room[] = [];
 	const entrance = new Room('entrance');
 	const exit = new Room('exit');
@@ -137,10 +137,9 @@ function initRooms(depth: number, feelingLarge: boolean, feelingSecrets: boolean
 	const specials0 = regionRoomCount(region, 'special', feelingLarge);
 	const specials = feelingLarge ? specials0 + 1 : specials0;
 
-	// SpecialRoom.initForFloor(): must run before the specials loop rolls any SpecialRoom class,
-	// but burns no RNG itself (a deterministic Dungeon.seed%3 check) - its exact position relative
-	// to other rolls doesn't affect the RNG stream, only that it runs before first use.
-	initSpecialRoomFloor(depth, runSeedForFloor);
+	// SpecialRoom.initForFloor(): after standard/shop room setup, Java checks the once-per-region
+	// lab gate here. Only the third floor's 50/50 check burns a level-stream Random.Int(2) draw.
+	initSpecialRoomFloor(depth);
 
 	// `Dungeon.bossLevel(depth+1)` - the floor before each region's boss level (5/10/15/20/25),
 	// so depth 4 in Sewers, depth 9 in Prison, depth 14 in Caves, depth 19 in City, depth 24 in
@@ -316,7 +315,7 @@ export function buildRoomGraph(depth: number, runSeed: bigint): GraphResult {
 		// standardRooms()/specialRooms()'s own Random.chances() count rolls happen inside
 		// initRooms() itself now, in their real Java position (after entrance/exit construction,
 		// interleaved with the standard/special room loops) - see initRooms()'s own doc comment.
-		initial = initRooms(depth, feelingLarge, feelingSecrets, runSeed);
+		initial = initRooms(depth, feelingLarge, feelingSecrets);
 	}
 	SpdRandom.shuffle(initial);
 
