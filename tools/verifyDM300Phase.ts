@@ -47,6 +47,16 @@ assert.equal((kingScene.match(/this\.kingP1Summon\([^\n]+challenge\), false, cha
 assert.ok(kingScene.includes('arrivalDelay?: number'), 'summoned servant accepts a Java arrival delay');
 assert.ok(kingScene.includes('false, undefined, arrivalDelay)'), 'summoned servant first action waits for the Java delay');
 
+const noRandomChoice = { float: () => 0, normalRange: () => 0, range: () => 0, int: () => 0, chance: () => false };
+assert.equal(planRatKingWave(0, 300, false, noRandomChoice)?.arrivalDelay, 3, 'normal first wave uses Java delay 3');
+assert.equal(planRatKingWave(4, 200, false, noRandomChoice)?.arrivalDelay, 3, 'normal second wave uses Java delay 3');
+assert.equal(planRatKingWave(8, 100, false, noRandomChoice)?.arrivalDelay, 4, 'normal final wave uses Java delay 4');
+assert.equal(planRatKingWave(0, 300, true, noRandomChoice)?.arrivalDelay, 3, 'challenge first wave uses Java delay 3');
+assert.equal(planRatKingWave(6, 300, true, noRandomChoice)?.arrivalDelay, 3, 'challenge second wave uses Java delay 3');
+assert.equal(planRatKingWave(12, 150, true, noRandomChoice)?.arrivalDelay, 3, 'challenge mixed wave uses Java delay 3');
+assert.equal(planRatKingWave(16, 150, true, noRandomChoice)?.arrivalDelay, 3, 'challenge golem wave uses Java delay 3');
+assert.ok(kingScene.includes('plan.arrivalDelay'), 'phase-two servants use their wave plan arrival delay');
+
 // Both call sites run the seam, not a second copy of the arithmetic (paths resolve
 // from the repo root, which is the documented working directory for the run line).
 for (const rel of ['src/scenes/dungeon/attackSeams.ts', 'src/scenes/dungeon/combatResolution.ts']) {

@@ -1026,7 +1026,7 @@ if (monster.hp <= 0) {
 	kingWave(this: DungeonScene, king: Creature, plan: RatKingWavePlan): void {
 		if (plan.announcement) this.say(t(`actors.mobs.dwarfking.${plan.announcement}`), 'warning');
 		king.kingSummonsMade = plan.nextSummonsMade;
-		for (const kind of plan.adds) this.summonKingAdd(king, kind, true);
+		for (const kind of plan.adds) this.summonKingAdd(king, kind, true, plan.arrivalDelay);
 	},
 
 	/**
