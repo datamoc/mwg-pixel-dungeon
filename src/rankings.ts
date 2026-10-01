@@ -69,9 +69,9 @@ export function recordRun(record: Omit<RunRecord, 'score'>, score: RunEndScore):
  * R015: Java `Statistics`' score half (`Statistics.java`/`Rankings.java`, tag `v3.3.8`),
  * one per run. `questScores[0..4]`/`bossScores[0..4]` collect the quest/boss writes (only
  * positive entries count); `goldCollected` is lifetime gold picked up; `floorsExplored`
- * maps each left floor to its explored fraction. The boss writes belong to the boss kits
- * and the mine `[2]` writes to R055/R056, so both halves arrive as zeros until those land -
- * the formula already sums them the way Java does.
+ * maps each left floor to its explored fraction. The mine `[2]` penalty writes landed with
+ * R055/R056; the boss writes belong to the boss kits and still arrive as zeros until those
+ * land - the formula already sums both the way Java does.
  */
 export interface ScoreState {
 	questScores: number[];

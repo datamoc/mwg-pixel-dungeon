@@ -134,6 +134,10 @@ export const combatResolutionMethods: Record<string, any> = {
 		if (attacker.isHero) this.cancelHourglassFreeze();
 		else noteMonsterAttack(attacker);
 		if (attacker.kind === 'crystalWisp') this.triggerCrystalWispPulse(attacker);
+		//`CrystalGuardian.attack()`'s pre-`super` quest-score write (CrystalGuardian.java, tag
+		//v3.3.8): every attack on the hero without a damaged spire within 8 pays `[2] -= 100`,
+		//misses included, so it sits ahead of the roll exactly where Java's override runs.
+		if (attacker.kind === 'crystalGuardian') this.crystalGuardianAttackScore(attacker, defender);
 		faceCharacter(this.sprite(attacker), attacker.x, defender.x);
 		const attackerSprite = this.sprite(attacker);
 		if (attackerSprite instanceof AnimatedSprite && attackerSprite.has('attack')) attackerSprite.play('attack', true);

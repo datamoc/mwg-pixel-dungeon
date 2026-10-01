@@ -22,7 +22,7 @@ try {
 	compile(fileURLToPath(new URL('../src/simulation/crystalSpire.ts', import.meta.url)), 'simulation/crystalSpire.js');
 	compile(fileURLToPath(new URL('../src/simulation/pourAuras.ts', import.meta.url)), 'simulation/pourAuras.js');
 	const {
-		spireSpread, planSpireDiamond, planSpireLine, spikeDamage, spikeKnockCell,
+		spireSpread, planSpireDiamond, planSpireLine, spikeDamage, spikeKnockCell, damagedSpireNear,
 		isOpenSpace, guardianSpeed, spireAbilityDelay, spireIdleFrame, usesCrystalPassability,
 		ignoresCrystalGuardianBeckon,
 	} = require(join(temp, 'simulation/crystalSpire.js'));
@@ -56,6 +56,13 @@ try {
 	assert.equal(ignoresCrystalGuardianBeckon('crystalGuardian', true), true, 'a sleeping guardian ignores beckon like Java');
 	assert.equal(ignoresCrystalGuardianBeckon('crystalGuardian', false), false, 'an awake guardian accepts beckon');
 	assert.equal(ignoresCrystalGuardianBeckon('crystalWisp', true), false, 'other sleeping mine mobs retain normal beckoning');
+	assert.equal(damagedSpireNear({ x: 4, y: 4 }, [{ kind: 'crystalSpire', x: 4, y: 12, hp: 100, maxHp: 300 }]), true, 'a damaged spire at Chebyshev distance 8 keeps the guardian score-free');
+	assert.equal(damagedSpireNear({ x: 4, y: 4 }, [{ kind: 'crystalSpire', x: 4, y: 13, hp: 100, maxHp: 300 }]), false, 'at distance 9 the spire is no longer fighting the hero');
+	assert.equal(damagedSpireNear({ x: 4, y: 4 }, [{ kind: 'crystalSpire', x: 12, y: 12, hp: 100, maxHp: 300 }]), true, 'the distance is Chebyshev: both axes 8 still counts');
+	assert.equal(damagedSpireNear({ x: 4, y: 4 }, [{ kind: 'crystalSpire', x: 5, y: 5, hp: 300, maxHp: 300 }]), false, 'an untouched spire (HP == HT) is no fight in progress');
+	assert.equal(damagedSpireNear({ x: 4, y: 4 }, []), false, 'with no spire at all the penalty applies');
+	assert.equal(damagedSpireNear({ x: 4, y: 4 }, [{ kind: 'hero', x: 5, y: 5, hp: 50, maxHp: 999 }]), false, 'a damaged hero beside the guardian is not a spire (Java: instanceof CrystalSpire)');
+	assert.equal(damagedSpireNear({ x: 4, y: 4 }, [{ kind: 'crystalWisp', x: 5, y: 5, hp: 10, maxHp: 30 }]), false, 'a damaged wisp is not a spire either');
 	assert.deepEqual([spireAbilityDelay(0), spireAbilityDelay(1.2), spireAbilityDelay(3.1)], [1, 2, 3], 'spire delay is ceil hero cooldown clamped to 1..3');
 	assert.deepEqual([0.91, 0.9, 0.67, 0.33].map((hp) => spireIdleFrame(hp * 300, 300)), [0, 1, 2, 3], 'spire idle frames use strict Java HP thresholds');
 	const sceneSource = readFileSync(fileURLToPath(new URL('../src/scenes/dungeon/monsters/crystalMine.ts', import.meta.url)), 'utf8');
@@ -75,9 +82,15 @@ try {
 	assert.match(sceneSource, /crystalWispZap\(this: DungeonScene, wisp: Creature\): void \{\s*this\.triggerCrystalWispPulse\(wisp\)/, 'ranged wisp zap triggers its pulse');
 	const combatSource = readFileSync(fileURLToPath(new URL('../src/scenes/dungeon/combatResolution.ts', import.meta.url)), 'utf8');
 	assert.match(combatSource, /attacker\.kind === 'crystalWisp'\) this\.triggerCrystalWispPulse\(attacker\)/, 'melee wisp attack triggers its pulse');
+	//R056 mine quest-score seams: the guardian's pre-roll write, its hook, and the spike's hero branch.
+	assert.match(sceneSource, /crystalGuardianAttackScore\(this: DungeonScene, guardian: Creature, defender: Creature\): void \{\s*if \(!defender\.isHero \|\| damagedSpireNear\(guardian, this\.creatures\)\) return;\s*addQuestScore\(this, 2, -100\)/, 'guardian attack on the hero pays [2] -= 100 unless a damaged spire lies within 8');
+	assert.match(combatSource, /if \(attacker\.kind === 'crystalGuardian'\) this\.crystalGuardianAttackScore\(attacker, defender\);/, 'the guardian score hook runs in resolveAttackWithGear ahead of the roll, like Java pre-super');
+	const waveBody = /\tlandSpireWave\(this: DungeonScene[^)]*\)[^{]*\{([\s\S]*?)\n\t\},/.exec(sceneSource);
+	assert.ok(waveBody, 'landSpireWave is a scene seam');
+	assert.match(waveBody[1] ?? '', /if \(ch\.isHero\) \{\s*(?:\/\/[^\n]*\n\s*)*addQuestScore\(this, 2, -100\)/, 'a spike on the hero pays [2] -= 100 in its damage branch');
 	assert.match(sceneSource, /deathAge < 1/, 'wisp halo remains through Java one-second TorchHalo putOut fade');
 	assert.match(sceneSource, /visual\.bob = 0/, 'wisp death clip stops sine bob without shifting the corpse');
-	console.log('PASS crystal mine pure planners (11 helpers) and wisp visual seam');
+	console.log('PASS crystal mine pure planners (12 helpers), wisp visual seam and quest-score seams');
 } finally {
 	rmSync(temp, { recursive: true, force: true });
 }

@@ -6,9 +6,10 @@ import { addBuff, buffBlocked, rollHit, type BuffId, type Creature, type Step } 
 import { spawnCrystalSplash } from '../../../ui/effectBursts';
 import { t } from '../../../i18n/index';
 import { runState } from '../../../runState';
+import { addQuestScore } from '../../../rankings';
 import { IMMOVABLE_KINDS } from '../../../monsters';
 import {
-	guardianSpeed, isOpenSpace, planSpireDiamond, planSpireLine, spikeDamage, spikeKnockCell, spireAbilityDelay, spireIdleFrame,
+	damagedSpireNear, guardianSpeed, isOpenSpace, planSpireDiamond, planSpireLine, spikeDamage, spikeKnockCell, spireAbilityDelay, spireIdleFrame,
 	usesCrystalPassability,
 } from '../../../simulation/crystalSpire';
 import { SPD_TERRAIN_TO_GAME_KIND } from '../../../spdLevelGen/gameBridge';
@@ -440,11 +441,24 @@ export const crystalMineMethods = {
 	},
 
 	/**
+	 * `CrystalGuardian.attack()` (`CrystalGuardian.java`, tag v3.3.8): an attack declared on the
+	 * hero while no damaged spire (`HP != HT`) lies within `Level.distance` 8 of the guardian
+	 * ("they aren't currently fighting the spire") writes `Statistics.questScores[2] -= 100`.
+	 * Java makes that write before `super.attack()`, so every attempt pays it - a miss included -
+	 * and only the hero counts as the target.
+	 */
+	crystalGuardianAttackScore(this: DungeonScene, guardian: Creature, defender: Creature): void {
+		if (!defender.isHero || damagedSpireNear(guardian, this.creatures)) return;
+		addQuestScore(this, 2, -100);
+	},
+
+	/**
 	 * One wave of spikes: every cell but the spire's own grows a `MINE_CRYSTAL`, then each
 	 * character there but a wisp or the spire takes `NormalIntRange(6, 15)` (`SpireSpike`, no
 	 * armour) - 12 more and `Cripple` 30 (prolonged) on a guardian - and is knocked one cell: a
-	 * guardian away from the hero, anyone else (not `IMMOVABLE`) away from the spire. Returns true
-	 * when it killed the hero. Not ported: `Statistics.questScores[2] -= 100` (no `[2]` write yet - R056).
+	 * guardian away from the hero, anyone else (not `IMMOVABLE`) away from the spire. A spike on
+	 * the hero also writes `Statistics.questScores[2] -= 100` (`CrystalSpire.java`, tag v3.3.8,
+	 * the branch beside the guardian's damage bonus - R056). Returns true when it killed the hero.
 	 */
 	landSpireWave(this: DungeonScene, spire: Creature, wave: readonly number[]): boolean {
 		const w = this.level.width;
@@ -471,6 +485,10 @@ export const crystalMineMethods = {
 			const free = (c: number): boolean => { const p = xy(c); return !this.crystalSolid(c) && !this.creatureAt(p.x, p.y); };
 			const movePos = guardian || !(ch.kind && IMMOVABLE_KINDS.has(ch.kind)) ? spikeKnockCell(cell, w, away, free) : cell;
 			if (ch.isHero) {
+				//`CrystalSpire.act()` (tag v3.3.8) writes `questScores[2] -= 100` in the same
+				//branch that computes the spike's damage, before `ch.damage` - so the killing
+				//spike pays it too; the port writes first for the same observable.
+				addQuestScore(this, 2, -100);
 				//`CrystalSpire` spike -> `Char.damage()`: shared dispatch hero branch, `onHeroDeath` printing the kill line.
 				if (this.applyCharacterDamage(this.hero, dmg, {
 					pierceArmor: true, cause: 'foe', skipAura: true,

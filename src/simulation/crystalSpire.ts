@@ -81,6 +81,22 @@ export function spikeKnockCell(cell: number, width: number, awayFrom: number, fr
 }
 
 /**
+ * `CrystalGuardian.attack()`'s spire-near clause (`CrystalGuardian.java`, tag v3.3.8): Java
+ * loops `Dungeon.level.mobs` for an `m instanceof CrystalSpire` with `HP != HT` within
+ * `Level.distance` (Chebyshev) 8 of the guardian - "they aren't currently fighting the spire".
+ * True while a damaged spire is that close, i.e. the attack is free of the
+ * `questScores[2] -= 100` write. The `kind` filter is the `instanceof`: a damaged hero or wisp
+ * beside the guardian must not exempt it.
+ */
+export function damagedSpireNear(
+	guardian: { x: number; y: number },
+	mobs: readonly { kind?: string; x: number; y: number; hp: number; maxHp: number }[],
+): boolean {
+	return mobs.some((m) => m.kind === 'crystalSpire' && m.hp !== m.maxHp
+		&& Math.max(Math.abs(m.x - guardian.x), Math.abs(m.y - guardian.y)) <= 8);
+}
+
+/**
  * `Level.buildFlagMaps()`' `openSpace` ("large enough to fit large mobs"): a non-solid cell with
  * some open 2x2 corner - an orthogonal neighbour, the diagonal after it and the orthogonal after
  * that all non-solid, walking `PathFinder.CIRCLE8` from each of its four orthogonal slots.

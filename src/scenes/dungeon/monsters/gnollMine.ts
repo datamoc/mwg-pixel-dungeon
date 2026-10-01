@@ -8,6 +8,7 @@ const exileState = new WeakMap<object, { aggro: boolean; hp: number }>();
 import { GAME_KIND_CODES } from '../../../dungeonConstants';
 import { t } from '../../../i18n/index';
 import { runState } from '../../../runState';
+import { addQuestScore } from '../../../rankings';
 import { faceCharacter } from '../../../ui/characterPlacement';
 import { simulationRandom } from '../../../adapters/mwgRandom';
 import { traceRayToTarget } from '../../../mechanics/rays';
@@ -442,12 +443,17 @@ export const gnollMineMethods = {
 	/**
 	 * One boulder or falling rock striking a character: `NormalIntRange(6, 12)` straight into
 	 * `damage()` (no armour), then `Paralysis` 3 - 10 for a guard - on a survivor, an invulnerable
-	 * geomancer included (Java's `damage()` is negated but the `Buff.prolong` still runs). Returns true
-	 * when it killed the hero. Not ported: `Statistics.questScores[2] -= 100` (no `[2]` write yet - R055).
+	 * geomancer included (Java's `damage()` is negated but the `Buff.prolong` still runs). The
+	 * hero's strike also writes `Statistics.questScores[2] -= 100` (both Java sites - the boulder
+	 * impact in `GnollGeomancer.doRockThrowAttack()` and `GnollRockFall.affectChar()`, tag
+	 * v3.3.8 - R055). Returns true when it killed the hero.
 	 */
 	gnollRockStrike(this: DungeonScene, target: Creature, killKey: string): boolean {
 		const dmg = Random.normalRange(6, 12);
 		if (target.isHero) {
+			//Java writes the penalty right after its `ch.damage`, ahead of the alive check - so the
+			//killing rock pays it too; the port writes before the damage for the same observable.
+			addQuestScore(this, 2, -100);
 			//Rock hit -> `Char.damage()`: shared dispatch hero branch, `onHeroDeath` printing the kill line.
 			if (this.applyCharacterDamage(this.hero, dmg, {
 				pierceArmor: true, cause: 'foe', skipAura: true,

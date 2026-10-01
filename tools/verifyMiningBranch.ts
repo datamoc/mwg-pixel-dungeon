@@ -65,4 +65,12 @@ assert.match(hazards, /this\.tryLeaveMiningBranch\(\);[\s\S]{0,200}this\.tryEnte
 assert.match(scene, /gold < 10 \? 'port\.blacksmith\.exit_warn_none' : gold < 20 \? 'port\.blacksmith\.exit_warn_low'\s*: gold < 30 \? 'port\.blacksmith\.exit_warn_med' : gold < 40 \? 'port\.blacksmith\.exit_warn_high' : 'port\.blacksmith\.exit_warn_full'/, 'exit warnings grade 10/20/30/40');
 assert.match(scene, /completeBlacksmithQuest\(\);\s*this\.leaveMiningBranch\(\);/, 'confirming the exit completes the quest first');
 
+//Mine quest-score writes (R055/R056): every `Statistics.questScores[2] -= 100` site pinned at
+//its scene seam - the shared rock strike (boulder impact and `GnollRockFall.affectChar` both
+//route through it) pays it on the hero, and the guardian/spike halves live in the crystal pins.
+const gnoll = readFileSync('src/scenes/dungeon/monsters/gnollMine.ts', 'utf8').replace(/\r\n/g, '\n');
+const rockStrike = /\tgnollRockStrike\(this: DungeonScene[^)]*\)[^{]*\{([\s\S]*?)\n\t\},/.exec(gnoll);
+assert.ok(rockStrike, 'gnollRockStrike is a scene seam');
+assert.match(rockStrike[1] ?? '', /if \(target\.isHero\) \{\s*(?:\/\/[^\n]*\n\s*)*addQuestScore\(this, 2, -100\)/, 'a boulder or rockfall on the hero pays [2] -= 100');
+
 console.log(`Mining branch checks passed (${seeds.length} seeds x 2 quest types).`);
