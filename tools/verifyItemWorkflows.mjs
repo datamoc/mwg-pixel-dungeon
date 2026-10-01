@@ -134,6 +134,9 @@ exports.buffBlocked = () => false;
 	writeFileSync(join(out, 'i18n', 'index.js'),
 		'exports.t = (key, params) => key + (params ? "[" + Object.values(params).join(",") + "]" : "");\n');
 	compile(join(root, 'src/items/alchemy.ts'), 'items/alchemy.js');
+	// R112's run-wide potion class store (the potion twin of `simulation/ringKnow.ts`,
+	// scene-keyed the same way; exotic ids normalize through `potionRegularCounterpart`).
+	compile(join(root, 'src/items/potionKnow.ts'), 'items/potionKnow.js');
 	compile(join(root, 'src/items/alchemyRules.ts'), 'items/alchemyRules.js');
 	compile(join(root, 'src/items/artifactActions.ts'), 'items/artifactActions.js');
 	compile(join(root, 'src/items/cloak.ts'), 'items/cloak.js');
@@ -232,6 +235,26 @@ shim(join('node_modules', 'mwg', 'core', 'index.js'), join(dist, 'core', 'index.
 	const { transmuteItem, isTransmutableForScroll, missileTierForClass } = require('./items/transmutation.js');
 	const { missileDamageRange, missilePickupValid, recordMissileUpgrade, missileAdjacentAccFactor, missileBaseUses, bolasCrippleTurns, tomahawkBleedRange, BOOMERANG_RETURN_TURNS, BOOMERANG_RETURN_ACC_FACTOR, tippedDartUseDivisor, TIPPED_DART_BY_SEED } = require('./items/missiles.js');
 	const { blacksmithTurnInFavor, BLACKSMITH_FAVOR_CAP, BLACKSMITH_QUEST_BOSS_BONUS } = require('./items/blacksmith.js');
+	// R112 `Potion`'s static `ItemStatusHandler` (tag v3.3.8): the run-wide known set is
+	// per-scene, exotic ids normalize to their regular counterpart on write AND read
+	// (`ExoticPotion.setKnown()` / `ExoticPotion.isKnown()`), and one learned class reveals
+	// the exotic sibling that shares its entry.
+	const { potionKindsKnownFor, markPotionKindsKnown, potionKindKnown } = require('./items/potionKnow.js');
+	const potionSceneA = {};
+	const potionSceneB = {};
+	markPotionKindsKnown(potionSceneA, ['potionHealing']);
+	const potionKnownA = potionKindsKnownFor(potionSceneA);
+	assert.equal(potionKindKnown(potionKnownA, 'potionHealing'), true, 'a quaffed potion class reads as known');
+	assert.equal(potionKindKnown(potionKnownA, 'potionStrength'), false, 'a class never learned stays unknown');
+	assert.equal(potionKindKnown(potionKnownA, 'potionShielding'), true, 'the exotic sibling answers through its regular counterpart');
+	assert.equal(potionKindKnown(potionKnownA, 'potionShrouding'), false, 'the unrelated exotic pair stays unknown');
+	assert.equal(potionKindsKnownFor(potionSceneA), potionKnownA, 'the set is stable per scene');
+	markPotionKindsKnown(potionSceneB, ['potionShrouding']);
+	const potionKnownB = potionKindsKnownFor(potionSceneB);
+	assert.equal(potionKnownB.has('potionInvis'), true, 'ExoticPotion.setKnown() stores the regular entry');
+	assert.equal(potionKnownB.has('potionShrouding'), false, 'the exotic id itself never enters the store');
+	assert.notEqual(potionKnownA, potionKnownB, 'each scene owns its own set');
+	assert.equal(potionKindKnown(potionKnownA, 'potionInvis'), false, "scene B's knowledge never leaks into scene A");
 	// `MissileWeapon.baseUses` (tag `v3.3.8`): Java's field defaults to 8, and each class overrides
 	// it. It is a property of the *wielded missile class*, not the hero class - this port used to
 	// derive it as `duelist ? 12 : 5`, which was wrong for every other class's missile.
@@ -4610,6 +4633,7 @@ function scrollReadDrive(overrides = {}) {
 	const flags = {
 		synced: 0, procIdentify: 0, transmuteCalls: [], recalled: [],
 		empowered: 0, weaponAffix: overrides.weaponAffix ?? null, armorGlyph: null,
+		potionKnown: [],
 	};
 	const hero = { hp: overrides.heroHp ?? 20, maxHp: overrides.heroMaxHp ?? 20, buffs: { ...(overrides.heroBuffs ?? {}) } };
 	const bag = new Inventory();
@@ -4646,6 +4670,11 @@ function scrollReadDrive(overrides = {}) {
 		procIdentifyTalents: () => { flags.procIdentify++; },
 		onScrollUsed: () => { flags.scrollTalentCalls = (flags.scrollTalentCalls ?? 0) + 1; },
 		armRecallInscription: (sourceClass) => { flags.recalled.push(sourceClass); },
+		// R112: `readScrollFlow`'s identify branch marks the potion CLASS and gates its
+		// target pick on `Potion.isIdentified() == isKnown()`; the behavior assertions
+		// live in `tools/verifyPotionKnowledge.mjs`, these keep the driver complete.
+		markPotionKindsKnown: (ids) => { flags.potionKnown.push(...ids); },
+		potionKindKnown: (id) => (overrides.potionKindsKnown ?? []).includes(id),
 		startTransmutationPick: (instanceId) => { flags.transmuteCalls.push(instanceId); return overrides.transmuteResult ?? true; },
 		get weaponAffix() { return flags.weaponAffix; },
 		set weaponAffix(affix) { flags.weaponAffix = affix; },
@@ -4698,6 +4727,42 @@ function scrollReadDrive(overrides = {}) {
 	});
 	assert.equal(known.result, true, 'reading with nothing new still reads');
 	assert.ok(known.said.some((l) => l.includes('port.log.nothingunidentified')), 'saying so');
+	// R112: `Potion.isIdentified()` returns `isKnown()` (tag v3.3.8), so the identify pick
+	// skips a potion whose CLASS the run already knows - even with its instance flag unset,
+	// whether learned by a earlier quaff or a sibling - and marks the class of the potion
+	// it does identify, the same `setKnown()` record the quaff path writes.
+	const knownPotionClass = scrollReadDrive({
+		items: [
+			{ id: 'scrollIdentify', quantity: 1, identified: true },
+			{ id: 'potionHealing', quantity: 1, identified: false },
+			{ id: 'scrollRage', quantity: 1 },
+		],
+		potionKindsKnown: ['potionHealing'],
+	});
+	assert.equal(knownPotionClass.result, true, 'the read still goes through');
+	assert.equal(knownPotionClass.bag.find('potionHealing')?.identified ?? false, false, 'a class-known potion is not a target');
+	assert.equal(knownPotionClass.bag.find('scrollRage')?.identified, true, 'the unknown scroll behind it is');
+	assert.deepEqual(knownPotionClass.flags.potionKnown, [], 'no potion class was marked');
+	const unknownPotionClass = scrollReadDrive({
+		items: [
+			{ id: 'scrollIdentify', quantity: 1, identified: true },
+			{ id: 'potionInvis', quantity: 1, identified: false },
+			{ id: 'scrollRage', quantity: 1 },
+		],
+	});
+	assert.equal(unknownPotionClass.bag.find('potionInvis')?.identified, true, 'an unknown-class potion is targeted');
+	assert.deepEqual(unknownPotionClass.flags.potionKnown, ['potionInvis'], 'and its class is marked known');
+	assert.equal(unknownPotionClass.bag.find('scrollRage')?.identified ?? false, false, 'the first valid target wins as before');
+	const onlyKnownPotionLeft = scrollReadDrive({
+		items: [
+			{ id: 'scrollIdentify', quantity: 1, identified: true },
+			{ id: 'potionHealing', quantity: 1, identified: false },
+		],
+		requestedItemId: 'scrollIdentify',
+		potionKindsKnown: ['potionHealing'],
+	});
+	assert.ok(onlyKnownPotionLeft.said.some((l) => l.includes('port.log.nothingunidentified')),
+		'with only class-known potions left, nothing unidentified remains');
 	const mob = { isHero: false, isNPC: false, isAlly: false, sleeping: true, seesHero: false, x: 1, y: 1 };
 	const rage = scrollReadDrive({
 		items: [{ id: 'scrollRage', quantity: 1, identified: true }],
@@ -5282,18 +5347,26 @@ function upgradeGearDrive(overrides = {}) {
 	compile(join(root, 'src/items/potionEffects.ts'), 'items/potionEffects.js');
 	const { createPotionEffects } = require('./items/potionEffects.js');
 	const smoked = [];
+	const fogMarks = [];
 	const fogScene = {
 		hero: { x: 2, y: 2 },
 		creatures: [],
 		level: { width: 5, inside: (x, y) => x >= 0 && y >= 0 && x < 5 && y < 5, passable: () => true, get: () => 1 },
 		seedSmoke: (x, y, volume) => { smoked.push({ x, y, volume }); },
 		say: () => {},
+		cellVisible: () => true,
+		markPotionKindsKnown: (ids) => { fogMarks.push(...ids); },
 	};
 	createPotionEffects(fogScene).potionShrouding();
 	assert.equal(smoked.length, 9, 'eight neighbours plus the center');
 	assert.ok(smoked.every((s) => s.volume === 180), 'every seed is Java\'s 180');
 	assert.ok(smoked.some((s) => s.x === 2 && s.y === 2), 'the center seeds too');
-	const walledScene = { ...fogScene, level: { ...fogScene.level, get: (x, y) => (x === 3 && y === 2 ? 0 : 1) } };
+	assert.deepEqual(fogMarks, ['potionShrouding'], 'a visible shatter marks the class known (R112, ShroudingFog.java:44)');
+	const unseenMarks = [];
+	const unseenScene = { ...fogScene, cellVisible: () => false, markPotionKindsKnown: (ids) => { unseenMarks.push(...ids); } };
+	createPotionEffects(unseenScene).potionShrouding();
+	assert.deepEqual(unseenMarks, [], 'an unseen shatter does not identify (the heroFOV gate)');
+	const walledScene = { ...fogScene, level: { ...fogScene.level, get: (x, y) => (x === 3 && y === 2 ? 0 : 1) }, markPotionKindsKnown: () => {} };
 	const walled = [];
 	walledScene.seedSmoke = (x, y, volume) => { walled.push({ x, y, volume }); };
 	createPotionEffects(walledScene).potionShrouding();

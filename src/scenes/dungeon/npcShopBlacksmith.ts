@@ -47,6 +47,7 @@ import { REGION_GRASS, REGION_WATER, patchGenerate, type Region } from '../../ge
 import { type Creature, type GroundItem, type Step } from '../../combat';
 import { nextEntityId } from '../../simulation/entityId';
 import { markRingTypesKnown } from '../../simulation/ringKnow';
+import { markPotionKindsKnown, potionKindKnown, potionKindsKnownFor } from '../../items/potionKnow';
 import { BOSSES, FLYING_KINDS, mobRosterForDepth, type MonsterId } from '../../monsters';
 import { BLACKSMITH_SMITH_COST, STARTING_WEAPON_CLASS, WANDMAKER_CLASS_INTROS, scenarioQuest } from './shared';
 import { mineTileFrames } from '../dungeonTileFrames';
@@ -1922,6 +1923,8 @@ export const npcShopBlacksmithMethods = {
 			set armorGlyph(glyph: string | null) { scene.armorGlyph = glyph; },
 			equippedRing: scene.equippedRing,
 			markRingTypesKnown: (ids) => markRingTypesKnown(scene, ids),
+			markPotionKindsKnown: (ids) => markPotionKindsKnown(scene, ids),
+			potionKindKnown: (id) => potionKindKnown(potionKindsKnownFor(scene), id),
 			syncHeroFromStats: () => scene.syncHeroFromStats(),
 		};
 	},

@@ -33,6 +33,10 @@ export interface PotionEffectsContext {
 	readonly clearHarmfulBlobs: (x: number, y: number) => void;
 	readonly eternalFireVolumeAt: (x: number, y: number) => number;
 	readonly clearEternalFire: () => void;
+	/** `Dungeon.level.heroFOV[cell]` - the gate Java's shatter identify sits behind. */
+	readonly cellVisible: (x: number, y: number) => boolean;
+	/** `Potion.setKnown()` on a visible shatter - the scene owns the run-wide class set (R112). */
+	readonly markPotionKindsKnown: (ids: string[]) => void;
 	readonly showDamage: (target: Creature, amount: number) => void;
 	readonly kill: (target: Creature) => void;
 	readonly say: (line: string, level?: 'info' | 'positive' | 'negative' | 'warning') => void;
@@ -49,8 +53,10 @@ export interface PotionEffectsContext {
 /** `PotionOfShielding.apply()` / `PotionOfHealing.pharmacophobiaProc()`, tag `v3.3.8`. */
 export function applyPotionShielding(context: PotionEffectsContext): void {
 	// Java calls identify() before applying the effect, updating shared Healing/Shielding
-	// class knowledge. The port's quaff workflow currently lacks that class-known store
-	// for all potions; this identification half remains Not ported, tracked by R112.
+	// class knowledge. The port records that class state run-wide in `applyPotionEffect`
+	// (`inventoryQuickslot.ts` - every quaff path marks the class before dispatching the
+	// effect), so this potion inherits its identification like every other one (R112,
+	// landed 2026-10-01; the store lives in `items/potionKnow.ts`).
 	if (isChallengeEnabled('no_healing')) {
 		if (!buffBlocked(context.hero, 'poison')) context.hero.buffs.poison = 4 + Math.floor(context.progression.level / 2);
 		context.say(t('port.log.pharmacophobia'), 'negative');
@@ -212,6 +218,14 @@ export const AREA_SHATTER_POTION_IDS: ReadonlySet<string> = new Set(['potionFlam
  * the cell - the `Freezing` blob's diffusion, applied at once - and clears Fire around it.
  */
 export function shatterPotionAt(scene: PotionEffectsContext, id: string, cx: number, cy: number): void {
+	// Java's shatter identifies inside `if (Dungeon.level.heroFOV[cell])` for every override
+	// that says so (`PotionOfFrost.java:44`, `PotionOfToxicGas.java:43`, `PotionOfLiquidFlame.java:44`,
+	// `PotionOfParalyticGas.java:43`, `PotionOfLevitation.java:48`, `PotionOfPurity.java:86`,
+	// `ExoticPotion`'s `PotionOfShroudingFog.java:44` - tag `v3.3.8`) - exactly this port's
+	// area set; base `Potion.shatter` splashes without identifying. A thrown flask reaches
+	// here directly (`onThrow(cell) = shatter(cell)`), beyond `applyPotionEffect`'s quaff-only
+	// mark, so the class record is written here too (R112).
+	if (AREA_SHATTER_POTION_IDS.has(id) && scene.cellVisible(cx, cy)) scene.markPotionKindsKnown([id]);
 	switch (id) {
 		case 'potionFlame':
 			shatterFlame(scene, cx, cy);

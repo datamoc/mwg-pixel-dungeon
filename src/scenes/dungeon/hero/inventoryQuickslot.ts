@@ -1,5 +1,6 @@
 import type { DungeonScene } from '../../dungeonScene';
 import { potionRegularCounterpart } from '../../../items/alchemy';
+import { markPotionKindsKnown } from '../../../items/potionKnow';
 import { refreshInventoryPanel as refreshInventoryPanelView, type InventoryPanelContext } from '../../../ui/inventoryPanel';
 import { createJournalWindow } from '../../../ui/journalWindow';
 import { createJournalTabs } from '../../../ui/journalContent';
@@ -146,6 +147,8 @@ export const inventoryQuickslotMethods = {
 			showDamage: this.showDamage.bind(this),
 			kill: (target: Creature) => this.kill(target),
 			say: this.say.bind(this),
+			cellVisible: (x: number, y: number) => scene.fov.isVisible(x, y),
+			markPotionKindsKnown: (ids: string[]) => markPotionKindsKnown(scene, ids),
 			get healingLeft() { return scene.healingLeft; },
 			set healingLeft(value: number) { scene.healingLeft = value; },
 			get healingPercent() { return scene.healingPercent; },
@@ -2332,7 +2335,16 @@ export const inventoryQuickslotMethods = {
 		};
 	},
 
-	applyPotionEffect(this: DungeonScene, id: string): void {
+	applyPotionEffect(this: DungeonScene, id: string, opts?: { anonymous?: boolean }): void {
+		// Every Java quaff path identifies the CLASS before applying: the specific
+		// `apply()`s call `identify()` first (`PotionOfHealing.java:53`,
+		// `PotionOfShielding.java:42`, tag `v3.3.8`), and the four malevolent potions
+		// route through `Potion.apply() -> shatter(hero.pos)`, which identifies inside
+		// `heroFOV` - always true at the hero's own cell. R112. Two paths stay
+		// anonymous like `Potion.setKnown()`'s `!anonymous` gate: the UnstableBrew's
+		// `anonymize()`d rolls, and `ElixirOfAquaticRejuvenation.apply()`, which has
+		// no `identify()` call at all.
+		if (!opts?.anonymous) markPotionKindsKnown(this, [id]);
 		const effect = this.potionEffects[id];
 		if (effect) effect();
 		else {

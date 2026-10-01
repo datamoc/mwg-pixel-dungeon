@@ -46,6 +46,7 @@ import { ARMOR_CHARGE_START, armorAbilitiesFor, armorAbilityDef, armorAbilityKey
 import { prismaticGuardMaxHp } from '../../simulation/prismatic';
 import { ignoresCrystalGuardianBeckon } from '../../simulation/crystalSpire';
 import { markRingTypesKnown } from '../../simulation/ringKnow';
+import { markPotionKindsKnown } from '../../items/potionKnow';
 import { isWandType, setStaffImbue } from '../../items/wands';
 import { CLASSES } from '../../classes';
 import { showChallengesWindow, showChoiceWindow } from '../../ui/portWindows';
@@ -344,6 +345,7 @@ export const panelsSingleUseMethods = {
 		this.armorHardened = s.armorHardened ?? false;
 		this.equippedRing = s.equippedRing ?? null;
 		markRingTypesKnown(this, s.ringTypesKnown ?? []);
+		markPotionKindsKnown(this, s.potionKindsKnown ?? []);
 		this.ringHtBonus = s.ringHtBonus ?? 0;
 		this.advancement = s.advancement ? Actors.Advancement.fromJSON(SUBCLASS_TRACK, s.advancement) : new Actors.Advancement(SUBCLASS_TRACK);
 		//No subclass window is re-opened on load either: the choice belongs to the Tengu's mask, not to a level.
@@ -1326,7 +1328,14 @@ export const panelsSingleUseMethods = {
 				&& item.id === id && (item.instanceId ?? undefined) === (instanceId ?? undefined)) ?? null,
 			bankEnergy: (amount) => { scene.alchemyEnergy += amount; },
 			consumeTarget: (id, instanceId) => { scene.bag.remove(id, 1, instanceId); },
-			markIdentified: (target) => { target.identified = true; },
+			markIdentified: (target) => {
+				target.identified = true;
+				//`WndEnergizeItem.energize()` ends in `item.identify()` (tag `v3.3.8`,
+				//WndEnergizeItem.java:168), and for potions that marks the CLASS run-wide
+				//(`Potion.identify -> setKnown`) - the instance is about to be consumed,
+				//so the class record is the part that survives (R112).
+				if (target.id.startsWith('potion')) markPotionKindsKnown(scene, [target.id]);
+			},
 			targetName: (target) => scene.itemDisplayName(target.id, target.identified ?? false, target.instanceId),
 			refreshPanels: () => { scene.refreshInventoryPanel(); },
 			say: scene.say.bind(scene),

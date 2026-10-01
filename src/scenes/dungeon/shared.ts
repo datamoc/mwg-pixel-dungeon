@@ -567,6 +567,8 @@ export interface SaveShape {
 	ringHtBonus?: number;
 	/** Ring ids whose type (not level/curse) stands revealed - Thief's Intuition or a full identify. */
 	ringTypesKnown?: string[];
+	/** Potion classes revealed run-wide this run (`Potion`'s `ItemStatusHandler` known set, R112). */
+	potionKindsKnown?: string[];
 	advancement?: { grantedTiers: number; balance: number; choices: [number, string][] };
 	/** Per-tier talent points (T1/T2/T3/T4) - see 	alentPoints`'s own comment. */
 	talentPoints?: number[];

@@ -5,6 +5,7 @@ import { ARMOR_NAME_BY_CLASS, STARTING_WEAPON_CLASS, WEAPON_NAME_BY_CLASS, isCla
 import { tippedDartNameKey, missileDamageRange } from './missiles';
 import { getCurse } from './itemCurses';
 import { potionRegularCounterpart } from './alchemy';
+import { potionKindKnown } from './potionKnow';
 import { armorSTRReq, missileSTRReq, weaponSTRReq } from './strReq';
 import { TOME_SPELL_COST, type SubclassSpellId, type TalentSpellId, type TomeSpellId } from '../simulation/clericSpells';
 import { tomeSpellKey } from './holyTome';
@@ -129,6 +130,8 @@ export interface ItemDisplayContext {
 	readonly holyWardUp?: boolean;
 	/** Ring ids whose type stands revealed while level/curse stay hidden (Thief's Intuition rank 1). */
 	readonly ringTypesKnown: ReadonlySet<string>;
+	/** Potion ids whose class stands revealed run-wide (`Potion.isKnown()` - quaff/identify/energize, R112). */
+	readonly potionKindsKnown: ReadonlySet<string>;
 }
 
 /** Resolves the player-facing name of a bag item, including appearances and enhancement notes. */
@@ -216,6 +219,12 @@ export function itemDisplayName(scene: ItemDisplayContext, id: string, identifie
 		const curse = ring?.cursed ? ` (${t('port.name.cursed')})` : '';
 		return `${t(RING_KEYS[id.slice(5)] ?? id)} +${ring?.level ?? 0}${curse}`;
 	}
+	//`Potion.isIdentified()` (tag `v3.3.8`) returns `isKnown()`: for potions the instance
+	//flag IS the run-wide class state, so a known class projects onto every instance of
+	//that class - including pickups minted after the class was learned (R112's acquisition
+	//projection). `ExoticPotion.isKnown()` shares its regular counterpart's entry, which
+	//`potionKindKnown` resolves the same way.
+	if (id.startsWith('potion')) identified = identified || potionKindKnown(scene.potionKindsKnown, id);
 	if (identified) {
 		const item = scene.bag.find(id, instanceId);
 		//Matches the queried (id, instanceId) against a worn slot - Java's slots hold the item

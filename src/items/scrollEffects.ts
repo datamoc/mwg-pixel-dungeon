@@ -183,6 +183,10 @@ export interface ReadScrollContext extends ScrollEffectsContext {
 	readonly requestedItemInstanceId: string | undefined;
 	/** `Ring.setKnown()` on identify - the scene owns the per-run known set. */
 	readonly markRingTypesKnown: (ids: string[]) => void;
+	/** `Potion.setKnown()` on identify, and the `Potion.isIdentified() == isKnown()` gate
+	 * over the target pick below - the scene owns the run-wide class set (R112). */
+	readonly markPotionKindsKnown: (ids: string[]) => void;
+	readonly potionKindKnown: (id: string) => boolean;
 	readonly heroClass: string;
 	readonly talentRank: (id: string) => number;
 	//Get/set pair (not set-only like TransmuteFlowContext): this builder spreads
@@ -299,7 +303,12 @@ export function readScrollFlow(context: ReadScrollContext, opts?: { freeRecast?:
 	//(Identify/effect/cleanse all consume below, so arming here is exact for them.)
 	const armEmpowered = selectedScroll !== 'scrollTransmutation'
 		&& context.heroClass === 'mage' && context.talentRank('empowering_scrolls') > 0;
-	const unidentified = bag.items.find((i) => !i.identified && i.quantity > 0);
+	//`ScrollOfIdentify` picks Java's `!Item.isIdentified()` target (`ScrollOfIdentify.java`,
+	//tag `v3.3.8`), and for potions `isIdentified()` returns `isKnown()` - so a potion whose
+	//CLASS is already known is not a target even while this instance never had its flag set
+	//(a colour-mate learned by quaffing, or a pickup made after the class was learned).
+	const unidentified = bag.items.find((i) => !i.identified && i.quantity > 0
+		&& !(i.id.startsWith('potion') && context.potionKindKnown(i.id)));
 	const id = selectedScroll;
 	if (id === 'scrollUpgrade') {
 		context.say(t('port.log.scrollisforgear'));
@@ -323,6 +332,7 @@ export function readScrollFlow(context: ReadScrollContext, opts?: { freeRecast?:
 		if (unidentified) {
 			Actors.identify(unidentified);
 			if (unidentified.id.startsWith('ring_')) context.markRingTypesKnown([unidentified.id]);
+			if (unidentified.id.startsWith('potion')) context.markPotionKindsKnown([unidentified.id]);
 			//**Correction, 2026-09-09 roadmap pass**: a prior audit pass (checking only
 			//Java tags `v3.3.8`/`4.0.0-beta`) wrongly called `test_subject`/`tested_hypothesis`
 			//invented substitutes for the unrelated `PROVOKED_ANGER`/`LINGERING_MAGIC` talents.

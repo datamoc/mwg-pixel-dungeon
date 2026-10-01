@@ -26,6 +26,7 @@ import { buildYogMinionDeck, chooseYogSpawnCell, yogBossChallengeQualified, yogF
 import { deathBurstsFor } from '../../simulation/deathBursts';
 import { colorblind, highContrast } from '../../settings';
 import { ringTypesKnownFor } from '../../simulation/ringKnow';
+import { potionKindsKnownFor } from '../../items/potionKnow';
 import { staffImbueFor } from '../../items/wands';
 import { Banner } from '../../ui/banner';
 import { bruteLootArmor, randomArmor, randomMissile, randomUsingDefaults, randomUsingDefaultsAnyCategory, Cat, type GenItem } from '../../items/generator';
@@ -1634,6 +1635,7 @@ export const deathSaveRefreshMethods = {
 			questStages: this.quests.toJSON().stageIndex,
 			equippedRing: this.equippedRing,
 			ringTypesKnown: [...ringTypesKnownFor(this)],
+			potionKindsKnown: [...potionKindsKnownFor(this)],
 			ringHtBonus: this.ringHtBonus,
 			advancement: this.advancement.toJSON(),
 			talentPoints: this.talentPoints,

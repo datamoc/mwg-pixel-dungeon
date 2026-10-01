@@ -17,6 +17,7 @@ import { ARMOR_CHARGE_START, armorAbilitiesFor } from '../../../armorAbilities';
 import { endureBankedDamage, endureDamageTaken, endureEndingBonus } from '../../../simulation/warriorAbilities';
 import { ratsistanceFactor, useRatmogrifyFlow, type RatmogrifyContext } from '../../../simulation/ratmogrify';
 import { markRingTypesKnown, ringTypesKnownFor, thiefsIntuitionKnownIds } from '../../../simulation/ringKnow';
+import { potionKindsKnownFor } from '../../../items/potionKnow';
 import { BADGE_DEFS, BADGE_ICON } from '../../../badges';
 import { Cat, randomUsingDefaults, type GenItem } from '../../../items/generator';
 import { MISSILE_MAX_DURABILITY, TIPPED_DART_BY_SEED } from '../../../items/missiles';
@@ -1614,6 +1615,7 @@ export const weaponSpellsGearMethods = {
 			weaponAffix: this.weaponAffix, holyWeaponUp: this.hero?.buffs['holyWeapon'] !== undefined,
 			heroClass: this.heroClass,
 			ringTypesKnown: ringTypesKnownFor(this),
+			potionKindsKnown: potionKindsKnownFor(this),
 			armorId: this.armorId, armorInstanceId: this.armorInstanceId, armorHardened: this.armorHardened,
 			armorSourceClass: this.armorSourceClass,
 			armorGlyph: this.armorGlyph, holyWardUp: this.hero?.buffs['holyWard'] !== undefined };

@@ -15,7 +15,7 @@
 	"test:simulation": "node tools/verifySimulation.mjs && node tools/verifyHiddenMimicContact.mjs && node tools/verifyRegeneration.mjs && node tools/verifyBanner.mjs && node tools/verifyVault.mjs && node tools/verifyBuffOverlays.mjs && node tools/verifyCrystalMine.mjs && node tools/verifyCrystalGuardianScale.mjs && node tools/verifyMindForm.mjs && node tools/verifyHeapStack.mjs && node tools/verifyRecycleTippedDart.mjs && node tools/verifyHermitCrabLoot.mjs && node tools/verifyBlobCells.mjs && node tools/verifyMonsterRoster.mjs && esbuild ./tools/verifyVertigo.ts --bundle --platform=node --format=esm --outfile=tools/scratch/verifyVertigo.mjs && node tools/scratch/verifyVertigo.mjs && esbuild ./tools/verifyHeapBlastProof.ts --bundle --platform=node --format=esm --outfile=tools/scratch/verifyHeapBlastProof.mjs && node tools/scratch/verifyHeapBlastProof.mjs && node tools/verifyCursedWandTier.mjs && npm run test:lab-room && npm run test:dm300-phase",
 	"test:lab-room": "esbuild ./tools/verifyLabRoomGate.ts --bundle --platform=node --format=esm --outfile=tools/scratch/verifyLabRoomGate.mjs && node tools/scratch/verifyLabRoomGate.mjs",
 	"test:dm300-phase": "esbuild ./tools/verifyDM300Phase.ts --bundle --platform=node --format=esm --outfile=tools/scratch/verifyDM300Phase.mjs && node tools/scratch/verifyDM300Phase.mjs",
-    "test:items": "node tools/verifyItemWorkflows.mjs",
+    "test:items": "node tools/verifyItemWorkflows.mjs && node tools/verifyPotionKnowledge.mjs",
     "test:lua": "node tools/verifyLua.mjs",
     "test:mwg": "node tools/verifyMwgCompatibility.mjs",
     "test:settings": "node tools/verifyDisplaySettings.mjs",
