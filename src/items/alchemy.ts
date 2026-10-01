@@ -347,8 +347,8 @@ export function canCraftScrollToExotic(inventory: Inventory): boolean {
 /**
  * `ExoticPotion.regToExo` (tag `v3.3.8`): all twelve regular potion classes map
  * to an exotic, brewed one potion at a time for 4 energy (`PotionToExotic`).
- * Only the Invisibility -> ShroudingFog pair exists as a port item; the other
- * eleven values name Java classes with no port id, so they stay out of this
+ * Invisibility -> ShroudingFog and Healing -> Shielding exist as port items; the other
+ * ten values name Java classes with no port id, so they stay out of this
  * table until their exotics are ported (each addition lights up automatically
  * below, since eligibility is "mapped value is a real MWL item"). The full
  * Java table for the record: Strength->Mastery, Healing->Shielding,
@@ -359,6 +359,7 @@ export function canCraftScrollToExotic(inventory: Inventory): boolean {
  */
 export const POTION_TO_EXOTIC: Readonly<Record<string, string>> = {
 	potionInvis: 'potionShrouding',
+	potionHealing: 'potionShielding',
 };
 
 /**
@@ -381,6 +382,11 @@ export function exoticRecycleAlternatives(id: string): string[] {
 
 export function potionExoticResult(potionId: string): string | undefined {
 	return POTION_TO_EXOTIC[potionId];
+}
+
+/** `ExoticPotion.regToExo` / `exoToReg` (v3.3.8): an exotic shares its regular class's shuffled appearance. */
+export function potionRegularCounterpart(potionId: string): string | undefined {
+	return Object.entries(POTION_TO_EXOTIC).find(([, exotic]) => exotic === potionId)?.[0];
 }
 
 export function craftPotionToExotic(inventory: Inventory, selected?: AlchemyUnitRef): boolean {

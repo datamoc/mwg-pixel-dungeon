@@ -5,6 +5,7 @@ import { t } from '../i18n';
 import { empoweringScrollsCharges } from '../talentEffects';
 import { RING_DEFS, ringDef, ringMightBonus, type EquippedRing } from './ringModifiers';
 import { MWL_CONSUMABLE_CLASS_ALIASES, MWL_MISSILE_DEFINITIONS, MWL_WAND_DEFINITIONS } from '../mwlContent';
+import { potionRegularCounterpart } from './alchemy';
 import { MISSILE_MAX_DURABILITY, TIPPED_DART_BY_SEED, missileStackId, recordMissileUpgrade } from './missiles';
 
 /**
@@ -115,7 +116,7 @@ export function isTransmutableForScroll(item: { id: string; sourceClass?: string
 	if (id.startsWith('ring_')) return ringDef(id) !== undefined;
 	//Ported exotics flip to their regular counterpart in `transmuteItem` below rather
 	//than joining the random deck, so they are transmutable without a class alias.
-	if (id.startsWith('potion')) return item.id in POTION_CLASS_BY_PORT_ID || item.id === 'potionShrouding';
+	if (id.startsWith('potion')) return item.id in POTION_CLASS_BY_PORT_ID || potionRegularCounterpart(item.id) !== undefined;
 	if (id.startsWith('scroll')) return id !== 'scrollTransmutation';
 	if (id === 'seed') return true;
 	if (id === 'stone' || id.startsWith('stoneOf')) return true;
@@ -168,9 +169,9 @@ export function transmuteItem(target: TransmutableItem, newItemInstanceId: (kind
 	}
 	if (target.id.startsWith('potion')) {
 		//`changePotion` (same file): an exotic flips to its own regular counterpart
-		//(`ExoticPotion.exoToReg`) - with one exotic pair ported that is
-		//`potionShrouding` -> `potionInvis`, mirroring the scroll branch below.
-		if (target.id === 'potionShrouding') return { id: 'potionInvis', quantity: 1, stackable: true, identified: target.identified };
+		//(`ExoticPotion.exoToReg`), mirroring the scroll branch below.
+		const regular = potionRegularCounterpart(target.id);
+		if (regular) return { id: regular, quantity: 1, stackable: true, identified: target.identified };
 		const current = POTION_CLASS_BY_PORT_ID[target.id];
 		const pool = Object.values(PORT_ID_BY_POTION_CLASS).filter((id) => POTION_CLASS_BY_PORT_ID[id] !== current);
 		if (pool.length === 0) return undefined;

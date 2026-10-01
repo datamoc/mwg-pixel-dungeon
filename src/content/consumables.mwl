@@ -19,6 +19,13 @@
       },
       {
         tag: "item",
+        id: "potionShielding",
+        name: "items.potions.exotic.potionofshielding.name",
+        slot: "consumable",
+        stackable: true,
+      },
+      {
+        tag: "item",
         id: "potionMindVision",
         name: "items.potions.potionofmindvision.name",
         slot: "consumable",

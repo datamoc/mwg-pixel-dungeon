@@ -1,4 +1,5 @@
 import type { DungeonScene } from '../../dungeonScene';
+import { potionRegularCounterpart } from '../../../items/alchemy';
 import { refreshInventoryPanel as refreshInventoryPanelView, type InventoryPanelContext } from '../../../ui/inventoryPanel';
 import { createJournalWindow } from '../../../ui/journalWindow';
 import { createJournalTabs } from '../../../ui/journalContent';
@@ -148,6 +149,14 @@ export const inventoryQuickslotMethods = {
 			set healingPercent(value: number) { scene.healingPercent = value; },
 			set healingEvasionTurns(turns: number) { scene.healingEvasionTurns = turns; },
 			grantHeroShield: (amount: number, cap: number) => { scene.grantHeroShield(amount, cap); },
+			setHeroBarrier: (amount: number) => {
+				// `Barrier.setShield()` (v3.3.8): preserve a higher pool; reset fractional decay
+				// when the resulting shield equals the requested value, including equal top-ups.
+				if (scene.heroBarrier.total <= amount) {
+					scene.heroBarrier.add(amount - scene.heroBarrier.total);
+					scene.barrierPartialLoss = 0;
+				}
+			},
 		};
 	},
 
@@ -319,7 +328,8 @@ export const inventoryQuickslotMethods = {
 			if (!category) return undefined;
 			//`appearanceOf` throws on an unmapped kind (see shared.ts); an unknown id keeps
 			//the generic family frame instead of crashing the bag.
-			try { return appearanceItemFrame(category, this.appearances.appearanceOf(category, id)); } catch { return undefined; }
+			const appearanceId = category === 'potion' ? potionRegularCounterpart(id) ?? id : id;
+			try { return appearanceItemFrame(category, this.appearances.appearanceOf(category, appearanceId)); } catch { return undefined; }
 		},
 			addToStage: (panel) => this.stage.addChild(panel),
 			positionInterface: () => this.positionInterface(Game.current.width, Game.current.height),

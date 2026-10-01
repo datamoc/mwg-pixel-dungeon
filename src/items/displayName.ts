@@ -4,6 +4,7 @@ import { wandTypeFromSource, type WandType } from './wands';
 import { ARMOR_NAME_BY_CLASS, STARTING_WEAPON_CLASS, WEAPON_NAME_BY_CLASS, isClassArmorId, weaponCombat } from './catalog';
 import { tippedDartNameKey, missileDamageRange } from './missiles';
 import { getCurse } from './itemCurses';
+import { potionRegularCounterpart } from './alchemy';
 import { armorSTRReq, missileSTRReq, weaponSTRReq } from './strReq';
 import { TOME_SPELL_COST, type SubclassSpellId, type TalentSpellId, type TomeSpellId } from '../simulation/clericSpells';
 import { tomeSpellKey } from './holyTome';
@@ -292,7 +293,7 @@ export function itemDisplayName(scene: ItemDisplayContext, id: string, identifie
 		}
 		return `${base}${affix}${hardenedNote}`;
 	}
-	if (id.startsWith('potion')) return t(scene.appearances.appearanceOf('potion', id));
+	if (id.startsWith('potion')) return t(scene.appearances.appearanceOf('potion', potionRegularCounterpart(id) ?? id));
 	if (id.startsWith('scroll')) return t(scene.appearances.appearanceOf('scroll', id));
 	return t(ITEM_KEYS[id] ?? id);
 }

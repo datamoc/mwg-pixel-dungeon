@@ -1388,16 +1388,17 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 			'the fresh rerolled tipped dart is added beside the remaining stack');
 	}
 	// `ExoticPotion.PotionToExotic` (tag `v3.3.8`): one regular potion, cost 4, into its
-	// exotic - only the Invisibility -> ShroudingFog pair exists here so far.
+	// exotic - Invisibility -> ShroudingFog and Healing -> Shielding are represented.
 	assert.equal(potionExoticResult('potionInvis'), 'potionShrouding');
-	assert.equal(potionExoticResult('potionHealing'), undefined, 'unported exotics map to nothing');
+	assert.equal(potionExoticResult('potionHealing'), 'potionShielding');
+	assert.equal(potionExoticResult('potionStrength'), undefined, 'unported exotics map to nothing');
 	const fogBag = new Inventory();
 	fogBag.add({ id: 'potionInvis', quantity: 1, stackable: true, identified: true });
 	fogBag.add({ id: 'potionHealing', quantity: 1, stackable: true });
 	assert.equal(canCraftPotionToExotic(fogBag), true, 'a carried invisibility potion offers the brew');
 	assert.equal(alchemyRecipe('potionToExotic')?.energyCost, 4, 'the MWL recipe carries Java\'s cost');
 	assert.equal(alchemyEnergyFor('potionShrouding', false), 10, 'exotic energy is regular + 4');
-	assert.equal(craftPotionToExotic(fogBag, { id: 'potionHealing' }), false, 'a healing potion cannot brew');
+	assert.equal(craftPotionToExotic(fogBag, { id: 'potionStrength' }), false, 'an absent or unsupported potion cannot brew');
 	assert.equal(fogBag.find('potionHealing')?.quantity, 1, '...unconsumed');
 	assert.equal(craftPotionToExotic(fogBag), true, 'the invisibility potion brews');
 	assert.deepEqual(
@@ -1406,6 +1407,12 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 		'the brewed exotic inherits the consumed potion\'s identified state (ExoticPotion.isKnown)',
 	);
 	assert.equal(fogBag.find('potionInvis'), undefined, 'and the invisibility potion is consumed');
+	assert.equal(craftPotionToExotic(fogBag, { id: 'potionHealing' }), true, 'the selected healing potion brews into Shielding');
+	assert.equal(fogBag.find('potionHealing'), undefined, 'exactly the selected healing unit is consumed');
+	assert.equal(fogBag.find('potionShielding')?.identified, false, 'unknown Healing produces unknown Shielding');
+	assert.equal(alchemyEnergyFor('potionShielding', false), 10, 'Shielding scraps for the exotic 6+4 energy');
+	assert.equal(isTransmutableForScroll({ id: 'potionShielding' }), true);
+	assert.equal(transmuteItem({ id: 'potionShielding', quantity: 1, identified: true }, () => 'unused')?.id, 'potionHealing', 'Shielding transmutes back to Healing');
 	// `changePotion`: an exotic flips to its own regular counterpart (`exoToReg`).
 	assert.equal(isTransmutableForScroll({ id: 'potionShrouding' }), true, 'exotics are transmutable like regulars');
 	const flippedFog = transmuteItem({ id: 'potionShrouding', quantity: 1, stackable: true, identified: false }, (kind) => `test-${kind}`);
@@ -1636,7 +1643,8 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 	// missile's display name - the mechanical `missileDefinitions` table has no name column, so it
 	// comes from the authored item node instead.
 	assert.equal(MWL_MISSILE_NAME_KEYS.missile_heavyboomerang, 'items.weapon.missiles.heavyboomerang.name');
-	assert.equal(Object.keys(MWL_CONSUMABLE_DESCRIPTION_KEYS).length, 71);
+	assert.equal(Object.keys(MWL_CONSUMABLE_DESCRIPTION_KEYS).length, 72);
+	assert.equal(MWL_CONSUMABLE_DESCRIPTION_KEYS.potionShielding, 'items.potions.exotic.potionofshielding.desc');
 	assert.equal(MWL_CONSUMABLE_DESCRIPTION_KEYS.seedStarflower, 'plants.starflower.desc');
 	assert.equal(mwlItemEffectValue('scrollMirror', 'imageCount'), 2);
 	assert.equal(mwlItemEffectValue('scrollRetribution', 'maxPower'), 4);
@@ -5283,7 +5291,7 @@ function upgradeGearDrive(overrides = {}) {
 // wiring itself.
 // (`combat` is stubbed here, so the restored_nature roots and the stubbed-off
 // no_healing challenge branch stay live-only by construction.)
-const { applyPotionHealing, applyPotionPurity, cureHeroBuffs } = require('./items/potionEffects.js');
+const { applyPotionHealing, applyPotionShielding, applyPotionPurity, cureHeroBuffs } = require('./items/potionEffects.js');
 function healingDrive(overrides = {}) {
 	const said = [];
 	const pool = { left: overrides.healingLeft ?? 0, percent: 0, evasion: 0 };
@@ -5300,6 +5308,7 @@ function healingDrive(overrides = {}) {
 		set healingPercent(v) { pool.percent = v; },
 		set healingEvasionTurns(v) { pool.evasion = v; },
 		grantHeroShield: (amount, cap) => { flags.shield = { amount, cap }; },
+		setHeroBarrier: (amount) => { flags.barrier = amount; },
 		syncHeroFromStats: () => { flags.synced++; },
 		say: (line, level) => { said.push(`${level}:${line}`); },
 		...overrides.ctx,
@@ -5317,6 +5326,23 @@ function healingDrive(overrides = {}) {
 	assert.equal(d.pool.percent, 0.25, 'at the quarter rate');
 	assert.ok(d.said.some((l) => l.includes('port.log.quaffhealing')), 'announced');
 	const full = healingDrive({ healingLeft: 50 });
+	const shield = healingDrive({ heroBuffs: { poison: 3, burning: 2 }, ranks: { restored_willpower: 2, restored_agility: 2 } });
+	shield.hero.maxHp = 37;
+	applyPotionShielding(shield.ctx);
+	assert.equal(shield.flags.barrier, 32, 'Shielding floors 0.6*37+10, rather than rounding or healing');
+	assert.deepEqual(shield.hero.buffs, { poison: 3, burning: 2 }, 'Shielding does not run Healing.cure');
+	assert.equal(shield.pool.left, 0, 'no healing pool');
+	assert.equal(shield.flags.shield, null, 'no Restored Willpower trigger');
+	assert.equal(shield.flags.synced, 0, 'no Restored Agility trigger');
+	const challenges = require('./challenges.js');
+	const originalChallengeGate = challenges.isChallengeEnabled;
+	try {
+		challenges.isChallengeEnabled = (id) => id === 'no_healing';
+		const poisoned = healingDrive({ level: 5 });
+		applyPotionShielding(poisoned.ctx);
+		assert.equal(poisoned.hero.buffs.poison, 6, 'Pharmacophobia sets 4+floor(level/2) poison');
+		assert.equal(poisoned.flags.barrier, undefined, 'challenge grants no Barrier');
+	} finally { challenges.isChallengeEnabled = originalChallengeGate; }
 	applyPotionHealing(full.ctx);
 	assert.equal(full.pool.left, 50, 'a bigger running pool is not stacked onto');
 	const will1 = healingDrive({ ranks: { restored_willpower: 1 } });

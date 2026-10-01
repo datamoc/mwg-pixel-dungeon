@@ -41,6 +41,12 @@
             energy: 10,
           },
           {
+            // `ExoticPotion.energyVal()` (v3.3.8): regular potion 6 plus 4.
+            tag: "row",
+            kind: "potionShielding",
+            energy: 10,
+          },
+          {
             tag: "row",
             //`Item.energyVal()` defaults to 0; `Food` does not override it.
             kind: "food",

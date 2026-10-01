@@ -509,6 +509,9 @@
         columns: "id:string|item:string|effect:string|value:number",
         children: [
           { tag: "row", id: "potionStrengthStrengthBonus", item: "potionStrength", effect: "strengthBonus", value: 1 },
+          // `PotionOfShielding.apply()` (v3.3.8): floor(0.6 * hero.HT + 10).
+          { tag: "row", id: "potionShieldingHpRatio", item: "potionShielding", effect: "shieldHpRatio", value: 0.6 },
+          { tag: "row", id: "potionShieldingBase", item: "potionShielding", effect: "shieldBase", value: 10 },
           { tag: "row", id: "potionFlameFireVolume", item: "potionFlame", effect: "fireVolume", value: 2 },
           { tag: "row", id: "potionToxicGasGasVolume", item: "potionToxicGas", effect: "gasVolume", value: 1000 },
           { tag: "row", id: "potionParalyticGasGasVolume", item: "potionParalyticGas", effect: "gasVolume", value: 1000 },
@@ -824,6 +827,7 @@
         children: [
           { tag: "row", item: "potionStrength", descriptionKey: "items.potions.potionofstrength.desc" },
           { tag: "row", item: "potionHealing", descriptionKey: "items.potions.potionofhealing.desc" },
+          { tag: "row", item: "potionShielding", descriptionKey: "items.potions.exotic.potionofshielding.desc" },
           { tag: "row", item: "potionMindVision", descriptionKey: "items.potions.potionofmindvision.desc" },
           { tag: "row", item: "potionFrost", descriptionKey: "items.potions.potionoffrost.desc" },
           { tag: "row", item: "potionFlame", descriptionKey: "items.potions.potionofliquidflame.desc" },

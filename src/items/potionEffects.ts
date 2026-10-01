@@ -42,6 +42,25 @@ export interface PotionEffectsContext {
 	set healingPercent(value: number);
 	set healingEvasionTurns(turns: number);
 	readonly grantHeroShield: (amount: number, cap: number) => void;
+	/** `Barrier.setShield()` raises the pool to a minimum, without adding to a larger shield. */
+	readonly setHeroBarrier: (amount: number) => void;
+}
+
+/** `PotionOfShielding.apply()` / `PotionOfHealing.pharmacophobiaProc()`, tag `v3.3.8`. */
+export function applyPotionShielding(context: PotionEffectsContext): void {
+	// Java calls identify() before applying the effect, updating shared Healing/Shielding
+	// class knowledge. The port's quaff workflow currently lacks that class-known store
+	// for all potions; this identification half remains Not ported, tracked by R112.
+	if (isChallengeEnabled('no_healing')) {
+		if (!buffBlocked(context.hero, 'poison')) context.hero.buffs.poison = 4 + Math.floor(context.progression.level / 2);
+		context.say(t('port.log.pharmacophobia'), 'negative');
+		return;
+	}
+	const amount = Math.floor(context.hero.maxHp * mwlItemEffectValue('potionShielding', 'shieldHpRatio') + mwlItemEffectValue('potionShielding', 'shieldBase'));
+	context.setHeroBarrier(amount);
+	// Java shows a floating shield count and icon on the hero. The port uses its existing
+	// positive shield log; it has no floating shielding-icon renderer.
+	context.say(t('port.log.shield', { amount }), 'positive');
 }
 
 /** `PotionOfHealing.cure()`: the curable debuffs this port models, shared by the potion, by
@@ -108,6 +127,7 @@ export function createPotionEffects(scene: PotionEffectsContext): Record<string,
 	return {
 		potion: () => applyPotionHealing(scene),
 		potionHealing: () => applyPotionHealing(scene),
+		potionShielding: () => applyPotionShielding(scene),
 		potionStrength: () => {
 			scene.heroStr += mwlItemEffectValue('potionStrength', 'strengthBonus');
 			scene.syncHeroFromStats();
