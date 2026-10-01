@@ -1650,6 +1650,16 @@ export const panelsSingleUseMethods = {
 		//inside `attack()`, which meant a blast or an ability hit a charged pylon or a slime for
 		//far more than Java's curve allows; see `PORT_COVERAGE.md`.
 		damage = applyDefenderDamageCurves(c.kind, damage, { beamCharged: c.beamCharged === true });
+		//`ChampionEnemy.damageTakenFactor()` runs inside `Char.damage()` for every source
+		//(`Char.java`, tag `v3.3.8`), with a ceiling per buff - Giant 0.2, AntiMagic 0.5,
+		//Growing 1/multiplier (Blessed/Projecting/Blazing keep the default 1). `rollDamage`
+		//carries the attack-path copy, so this dispatch carries every other source (bombs,
+		//zaps, traps, blobs, bolts, spirit-bow shots). Java's `Mob.damage()` overrides run
+		//the curves above ahead of `Char.damage()`, so the factor lands after them here,
+		//ahead of the shields and the HP write below.
+		if (c.champion === 'giant') damage = Math.ceil(damage * 0.2);
+		else if (c.champion === 'antimagic') damage = Math.ceil(damage * 0.5);
+		else if (c.champion === 'growing') damage = Math.ceil(damage / (c.championPower ?? 1.19));
 		damage = this.gnollMineDamageTaken(c, damage);
 		//`DwarfKing.damage()` (phase 3) and `RustedFist.damage()` bank every hit into the same
 		//`Viscosity.DeferedDamage` pool instead of losing HP - also a `damage()` override, so also

@@ -394,6 +394,19 @@ export function verifyCombat(require, check) {
 		assert.match(blastSource, /auraProtectedDamage\(c, damage\)[\s\S]*?c\.buffs\['powerOfMany'\] !== undefined[\s\S]*?powerOfManyDamageFactor\(this\.talentRank\('life_link'\)\)[\s\S]*?doomDamage\(damage, c\)/,
 			'shared dispatch reduces powered defenders between Aura and Doom');
 	});
+	check('the shared Char.damage dispatch applies champion damageTakenFactor to every source (T63)', () => {
+		//`Char.damage()` runs every defender ChampionEnemy's `damageTakenFactor()` with a
+		//ceiling per buff (`Char.java`, tag `v3.3.8`) - for every source, not just the
+		//attack() roll. `rollDamage` carries the attack-path copy; the dispatch carries
+		//every other source (bombs, zaps, traps, blobs, bolts, spirit-bow shots), after
+		//the defender `damage()` curves Java's own Mob overrides run ahead of.
+		assert.match(blastSource, /applyDefenderDamageCurves\(c\.kind, damage[\s\S]*?c\.champion === 'giant'[\s\S]*?Math\.ceil\(damage \* 0\.2\)/,
+			'a Giant champion takes ceil(x0.2) through the dispatch, after the defender curves');
+		assert.match(blastSource, /c\.champion === 'antimagic'[\s\S]*?Math\.ceil\(damage \* 0\.5\)/,
+			'an AntiMagic champion takes ceil(x0.5) through the dispatch');
+		assert.match(blastSource, /c\.champion === 'growing'[\s\S]*?Math\.ceil\(damage \/ \(c\.championPower \?\? 1\.19\)\)/,
+			'a Growing champion takes ceil(dmg/power) through the dispatch');
+	});
 	check('Paladin holy halves keep the worn enchant and scale 6/3 (R029)', () => {
 		//`Weapon.proc()`'s wielding arm (`Weapon.java` 147-162) procs the worn
 		//enchant for the Paladin (or a cursed enchant for anyone) alongside the
