@@ -1279,16 +1279,17 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.deepEqual(messages, ['pump', 'pump-more', 'slam']);
 		//The pumped slam fouls the bosses challenge exactly once per slam.
 		assert.equal(fouled, 1);
-		assert.deepEqual(planRatKingWave(0, 300, false, random), { adds: ['ghoul'], nextSummonsMade: 1, announcement: 'wave_1', cadence: 3 });
+		assert.deepEqual(planRatKingWave(0, 300, false, random), { adds: ['ghoul'], nextSummonsMade: 1, announcement: 'wave_1', arrivalDelay: 3, cadence: 3 });
 		assert.deepEqual(ratKingP1Summon(8, true, random), 'golem');
-		assert.deepEqual(planRatKingWave(12, 150, true, random), { adds: ['warlock', 'monk', 'ghoul', 'ghoul'], nextSummonsMade: 16, announcement: 'wave_3', cadence: 3 });
+		assert.deepEqual(planRatKingWave(12, 150, true, random), { adds: ['warlock', 'monk', 'ghoul', 'ghoul'], nextSummonsMade: 16, announcement: 'wave_3', arrivalDelay: 3, cadence: 3 });
 		//34th matrix: the wave-3 yell fires wherever the branch fires (made 8, not
 		//just 12), and every plan carries Java's spend pacing (3 for wave-1
-		//schedules, 1 for the per-turn waves).
-		assert.deepEqual(planRatKingWave(8, 50, false, random), { adds: ['warlock', 'monk', 'ghoul', 'ghoul'], nextSummonsMade: 12, announcement: 'wave_3', cadence: 1 });
-		assert.deepEqual(planRatKingWave(4, 150, false, random), { adds: ['ghoul'], nextSummonsMade: 5, announcement: 'wave_2', cadence: 1 });
-		assert.deepEqual(planRatKingWave(14, 100, true, random), { adds: ['golem', 'golem'], nextSummonsMade: 16, announcement: undefined, cadence: 1 });
-		assert.deepEqual(planRatKingWave(0, 400, true, random), { adds: ['ghoul', 'ghoul'], nextSummonsMade: 2, announcement: 'wave_1', cadence: 3 });
+		//schedules, 1 for the per-turn waves) plus the Summoning.delay before
+		//the servants first act (arrivalDelay).
+		assert.deepEqual(planRatKingWave(8, 50, false, random), { adds: ['warlock', 'monk', 'ghoul', 'ghoul'], nextSummonsMade: 12, announcement: 'wave_3', arrivalDelay: 4, cadence: 1 });
+		assert.deepEqual(planRatKingWave(4, 150, false, random), { adds: ['ghoul'], nextSummonsMade: 5, announcement: 'wave_2', arrivalDelay: 3, cadence: 1 });
+		assert.deepEqual(planRatKingWave(14, 100, true, random), { adds: ['golem', 'golem'], nextSummonsMade: 16, announcement: undefined, arrivalDelay: 3, cadence: 1 });
+		assert.deepEqual(planRatKingWave(0, 400, true, random), { adds: ['ghoul', 'ghoul'], nextSummonsMade: 2, announcement: 'wave_1', arrivalDelay: 3, cadence: 3 });
 		assert.equal(chooseDM300Ability(0, random), 'vent');
 		assert.equal(chooseDM300Ability(2, random), 'rockfall');
 		// Java's weighted repeat rule, pinned exactly: fresh is 50/50, a repeat lands
@@ -1803,7 +1804,7 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 	check('HolyWard gates beneficial armor glyphs and refreshes derived state', () => {
 		const scene = readSceneSource();
 		assert.ok(scene.includes('armorGlyphActive'), 'armor glyph paths share the HolyWard gate');
-		assert.ok(scene.includes("this.hero.buffs['holyWard'] === undefined"), 'the gate observes the live HolyWard buff');
+		assert.ok(scene.includes("owner.buffs['holyWard'] === undefined"), 'the gate observes the live HolyWard buff');
 		assert.ok(scene.includes("if (spell === 'holyWard') this.syncHeroFromStats()"), 'casting HolyWard refreshes derived hero state');
 		assert.ok(scene.includes('hadHolyWard'), 'HolyWard expiry refreshes derived hero state');
 	});
@@ -1813,10 +1814,10 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		//2026-09-22: both gates widened from shock-only to every ELECTRIC holder
 		//(shock elemental, DM100, Pylon, BrightFist) through one shared predicate.
 		const scene = readSceneSource();
-		assert.ok(scene.includes('electricDamageHalved(target.kind, target.elementalType, target.yogFistType)'),
-			'the blob seam halves electricity for every ELECTRIC holder');
-		assert.ok(scene.includes('electricDamageHalved(victim.kind, victim.elementalType, victim.yogFistType)'),
-			'the lightning wand halves for every ELECTRIC holder');
+		assert.ok(scene.includes("sourceElement: cause === 'electricity' ? 'electric' : undefined"),
+			'the blob seam routes electricity through the shared dispatch, halving every ELECTRIC holder');
+		assert.ok(scene.includes("wandType === 'lightning' ? 'electric' : undefined"),
+			'the lightning wand passes electric through the shared dispatch, halving every ELECTRIC holder');
 		assert.ok(scene.includes("magical: true, sourceElement: 'electric' }"),
 			'the Shocking chain halves per hit');
 	});

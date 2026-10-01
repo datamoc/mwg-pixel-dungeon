@@ -25,13 +25,24 @@ function check(name, run) {
 function compile(source, destination) {
 	const file = join(output, destination);
 	mkdirSync(dirname(file), { recursive: true });
-	writeFileSync(file, ts.transpileModule(readFileSync(source, 'utf8'), {
+	const emitted = ts.transpileModule(readFileSync(source, 'utf8'), {
 		compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, rewriteRelativeImportExtensions: true },
-	}).outputText);
+	}).outputText;
+	//Point the emitted bare framework requires at the namespaces imported
+	//below - `mwg/core` first, since it prefixes `mwg`.
+	writeFileSync(file, emitted
+		.split('require("mwg/core")').join('(globalThis.__spdMwgCore)')
+		.split('require("mwg")').join('(globalThis.__spdMwgRoot)'));
 }
 
 try {
 	writeFileSync(join(output, 'package.json'), '{"type":"commonjs"}');
+//`spdRng` extends the framework's ESM-only `JavaRandom` (@f5e4c530) and the boss
+//visuals read `Roguelike` off the framework root: the CJS tree cannot require()
+//either, so the harness imports both namespaces once and rewrites each emitted
+//require to the live object (see compile()).
+globalThis.__spdMwgCore = await import('mwg/core');
+globalThis.__spdMwgRoot = await import('mwg');
 	for (const file of ['spdRng', 'spdLevelGen/paintLevel', 'spdLevelGen/vaultVisuals', 'spdLevelGen/spdPatch', 'spdLevelGen/wallTiles', 'spdLevelGen/visualWalls', 'spdLevelGen/customTilemapLayer', 'spdLevelGen/cavesBossVisuals', 'spdLevelGen/cityBossVisuals', 'spdLevelGen/hallsBossVisuals', 'spdLevelGen/ritualMarkerVisuals', 'spdLevelGen/cavesDecorate', 'spdLevelGen/cityDecorate', 'spdLevelGen/bossLevels']) {
 		compile(new URL(`../src/${file}.ts`, import.meta.url), `${file}.js`);
 	}

@@ -3699,7 +3699,8 @@
       "seed": 12345,
       "expected": {
         "buffs": {
-          "burning": 2
+          "burning": 2,
+          "burningActed": 1
         },
         "damage": 2,
         "rng": [

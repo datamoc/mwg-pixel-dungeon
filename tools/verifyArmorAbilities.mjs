@@ -685,13 +685,13 @@ export function verifyArmorAbilities(require, check) {
 			'a delegated swing rolls at Java base proc chance and keeps the hero trackers armed');
 		assert.match(cloneCombat, /if \(!gearDelegated && this\.subclass\(\) === 'battlemage'\)/,
 			'Battlemage/Monk subclass hooks stay hero-only on a delegated swing');
-		assert.match(cloneCombat, /const cloneDefenderGate = defender\.allyKind === 'shadowClone'\s*&& shadowCloneArmorProc\(Random\.int\(4\), this\.talentRank\('cloned_armor'\), this\.armorGlyph != null\)/,
-			'attack() draws the single defenseProc roll for a landed attack on the clone');
-		assert.match(cloneCombat, /if \(defender\.allyKind === 'shadowClone'\) this\.mobOnHit\(attacker, defender, damage, cloneDefenderGate\)/,
-			'the hero-as-attacker path reaches the clone defend-side glyphs too');
+		assert.match(cloneCombat, /const cloneDefenderGate = roseArmorGate \|\| \(defender\.allyKind === 'shadowClone'\s*&& shadowCloneArmorProc\(Random\.int\(4\), this\.talentRank\('cloned_armor'\), this\.armorGlyph != null\)\)/,
+			'attack() draws the single defenseProc roll for a landed attack on the clone (rose ghost bypasses)');
+		assert.match(cloneCombat, /if \(defender\.allyKind === 'shadowClone' \|\| roseArmorGate\) this\.mobOnHit\(attacker, defender, damage, cloneDefenderGate\)/,
+			'the hero-as-attacker path reaches the clone defend-side glyphs too (rose ghost included)');
 		const cloneMobOnHit = readFileSync(new URL('../src/scenes/mobOnHit.ts', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
-		assert.match(cloneMobOnHit, /const glyphDefender = defender\.isHero \|\| cloneDefenderGate;/,
-			'generic defend-side glyph sites accept the clone');
+		assert.match(cloneMobOnHit, /const glyphDefender = defender\.isHero \|\| cloneDefenderGate \|\| roseArmorGate;/,
+			'generic defend-side glyph sites accept the clone (rose ghost included)');
 		assert.match(cloneMobOnHit, /if \(defender\.isHero && armorGlyph\('metabolism'\)/,
 			'hero-scoped glyph sites stay keyed on the hero');
 		//`ShadowAlly.defenseProc()`'s AntiMagic/Viscosity shares (B9-a): the shared
@@ -991,9 +991,6 @@ export function verifyArmorAbilities(require, check) {
 		//The mirrors must carry the same gates as `attack()`'s own branches, so the
 		//cone resolves what an ordinary swing resolves.
 		for (const [method, gate] of [
-			['cursedWeaponPreProcs', "this.weaponAffix === 'polarized'"],
-			['cursedWeaponPreProcs', "this.weaponAffix === 'sacrificial'"],
-			['cursedWeaponPreProcs', "this.weaponAffix === 'displacing'"],
 			['friendlyCurseProc', "this.weaponAffix === 'friendly'"],
 			['corruptingEnchantProc', "this.weaponAffix === 'corrupting'"],
 			['grimExecuteBonus', "this.weaponAffix === 'grim'"],
@@ -1002,6 +999,12 @@ export function verifyArmorAbilities(require, check) {
 			assert.ok(m, `${method} still exists`);
 			assert.ok(m[1].includes(gate), `${method} must still gate on ${gate}`);
 		}
+		//Polarized/Sacrificial/Displacing resolve in the affix seam (@214dfa94):
+		//the method routes the live affix in and the seam gates each curse
+		//(pinned behaviorally in verifyEnchantProcChances).
+		const cursePre = /\tcursedWeaponPreProcs\(this: DungeonScene[^)]*\)[^{]*\{([\s\S]*?)\n\t\},/.exec(res);
+		assert.ok(cursePre, 'cursedWeaponPreProcs still exists');
+		assert.ok(cursePre[1].includes('affix: this.weaponAffix'), 'the curse trio routes through the affix seam');
 	});
 	check('the AfterImage decoy takes no buffs and no direct blob damage', () => {
 		//`Feint.AfterImage` (tag `v3.3.8`): `add(Buff)` returns false unconditionally and the

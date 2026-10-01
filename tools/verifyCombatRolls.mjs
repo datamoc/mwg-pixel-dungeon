@@ -101,7 +101,7 @@ export function verifyCombatRolls(require, check) {
 	});
 
 	check('status ticks deal, redraw, decrement, and expire exactly', () => {
-		assert.deepEqual(advanceBuffs({ burning: 3 }, minStub, 0), { buffs: { burning: 2 }, damage: 1 });
+		assert.deepEqual(advanceBuffs({ burning: 3 }, minStub, 0), { buffs: { burning: 2, burningActed: 1 }, damage: 1 });
 		assert.deepEqual(advanceBuffs({ poison: 6 }, minStub, 0), { buffs: { poison: 5 }, damage: 3 });
 		assert.deepEqual(advanceBuffs({ poison: 6 }, minStub, 0, true), { buffs: { poison: 5 }, damage: 2 });
 		assert.deepEqual(advanceBuffs({ poison: 1 }, minStub, 0), { buffs: {}, damage: 1 });

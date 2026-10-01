@@ -404,8 +404,8 @@ export function verifyCombat(require, check) {
 			'paladin gate is computed for the holy proc seam');
 		assert.match(attack, /&& !paladin && !\(typeof rawAffix === 'string' && getCurse\(rawAffix\)\) \? null : rawAffix;/,
 			'paladin and cursed enchants survive the holy suppression');
-		assert.match(attack, /doomDamage\(Math\.round\(holyWeaponBonus\(this\.subclass\(\)\) \* this\.genericProcMultiplier\(\)\), defender\)/,
-			'wielded holy flat is Paladin ? 6 : 2');
+		assert.match(attack, /doomDamage\(holyWeaponHitDamage\(holyWeaponBonus\(this\.subclass\(\)\), this\.genericProcMultiplier\(\)\), defender\)/,
+			'wielded holy flat routes Paladin 6 : 2 through the affix seam');
 		assert.match(attack, /doomDamage\(holyWeaponBonus\(this\.subclass\(\)\), defender\)/,
 			'mirror-image holy flat is Paladin ? 6 : 2');
 		assert.match(attack, /scaled - Math\.round\(holyWardBlock\(this\.subclass\(\)\) \* this\.armorProcMultiplier\(this\.hero\)\)/,
@@ -463,10 +463,10 @@ export function verifyCombat(require, check) {
 		const mob = base({ isNPC: false });
 		facade.addBuff(mob, 'poison');
 		assert.notEqual(mob.buffs.poison, undefined, 'a non-NPC must still take buffs');
-		assert.ok(blastSource.includes('if (c.isNPC) return false;'),
-			'the shared Char.damage dispatch must skip NPCs like the sheep/sentry gates');
-		assert.ok(bombSource.includes('if (target.isNPC) return false;'),
-			'the headless blast fallback carries its own NPC gate beside sheep/sentry');
+		assert.ok(blastSource.includes('if (npcHasNoOpDamageAndBuff(c)) return false;'),
+			'the shared Char.damage dispatch must skip NPCs like the sheep/sentry gates (Ward excepted)');
+		assert.ok(bombSource.includes('if (npcHasNoOpDamageAndBuff(target)) return false;'),
+			'the headless blast fallback carries its own NPC gate beside sheep/sentry (Ward excepted)');
 		assert.ok(trapSource.includes('this.applyCharacterDamage(target, damage, {'),
 			'the blob applyDamage closure must route through that dispatch (it carries the NPC gate)');
 		assert.ok(trapSource.includes("applyElementalBacklash(target, 'chill') === 0 && !target.isNPC"),
@@ -573,8 +573,8 @@ export function verifyCombat(require, check) {
 		assert.equal(lit.buffs.burning, facade.BUFF_DURATION.burning, 'reignite arms full on a fresh target');
 		//Structural: every damage seam reads the shared gates.
 		const trapSource = readFileSync(new URL('../src/scenes/dungeon/environmentFireTraps.ts', import.meta.url), 'utf8');
-		assert.ok(trapSource.includes('electricDamageHalved(target.kind, target.elementalType, target.yogFistType)'),
-			'the blob Electricity seam halves every ELECTRIC holder, not just shock');
+		assert.ok(trapSource.includes("sourceElement: cause === 'electricity' ? 'electric' : undefined"),
+			'blob Electricity routes through the shared dispatch as electric so every ELECTRIC holder halves, not just shock');
 		assert.ok(mobOnHitSource.includes("reigniteBuff(defender, 'burning')"),
 			'fire melee reignites Burning to full like Java affect+reignite');
 		const wandSource = readFileSync(new URL('../src/items/wandEffects.ts', import.meta.url), 'utf8');
@@ -589,9 +589,13 @@ export function verifyCombat(require, check) {
 		for (const [file, source] of [
 			['environmentFireTraps.ts', trapSource],
 			['monsterAi.ts', readFileSync(new URL('../src/scenes/dungeon/monsters/monsterAi.ts', import.meta.url), 'utf8')],
-			//ElementalStrike chilling seeds the Freezing blob instead of writing Chill (see below).
-			['potionEffects.ts', readFileSync(new URL('../src/items/potionEffects.ts', import.meta.url), 'utf8')],
 		]) assert.ok(source.includes('icyBuffImmune('), `${file} direct Chill writes must honor ICY`);
+		//The Frost potion writes no Chill directly: it seeds the Freezing blob
+		//(`PotionOfFrost.shatter()`, volume 10 over NEIGHBOURS9), whose chill
+		//path honors ICY per the pin just below.
+		const potionSource = readFileSync(new URL('../src/items/potionEffects.ts', import.meta.url), 'utf8');
+		assert.ok(!potionSource.includes('applyChillFreeze'), 'Frost potion must not write Chill directly');
+		assert.ok(potionSource.includes('scene.seedFreeze(x, y, 10)'), 'Frost potion seeds the Freezing blob');
 		//The Freezing-blob chill path carries the same gate for the seeded blob above.
 		assert.ok(trapSource.includes("applyChill: (target) => { if (applyElementalBacklash(target, 'chill') === 0 && !target.isNPC")
 			&& trapSource.includes("icyBuffImmune(target.kind, target.elementalType, 'chill')"),
@@ -632,7 +636,14 @@ export function verifyCombat(require, check) {
 					//this way with zero runtime dependency (asserted on the compiled output below).
 					const typeOnly = statement.importClause?.isTypeOnly || statement.isTypeOnly;
 					if (typeOnly) continue;
-					assert.match(statement.moduleSpecifier.text, /^\.\/[\w]+$/, `${file} imports outside simulation`);
+					const spec = statement.moduleSpecifier.text;
+					//Two documented exceptions keep formulas single-sourced: the
+					//attack seams reuse runtime-pure `talentEffects` (@9cb44a0b,
+					//its only import is a type), and `toolkitWarmup` reads its
+					//one tuning value from generated `mwlContent` (@59eea61a).
+					const confined = /^\.\/[\w]+$/.test(spec)
+						|| spec === '../talentEffects' || spec === '../mwlContent';
+					assert.ok(confined, `${file} imports outside simulation: ${spec}`);
 				}
 			}
 		}

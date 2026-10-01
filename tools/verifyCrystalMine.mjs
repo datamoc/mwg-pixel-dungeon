@@ -17,6 +17,7 @@ function compile(source, destination) {
 }
 
 try {
+	compile(fileURLToPath(new URL('../src/simulation/combatState.ts', import.meta.url)), 'simulation/combatState.js');
 	compile(fileURLToPath(new URL('../src/simulation/gnollGeomancer.ts', import.meta.url)), 'simulation/gnollGeomancer.js');
 	compile(fileURLToPath(new URL('../src/simulation/crystalSpire.ts', import.meta.url)), 'simulation/crystalSpire.js');
 	compile(fileURLToPath(new URL('../src/simulation/pourAuras.ts', import.meta.url)), 'simulation/pourAuras.js');
