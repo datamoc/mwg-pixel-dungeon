@@ -39,6 +39,14 @@ assert.ok(supercharge, 'scene supercharge adapter still exists');
 assert.ok(supercharge[0].includes("this.scheduler.postpone(dm300, isChallengeEnabled('stronger_bosses') ? 2 : 3)"),
 	'DM300 receives Java\'s challenge-specific actor cooldown at charge activation');
 
+// DwarfKing.act() passes challenge ? 2 : 3 to summonSubject for P1/P3 arrivals.
+// The port immediately exposes the add, but defers its first scheduled turn by that delay.
+const kingScene = readFileSync(join(process.cwd(), 'src/scenes/dungeon/bosses/bossLogic.ts'), 'utf8');
+assert.equal((kingScene.match(/this\.kingP1Summon\([^\n]+challenge\), false, challenge \? 2 : 3\)/g) ?? []).length, 2,
+	'P1 and P3 servants both receive Java\'s challenge-specific arrival delay');
+assert.ok(kingScene.includes('arrivalDelay?: number'), 'summoned servant accepts a Java arrival delay');
+assert.ok(kingScene.includes('false, undefined, arrivalDelay)'), 'summoned servant first action waits for the Java delay');
+
 // Both call sites run the seam, not a second copy of the arithmetic (paths resolve
 // from the repo root, which is the documented working directory for the run line).
 for (const rel of ['src/scenes/dungeon/attackSeams.ts', 'src/scenes/dungeon/combatResolution.ts']) {

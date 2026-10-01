@@ -850,7 +850,7 @@ if (monster.hp <= 0) {
 		if (phase === 1) {
 			king.kingSummonCd = (king.kingSummonCd ?? 0) - 1;
 			if ((king.kingSummonCd ?? 0) <= 0) {
-				if (this.summonKingAdd(king, this.kingP1Summon((king.kingSummonsMade ?? 0), challenge))) {
+				if (this.summonKingAdd(king, this.kingP1Summon((king.kingSummonsMade ?? 0), challenge), false, challenge ? 2 : 3)) {
 					king.kingSummonsMade = (king.kingSummonsMade ?? 0) + 1;
 					king.kingSummonCd = Random.normalRange(challenge ? 8 : 10, challenge ? 10 : 14);
 				}
@@ -883,7 +883,7 @@ if (monster.hp <= 0) {
 			//instant spawns the pipeline is always empty, so P3 reinforces every turn with
 			//no live cap, and every success advances the rotation below (which the old
 			//live-count gate left frozen on one kind).
-			if (this.summonKingAdd(king, this.kingP1Summon(king.kingSummonsMade ?? 1, challenge))) {
+			if (this.summonKingAdd(king, this.kingP1Summon(king.kingSummonsMade ?? 1, challenge), false, challenge ? 2 : 3)) {
 				king.kingSummonsMade = (king.kingSummonsMade ?? 1) + 1;
 			}
 		}
@@ -910,15 +910,18 @@ if (monster.hp <= 0) {
 	},
 
 	/** One royal servant beside the King (neighbour cells only, like the old guard calls;
-	 * Java arrives onto arena pedestals after a 2-3 turn delay with arrival damage -
-	 * stated); tracked for LifeLink subjects, wave counts, and death cleanup.
+	 * Java arrives onto arena pedestals after a 2-3 turn delay with arrival damage.
+	 * This port makes the add visible and targetable immediately, but delays its first
+	 * scheduled action by Java's 2/3 ticks (`DwarfKing.java:161,297`, tag `v3.3.8`);
+	 * it has no `Summoning` buff/pedestal arrival state. Tracked for LifeLink subjects,
+	 * wave counts, and death cleanup.
 	 * `noExp` is Java's `maxLvl = -2` on the arrival (`Summoning.spawnMinion`):
 	 * servants grant no XP and roll no loot, in every phase. */
-	summonKingAdd(this: DungeonScene, king: Creature, kind: RatKingAddKind, damager = false): boolean {
+	summonKingAdd(this: DungeonScene, king: Creature, kind: RatKingAddKind, damager = false, arrivalDelay?: number): boolean {
 		for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
 			const at = { x: king.x + dx, y: king.y + dy };
 			if (!this.level.passable(at.x, at.y) || this.isChasmCell(at.x, at.y) || this.creatureAt(at.x, at.y)) continue;
-			const add = this.spawnMonster(kind, at);
+			const add = this.spawnMonster(kind, at, false, undefined, false, undefined, false, undefined, arrivalDelay);
 			add.sleeping = false;
 			add.noExp = true;
 			//P2-wave arrivals carry `KingDamager` (chip the P2 shield when they die);
