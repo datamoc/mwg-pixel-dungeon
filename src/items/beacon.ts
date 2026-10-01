@@ -291,7 +291,8 @@ export function returnBeaconFlow(ctx: BeaconFlowContext, instanceId?: string): v
  *  refuses (this port has no branches, so the anchor always writes 0 and this is a
  *  defensive re-check); same-depth occupancy follows `BeaconOfReturning.returnBeacon()`'s
  *  separate Char/IMMOVABLE/refusal algorithm; another depth in 1..26 travels there. Every
- *  finished cast consumes the spell and spends the turn; every refusal returns early. */
+ *  successful return consumes the spell and runs spell talents; setting the anchor
+ *  only spends a turn. Every refusal returns early. */
 export function useReturningBeaconFlow(ctx: BeaconFlowContext, instanceId?: string): void {
 	const beacon = ctx.returningBeaconOf(instanceId);
 	if (!beacon) return;
@@ -301,11 +302,9 @@ export function useReturningBeaconFlow(ctx: BeaconFlowContext, instanceId?: stri
 		beacon.returnPos = ctx.cellIndex(ctx.heroPos.x, ctx.heroPos.y);
 		beacon.returnX = ctx.heroPos.x;
 		beacon.returnY = ctx.heroPos.y;
-		// Spell.onCast is an inventory-spell use even when it only sets the anchor (v3.3.8).
-		ctx.consumeReturningBeacon(instanceId);
+		// `BeaconOfReturning.setBeacon()` (v3.3.8) keeps the spell and does not call
+		// Talent.onScrollUsed(); those success effects belong to returnBeacon() only.
 		ctx.say(ctx.t('items.spells.beaconofreturning.set'), 'positive');
-		// BeaconOfReturning.onCast uses its recipe's 1/3 talent chance (v3.3.8).
-		ctx.onScrollUsed?.(1, 1 / 3);
 		ctx.spendTurn();
 		return;
 	}
@@ -333,7 +332,7 @@ export function useReturningBeaconFlow(ctx: BeaconFlowContext, instanceId?: stri
 		ctx.say(ctx.t('items.spells.beaconofreturning.preventing'), 'negative');
 		return;
 	}
-	// Only a successful return reaches Java's onSpellUsed call (v3.3.8, 1/3 recipe chance).
+	// Only a successful return reaches Java's onScrollUsed call (v3.3.8, 1/3 recipe chance).
 	ctx.onScrollUsed?.(1, 1 / 3);
 	ctx.spendTurn();
 }

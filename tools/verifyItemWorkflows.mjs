@@ -10,8 +10,8 @@ import { readSceneSource } from './sceneSource.mjs';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const elementalCastSource = readFileSync(join(root, 'src/scenes/dungeon/hero/inventoryQuickslot.ts'), 'utf8');
 assert.match(elementalCastSource,
-	/const existing = this\.creatures\.find\(\(c\) => c\.isAlly === true[\s\S]*?c\.kind === 'newbornElemental' \|\| c\.kind === 'elemental'[\s\S]*?c\.hp > 0\)/,
-	'SummonElemental recall must find both summoned newborn and mature elemental allies');
+	/const existing = this\.creatures\.find\(\(c\) => c\.summonedByElementalSpell === true[\s\S]*?c\.kind === 'newbornElemental' \|\| c\.kind === 'elemental'[\s\S]*?c\.hp > 0\)/,
+	'SummonElemental recall must select its own summoned newborn and mature elementals');
 const dist = fileURLToPath(new URL('../node_modules/mwg/dist/', import.meta.url));
 const out = mkdtempSync(join(tmpdir(), 'spd-items-'));
 // NOTE: this file used to shadow the import above with a hand-rolled helper that rewrote
@@ -1246,7 +1246,7 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 	assert.notEqual(weightedSeedPotion.id, 'potionHealing', 'COOKING_HP rerolls a Healing result when Int(10) < count');
 	assert.equal(highCookingHp.cookingHpCount, 100, 'rerolled Healing does not increment the accepted-result counter');
 	assert.equal(defaultPotionGenerations, cookingRerollChecks + 1, 'every rejected Healing result triggers one new default-potion generation');
-	assert.equal(potionGeneratorFloatDraws, 2 * defaultPotionGenerations, 'each default-potion generation burns one weighted-choice float and Java\'s ExoticCrystals chance float at zero chance');
+	assert.equal(potionGeneratorFloatDraws, defaultPotionGenerations, 'the two-deck default-potion branch consumes one weighted-choice float and returns before the exotic-swap check');
 	assert.match(readFileSync(join(root, 'src/scenes/dungeon/deathSaveRefresh.ts'), 'utf8'),
 		/cookingHpCount:\s*this\.cookingHpCount/, 'run saves serialize the COOKING_HP count');
 	assert.match(readFileSync(join(root, 'src/scenes/dungeon/panelsSingleUse.ts'), 'utf8'),
@@ -1312,12 +1312,13 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 		transmuteBag.add({ id: 'scrollTransmutation', quantity: 1, stackable: true, identified: true });
 		const transmuteSaid = [];
 		let transmutePicks = 0;
+		let paidTransmutationReads = 0;
 		const transmuteScene = {
 			bag: transmuteBag, heroClass: 'mage', miningBranchActive: false,
 			hero: { maxHp: 100, hp: 100, magicImmune: false },
 			talentRank: (id) => (id === 'empowering_scrolls' ? 2 : 0),
 			newItemInstanceId: (kind) => `test-${kind}-0`,
-			syncHeroFromStats: () => {}, say: (line, level) => { transmuteSaid.push({ line, level }); },
+			syncHeroFromStats: () => {}, onScrollUsed: () => { paidTransmutationReads++; }, say: (line, level) => { transmuteSaid.push({ line, level }); },
 			openItemPicker: (title, entries, onPick) => { transmutePicks++; onPick({ id: entries[0].id, instanceId: entries[0].instanceId }); },
 			equippedRing: null, ringHtBonus: 0, missileThresholds: new Map(), empoweredZaps: 0,
 			recalled: [], armRecallInscription(sourceClass) { this.recalled.push(sourceClass); },
@@ -1325,6 +1326,7 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 		assert.equal(transmuteCandidates(transmuteScene).length, 1, 'the lone healing potion is the only candidate (one transmutation scroll cannot target itself)');
 		assert.equal(startTransmutationPick(transmuteScene), true, 'the picker takes over');
 		assert.equal(transmutePicks, 1, '...exactly once');
+		assert.equal(paidTransmutationReads, 1, 'a paid transmutation runs the shared scroll talent hook exactly once');
 		assert.equal(transmuteBag.find('scrollTransmutation'), undefined, 'the read scroll is consumed');
 		assert.equal(transmuteBag.find('potionHealing'), undefined, '...and the picked potion is gone');
 		assert.equal(transmuteBag.items.filter((i) => i.id.startsWith('potion')).length, 1, '...rerolled into one potion');
@@ -1341,6 +1343,7 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 		assert.equal(emptyBag.find('scrollTransmutation')?.quantity, 1, '...and the scroll is kept');
 		completeTransmutation(transmuteScene, { id: 'noSuchItem' });
 		assert.equal(transmuteBag.items.length, 1, 'a stale pick consumes nothing');
+		assert.equal(paidTransmutationReads, 1, 'empty and stale picks do not run the scroll talent hook');
 	}
 	{
 		// A free re-read (recall): the read scroll is kept and nothing arms, but the
@@ -1377,7 +1380,7 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 		const dartScene = {
 			bag: dartBag, heroClass: 'cleric', miningBranchActive: false,
 			hero: { maxHp: 100, hp: 100, magicImmune: false }, talentRank: () => 0,
-			newItemInstanceId: (kind) => `test-${kind}-dart`, syncHeroFromStats: () => {}, say: () => {},
+			newItemInstanceId: (kind) => `test-${kind}-dart`, syncHeroFromStats: () => {}, onScrollUsed: () => {}, say: () => {},
 			equippedRing: null, ringHtBonus: 0, missileThresholds: new Map(), empoweredZaps: 0,
 			armRecallInscription: () => {},
 		};
@@ -1845,8 +1848,8 @@ for (const id of ['clothArmor', 'platearmor', 'armorReward', 'armor']) assert.ok
 // pickers take it through the shared `isUpgradableItem` predicate, which needs no id list.
 const { isBlacksmithGear } = require('./items/blacksmith.js');
 for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithGear({ id, quantity: 1 }), `${id} hardens`);
-	// `Generator.java`'s static deck tables (tag `v2.1.4`, the baseline these MWL decks
-	// reproduce): every tier/category's class order and starting weights are authored data, so
+	// `Generator.java`'s static deck tables (v2.1.4 baseline, except potion/scroll
+	// starting weights updated to the target v3.3.8 two-deck system): every tier/category's class order and starting weights are authored data, so
 	// a typo'd class or weight would compile clean and only surface as wrong loot at runtime -
 	// the same silent-failure shape the loot-kind validators in tools/compile-mwl.mjs close at
 	// compile time. This pins all seventeen decks to Java's values so MWL drift fails loudly
@@ -1884,8 +1887,8 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 		missileDeckT3: { classes: ['ThrowingSpear', 'Kunai', 'Bolas'], probs: [3, 3, 3] },
 		missileDeckT4: { classes: ['Javelin', 'Tomahawk', 'HeavyBoomerang'], probs: [3, 3, 3] },
 		missileDeckT5: { classes: ['Trident', 'ThrowingHammer', 'ForceCube'], probs: [3, 3, 3] },
-		potionDeck: { classes: ['PotionOfStrength', 'PotionOfHealing', 'PotionOfMindVision', 'PotionOfFrost', 'PotionOfLiquidFlame', 'PotionOfToxicGas', 'PotionOfHaste', 'PotionOfInvisibility', 'PotionOfLevitation', 'PotionOfParalyticGas', 'PotionOfPurity', 'PotionOfExperience'], probs: [0, 6, 4, 3, 3, 3, 2, 2, 2, 2, 2, 1] },
-		scrollDeck: { classes: ['ScrollOfUpgrade', 'ScrollOfIdentify', 'ScrollOfRemoveCurse', 'ScrollOfMirrorImage', 'ScrollOfRecharging', 'ScrollOfTeleportation', 'ScrollOfLullaby', 'ScrollOfMagicMapping', 'ScrollOfRage', 'ScrollOfRetribution', 'ScrollOfTerror', 'ScrollOfTransmutation'], probs: [0, 6, 4, 3, 3, 3, 2, 2, 2, 2, 2, 1] },
+		potionDeck: { classes: ['PotionOfStrength', 'PotionOfHealing', 'PotionOfMindVision', 'PotionOfFrost', 'PotionOfLiquidFlame', 'PotionOfToxicGas', 'PotionOfHaste', 'PotionOfInvisibility', 'PotionOfLevitation', 'PotionOfParalyticGas', 'PotionOfPurity', 'PotionOfExperience'], probs: [0, 3, 2, 1, 2, 1, 1, 1, 1, 1, 1, 1] },
+		scrollDeck: { classes: ['ScrollOfUpgrade', 'ScrollOfIdentify', 'ScrollOfRemoveCurse', 'ScrollOfMirrorImage', 'ScrollOfRecharging', 'ScrollOfTeleportation', 'ScrollOfLullaby', 'ScrollOfMagicMapping', 'ScrollOfRage', 'ScrollOfRetribution', 'ScrollOfTerror', 'ScrollOfTransmutation'], probs: [0, 3, 2, 1, 2, 1, 1, 1, 1, 1, 1, 1] },
 		// Java v2.1.4 names StoneOfDisarming at index 2; the port authors StoneOfDetectMagic
 		// there instead (that class does not exist in real SPD - see the runestone row - so the
 		// implemented detect-magic stone would otherwise be unreachable through floor generation).
@@ -2170,6 +2173,9 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 			prismaticGuard: 9999, holyWeapon: 50, holyWard: 50, powerOfMany: 100, illuminated: 9999, wasIlluminated: 9999,
 			satiatedSpells: 9999, shieldOfLight: 5, divineSense: 50, recallUsed: 10,
 			sunrayUsed: 9999, sunrayRecent: 4, cleanseImmunity: 5,
+			// Match the landed MWL cooldowns and persistent turn markers as well.
+			scrollEmpower: 9999, rejuvenatingStepsCooldown: 10, rejuvenatingStepsFurrow: 9999,
+			burningActed: 9999, oozeActed: 9999, beamingRayBoost: 10,
 			//`HolyLance.LanceCooldown` 30, `AuraOfProtection.AuraBuff.DURATION` 20 and
 			//`GuidingLight.GuidingLightPriestCooldown` 50 are all real Java `FlavourBuff`
 			//DURATIONs; `Smite.SmiteTracker` 1 only satisfies the table's shape (a
@@ -3173,6 +3179,7 @@ function beaconDrive(overrides = {}, pickScript = [0]) {
 		travelToDepth: (returnDepth, arrival) => { flags.traveled = { depth: returnDepth, arrival }; },
 		returningBeaconOf: () => spell,
 		consumeReturningBeacon: () => { flags.consumed = true; },
+		onScrollUsed: (factor, chance) => { (flags.spellTalentCalls ??= []).push([factor, chance]); },
 		spendTurn: () => { flags.turns++; },
 		clearRoots: () => { flags.rootsCleared = true; },
 		dispelInvisibility: () => { flags.uncloaked = true; },
@@ -3280,7 +3287,8 @@ function beaconDrive(overrides = {}, pickScript = [0]) {
 		[5, 0, 55, 5, 5], 'the first cast anchors depth and cell');
 	assert.ok(set.log.some((l) => l.includes('beaconofreturning.set')), 'with the set line');
 	assert.equal(set.flags.turns, 1, 'anchoring spends the turn');
-	assert.equal(set.flags.consumed, false, 'but not the spell');
+	assert.equal(set.flags.consumed, false, 'anchoring keeps the BeaconOfReturning spell');
+	assert.deepEqual(set.flags.spellTalentCalls ?? [], [], 'anchoring does not run spell talents');
 	const branched = beaconDrive({ spell: { returnDepth: 5, returnBranch: 1, returnPos: 55 } });
 	useReturningBeaconFlow(branched.ctx);
 	assert.ok(branched.log.some((l) => l.includes('preventing')), 'a foreign branch refuses');
@@ -3289,6 +3297,7 @@ function beaconDrive(overrides = {}, pickScript = [0]) {
 	useReturningBeaconFlow(home.ctx);
 	assert.deepEqual(home.flags.relocated, { x: 2, y: 2 }, 'same depth steps to the anchor');
 	assert.equal(home.flags.consumed, true, 'consuming the spell');
+	assert.deepEqual(home.flags.spellTalentCalls, [[1, 1 / 3]], 'a successful return runs spell talents once at the recipe chance');
 	assert.ok(home.log.some((l) => l.includes('beaconreturned')), 'with the return line');
 	assert.equal(home.flags.turns, 1, 'and a spent turn');
 	const stayed = beaconDrive({
@@ -4635,6 +4644,7 @@ function scrollReadDrive(overrides = {}) {
 		set empoweredZaps(zaps) { flags.empowered = zaps; },
 		itemDisplayName: (id) => id,
 		procIdentifyTalents: () => { flags.procIdentify++; },
+		onScrollUsed: () => { flags.scrollTalentCalls = (flags.scrollTalentCalls ?? 0) + 1; },
 		armRecallInscription: (sourceClass) => { flags.recalled.push(sourceClass); },
 		startTransmutationPick: (instanceId) => { flags.transmuteCalls.push(instanceId); return overrides.transmuteResult ?? true; },
 		get weaponAffix() { return flags.weaponAffix; },
@@ -4654,6 +4664,7 @@ function scrollReadDrive(overrides = {}) {
 	assert.ok(empty.said.some((l) => l.includes('port.log.noscroll')), 'saying so');
 	const forge = scrollReadDrive({ items: [{ id: 'scrollUpgrade', quantity: 1, identified: true }] });
 	assert.equal(forge.result, false, 'upgrade reads refuse');
+	assert.equal(forge.flags.scrollTalentCalls ?? 0, 0, 'a refused read does not run scroll talents');
 	assert.ok(forge.said.some((l) => l.includes('port.log.scrollisforgear')), 'pointing at gear');
 	assert.equal(forge.bag.find('scrollUpgrade')?.quantity ?? 0, 1, 'refusing consumes nothing');
 	assert.deepEqual(forge.flags.recalled, [], 'refusing arms nothing');
@@ -4674,6 +4685,7 @@ function scrollReadDrive(overrides = {}) {
 		ranks: { test_subject: 1 },
 	});
 	assert.equal(identify.result, true, 'identify reads');
+	assert.equal(identify.flags.scrollTalentCalls, 1, 'a paid Identify read runs scroll talents exactly once');
 	assert.equal(identify.bag.find('scrollIdentify')?.quantity ?? 0, 0, 'consuming the scroll');
 	assert.equal(identify.bag.find('scrollRage')?.identified, true, 'identifying the unknown');
 	assert.equal(identify.flags.procIdentify, 1, 'proccing the warrior identify talent');
@@ -4955,6 +4967,7 @@ assert.ok(Number.isFinite(lonelyGuards[0]) && lonelyGuards[0] > 0, 'at a positiv
 	assert.deepEqual(free.flags.recalled, [], 're-arming nothing');
 	assert.equal(free.flags.empowered, 0, 'arming no zaps');
 	assert.equal(free.flags.procIdentify, 0, 'proccing no identify talent');
+	assert.equal(free.flags.scrollTalentCalls ?? 0, 0, 'a free Recall read does not rerun paid-scroll talents');
 	assert.equal(free.bag.find('scrollRage')?.identified, true, 'still identifying the unknown');
 	// The scroll class maps round-trip; exotics and unknown ids arm nothing.
 	assert.equal(recallScrollClass('scrollRage'), 'ScrollOfRage');
@@ -5193,6 +5206,7 @@ function upgradeGearDrive(overrides = {}) {
 		set armorHardened(v) { state.armorHardened = v; },
 		randomInt: takeRoll,
 		randomFloat: takeRoll,
+		onScrollUsed: () => { flags.scrollTalentCalls = (flags.scrollTalentCalls ?? 0) + 1; },
 		say: (line, level) => { said.push(`${level}:${line}`); },
 		syncHeroFromStats: () => { flags.synced++; },
 		...overrides.ctx,
@@ -5203,9 +5217,11 @@ function upgradeGearDrive(overrides = {}) {
 {
 	const bare = upgradeGearDrive({ items: [] });
 	assert.equal(bare.result, false, 'no upgrade scroll, no upgrade');
+	assert.equal(bare.flags.scrollTalentCalls ?? 0, 0, 'a failed upgrade does not run scroll talents');
 	assert.ok(bare.said.some((l) => l.includes('port.log.noupgrade')), 'saying so');
 	const missiles = upgradeGearDrive({ heroClass: 'warrior', missileLevel: 0, weaponLevel: 2, armorLevel: 2 });
 	assert.equal(missiles.result, true, 'a lagging pile catches up first');
+	assert.equal(missiles.flags.scrollTalentCalls, 1, 'a paid upgrade runs scroll talents exactly once');
 	assert.equal(missiles.state.missileLevel, 1, 'one level');
 	assert.equal(missiles.state.ammo, MISSILE_DEFAULT_QUANTITY, 'refilled to the default pile');
 	assert.equal(missiles.state.durability, MISSILE_MAX_DURABILITY, 'at full wear');
