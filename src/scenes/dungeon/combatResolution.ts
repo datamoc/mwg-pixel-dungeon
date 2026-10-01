@@ -7,7 +7,8 @@ import { planHiddenMimicContact } from '../../simulation/hiddenMimicContact';
 import { planShockElementalArc } from '../../simulation/shockArc';
 import { applyDefenderDamageCurves } from '../../simulation/defenderDamageCurves';
 import { dm300ChargeEndTurns, dm300SuperchargeEntry, dm300SuperchargeThreshold } from '../../simulation/dm300Boss';
-import { annoyingProcChance, blazingProcChance, blockingProcChance, bloomingProcChance, chillingProcChance, corruptingProcChance, dazzlingProcChance, elasticProcChance, explosiveFuseWear, friendlyProcChance, grimExecuteChance, holyWeaponHitDamage, kineticConserveRelease, kineticOverkillStore, lethalMomentumChance, luckyProcChance, shockingProcChance, spiritBladesFires, vampiricHealChance, waywardProcChance } from '../../simulation/attackWeaponAffixes';
+import { annoyingProcChance, blazingProcChance, blockingProcChance, bloomingProcChance, chillingProcChance, corruptingProcChance, dazzlingProcChance, elasticProcChance, explosiveFuseWear, friendlyProcChance, grimExecuteChance, holyWeaponHitDamage, kineticConserveRelease, kineticOverkillStore, lethalMomentumChance, luckyProcChance, resolveAttackWeaponAffixes, shockingProcChance, spiritBladesFires, vampiricHealChance, waywardProcChance } from '../../simulation/attackWeaponAffixes';
+import { simulationRandom } from '../../adapters/mwgRandom';
 import { weaponHitDisqualifiesDwarfKingChallenge } from '../../simulation/bossChallenge';
 import { displacementProcChance, repulsionProcChance } from '../../simulation/combat';
 import { fishingSpearPiranhaDamage } from '../../simulation/fishingSpearProc';
@@ -518,27 +519,27 @@ export const combatResolutionMethods: Record<string, any> = {
 			damage = Math.round(damage * (1 + 0.08 * this.talentRank('deadly_followup')));
 			this.deadlyFollowupTarget = null;
 		}
-		//Polarized.proc(): real chance is a flat 1/2 - on success it amplifies to 1.5x, on
-		//failure it zeroes the hit outright (a coin-flip between "hits hard" and "whiffs"),
-		//reproduced exactly since it needs no subsystem beyond the damage value itself.
-		if (gearAttacker && this.weaponAffix === 'polarized') {
-			damage = Random.chance(0.5) ? Math.round(damage * 1.5) : 0;
-		}
-		//Sacrificial.proc(): Java rolls 1/10 x Arcana, then rolls a second time against
-		//(HP/HT)^2 * HT / 8 and applies Bleeding at max(1, bleedAmt). The first draft
-		//mistakenly used missing HP and a poison stand-in; both were wrong.
-		if (gearAttacker && this.weaponAffix === 'sacrificial' && Random.chance((1 / 10) * this.enchantProcMultiplier())) {
-			const bleedAmount = (attacker.hp / attacker.maxHp) ** 2 * attacker.maxHp / 8;
-			if (Random.chance(bleedAmount)) setBleeding(attacker, Math.max(1, bleedAmount), 'sacrificial');
-		}
-		//Displacing.proc(): real chance is 1/12 x arcana, skipped against Java's IMMOVABLE targets.
-		//Reuses the same free-cell search this file's Displacement armor curse already
-		//uses in place of Java's ScrollOfTeleportation.teleportChar. Java also resets a fleeing
-		//HUNTING mob back to WANDERING; this port has no such explicit state to reset, but the
-		//next monster-turn FOV recompute (`seesHero`) naturally loses track once far enough away.
-		if (gearAttacker && this.weaponAffix === 'displacing' && !defender.isNPC
-			&& (defender.kind === undefined || !IMMOVABLE_KINDS.has(defender.kind))
-			&& Random.chance((1 / 12) * this.enchantProcMultiplier())) {
+		//Polarized/Sacrificial/Displacing (`items/weapon/curses/*.java`, tag `v3.3.8`)
+		//resolve in the affix seam - same formulas, same draw order, same gates. The
+		//gate is `gearAttacker`, not the live hero alone: delegated ShadowAlly/Rose
+		//swings run the hero's affix, rolling at Java's base 1.0 because
+		//`enchantProcMultiplier()` answers through the `delegatedGearSwing` flag.
+		//The multiplier call stays lazy by branch (only Sacrificial/Displacing roll
+		//it) so Polarized and unrelated affixes never drain the one-shot trackers.
+		//Payloads (bleed, teleport presentation) stay here, in the same order.
+		const usesEnchantMultiplier = this.weaponAffix === 'sacrificial' || this.weaponAffix === 'displacing';
+		const affixResult = resolveAttackWeaponAffixes(damage, {
+			affix: this.weaponAffix,
+			gearAttacker,
+			enchantProcMultiplier: usesEnchantMultiplier ? this.enchantProcMultiplier() : 1,
+			attackerHp: attacker.hp,
+			attackerMaxHp: attacker.maxHp,
+			defenderIsNpc: defender.isNPC === true,
+			defenderImmovable: defender.kind !== undefined && IMMOVABLE_KINDS.has(defender.kind),
+		}, simulationRandom);
+		damage = affixResult.damage;
+		if (affixResult.applySacrificialBleeding) setBleeding(attacker, Math.max(1, affixResult.sacrificialBleedAmount), 'sacrificial');
+		if (affixResult.displaceDefender) {
 			const destination = this.randomFreeCell(defender);
 			if (destination) {
 				const displaceFrom = { x: defender.x, y: defender.y };
@@ -1327,27 +1328,24 @@ export const combatResolutionMethods: Record<string, any> = {
 	 * Returns the possibly-reassigned damage.
 	 */
 	cursedWeaponPreProcs(this: DungeonScene, attacker: Creature, defender: Creature, damage: number, gearAttacker: boolean): number {
-		//Polarized.proc(): real chance is a flat 1/2 - on success it amplifies to 1.5x, on
-		//failure it zeroes the hit outright (a coin-flip between "hits hard" and "whiffs"),
-		//reproduced exactly since it needs no subsystem beyond the damage value itself.
-		if (gearAttacker && this.weaponAffix === 'polarized') {
-			damage = Random.chance(0.5) ? Math.round(damage * 1.5) : 0;
-		}
-		//Sacrificial.proc(): Java rolls 1/10 x Arcana, then rolls a second time against
-		//(HP/HT)^2 * HT / 8 and applies Bleeding at max(1, bleedAmt). The first draft
-		//mistakenly used missing HP and a poison stand-in; both were wrong.
-		if (gearAttacker && this.weaponAffix === 'sacrificial' && Random.chance((1 / 10) * this.enchantProcMultiplier())) {
-			const bleedAmount = (attacker.hp / attacker.maxHp) ** 2 * attacker.maxHp / 8;
-			if (Random.chance(bleedAmount)) setBleeding(attacker, Math.max(1, bleedAmount), 'sacrificial');
-		}
-		//Displacing.proc(): real chance is 1/12 x arcana, skipped against Java's IMMOVABLE targets.
-		//Reuses the same free-cell search this file's Displacement armor curse already
-		//uses in place of Java's ScrollOfTeleportation.teleportChar. Java also resets a fleeing
-		//HUNTING mob back to WANDERING; this port has no such explicit state to reset, but the
-		//next monster-turn FOV recompute (`seesHero`) naturally loses track once far enough away.
-		if (gearAttacker && this.weaponAffix === 'displacing' && !defender.isNPC
-			&& (defender.kind === undefined || !IMMOVABLE_KINDS.has(defender.kind))
-			&& Random.chance((1 / 12) * this.enchantProcMultiplier())) {
+		//Polarized/Sacrificial/Displacing resolve in the affix seam - same formulas,
+		//same draw order, same `gearAttacker` gate (see `attack()` above for why the
+		//gate is the gear swing, not the live hero). The multiplier call stays lazy
+		//by branch so Polarized never drains the one-shot trackers. Payloads stay
+		//here, in the same order. Returns the possibly-reassigned damage.
+		const usesEnchantMultiplier = this.weaponAffix === 'sacrificial' || this.weaponAffix === 'displacing';
+		const affixResult = resolveAttackWeaponAffixes(damage, {
+			affix: this.weaponAffix,
+			gearAttacker,
+			enchantProcMultiplier: usesEnchantMultiplier ? this.enchantProcMultiplier() : 1,
+			attackerHp: attacker.hp,
+			attackerMaxHp: attacker.maxHp,
+			defenderIsNpc: defender.isNPC === true,
+			defenderImmovable: defender.kind !== undefined && IMMOVABLE_KINDS.has(defender.kind),
+		}, simulationRandom);
+		damage = affixResult.damage;
+		if (affixResult.applySacrificialBleeding) setBleeding(attacker, Math.max(1, affixResult.sacrificialBleedAmount), 'sacrificial');
+		if (affixResult.displaceDefender) {
 			const destination = this.randomFreeCell(defender);
 			if (destination) {
 				const displaceFrom = { x: defender.x, y: defender.y };

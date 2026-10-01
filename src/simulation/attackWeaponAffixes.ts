@@ -2,7 +2,12 @@ import type { SimulationRandom } from './random';
 
 export interface WeaponAffixState {
 	affix: string | null;
-	isLiveHero: boolean;
+	/** The `gearAttacker` gate (`attack()`'s hero/clone/rose swing), NOT the live
+	 * hero alone: the coverage row's SHADOW_BLADE half delegates the hero's
+	 * `Weapon.proc` to landed ShadowAlly swings, so every affix branch fires for
+	 * them too. A delegated swing rolls at Java's base 1.0 because the caller's
+	 * `enchantProcMultiplier()` answers through the `delegatedGearSwing` flag. */
+	gearAttacker: boolean;
 	enchantProcMultiplier: number;
 	attackerHp: number;
 	attackerMaxHp: number;
@@ -26,15 +31,15 @@ export function resolveAttackWeaponAffixes(
 	let applySacrificialBleeding = false;
 	let sacrificialBleedAmount = 0;
 	let displaceDefender = false;
-	if (state.isLiveHero && state.affix === 'polarized') {
+	if (state.gearAttacker && state.affix === 'polarized') {
 		damage = random.chance(0.5) ? Math.round(damage * 1.5) : 0;
 	}
-	if (state.isLiveHero && state.affix === 'sacrificial'
+	if (state.gearAttacker && state.affix === 'sacrificial'
 		&& random.chance((1 / 10) * state.enchantProcMultiplier)) {
 		sacrificialBleedAmount = (state.attackerHp / state.attackerMaxHp) ** 2 * state.attackerMaxHp / 8;
 		applySacrificialBleeding = random.chance(sacrificialBleedAmount);
 	}
-	if (state.isLiveHero && state.affix === 'displacing' && !state.defenderIsNpc && !state.defenderImmovable) {
+	if (state.gearAttacker && state.affix === 'displacing' && !state.defenderIsNpc && !state.defenderImmovable) {
 		displaceDefender = random.chance((1 / 12) * state.enchantProcMultiplier);
 	}
 	return { damage, applySacrificialBleeding, sacrificialBleedAmount, displaceDefender };

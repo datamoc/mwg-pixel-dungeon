@@ -65,6 +65,40 @@ assert.equal(seam.holyWeaponHitDamage(2, 1.5), 3);
 assert.equal(seam.blazingProcChance(1, 1.5), 0.75);
 assert.ok(Math.abs(seam.dazzlingProcChance(1.5) - 0.15) < 1e-12);
 
+// The curse trio resolves in the seam under the gearAttacker gate (hero, clone
+// and rose swings - not the live hero alone), with the same draw order.
+const counting = (values) => {
+	let i = 0;
+	return { draws: 0, chance(p) { i++; this.draws++; return values[(i - 1) % values.length]; } };
+};
+const gearState = (over) => Object.assign({ affix: null, gearAttacker: false, enchantProcMultiplier: 1, attackerHp: 100, attackerMaxHp: 100, defenderIsNpc: false, defenderImmovable: false }, over);
+{
+	const r = counting([true]);
+	const out = seam.resolveAttackWeaponAffixes(10, gearState({ affix: 'polarized', gearAttacker: false }), r);
+	assert.equal(out.damage, 10, 'gated-out polarized passes damage through');
+	assert.equal(r.draws, 0, 'gated-out polarized draws nothing');
+}
+{
+	const r = counting([true]);
+	const out = seam.resolveAttackWeaponAffixes(10, gearState({ affix: 'polarized', gearAttacker: true }), r);
+	assert.equal(out.damage, 15, 'polarized success amplifies 1.5x');
+}
+{
+	const r = counting([false]);
+	const out = seam.resolveAttackWeaponAffixes(10, gearState({ affix: 'polarized', gearAttacker: true }), r);
+	assert.equal(out.damage, 0, 'polarized failure zeroes the hit');
+}
+{
+	const r = counting([true, true]);
+	const out = seam.resolveAttackWeaponAffixes(10, gearState({ affix: 'sacrificial', gearAttacker: true, attackerHp: 100, attackerMaxHp: 100 }), r);
+	assert.equal(out.applySacrificialBleeding, true, 'sacrificial double-roll arms the bleed');
+	assert.ok(Math.abs(out.sacrificialBleedAmount - 12.5) < 1e-12, 'bleed amount is (HP/HT)^2*HT/8');
+}
+{
+	const r = counting([true]);
+	const out = seam.resolveAttackWeaponAffixes(10, gearState({ affix: 'displacing', gearAttacker: true, defenderImmovable: true }), r);
+	assert.equal(out.displaceDefender, false, 'immovables never displace');
+}
 // The chain runs the seam, not a second copy of the arithmetic.
 const chain = readFileSync(new URL('../src/scenes/dungeon/combatResolution.ts', import.meta.url), 'utf8');
 for (const name of ['blazingProcChance', 'bloomingProcChance', 'chillingProcChance', 'elasticProcChance',
@@ -77,6 +111,11 @@ for (const name of ['blazingProcChance', 'bloomingProcChance', 'chillingProcChan
 // so their no-duplicate gate covers the whole file, not just the chain region.
 assert.ok(!chain.includes('(0.5 + 0.05 * level) * this.enchantProcMultiplier()'), 'no duplicated grim maxChance');
 assert.ok(!chain.includes('((Math.max(0, this.degradedLevel(this.weaponLevel)) + 5) / (Math.max(0, this.degradedLevel(this.weaponLevel)) + 25))'), 'no duplicated corrupting fraction');
+// Both curse-trio blocks (attack() and the Shockwave mirror) run the seam now.
+assert.equal(chain.split('resolveAttackWeaponAffixes(damage, {').length - 1, 2, 'both curse blocks delegate');
+assert.ok(!chain.includes('damage = Random.chance(0.5) ? Math.round(damage * 1.5) : 0'), 'no duplicated polarized coin-flip');
+assert.ok(!chain.includes('Random.chance((1 / 10) * this.enchantProcMultiplier())'), 'no duplicated sacrificial tenth');
+assert.ok(!chain.includes('Random.chance((1 / 12) * this.enchantProcMultiplier())'), 'no duplicated displacing twelfth');
 // Absence is scoped to the post-hit affix chain (other 1/10-style rolls elsewhere -
 // sacrificial mirrors, spirit blades - are different mechanics, not copies).
 const chainStart = chain.indexOf("if (affix === 'blazing'");

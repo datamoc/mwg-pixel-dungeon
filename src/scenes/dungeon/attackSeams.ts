@@ -237,7 +237,10 @@ export const attackSeamMethods = {
 		const usesEnchantMultiplier = this.weaponAffix === 'sacrificial' || this.weaponAffix === 'displacing';
 		const result = resolveAttackWeaponAffixes(damage, {
 			affix: this.weaponAffix,
-			isLiveHero: attacker === this.hero,
+			//This path only ever sees the live hero today, so the hero check preserves
+			//its current gate exactly; the T61 reunion computes the real `gearAttacker`
+			//(hero/clone/rose) here once this method takes live callers.
+			gearAttacker: attacker === this.hero,
 			enchantProcMultiplier: attacker === this.hero && usesEnchantMultiplier ? this.enchantProcMultiplier() : 1,
 			attackerHp: attacker.hp,
 			attackerMaxHp: attacker.maxHp,
