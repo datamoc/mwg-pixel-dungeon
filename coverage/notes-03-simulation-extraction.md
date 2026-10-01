@@ -610,9 +610,12 @@ flag) caps the DarkGold half at 2000 and adds the quest-branch-boss bonus on a p
 `blacksmithBossBeaten` flag - set since 2026-09-23 by the `GnollGeomancer`'s death (see the
 "Blacksmith GNOLL mine roster" row) and, since the same day, by smashing the `CrystalSpire` (the
 "Blacksmith CRYSTAL mine roster" row); (open residual moved to `ROADMAP.md` R014) The legacy bat-blood alternative grants no favor and
-earns the free buy-back: old Java's flat `questScores[2] = 3000` observable half, recorded
-(open residual moved to `ROADMAP.md` R015)
-endgame/Rankings work, not a forge gap). The service-window gate is Java's
+earns the free buy-back: old Java's flat `questScores[2] = 3000` observable half, recorded directly on the free flag because this port tracks no quest-score table
+(**corrected 2026-10-01, R015 restated**: the forge's favor logic is flag-based and complete; what the
+missing table still costs is endgame only - Java's `Rankings.record()` sums positive `questScores`,
+positive `bossScores`, an `exploreScore` and a capped `treasureScore` into the record score, times a
+win multiplier, where `rankings.ts` scores depth/level/gold only; the mine-roster writes are their own
+items R055/R056 - endgame/Rankings work, not a forge gap). The service-window gate is Java's
 `rewardsAvailable()` - favor, or a free retained pickaxe - so a run cashed out to 0 with only
 a paid buy-back left hears the done line instead of an empty menu. Verified live
 (`tools/scratch/blacksmith-harden-livecheck.mjs`, 22/22 assertions: the cap at 50 ore, the
