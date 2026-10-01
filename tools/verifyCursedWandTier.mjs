@@ -43,6 +43,33 @@ assert.match(armorAbility, /castCursedWandEffect\(aim, cell, spare\.entry\)/);
 const turnLoop = readFileSync(new URL('../src/scenes/dungeon/turnLoopAiming.ts', import.meta.url), 'utf8');
 assert.match(turnLoop, /hadHeroDisguise[\s\S]*?delete this\.hero\.heroDisguiseClass[\s\S]*?refreshHeroArmorSprite/);
 
+// R061 (closed 2026-10-01): the cursed path runs Java's whole
+// `Wand.wandProc(target, origin.buffedLvl(), 1)` tail (`CursedWand.java:135-138`), not just
+// the Arcane Vision leg.
+assert.match(scene, /cursedProcWandLevel = origin\.level \?\? 0;/,
+	'the dispatcher captures the origin wand level that tryForWandProc passes as buffedLvl()');
+assert.match(scene, /applyCursedWandProc\(this: DungeonScene, target: Creature \| null \| undefined, wandLevel: number\): void/,
+	'the proc entry point exists and takes Java wandProc\'s wand level as an argument');
+assert.match(scene, /if \(!target \|\| target === this\.hero \|\| target\.hp <= 0\) return;/,
+	"Java's tryForWandProc guard (non-null, non-hero target) plus the port's stated corpse gate");
+assert.match(scene, /soulMarkProcThreshold\(wandLevel, 1\)/,
+	"SoulMark rolls at Java's fixed chargesUsed = 1");
+assert.match(scene, /soulMarkDuration\(wandLevel\)/,
+	"SoulMark duration carries the wand level (SoulMark.DURATION + wandLevel)");
+assert.match(scene, /awareCreatures\.set\(target, Math\.max\(this\.awareCreatures\.get\(target\) \?\? 0, arcaneVisionDuration\(rank\)\)\)/,
+	'Arcane Vision marks the victim per-target (Java CharAwareness charID), replacing the all-mobs Mind Vision stand-in');
+assert.match(scene, /talismanArtifactProcPlan\(\{[\s\S]*?sunrayRank: this\.talentRank\('sunray'\)/,
+	'the Priest-detonate / Searing-Light / Sunray-blind legs ride the shared artifact plan');
+assert.doesNotMatch(scene, /applyCursedWandArcaneVision/,
+	'the old Arcane-Vision-only entry point is gone');
+assert.doesNotMatch(scene, /buffs\['mindvision'\] = Math\.max\(this\.hero\.buffs\['mindvision'\]/,
+	'the all-mobs Mind Vision stand-in is gone from the cursed path');
+const procCallSites = scene.match(/this\.applyCursedWandProc\(/g)?.length ?? 0;
+assert.equal(procCallSites, 14, 'every former tryForWandProc call site now runs the full proc');
+const threadedCallSites = scene.match(/this\.applyCursedWandProc\([^\n]*cursedProcWandLevel\)/g)?.length ?? 0;
+assert.equal(threadedCallSites, 14, 'every call site passes the dispatcher-captured origin wand level');
+console.log('PASS CursedWand cursed path runs the full Wand.wandProc tail (R061).');
+
 
 assert.deepEqual(CURSED_COMMON_EFFECT_IDS, ['burnAndFreeze', 'spawnRegrowth', 'randomTeleport', 'randomGas', 'randomAreaEffect', 'bubbles', 'randomWand', 'selfOoze']);
 assert.equal(pickCursedCommonEffect((bound) => { assert.equal(bound, 8); return 4; }), 'randomAreaEffect');
