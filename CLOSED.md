@@ -4259,3 +4259,7 @@ Every family named in the section below is matrixed (55 matrices under `garbage/
 # R014. Blacksmith mine roster
 
 - [x] **R014** _(Blacksmith Crystal mine roster / FungalCore)_ **Closed 2026-10-01:** Java assigns fresh Blacksmith quest types 1 and 2 only; the source explicitly says FUNGI cannot roll. The port covers both reachable Crystal and Gnoll mine rosters. See `coverage/rows-monsters-and-quests.md`.
+
+# R050. Ethereal Chains residuals
+
+- [x] **R050** _(EtherealChains.chainsRecharge and Talent.onArtifactUsed residuals)_ **Ported (2026-10-01); Simplified:** successful chain use now runs `Talent.onArtifactUsed` (Enhanced Rings, non-Cleric Divine Sense and Cleanse), and successful enemy pulls run the shared `Artifact.artifactProc` talent effects from Talisman of Foresight on the pulled creature. The proc runs before this port's synchronous turn advance to preserve Java's callback timing. The pull animation remains an instant relocation. See `coverage/rows-items-equipment-and-artifacts.md`.

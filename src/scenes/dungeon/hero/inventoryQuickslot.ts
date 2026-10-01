@@ -76,6 +76,37 @@ const ROSE_DROP_DESTROYING_TRAPS = new Set<string>([
 	'burning', 'blazing', 'chilling', 'frost', 'explosive', 'disintegration', 'pitfall',
 ]);
 
+/** Shared `Artifact.artifactProc()` talent effects for scry and Ethereal Chains pulls. */
+function applyArtifactProc(scene: DungeonScene, actor: Creature): void {
+	const plan = talismanArtifactProcPlan({
+		heroClass: scene.heroClass,
+		heroSubclass: scene.subclass() ?? undefined,
+		heroLevel: scene.progression.level,
+		targetIsAlly: actor.isAlly === true,
+		targetIlluminated: actor.buffs['illuminated'] !== undefined,
+		searingLightRank: scene.talentRank('searing_light'),
+		searingLightCooldown: scene.hero.buffs['searingLightCooldown'] !== undefined,
+		sunrayRank: scene.talentRank('sunray'),
+	});
+	if (plan.consumeIlluminated) {
+		//`Artifact.artifactProc()` detaches Illuminated, then calls `target.damage(5+hero.lvl, GuidingLight.INSTANCE)`.
+		delete actor.buffs['illuminated'];
+		const parried = actor.kind === 'greatCrab' && !actor.sleeping && actor.seesHero
+			&& actor.buffs['paralysis'] === undefined;
+		if (parried) scene.say(t('port.log.crabparries'), 'negative');
+		else scene.applyCharacterDamage(actor, plan.illuminatedDamage, {
+			pierceArmor: true, cause: 'foe',
+			onNonWeaponBossDamage: (victim) => scene.disqualifyBossChallenge(victim),
+		});
+	}
+	if (plan.applyIlluminated) addBuff(actor, 'illuminated');
+	if (plan.armSearingLightCooldown) addBuff(scene.hero, 'searingLightCooldown', BUFF_DURATION.searingLightCooldown);
+	//Java rolls only after the damage and Searing Light branches above: Random.Int(20) < 1 + 2*SUNRAY.
+	if (plan.sunrayChance > 0 && Random.int(20) < plan.sunrayChance) {
+		addBuff(actor, 'blindness', plan.sunrayBlindTurns);
+	}
+}
+
 /** DungeonScene methods, moved verbatim from `dungeonScene.ts` (group `inventoryQuickslot`). Each takes the scene as `this`;
  * `dungeonScene.ts` merges them back onto the class prototype. */
 export const inventoryQuickslotMethods = {
@@ -569,6 +600,7 @@ export const inventoryQuickslotMethods = {
 					scene.fov.update(cell.x, cell.y, scene.viewRadius());
 				},
 				pullEnemyTo: (enemy, destination) => { scene.moveTo(enemy as Creature, destination); },
+				artifactProc: (enemy) => applyArtifactProc(scene, enemy as Creature),
 				shake: () => { scene.shakeScreen(1, 1); },
 				armEnhancedRings: () => { scene.armEnhancedRingsFromArtifact(); },
 				dispelInvisibility: () => { delete scene.hero.buffs['invisibility']; },
@@ -797,37 +829,7 @@ export const inventoryQuickslotMethods = {
 				markCreatureAware: (creature, duration) => {
 					scene.awareCreatures.set(creature as Creature, Math.max(scene.awareCreatures.get(creature as Creature) ?? 0, duration));
 				},
-				artifactProc: (target) => {
-					const actor = target as Creature;
-					const sunrayRank = scene.talentRank('sunray');
-					const plan = talismanArtifactProcPlan({
-						heroClass: scene.heroClass,
-						heroSubclass: scene.subclass() ?? undefined,
-						heroLevel: scene.progression.level,
-						targetIsAlly: actor.isAlly === true,
-						targetIlluminated: actor.buffs['illuminated'] !== undefined,
-						searingLightRank: scene.talentRank('searing_light'),
-						searingLightCooldown: scene.hero.buffs['searingLightCooldown'] !== undefined,
-						sunrayRank,
-					});
-					if (plan.consumeIlluminated) {
-						//`Artifact.artifactProc()` detaches Illuminated, then calls `target.damage(5+hero.lvl, GuidingLight.INSTANCE)`.
-						delete actor.buffs['illuminated'];
-						const parried = actor.kind === 'greatCrab' && !actor.sleeping && actor.seesHero
-							&& actor.buffs['paralysis'] === undefined;
-						if (parried) scene.say(t('port.log.crabparries'), 'negative');
-						else scene.applyCharacterDamage(actor, plan.illuminatedDamage, {
-							pierceArmor: true, cause: 'foe',
-							onNonWeaponBossDamage: (victim) => scene.disqualifyBossChallenge(victim),
-						});
-					}
-					if (plan.applyIlluminated) addBuff(actor, 'illuminated');
-					if (plan.armSearingLightCooldown) addBuff(scene.hero, 'searingLightCooldown', BUFF_DURATION.searingLightCooldown);
-					//Java rolls only after the damage and Searing Light branches above: Random.Int(20) < 1 + 2*SUNRAY.
-					if (plan.sunrayChance > 0 && Random.int(20) < plan.sunrayChance) {
-						addBuff(actor, 'blindness', plan.sunrayBlindTurns);
-					}
-				},
+				artifactProc: (target) => applyArtifactProc(scene, target as Creature),
 				hasGroundItem: (x, y) => scene.groundItemAt(x, y) != null,
 				markHeapAware: (cellIndex, duration) => {
 					scene.awareHeapCells.set(cellIndex, Math.max(scene.awareHeapCells.get(cellIndex) ?? 0, duration));

@@ -50,6 +50,7 @@ export interface ChainsFlowContext {
 	pullEnemyTo(enemy: ChainsEnemy, destination: { x: number; y: number }): void;
 	shake(): void;
 	armEnhancedRings(): void;
+	artifactProc(enemy: ChainsEnemy, artifactLevel: number, chargesUsed: number): void;
 	dispelInvisibility(): void;
 	spendTurn(): void;
 	say(line: string, level?: 'info' | 'positive' | 'negative' | 'warning'): void;
@@ -108,7 +109,14 @@ export function chainEnemyFlow(ctx: ChainsFlowContext, chains: ChainsItem, path:
 	//animation callback with `Talent.onArtifactUsed(hero)` and `hero.spendAndNext(1f)`
 	//- the turn and the EnhancedRings arming were both missing here (failures return
 	//free in Java too, and do here, so only this success path spends).
+	//`EtherealChains.chainEnemy` (tag `v3.3.8`): the pull lands inside the chains'
+	//animation callback with `Talent.onArtifactUsed(hero)` and `hero.spendAndNext(1f)`
+	//- the turn, `artifactProc`, and the EnhancedRings arming were missing here. Java calls
+	//`artifactProc` after `spendAndNext`, but its scheduler runs actors later; this port advances
+	//the whole turn synchronously, so proc before spending to preserve the same live target.
 	ctx.armEnhancedRings();
+	ctx.artifactProc(enemy, (chains.level ?? 0) > 0 ? 1 : 0, chargeUse);
+	//Failures return free in Java too, and do here, so only this success path spends.
 	ctx.spendTurn();
 }
 

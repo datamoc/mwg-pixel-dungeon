@@ -2758,9 +2758,13 @@ function sandalsDrive(overrides = {}, pickScript = []) {
 // The moved chains flow (`ChainsFlowContext`, the file-size refactor's tenth extraction):
 // driven headlessly on a stub 10x10 level with a scripted aimer.
 const { useChainsFlow } = require('./items/chains.js');
+{
+	const chainAdapterSource = readFileSync(join(root, 'src/scenes/dungeon/hero/inventoryQuickslot.ts'), 'utf8');
+	assert.match(chainAdapterSource, /artifactProc:\s*\(enemy\)\s*=>\s*applyArtifactProc\(scene, enemy as Creature\)/);
+}
 function chainsDrive(overrides = {}, pickCell = { x: 4, y: 0 }) {
 	const log = [];
-	const flags = { turns: 0, uncloaked: false, rings: 0, shaken: false, heroAt: { x: 0, y: 0 } };
+	const flags = { turns: 0, uncloaked: false, rings: 0, shaken: false, heroAt: { x: 0, y: 0 }, procs: [], order: [] };
 	const chains = { level: 0, charge: 10, ...overrides.chains };
 	const creatures = overrides.creatures ?? { '4,0': { x: 4, y: 0, kind: 'rat' } };
 	const ctx = {
@@ -2784,11 +2788,12 @@ function chainsDrive(overrides = {}, pickCell = { x: 4, y: 0 }) {
 		},
 		creatureAt: (x, y) => creatures[`${x},${y}`] ?? null,
 		moveHeroTo: (cell) => { flags.heroAt = { ...cell }; },
-		pullEnemyTo: (enemy, dest) => { log.push(`pull:${enemy.x},${enemy.y}->${dest.x},${dest.y}`); },
+		pullEnemyTo: (enemy, dest) => { flags.order.push('pull'); log.push(`pull:${enemy.x},${enemy.y}->${dest.x},${dest.y}`); },
 		shake: () => { flags.shaken = true; },
 		armEnhancedRings: () => { flags.rings++; },
+		artifactProc: (...args) => { flags.order.push('proc'); flags.procs.push(args); },
 		dispelInvisibility: () => { flags.uncloaked = true; },
-		spendTurn: () => { flags.turns++; },
+		spendTurn: () => { flags.order.push('turn'); flags.turns++; },
 		say: (line, level) => { log.push(`say:${level}:${line}`); },
 		t: (key) => key,
 		...overrides.ctx,
@@ -2804,6 +2809,8 @@ function chainsDrive(overrides = {}, pickCell = { x: 4, y: 0 }) {
 	assert.ok(d.log.includes('pull:4,0->2,0'), `the rat slides to the first free cell, got ${d.log}`);
 	assert.equal(d.chains.charge, 8, 'a 2-distance pull pays 2 charge');
 	assert.ok(d.flags.turns === 1 && d.flags.uncloaked && d.flags.rings === 1, 'one turn, uncloaked, rings armed');
+	assert.deepEqual(d.flags.procs, [[d.ctx.creatureAt(4, 0), 0, 2]], 'a successful enemy pull runs Artifact.artifactProc with Java’s charge use');
+	assert.deepEqual(d.flags.order, ['pull', 'proc', 'turn'], 'proc the pulled target before the port synchronously advances the turn');
 }
 // Self-grab: a cell beside the east wall pulls the hero himself there for its distance.
 {
@@ -2811,6 +2818,7 @@ function chainsDrive(overrides = {}, pickCell = { x: 4, y: 0 }) {
 	assert.ok(d.flags.heroAt.x === 8 && d.flags.heroAt.y === 8, 'the hero lands on the grabbed cell');
 	assert.equal(d.chains.charge, 2, 'an 8-distance grab pays 8 charge');
 	assert.equal(d.flags.turns, 1);
+	assert.deepEqual(d.flags.procs, [], 'a self-grab does not proc on a creature');
 }
 // Refusals: rooted shakes, walls and grab-less cells refuse, short charge refuses, statues
 // cannot be pulled, the unreachable cannot be reached, and the gates never aim.
@@ -2826,6 +2834,7 @@ function chainsDrive(overrides = {}, pickCell = { x: 4, y: 0 }) {
 	assert.equal(poor.flags.turns, 0, 'refusals spend nothing');
 	const statue = chainsDrive({ creatures: { '4,0': { x: 4, y: 0, kind: 'statue' } } });
 	assert.ok(statue.log.some((l) => l.includes('cant_pull')), 'statues cannot be pulled');
+	assert.deepEqual(statue.flags.procs, [], 'an immovable target does not proc');
 	const far = chainsDrive({ ctx: { reachableFromHero: () => false } });
 	assert.ok(far.log.some((l) => l.includes('cant_reach')), 'the unreachable refuses');
 	const cursed = chainsDrive({ chains: { charge: 10, cursed: true } });
