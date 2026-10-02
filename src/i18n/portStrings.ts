@@ -21,8 +21,8 @@ import { PORT_MINE_STRINGS } from './portMineStrings';
  * placement). Sentence structure and tense stay each catalogue's own - SPD's badge texts are
  * command-style, this port's are achievement-style. Where SPD's own wording is internally
  * inconsistent (RU/UK/BE journal `Йендор`/`Єндор` vs badge+item `Индора`/`Єндера`), the badge
- * follows `items.amulet.name`, the string the player actually sees on the item; port-owned
- * references that still use the journal spelling are tracked as R114. This is an SPD-authority
+ * follows `items.amulet.name`, the string the player actually sees on the item; R114
+ * (2026-10-02) extended that rule to the port-owned log lines too (see `port.log.victory`). This is an SPD-authority
  * review, not a native-speaker proofread, so `PORT_TRANSLATION_ORIGIN` still reports `machine`
  * where it did before. `PORT_STRINGS` at the foot of this file lists the full prose catalogs
  * plus badge-only catalogs for the four remaining SPD locales; any other missing port-only prose
@@ -399,6 +399,17 @@ export const PORT_STRINGS_EN: Record<string, string> = {
 	'port.log.stasharmor': 'You stash the armor.',
 	'port.log.stashweapon': 'You stash the weapon.',
 	'port.log.wandabsorbed': 'The wand dissolves into your staff, restoring its charges.',
+	// R114 (2026-10-02): both Amulet-of-Yendor log lines follow `items.amulet.name`, the
+	// name printed on the item, wherever SPD's own catalogue disagrees with itself -
+	// ru Индора/ИНДОРА (was Йендора/ЙЕНДОРА), uk Єндера/ЄНДЕРА (was Єндора/ЄНДОРА),
+	// pl Yendoru/YENDORU (was Yendora/YENDORA, a spelling SPD's messages never use; the
+	// port's own pl badges already said Yendoru). SPD's strings that keep the journal
+	// spelling (`journal.document.halls_king.amulet.body` ru/uk, ru
+	// `badges$badge.victory_random.desc`) stay verbatim - that inconsistency is SPD's to
+	// have, and the badge window reads port.badges.* which R074 already aligned. The
+	// badge-only catalogues (be/eo/sv/zh-hant) keep their documented English fallback
+	// here too. `port.log.victory` has no reader yet - the escape summary arrives with
+	// R020's remainder - and is corrected now so it cannot ship disagreeing.
 	'port.log.victory': 'YOU ESCAPED WITH THE AMULET OF YENDOR. VICTORY!',
 	'port.log.bossvictory.sewers': 'Goo bursts apart in a spray of ooze. You have slain the Sewers boss!',
 	'port.log.bossvictory.prison': 'Tengu collapses, his tricks spent at last. You have slain the Prison boss!',
@@ -411,6 +422,8 @@ export const PORT_STRINGS_EN: Record<string, string> = {
 	'port.log.drops': '{who} drops {item}.',
 	'port.log.guardkey': 'The guard carried an iron key!',
 	'port.log.thiefloot': 'You recover what the thief stole, and a few coins.',
+	// Said when the depth-26 vault generates the Amulet (`npcShopBlacksmith.ts`); same
+	// `items.amulet.name`-wins decision as `port.log.victory` above (R114).
 	'port.log.amuletwaits': 'The Amulet of Yendor rests in the vault. Take it!',
 
 	//eating and drinking
@@ -4583,7 +4596,7 @@ export const PORT_STRINGS_PL: Record<string, string> = {
 	'port.log.stasharmor': 'Chowasz zbroję.',
 	'port.log.stashweapon': 'Chowasz broń.',
 	'port.log.wandabsorbed': 'Różdżka rozpuszcza się w twojej lasce, przywracając jej ładunki.',
-	'port.log.victory': 'UCIEKŁEŚ Z AMULETEM YENDORA. ZWYCIĘSTWO!',
+	'port.log.victory': 'UCIEKŁEŚ Z AMULETEM YENDORU. ZWYCIĘSTWO!',
 	'port.log.bossvictory.sewers': 'Maź rozpryskuje się falą szlamu. Pokonałeś bossa Kanałów!',
 	'port.log.bossvictory.prison': 'Tengu upada, jego sztuczki się skończyły. Pokonałeś bossa Więzienia!',
 	'port.log.bossvictory.caves': 'DM-300 zatrzymuje się z ostatnim zgrzytem. Pokonałeś bossa Jaskiń!',
@@ -4595,7 +4608,7 @@ export const PORT_STRINGS_PL: Record<string, string> = {
 	'port.log.drops': '{who} upuszcza {item}.',
 	'port.log.guardkey': 'Strażnik niósł żelazny klucz!',
 	'port.log.thiefloot': 'Odzyskujesz to, co ukradł złodziej, oraz kilka monet.',
-	'port.log.amuletwaits': 'Amulet Yendora spoczywa w skarbcu. Weź go!',
+	'port.log.amuletwaits': 'Amulet Yendoru spoczywa w skarbcu. Weź go!',
 
 	'port.log.nothingtoeat': 'Nie masz nic do jedzenia.',
 	'port.log.eatmeathearty': 'Jesz mięso i czujesz się pokrzepiony (+{heal}).',
@@ -5273,7 +5286,7 @@ export const PORT_STRINGS_RU: Record<string, string> = {
 	'port.log.stasharmor': 'Вы прячете броню в сумку.',
 	'port.log.stashweapon': 'Вы прячете оружие в сумку.',
 	'port.log.wandabsorbed': 'Жезл растворяется в вашем посохе, восстанавливая его заряды.',
-	'port.log.victory': 'ВЫ ВЫБРАЛИСЬ С АМУЛЕТОМ ЙЕНДОРА. ПОБЕДА!',
+	'port.log.victory': 'ВЫ ВЫБРАЛИСЬ С АМУЛЕТОМ ИНДОРА. ПОБЕДА!',
 	'port.log.bossvictory.sewers': 'Слизень разлетается брызгами слизи. Вы победили босса Канализации!',
 	'port.log.bossvictory.prison': 'Тенгу падает, его трюки наконец исчерпаны. Вы победили босса Тюрьмы!',
 	'port.log.bossvictory.caves': 'DM-300 останавливается с последним скрежетом. Вы победили босса Пещер!',
@@ -5285,7 +5298,7 @@ export const PORT_STRINGS_RU: Record<string, string> = {
 	'port.log.drops': '{who} роняет {item}.',
 	'port.log.guardkey': 'У стража был железный ключ!',
 	'port.log.thiefloot': 'Вы возвращаете украденное вором и горсть монет.',
-	'port.log.amuletwaits': 'Амулет Йендора покоится в хранилище. Заберите его!',
+	'port.log.amuletwaits': 'Амулет Индора покоится в хранилище. Заберите его!',
 	'port.log.nothingtoeat': 'Вам нечего съесть.',
 	'port.log.eatmeathearty': 'Вы съедаете мясо и чувствуете прилив сил (+{heal}).',
 	'port.log.eatmeat': 'Вы съедаете мясо.',
@@ -6635,7 +6648,7 @@ export const PORT_STRINGS_UK: Record<string, string> = {
 	'port.log.stasharmor': 'Ви ховаєте броню в рюкзак.',
 	'port.log.stashweapon': 'Ви ховаєте зброю в рюкзак.',
 	'port.log.wandabsorbed': 'Жезл розчиняється у вашому посоху, відновлюючи його заряди.',
-	'port.log.victory': 'ВИ ВТЕКЛИ З АМУЛЕТОМ ЄНДОРА. ПЕРЕМОГА!',
+	'port.log.victory': 'ВИ ВТЕКЛИ З АМУЛЕТОМ ЄНДЕРА. ПЕРЕМОГА!',
 	'port.log.bossvictory.sewers': 'Хлюпень розлітається бризками слизу. Ви перемогли боса Каналізації!',
 	'port.log.bossvictory.prison': 'Тенгу падає, його трюки нарешті вичерпані. Ви перемогли боса В’язниці!',
 	'port.log.bossvictory.caves': 'DM-300 зупиняється з останнім скрипом. Ви перемогли боса Печер!',
@@ -6647,7 +6660,7 @@ export const PORT_STRINGS_UK: Record<string, string> = {
 	'port.log.drops': '{who} роняє {item}.',
 	'port.log.guardkey': 'Охоронець носив залізний ключ!',
 	'port.log.thiefloot': 'Ви повертаєте вкрадене злодієм і кілька монет.',
-	'port.log.amuletwaits': 'Амулет Єндора спочиває у сховищі. Візьміть його!',
+	'port.log.amuletwaits': 'Амулет Єндера спочиває у сховищі. Візьміть його!',
 	'port.log.nothingtoeat': 'Вам нічого їсти.',
 	'port.log.eatmeathearty': 'Ви їсте м’ясо і відчуваєте ситість (+{heal}).',
 	'port.log.eatmeat': 'Ви їсте м’ясо.',
