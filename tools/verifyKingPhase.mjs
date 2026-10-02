@@ -51,6 +51,7 @@ if (process.argv[2]) {
 	assert.equal(lines[0].tool, 'parityDwarfKingPhase-java');
 	const summary = lines.at(-1);
 	assert.equal(summary.phaseTwoCases, 6);
+	assert.equal(summary.phaseTwoToThreeCases, 1);
 	assert.equal(summary.phaseThreeCases, 1);
 	const phaseTwo = lines.filter((row) => row.kind === 'phase2');
 	assert.equal(phaseTwo.length, 6);
@@ -65,13 +66,24 @@ if (process.argv[2]) {
 			assert.equal(row.shield, 400, 'phase 2 grants a full-HT barrier');
 		}
 	}
+	const phaseThreeEntry = lines.find((row) => row.kind === 'phase3entry');
+	assert.ok(phaseThreeEntry, 'Java P2->P3 trace exists');
+	assert.equal(kingPhase3Entry(phaseThreeEntry.prePhase, phaseThreeEntry.preShield), true);
+	assert.equal(phaseThreeEntry.prePhase, 2);
+	assert.equal(phaseThreeEntry.preShield, 0);
+	assert.equal(phaseThreeEntry.hp, 119);
+	assert.equal(phaseThreeEntry.phase, 3);
+	assert.equal(phaseThreeEntry.summonsMade, 1);
+	assert.equal(phaseThreeEntry.shield, 0);
+	assert.equal(phaseThreeEntry.yellCalls, 1, 'Java yells on entry to phase 3');
+	assert.equal(phaseThreeEntry.bleeding, true, 'Java marks the boss health bar bleeding on phase 3 entry');
 	const phaseThree = lines.find((row) => row.kind === 'phase3');
 	assert.ok(phaseThree, 'Java P3 edge trace exists');
 	assert.equal(phaseThree.hp, 19);
 	assert.equal(phaseThree.phase, 3);
 	assert.equal(kingLosingYell(phaseThree.hp), true);
-	assert.equal(phaseThree.losingYells, 1, 'Java emits the losing yell on the crossing below 20 HP');
-	console.log('Java v3.3.8 DwarfKing damage trace: phase thresholds/clamps and P3 low-HP edge match');
+	assert.equal(phaseThree.yellCalls, 1, 'Java emits the losing yell on the crossing below 20 HP');
+	console.log('Java v3.3.8 DwarfKing damage trace: phase thresholds/clamps, P2->P3 transition and P3 low-HP edge match');
 }
 
 console.log('king phase seam: all checks pass');

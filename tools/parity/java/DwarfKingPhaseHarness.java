@@ -9,6 +9,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.levels.CityBossLevel;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.Viscosity;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.MobSprite;
+import com.shatteredpixel.shatteredpixeldungeon.ui.BossHealthBar;
 import com.watabou.noosa.Group;
 import com.watabou.noosa.particles.Emitter;
 import com.watabou.utils.SparseArray;
@@ -17,7 +18,7 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.HashSet;
 
-/** Project-authored trace of the actual v3.3.8 DwarfKing.damage() P1 clamp and P3 low-HP edge. */
+/** Project-authored trace of actual v3.3.8 DwarfKing.damage() phase thresholds and transitions. */
 public final class DwarfKingPhaseHarness {
 
 	private static final int[][] PHASE_TWO = {
@@ -28,9 +29,11 @@ public final class DwarfKingPhaseHarness {
 	public static String captureOutput() throws ReflectiveOperationException {
 		StringBuilder out = new StringBuilder("{\"tool\":\"parityDwarfKingPhase-java\"}\n");
 		for (int[] test : PHASE_TWO) out.append(phaseTwoCase(test[0], test[1], test[2] != 0)).append('\n');
+		out.append(phaseTwoToThreeCase()).append('\n');
 		out.append(phaseThreeCase()).append('\n');
 		Actor.clear();
-		out.append("{\"phaseTwoCases\":").append(PHASE_TWO.length).append(",\"phaseThreeCases\":1}\n");
+		out.append("{\"phaseTwoCases\":").append(PHASE_TWO.length)
+			.append(",\"phaseTwoToThreeCases\":1,\"phaseThreeCases\":1}\n");
 		return out.toString();
 	}
 
@@ -45,17 +48,32 @@ public final class DwarfKingPhaseHarness {
 			+ ",\"phase\":" + phase + ",\"summonsMade\":" + summonsMade + ",\"shield\":" + shield + "}";
 	}
 
+	private static String phaseTwoToThreeCase() throws ReflectiveOperationException {
+		Harness h = setup(120, 2, false);
+		BossHealthBar.assignBoss(h.king);
+		int prePhase = intField(h.king, "phase");
+		int preShield = h.king.shielding();
+		// DwarfKing.isInvulnerable() only permits phase-2 damage from its own KingDamager source.
+		h.king.damage(1, new DwarfKing.KingDamager());
+		return "{\"kind\":\"phase3entry\",\"preHp\":120,\"damage\":1,\"prePhase\":" + prePhase
+			+ ",\"preShield\":" + preShield + ",\"hp\":" + h.king.HP
+			+ ",\"phase\":" + intField(h.king, "phase") + ",\"summonsMade\":" + intField(h.king, "summonsMade")
+			+ ",\"shield\":" + h.king.shielding() + ",\"yellCalls\":" + h.king.yellCalls
+			+ ",\"bleeding\":" + BossHealthBar.isBleeding() + "}";
+	}
+
 	private static String phaseThreeCase() throws ReflectiveOperationException {
 		Harness h = setup(21, 3, false);
 		setIntField(h.king, "phase", 3);
 		Viscosity.DeferedDamage deferred = Buff.affect(h.king, Viscosity.DeferedDamage.class);
 		h.king.damage(2, deferred);
 		return "{\"kind\":\"phase3\",\"preHp\":21,\"damage\":2,\"hp\":" + h.king.HP
-			+ ",\"phase\":" + intField(h.king, "phase") + ",\"losingYells\":" + h.king.losingYells + "}";
+			+ ",\"phase\":" + intField(h.king, "phase") + ",\"yellCalls\":" + h.king.yellCalls + "}";
 	}
 
 	private static Harness setup(int hp, int phase, boolean stronger) throws ReflectiveOperationException {
 		Actor.clear();
+		BossHealthBar.assignBoss(null);
 		Dungeon.challenges = stronger ? Challenges.STRONGER_BOSSES : 0;
 		Dungeon.depth = 20;
 		Hero hero = new Hero();
@@ -109,9 +127,9 @@ public final class DwarfKingPhaseHarness {
 	}
 
 	private static final class HarnessKing extends DwarfKing {
-		int losingYells;
+		int yellCalls;
 		@Override public int drRoll() { return 0; }
-		@Override public void yell(String line) { losingYells++; }
+		@Override public void yell(String line) { yellCalls++; }
 	}
 
 	/** Only the screen-space placement is presentation; the actor move and phase code remain real. */
@@ -119,5 +137,6 @@ public final class DwarfKingPhaseHarness {
 		private final Emitter emitter = new Emitter();
 		@Override public void place(int cell) { }
 		@Override public Emitter emitter() { return emitter; }
+		@Override public Emitter centerEmitter() { return emitter; }
 	}
 }

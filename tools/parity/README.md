@@ -42,11 +42,12 @@ phase-edge cases (360 compared fields total). The phase fixture's `PrisonBossLev
 override's `progress()` call and switches to FIGHT_PAUSE; it does not run arena map/layout presentation.
 
 The `king` stage calls Java's actual `DwarfKing.damage()` for six phase-2 threshold/clamp cases
-(normal and STRONGER_BOSSES) and one phase-3 crossing below 20 HP through Java's own
-`Viscosity.DeferedDamage`. It compares HP, phase, summon counter, full-HT barrier and the losing
-yell against `dwarfKingPhase.ts`. The launcher supplies a real `MobSprite` in a `Group`; the test
-double suppresses only camera placement and counts the yell. The phase-2-to-phase-3 presentation
-branch is not exercised by this stage.
+(normal and STRONGER_BOSSES), one phase-2-to-phase-3 crossing using Java's permitted
+`KingDamager` source, and one phase-3 crossing below 20 HP through Java's own
+`Viscosity.DeferedDamage`. It compares HP, phase, summon counters, full-HT barrier, transition yell,
+and the boss-bar bleeding flag against `dwarfKingPhase.ts` across eight live cases. The launcher
+supplies a real `MobSprite` in a `Group`; the test double replaces camera placement and provides
+emitters/yell counting. It does not visually compare the emitter, audio, or boss-bar presentation.
 
 ## How the Java half is made reproducible
 
