@@ -13,6 +13,7 @@
  *   node tools/parity/run-parity.mjs --stage ghost       Ghost spawn gate + reward rolls per (seed, depth), Java v3.3.8 vs TS
  *   node tools/parity/run-parity.mjs --stage imp         Imp spawn gate + alternative flag + reward ring per seed, checkout oracle + S6 deck backport vs TS
  *   node tools/parity/run-parity.mjs --stage blacksmith  Blacksmith spawn gate + type + reward rolls per (seed, depth), Java v3.3.8 vs TS
+ *   node tools/parity/run-parity.mjs --stage tengu       Tengu.damage() HP bracket clamp + deferred jump, Java v3.3.8 vs TS
  *   options: --spd <SPD checkout>   (default $SPD_CHECKOUT or ~/dev/shattered-pixel-dungeon; a git repo with the tags/commits)
  *            --work <dir>           scratch dir for the Java trees (default <os tmp>/mwg-parity; reused between runs)
  *            --combat-ref v3.3.8    Java ref for the combat oracle
@@ -79,7 +80,7 @@ function exportTree(dir, ref) {
 }
 
 /** Copies our harness classes in, inserts the trace hook into Random.java and makes sure the Gradle tasks exist. */
-function installHarness(dir, { combat, levelgen, loot, mobdata, ghost, imp, blacksmith, wandmaker }) {
+function installHarness(dir, { combat, levelgen, loot, mobdata, ghost, imp, blacksmith, wandmaker, tengu }) {
 	const put = (name, rel) => { mkdirSync(dirname(join(dir, rel)), { recursive: true }); copyFileSync(join(JAVA_SRC, name), join(dir, rel)); };
 	if (combat) { put('CombatHarness.java', `${CORE}/actors/mobs/CombatHarness.java`); put('CombatHarnessLauncher.java', `${DESKTOP}/CombatHarnessLauncher.java`); }
 	if (levelgen) { put('LevelGenHarness.java', `${CORE}/levels/LevelGenHarness.java`); put('LevelGenHarnessLauncher.java', `${DESKTOP}/LevelGenHarnessLauncher.java`); }
@@ -89,6 +90,7 @@ function installHarness(dir, { combat, levelgen, loot, mobdata, ghost, imp, blac
 	if (imp) { put('ImpRewardHarness.java', `${CORE}/actors/mobs/npcs/ImpRewardHarness.java`); put('ImpRewardHarnessLauncher.java', `${DESKTOP}/ImpRewardHarnessLauncher.java`); }
 	if (blacksmith) { put('BlacksmithRewardHarness.java', `${CORE}/actors/mobs/npcs/BlacksmithRewardHarness.java`); put('BlacksmithRewardHarnessLauncher.java', `${DESKTOP}/BlacksmithRewardHarnessLauncher.java`); }
 	if (wandmaker) { put('WandmakerSpawnHarness.java', `${CORE}/actors/mobs/npcs/WandmakerSpawnHarness.java`); put('WandmakerSpawnHarnessLauncher.java', `${DESKTOP}/WandmakerSpawnHarnessLauncher.java`); }
+	if (tengu) { put('TenguDamageHarness.java', `${CORE}/actors/mobs/TenguDamageHarness.java`); put('TenguDamageHarnessLauncher.java', `${DESKTOP}/TenguDamageHarnessLauncher.java`); }
 
 	const randomFile = join(dir, 'SPD-classes/src/main/java/com/watabou/utils/Random.java');
 	let random = readFileSync(randomFile, 'utf8');
@@ -114,6 +116,7 @@ function installHarness(dir, { combat, levelgen, loot, mobdata, ghost, imp, blac
 	if (imp && !gradle.includes("'runImpReward'")) gradle += task('runImpReward', 'ImpRewardHarnessLauncher');
 	if (blacksmith && !gradle.includes("'runBlacksmithReward'")) gradle += task('runBlacksmithReward', 'BlacksmithRewardHarnessLauncher');
 	if (wandmaker && !gradle.includes("'runWandmakerSpawn'")) gradle += task('runWandmakerSpawn', 'WandmakerSpawnHarnessLauncher');
+	if (tengu && !gradle.includes("'runTenguDamage'")) gradle += task('runTenguDamage', 'TenguDamageHarnessLauncher');
 	writeFileSync(gradleFile, gradle);
 }
 
@@ -307,6 +310,24 @@ function blacksmithStage() {
 	gate('blacksmith: spawn gate, type, tiers, classes, item level and enchant keep all match Java or are documented in blacksmith-known.json', r.status === 0, `report: ${join(outDir, 'blacksmith-report.txt')}`);
 }
 
+/** B3, boss transition domain: actual `Tengu.damage()` bracket clamp + the actor it schedules
+ * when a hit crosses a bracket. FIGHT_PAUSE keeps the test away from arena presentation and
+ * phase progression while retaining the production override's HP and jump branches. */
+function tenguStage() {
+	console.log(`\n== tengu: Java ${combatRef} Tengu.damage() HP bracket clamp + deferred jump vs production TypeScript ==`);
+	const dir = join(work, `spd-${combatRef}`);
+	exportTree(dir, combatRef);
+	installHarness(dir, { tengu: true });
+	const outDir = join(work, 'tengu'); mkdirSync(outDir, { recursive: true });
+	const javaOut = join(outDir, 'tengu_damage_java_out.txt');
+	rmSync(javaOut, { force: true });
+	const g = gradle(dir, 'runTenguDamage', { TENGU_DAMAGE_OUT: javaOut });
+	if (!existsSync(javaOut)) { gate('tengu Java dump produced', false, g.out.slice(-500)); return; }
+	const r = run(process.execPath, [join(ROOT, 'tools', 'verifyTenguPhase.mjs'), javaOut]);
+	console.log(r.out.trim());
+	gate('tengu: actual Java damage clamp and jump scheduling match the production seam', r.status === 0, `report: ${javaOut}`);
+}
+
 function levelgenStage() {
 
 	console.log(`\n== levelgen: floor-generation RNG draws, oracle ${prebuiltLevelgenTree ? prebuiltLevelgenTree : levelgenRef} vs this port (depths 3-9, 4 seeds) ==`);
@@ -345,6 +366,7 @@ try {
 	if (stage === 'all' || stage === 'ghost') ghostStage();
 	if (stage === 'all' || stage === 'imp') impStage();
 	if (stage === 'all' || stage === 'blacksmith') blacksmithStage();
+	if (stage === 'all' || stage === 'tengu') tenguStage();
 	if (stage === 'all' || stage === 'levelgen') levelgenStage();
 } catch (e) {
 	gate('runner', false, e.message);

@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { createRequire } from 'node:module';
 import ts from 'typescript';
 
+const javaPath = process.argv[2];
 // Pins the Tengu HP-bracket seam (`src/simulation/tenguBeam.ts`) against
 // `Tengu.damage()` (actors/mobs/Tengu.java 132-200, tag `v3.3.8`) and pins
 // `clampTenguBracket`/`tenguBracketJump` to the seam: the hooks must delegate,
@@ -47,4 +48,23 @@ for (const name of ['tenguHpBracket', 'tenguBracketClamp', 'tenguPhase1Edge', 't
 assert.ok(!hooks.includes('Math.floor(tengu.maxHp / 8)'), 'no duplicated bracket remains in the hooks');
 assert.ok(!hooks.includes('Math.floor(preHp / bracket)'), 'no duplicated bracket index remains in the hooks');
 
-console.log('tengu phase seam: all checks pass');
+if (javaPath) {
+	const javaCases = readFileSync(javaPath, 'utf8').split(/\r?\n/).filter(Boolean)
+		.map(line => JSON.parse(line)).filter(row => Number.isInteger(row.preHp));
+	assert.ok(javaCases.length >= 90, 'Java Tengu harness covers the bracket boundary matrix');
+	let fields = 0;
+	for (const javaCase of javaCases) {
+		assert.equal(javaCase.error, undefined, `Java HP ${javaCase.preHp} / damage ${javaCase.damage} had no error`);
+		const bracket = tenguHpBracket(javaCase.maxHp);
+		assert.equal(javaCase.bracket, bracket, 'Java uses integer HT / 8');
+		const expectedHp = tenguBracketClamp(javaCase.preHp, javaCase.preHp - javaCase.damage, bracket);
+		assert.equal(javaCase.hp, expectedHp, `Java damage clamp at HP ${javaCase.preHp}, damage ${javaCase.damage}`);
+		assert.equal(javaCase.jumpScheduled,
+			tenguBracketChanged(javaCase.preHp, javaCase.hp, bracket),
+			`Java schedules a jump exactly when the bracket changes at HP ${javaCase.preHp}`);
+		fields += 3;
+	}
+	console.log(`tengu phase seam: ${javaCases.length} actual Java damage cases, ${fields} fields match; source and delegation checks pass`);
+} else {
+	console.log('tengu phase seam: source and delegation checks pass (pass Java output path for runtime parity)');
+}
