@@ -27,6 +27,11 @@ tables are byte-identical to the checkout's; v3.3.8 has a different room roster 
 The Ghost stage (2026-09-30) forced the port onto v3.3.8 decks; the S6 backport the same day re-pointed the levelgen oracle at those mechanics (checkout rooms + v3.3.8 deck draws), so `--stage levelgen` is green (28/28) and `--stage ghost` stays the v3.3.8-true gate for quests.
 2026-09-30: keep the v3.3.8 mechanics).
 
+The `imp` stage also calls v3.3.8's actual `Imp.Quest.complete()` after initializing a stored reward and a nonzero
+score. It asserts that Java clears the stored reward, then compares the completion score and completed-state route
+in the production TypeScript scene path, in addition to the 160 spawn/reward fields. The NPC confirmation window
+remains an explicitly documented UI simplification in the port.
+
 ## How the Java half is made reproducible
 
 Nothing here modifies your SPD checkout. For each stage the runner:

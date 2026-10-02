@@ -1,8 +1,13 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs;
 
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
+import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfMight;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
+import com.shatteredpixel.shatteredpixeldungeon.Statistics;
+import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
 import com.watabou.utils.Random;
+
+import java.lang.reflect.Field;
 
 /**
  * Parity harness (BACKLOG B3, Imp quest domain), project-authored: replicates
@@ -53,8 +58,31 @@ public class ImpRewardHarness {
 					.append("\"}\n");
 			}
 		}
+		try {
+			out.append(impCompletionCase()).append('\n');
+		} catch (Throwable t) {
+			out.append("{\"kind\":\"completion\",\"error\":\"")
+				.append(String.valueOf(t).replace("\"", "'").replace("\\", "/"))
+				.append("\"}\n");
+		}
 		out.append("{\"cases\":").append(cases).append("}\n");
 		return out.toString();
+	}
+
+	/** Calls the actual `Imp.Quest.complete()` from v3.3.8 with a stored reward and seeded score. */
+	private static String impCompletionCase() throws ReflectiveOperationException {
+		Notes.reset();
+		Imp.Quest.reset();
+		Field spawned = Imp.Quest.class.getDeclaredField("spawned");
+		spawned.setAccessible(true);
+		spawned.setBoolean(null, true);
+		Imp.Quest.reward = new RingOfMight();
+		Statistics.questScores = new int[5];
+		Statistics.questScores[3] = 1234;
+		Imp.Quest.complete();
+		return "{\"kind\":\"completion\",\"questScore\":" + Statistics.questScores[3]
+			+ ",\"rewardCleared\":" + (Imp.Quest.reward == null)
+			+ ",\"completed\":" + Imp.Quest.isCompleted() + "}";
 	}
 
 	private static String impCase(long seed) {

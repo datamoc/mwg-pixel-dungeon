@@ -15,6 +15,8 @@ B9's coord tasks are T159 (residuals, re-filed after T18-T21 were cancelled as d
 
 ## B3. Verify loot, quest outcomes, boss transitions and save/load state
 
+  - **Progress 2026-10-02, Imp completion trace:** `--stage imp` invokes v3.3.8 `Imp.Quest.complete()` with a stored reward and nonzero score, asserts reward clearing, and compares the 4000-point score and completed state against the port scene path; 162 fields match across reward and completion cases. Blacksmith completion and remaining boss runtime traces stay open.
+
 - [ ] Verify loot, quest outcomes, boss transitions, and save/load state. **Complexity: L.** extends `tools/parity/` (see its README, "Extending it").
   - **Progress 2026-09-27, save/load and mob tables (T57):** `npm run verify:saveload` (Chrome and Firefox: five floors incl. two boss floors, save/load/save fixed point, fresh-page resume) found and fixed four real bugs (duplicated floor items and resurrected keys on every revisit/load, keys re-queued to the floor below, secret doors revealed by loading, a stale ritual site crashing a first visit) - see the coverage row "Floor restore on revisit and load". The `mobdata` stage diffs every Java mob class against the monster/loot tables (440 field checks, 8 documented differences) and corrected RotLasher DR to 0-8.
   - **Progress 2026-09-26, loot domain:** `node tools/parity/run-parity.mjs --stage loot` compares Java's own

@@ -27,11 +27,15 @@ import { SpdRandom } from '../src/spdRng';
 import { generatorFullReset, impQuestReward } from '../src/items/generator';
 
 interface JavaCase {
+	kind?: string;
 	seed: number;
 	spawnDepth?: number;
 	alternative?: boolean;
 	ringCls?: string;
 	ringLevel?: number;
+	questScore?: number;
+	rewardCleared?: boolean;
+	completed?: boolean;
 	error?: string;
 }
 
@@ -53,12 +57,14 @@ export function main(argv: string[]): number {
 	const known = readKnown(at('--known'));
 	const reportPath = at('--report');
 
-	const cases: JavaCase[] = readFileSync(javaPath, 'utf8')
+	const records: JavaCase[] = readFileSync(javaPath, 'utf8')
 		.split('\n')
 		.map((line) => line.trim())
 		.filter(Boolean)
 		.map((line) => JSON.parse(line) as JavaCase)
-		.filter((line) => line.seed !== undefined);
+		.filter((line) => line.seed !== undefined || line.kind === 'completion');
+	const cases = records.filter((line) => line.seed !== undefined);
+	const completion = records.find((line) => line.kind === 'completion');
 
 	const rows: string[] = [];
 	const knownUsed = new Set<string>();
@@ -106,9 +112,24 @@ export function main(argv: string[]): number {
 			SpdRandom.popGenerator();
 		}
 	}
+	if (!completion) javaErrors.push('Java completion trace is missing');
+	else if (completion.error) javaErrors.push(`Java completion threw: ${completion.error}`);
+	else {
+		const scene = readFileSync('src/scenes/dungeon/npcShopBlacksmith.ts', 'utf8');
+		const impFlow = scene.match(/interactWithImp\(this: DungeonScene, npc: Creature\): void \{([\s\S]*?)\n\t\},/);
+		if (!impFlow) javaErrors.push('Production Imp interaction is missing');
+		const flow = impFlow?.[1] ?? '';
+		const scoreValue = flow.match(/setQuestScore\(this, 3, (\d+)\)/)?.[1];
+		const questScore = scoreValue === undefined ? Number.NaN : Number(scoreValue);
+		const completed = /this\.gameState\.setSwitch\('impDone', true\)/.test(flow)
+			|| /advanceStage\('imp'/.test(flow) || /advanceQuest\(\)/.test(flow);
+		if (!completion.rewardCleared) javaErrors.push('Java Imp.Quest.complete() did not clear the stored reward');
+		check('completion', 'questScore', completion.questScore, questScore, 'Imp completion quest score');
+		check('completion', 'completed', completion.completed, completed, 'Imp turn-in reaches completion');
+	}
 
 	const stale = Object.keys(known).filter((k) => !knownUsed.has(k));
-	const summary = `imp reward parity: ${cases.length} cases - ${match} fields match, ${mismatch.length} undocumented mismatches, ${javaErrors.length} java errors, ${stale.length} stale known entries`;
+	const summary = `imp parity: ${cases.length} reward cases plus completion - ${match} fields match, ${mismatch.length} undocumented mismatches, ${javaErrors.length} java errors, ${stale.length} stale known entries`;
 	console.log(summary);
 	for (const b of mismatch) console.log('BEYOND ' + b);
 	for (const e of javaErrors) console.log('JAVA-ERROR ' + e);
