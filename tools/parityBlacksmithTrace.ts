@@ -28,11 +28,13 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { SpdRandom } from '../src/spdRng';
 import { Cat, blacksmithSmithRewards, generatorFullReset } from '../src/items/generator';
+import { BLACKSMITH_FREE_PICKAXE_FAVOR, blacksmithTurnInFavor } from '../src/items/blacksmith';
 
 interface JavaCase {
-	seed: number;
-	depth: number;
-	spawned: boolean;
+	kind?: string;
+	seed?: number;
+	depth?: number;
+	spawned?: boolean;
 	type?: number;
 	w1tier?: number;
 	w1cls?: string;
@@ -46,6 +48,14 @@ interface JavaCase {
 	keptEnchant?: boolean;
 	keptGlyph?: boolean;
 	error?: string;
+	gold?: number;
+	bossBeaten?: boolean;
+	favor?: number;
+	scoreDelta?: number;
+	goldRemaining?: number;
+	pickaxeRetained?: boolean;
+	completed?: boolean;
+	freePickaxe?: boolean;
 }
 
 function readKnown(path: string | null): Record<string, string> {
@@ -68,12 +78,14 @@ export function main(argv: string[]): number {
 	const known = readKnown(at('--known'));
 	const reportPath = at('--report');
 
-	const cases: JavaCase[] = readFileSync(javaPath, 'utf8')
+	const records: JavaCase[] = readFileSync(javaPath, 'utf8')
 		.split('\n')
 		.map((line) => line.trim())
 		.filter(Boolean)
 		.map((line) => JSON.parse(line) as JavaCase)
-		.filter((line) => line.seed !== undefined && line.depth !== undefined);
+		.filter((line) => (line.seed !== undefined && line.depth !== undefined) || line.kind === 'completion');
+	const cases = records.filter((line) => line.seed !== undefined && line.depth !== undefined);
+	const completionCases = records.filter((line) => line.kind === 'completion');
 
 	const rows: string[] = [];
 	const knownUsed = new Set<string>();
@@ -132,9 +144,34 @@ export function main(argv: string[]): number {
 			SpdRandom.popGenerator();
 		}
 	}
+	const scene = readFileSync('src/scenes/dungeon/npcShopBlacksmith.ts', 'utf8');
+	const completionFlow = scene.match(/completeBlacksmithQuest\(this: DungeonScene\): void \{([\s\S]*?)\n\t\},/);
+	const flow = completionFlow?.[1] ?? '';
+	const finishFlow = scene.match(/finishBlacksmithQuest\(this: DungeonScene\): void \{([\s\S]*?)\n\t\},/);
+	if (!completionFlow) javaErrors.push('Production Blacksmith completion method is missing');
+	if (!/blacksmithTurnInFavor\(gold, this\.blacksmithBossBeaten\)/.test(flow)
+		|| !/addQuestScore\(this, 2, this\.blacksmithFavor\)/.test(flow)
+		|| !/this\.bag\.remove\('darkGold', gold\)/.test(flow)
+		|| !/blacksmithPickaxeFree = this\.blacksmithFavor >= BLACKSMITH_FREE_PICKAXE_FAVOR/.test(flow)
+		|| !/this\.blacksmithPickaxeAvailable = true/.test(scene)
+		|| !/this\.gameState\.setSwitch\('blacksmithDone', true\)/.test(finishFlow?.[1] ?? '')) {
+		javaErrors.push('Production Blacksmith completion does not wire the verified favor, score, inventory and pickaxe outcomes');
+	}
+	for (const c of completionCases) {
+		const key = `completion:${c.gold}:${c.bossBeaten}`;
+		if (c.error) { javaErrors.push(`${key} Java threw: ${c.error}`); continue; }
+		const favor = blacksmithTurnInFavor(c.gold ?? 0, c.bossBeaten ?? false);
+		check(key, 'favor', c.favor, favor, `${key} favor`);
+		check(key, 'scoreDelta', c.scoreDelta, favor, `${key} quest score delta`);
+		check(key, 'goldRemaining', c.goldRemaining, 0, `${key} DarkGold consumed`);
+		check(key, 'pickaxeRetained', c.pickaxeRetained, true, `${key} quest pickaxe retained`);
+		check(key, 'completed', c.completed, true, `${key} quest completed state`);
+		check(key, 'freePickaxe', c.freePickaxe, favor >= BLACKSMITH_FREE_PICKAXE_FAVOR, `${key} free pickaxe threshold`);
+	}
+	if (completionCases.length !== 10) javaErrors.push(`Expected 10 Java completion cases, got ${completionCases.length}`);
 
 	const stale = Object.keys(known).filter((k) => !knownUsed.has(k));
-	const summary = `blacksmith reward parity: ${cases.length} cases - ${match} fields match, ${mismatch.length} undocumented mismatches, ${javaErrors.length} java errors, ${stale.length} stale known entries`;
+	const summary = `blacksmith parity: ${cases.length} reward cases + ${completionCases.length} completion cases - ${match} fields match, ${mismatch.length} undocumented mismatches, ${javaErrors.length} java errors, ${stale.length} stale known entries`;
 	console.log(summary);
 	for (const b of mismatch) console.log('BEYOND ' + b);
 	for (const e of javaErrors) console.log('JAVA-ERROR ' + e);

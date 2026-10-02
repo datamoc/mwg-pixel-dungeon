@@ -1,14 +1,20 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.Statistics;
+import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.quest.DarkGold;
+import com.shatteredpixel.shatteredpixeldungeon.items.quest.Pickaxe;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.watabou.utils.Random;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.lang.reflect.Field;
 
 /**
  * Parity harness (BACKLOG B3, Blacksmith quest domain), project-authored: replicates
@@ -76,8 +82,51 @@ public class BlacksmithRewardHarness {
 				}
 			}
 		}
+		try {
+			for (int gold : new int[] {0, 1, 30, 40, 50}) {
+				for (boolean bossBeaten : new boolean[] {false, true}) {
+					out.append(blacksmithCompletionCase(gold, bossBeaten)).append('\n');
+				}
+			}
+		} catch (Throwable t) {
+			out.append("{\"kind\":\"completion\",\"error\":\"")
+				.append(String.valueOf(t).replace("\"", "'").replace("\\", "/"))
+				.append("\"}\n");
+		}
 		out.append("{\"cases\":").append(cases).append("}\n");
 		return out.toString();
+	}
+
+	/** Calls real `Blacksmith.Quest.complete()` with carried DarkGold and the retained quest Pickaxe. */
+	private static String blacksmithCompletionCase(int goldQuantity, boolean bossBeaten) throws ReflectiveOperationException {
+		// Quest.complete() can award a badge; use an in-memory registry so the harness does not touch game files.
+		Field globalBadges = Badges.class.getDeclaredField("global");
+		globalBadges.setAccessible(true);
+		globalBadges.set(null, new HashSet<>());
+		Hero hero = new Hero();
+		hero.heroClass = HeroClass.WARRIOR;
+		Dungeon.hero = hero;
+		Blacksmith.Quest.reset();
+		new Pickaxe().collect(hero.belongings.backpack);
+		if (goldQuantity > 0) new DarkGold().quantity(goldQuantity).collect(hero.belongings.backpack);
+		Field beaten = Blacksmith.Quest.class.getDeclaredField("bossBeaten");
+		beaten.setAccessible(true);
+		beaten.setBoolean(null, bossBeaten);
+		Field given = Blacksmith.Quest.class.getDeclaredField("given");
+		given.setAccessible(true);
+		given.setBoolean(null, true);
+		Statistics.questScores = new int[5];
+		Statistics.questScores[2] = 17;
+		Blacksmith.Quest.complete();
+		DarkGold remainingGold = hero.belongings.getItem(DarkGold.class);
+		return "{\"kind\":\"completion\",\"gold\":" + goldQuantity
+			+ ",\"bossBeaten\":" + bossBeaten
+			+ ",\"favor\":" + Blacksmith.Quest.favor
+			+ ",\"scoreDelta\":" + (Statistics.questScores[2] - 17)
+			+ ",\"goldRemaining\":" + (remainingGold == null ? 0 : remainingGold.quantity())
+			+ ",\"pickaxeRetained\":" + (Blacksmith.Quest.pickaxe != null)
+			+ ",\"completed\":" + Blacksmith.Quest.completed()
+			+ ",\"freePickaxe\":" + Blacksmith.Quest.freePickaxe + "}";
 	}
 
 	private static String blacksmithCase(long seed, int depth) {

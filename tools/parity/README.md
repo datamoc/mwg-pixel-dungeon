@@ -32,6 +32,11 @@ score. It asserts that Java clears the stored reward, then compares the completi
 in the production TypeScript scene path, in addition to the 160 spawn/reward fields. The NPC confirmation window
 remains an explicitly documented UI simplification in the port.
 
+The `blacksmith` stage calls Java's actual `Blacksmith.Quest.complete()` for ten carried-DarkGold/boss-beaten
+combinations. The production `blacksmithTurnInFavor()` matches the Java favor and score delta; checks also cover
+consuming the ore, retaining the quest pickaxe, completion state, and the 2500-favor free-pickaxe threshold (60 completion fields),
+in addition to its 1350 spawn/reward fields.
+
 ## How the Java half is made reproducible
 
 Nothing here modifies your SPD checkout. For each stage the runner:

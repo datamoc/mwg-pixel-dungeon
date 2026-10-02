@@ -293,7 +293,7 @@ function impStage() {
  * composition + `blacksmithSmithRewards()`. The room placement is not walked on either side:
  * its draws depend on level geometry. No S6 backport: the v3.3.8 tree already has the deck mechanics. */
 function blacksmithStage() {
-	console.log(`\n== blacksmith: Java ${combatRef} Blacksmith.Quest.spawn() gate + type + reward rolls vs this port's gate + type + blacksmithSmithRewards() ==`);
+	console.log(`\n== blacksmith: Java ${combatRef} quest spawn/rewards and Quest.complete() vs this port ==`);
 	const dir = join(work, `spd-${combatRef}`);
 	exportTree(dir, combatRef);
 	installHarness(dir, { blacksmith: true });
@@ -307,7 +307,7 @@ function blacksmithStage() {
 	const tsRunner = tsBundle('tools/parityBlacksmithTrace.ts', 'parityBlacksmithTrace.mjs');
 	const r = run(process.execPath, [tsRunner, '--java', javaOut, '--known', join(ROOT, 'tools', 'parity', 'blacksmith-known.json'), '--report', join(outDir, 'blacksmith-report.txt')]);
 	console.log(r.out.trim().split('\n').slice(0, 40).join('\n'));
-	gate('blacksmith: spawn gate, type, tiers, classes, item level and enchant keep all match Java or are documented in blacksmith-known.json', r.status === 0, `report: ${join(outDir, 'blacksmith-report.txt')}`);
+	gate('blacksmith: spawn/reward fields and actual Java completion outcomes match the port', r.status === 0, `report: ${join(outDir, 'blacksmith-report.txt')}`);
 }
 
 /** B3, boss transition domain: actual `Tengu.damage()` bracket clamp + the actor it schedules
