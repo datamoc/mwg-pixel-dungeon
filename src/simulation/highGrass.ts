@@ -130,14 +130,12 @@ export interface HighGrassApplyContext {
 	readonly chargeNaturalism: () => void;
 	/** `null` unless the worn glyph is camouflage, else the computed meld duration. */
 	readonly camouflageDuration: number | null;
-	readonly grantShield: (amount: number, cap: number) => void;
 	readonly afterTerrainChange: (x: number, y: number) => void;
 	readonly depth: number;
 	get natureBerriesDropped(): number;
 	set natureBerriesDropped(dropped: number);
 	/** Scripted rolls: `Random.chance` in play, a queue in the suite. */
 	readonly rollChance: (p: number) => boolean;
-	readonly rollInt: (min: number, max: number) => number;
 	readonly drawSeedClass: () => string;
 	readonly spawnDrop: (kind: 'seed' | 'dewdrop' | 'food' | 'berry', x: number, y: number, seedClass?: string) => void;
 	readonly say: (key: string, level: 'positive' | 'negative') => void;
@@ -177,17 +175,10 @@ export function applyHighGrassTrample(context: HighGrassApplyContext, x: number,
 		context.hero.buffs['invisibility'] = Math.max(context.hero.buffs['invisibility'] ?? 0, context.camouflageDuration);
 		context.say('port.log.camouflage', 'positive');
 	}
-	//`Talent.NATURES_AID`'s real Java home is `Plant.trigger()` (`plants/Plant.java`:68-70,
-	//tag `v3.3.8`: `heroFOV[pos] && hasTalent` -> `Barkskin.conditionallyAppend(hero, 2,
-	//1 + 2*points)`, fired when a plant's effect activates in the hero's vision) - a full
-	//Java-source scan finds NATURES_AID in no trample code at all, and its barkskin there is
-	//a fixed level 2, not this random 0-2 roll. This grant has been the port's misplaced
-	//home for the talent since the initial commit; the plant-trigger seam it belongs in
-	//(`actorTurnsHazards`' plant prelude) cannot take it while that file is under active
-	//peer edits, so both the move and the removal here stay tracked as R070's first open
-	//half rather than landing half a fix. See the Plant.trigger row's 2026-10-01 correction
-	//in `coverage/rows-architecture-mwg-and-simulation.md`.
-	if (context.heroClass === 'huntress' && context.talentRank('natures_aid') > 0) context.grantShield(context.rollInt(0, 3), 2);
+	//`Talent.NATURES_AID` lived here as a trample grant since the initial commit; its
+	//real Java home is `Plant.trigger()` (`plants/Plant.java`:68-70, tag `v3.3.8`), so
+	//`naturesAidBarkskin` in `simulation/plantTriggers.ts` now fires it from both
+	//plant-trigger halves with Java's fixed level 2 (not this seam's old 0-2 roll).
 	context.afterTerrainChange(x, y);
 
 	if (!trample.rollDrops) return;

@@ -121,7 +121,7 @@ try {
 	const { wraithCombatStats, dustSpawnerStep, dustSpawnerCap } = require('./simulation/wraith');
 const { grantSungrassHealth, tickSungrassHealth, grantEarthrootArmor, absorbEarthrootArmor } = require('./simulation/plantPools');
 const { plantDropCandidates, plantDropCount } = require('./simulation/plantDrops');
-const { runHeroPlantEffect, runMobPlantEffect } = require('./simulation/plantTriggers');
+const { runHeroPlantEffect, runMobPlantEffect, naturesAidBarkskin } = require('./simulation/plantTriggers');
 const { TIME_BUBBLE_TURNS: MOB_BUBBLE_TURNS } = require('./simulation/timeBubble');
 const { teleportCandidates, disarmBubblePresses } = require('./simulation/teleport');
 const { teleportAppearPlan } = require('./simulation/teleportAppear');
@@ -486,6 +486,21 @@ check('the moved hero plant-effect switch fires every branch', () => {
 	assert.equal(r.rec.armor, null);
 	r = drive('earthroot', { isVisible: () => false });
 	assert.deepEqual(r.rec.shakes, []);
+	//`naturesAidBarkskin` is Java's fixed pair - level 2, 3 turns at +1, 5 at +2 -
+	//never the trample seam's old 0-2 roll, and never for a non-Huntress.
+	assert.deepEqual(naturesAidBarkskin('huntress', 1), [2, 3]);
+	assert.deepEqual(naturesAidBarkskin('huntress', 2), [2, 5]);
+	assert.equal(naturesAidBarkskin('huntress', 0), null);
+	assert.equal(naturesAidBarkskin('mage', 2), null);
+	//`Plant.trigger()` fires the clause ahead of every hero-stepped plant effect.
+	r = drive('firebloom', { heroClass: () => 'huntress', talentRank: () => 1 });
+	assert.deepEqual(r.rec.barkskin, [2, 3]);
+	r = drive('firebloom', { heroClass: () => 'huntress', talentRank: () => 2 });
+	assert.deepEqual(r.rec.barkskin, [2, 5]);
+	r = drive('firebloom', { heroClass: () => 'huntress', talentRank: () => 1, isVisible: () => false });
+	assert.equal(r.rec.barkskin, null, 'out-of-sight plants never bark');
+	r = drive('firebloom', { heroClass: () => 'mage', talentRank: () => 2 });
+	assert.equal(r.rec.barkskin, null, 'no talent without the Huntress class');
 	//Blindweed: a Warden turns invisible, everyone else is dazed and crippled.
 	r = drive('blindweed');
 	assert.deepEqual(r.rec.grants, [['daze', 10]], 'blindness arrives as daze for the whole Blindness.DURATION');
@@ -558,6 +573,52 @@ check('the moved hero plant-effect switch fires every branch', () => {
 	assert.deepEqual(r.rec.fires, []);
 	assert.deepEqual(r.rec.gases, []);
 	assert.equal(r.rec.said.length, 1);
+});
+check('high-grass trample still furrows and flattens after the aid removal', () => {
+	//Drive of `applyHighGrassTrample` past the removed `NATURES_AID` seam: the
+	//old grant was doubly wrong - the wrong event (trample, not plant trigger)
+	//with the wrong roll (0-2, not Java's fixed 2) - and unreachable besides (a
+	//Huntress always furrows above the line that housed it, so it never fired).
+	//The context carries no shield writer anymore; both trample paths below run
+	//it end to end with scripted no-drop rolls.
+	const { applyHighGrassTrample } = require('./simulation/highGrass');
+	function driveTrample(heroClass, talentRank, furrowedCells) {
+		const sets = [];
+		const furrowed = new Set(furrowedCells);
+		applyHighGrassTrample({
+			hero: { buffs: {} },
+			heroClass,
+			talentRank,
+			furrowedGrass: furrowed,
+			level: { width: 32, height: 32, get: () => 1, set: (x, y, terrain) => { sets.push([x, y, terrain]); }, index: (x, y) => y * 32 + x },
+			highGrassTerrain: 1,
+			grassTerrain: 2,
+			naturalismLevel: 0,
+			grassFeeling: false,
+			lootRules: { seedChanceBase: 25, seedChancePerLevel: 4, dewChanceBase: 6, dewChanceLevelDivisor: 2 },
+			chargeNaturalism: () => {},
+			camouflageDuration: null,
+			afterTerrainChange: () => {},
+			depth: 12,
+			get natureBerriesDropped() { return 0; },
+			set natureBerriesDropped(_dropped) {},
+			rollChance: () => false,
+			drawSeedClass: () => 'sungrass',
+			spawnDrop: () => {},
+			say: () => {},
+			isBloomGround: () => false,
+			isPlanted: () => false,
+		}, 7, 12);
+		return { sets, furrowed };
+	}
+	//A talented Huntress furrows high grass without touching the terrain writer.
+	let t = driveTrample('huntress', (id) => id === 'natures_aid' ? 2 : 0, []);
+	assert.deepEqual(t.sets, []);
+	assert.ok(t.furrowed.has(12 * 32 + 7));
+	//Anyone else flattens it to grass.
+	t = driveTrample('rogue', () => 0, []);
+	assert.deepEqual(t.sets, [[7, 12, 2]]);
+	assert.ok(!t.furrowed.has(12 * 32 + 7));
 });
 check('the moved mob plant-effect switch fires every branch', () => {
 	//Drive of `runMobPlantEffect` (the `triggerMobPlantAt` half moved to

@@ -315,7 +315,6 @@ export const environmentFireTrapsMethods = {
 			camouflageDuration: scene.armorGlyphActive() && scene.armorGlyph === 'camouflage'
 				? Math.round((3 + scene.armorLevel / 2) * scene.genericProcMultiplier())
 				: null,
-			grantShield: (amount, cap) => scene.grantHeroShield(amount, cap),
 			afterTerrainChange: (x, y) => {
 				scene.restitchTilesAround(x, y);
 				scene.featuresMap?.setLayerData('features', scene.featureFrames());
@@ -324,7 +323,6 @@ export const environmentFireTrapsMethods = {
 			get natureBerriesDropped() { return scene.natureBerriesDropped; },
 			set natureBerriesDropped(dropped: number) { scene.natureBerriesDropped = dropped; },
 			rollChance: (p) => Random.chance(p),
-			rollInt: (min, max) => Random.int(min, max),
 			drawSeedClass: () => randomUsingDefaults(Cat.SEED).cls,
 			spawnDrop: (kind, x, y, seedClass) => {
 				if (kind === 'seed') scene.spawnGroundItem('seed', x, y, sourceInventoryItem('seed', seedClass ?? '', (id) => scene.newItemInstanceId(id)));
@@ -359,7 +357,6 @@ export const environmentFireTrapsMethods = {
 			naturalismLevel: 0,
 			chargeNaturalism: () => {},
 			camouflageDuration: null,
-			grantShield: () => {},
 			get natureBerriesDropped() { return 0; },
 			set natureBerriesDropped(_dropped: number) {},
 		}, monster.x, monster.y);

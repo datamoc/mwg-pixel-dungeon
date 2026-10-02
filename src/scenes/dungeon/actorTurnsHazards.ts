@@ -608,12 +608,26 @@ export const actorTurnsHazardsMethods = {
 		this.featuresMap?.setLayerData('features', this.featureFrames());
 	},
 
-	/** Scene services behind `runHeroPlantEffect`: the plant-trigger extraction's hero-half
+	/** `Barkskin.conditionallyAppend`'s keep-max half for the hero (`actors/buffs/Barkskin.java`,
+ * tag `v3.3.8`): both plant-trigger contexts route their barkskin writes through this
+ * one setter, so the Earthroot Warden branch and the `NATURES_AID` clause share the
+ * same single-slot shape (Java would stack a second instance when the interval
+ * differs; the port keeps the strongest level, like the consumable barkskin grants). */
+setHeroBarkskin(this: DungeonScene, level: number, interval: number): void {
+	if ((this.hero.barkskinLevel ?? 0) <= level) {
+		this.hero.barkskinLevel = level;
+		this.hero.barkskinInterval = interval;
+		this.hero.barkskinCooldown = interval;
+	}
+},
+/** Scene services behind `runHeroPlantEffect`: the plant-trigger extraction's hero-half
 	 * context. Buff grants, the cure, blob seeds and `t()` stay shared code; the scene only
 	 * binds its own state, movement and presentation seams. */
 	heroPlantContext(this: DungeonScene): HeroPlantContext {
 		return {
 			subclass: () => this.subclass(),
+			heroClass: () => this.heroClass,
+			talentRank: (id) => this.talentRank(id),
 			level: this.progression.level,
 			depth: this.depth,
 			say: this.say.bind(this),
@@ -632,13 +646,7 @@ export const actorTurnsHazardsMethods = {
 			isVisible: (x, y) => this.fov.isVisible(x, y),
 			shake: this.shakeScreen.bind(this),
 			setEarthrootArmor: (level, pos) => { this.earthrootArmor = { level, pos }; },
-			setBarkskin: (level, interval) => {
-				if ((this.hero.barkskinLevel ?? 0) <= level) {
-					this.hero.barkskinLevel = level;
-					this.hero.barkskinInterval = interval;
-					this.hero.barkskinCooldown = interval;
-				}
-			},
+			setBarkskin: (level, interval) => this.setHeroBarkskin(level, interval),
 			setTimeBubble: (turns) => { this.timeBubbleTurns = turns; },
 			syncHero: () => this.syncHeroFromStats(),
 			healingLeft: () => this.healingLeft,
@@ -736,6 +744,9 @@ export const actorTurnsHazardsMethods = {
 			seedFire: (x, y, volume) => this.fire.seed(x, y, volume),
 			passable: (x, y) => this.level.passable(x, y),
 			isVisibleCell: (cell) => this.fov.isVisible(cell % this.level.width, Math.floor(cell / this.level.width)),
+			heroClass: () => this.heroClass,
+			talentRank: (id) => this.talentRank(id),
+			setHeroBarkskin: (level, interval) => this.setHeroBarkskin(level, interval),
 			shake: this.shakeScreen.bind(this),
 			isImmovableKind: (kind) => IMMOVABLE_KINDS.has(kind),
 		};

@@ -21,6 +21,8 @@ import { TIME_BUBBLE_TURNS } from './timeBubble';
  */
 export interface HeroPlantContext {
 	subclass: () => string | null;
+	heroClass: () => string;
+	talentRank: (id: string) => number;
 	level: number;
 	depth: number;
 	say: (line: string, level?: LogLevel) => void;
@@ -56,6 +58,22 @@ export interface HeroPlantContext {
 	showTeleport: (from: { x: number; y: number }, to: { x: number; y: number }) => void;
 }
 
+/**
+ * `Plant.trigger()`'s `Talent.NATURES_AID` clause (`plants/Plant.java:68-70`, tag
+ * `v3.3.8`): when any plant's effect activates in the hero's vision and the hero
+ * holds the Huntress talent, `Barkskin.conditionallyAppend(hero, 2, 1+2*points)` -
+ * a fixed level-2 barkskin lasting 3 turns at +1, 5 at +2. Returns the
+ * `[level, interval]` pair, or null when the hero cannot hold the talent (Java's
+ * `hasTalent` is points-gated, and points are class-gated, so a non-Huntress
+ * never qualifies). The caller's `setBarkskin` keeps the single-slot keep-max
+ * shape the Earthroot Warden branch already uses, where Java would stack a
+ * second same-hero instance when the interval differs.
+ */
+export function naturesAidBarkskin(heroClass: string, points: number): readonly [level: number, interval: number] | null {
+	if (heroClass !== 'huntress' || points <= 0) return null;
+	return [2, 1 + 2 * points];
+}
+
 export function runHeroPlantEffect(
 	kind: string,
 	x: number,
@@ -64,6 +82,11 @@ export function runHeroPlantEffect(
 	hero: Creature,
 	ctx: HeroPlantContext,
 ): void {
+	//`Plant.trigger()` runs its `NATURES_AID` clause before `wither()`/`activate()`
+	//for every triggerer, gated on the plant cell being in the hero's vision -
+	//trivially true for the hero's own step, load-bearing for the mob half below.
+	const aid = naturesAidBarkskin(ctx.heroClass(), ctx.talentRank('natures_aid'));
+	if (aid && ctx.isVisible(x, y)) ctx.setBarkskin(aid[0], aid[1]);
 	switch (kind) {
 		case 'sungrass':
 			if (ctx.subclass() === 'warden') {
@@ -253,6 +276,9 @@ export function runHeroPlantEffect(
  * and the immovable-kind gate stay scene-owned services on the context.
  */
 export interface MobPlantContext {
+	heroClass: () => string;
+	talentRank: (id: string) => number;
+	setHeroBarkskin: (level: number, interval: number) => void;
 	depth: number;
 	neighbour8: ReadonlyArray<ReadonlyArray<number>>;
 	grantBuff: (target: Creature, id: BuffId, duration?: number) => void;
@@ -278,6 +304,12 @@ export function runMobPlantEffect(
 	creature: Creature,
 	ctx: MobPlantContext,
 ): void {
+	//`Plant.trigger()`'s `NATURES_AID` clause is triggerer-agnostic: a mob stepping
+	//on a plant the hero can see still barks the hero's skin, ahead of `activate()`.
+	//It runs even for an immovable stepper Java refuses to teleport - the plant
+	//still withers - so this sits above the fadeleaf early return.
+	const aid = naturesAidBarkskin(ctx.heroClass(), ctx.talentRank('natures_aid'));
+	if (aid && ctx.isVisibleCell(cell)) ctx.setHeroBarkskin(aid[0], aid[1]);
 	if (kind === 'fadeleaf') {
 		//`Fadeleaf.activate()`: Java teleports every non-`IMMOVABLE` mob. The statue is
 		//not immovable in Java (`Statue.java` carries only `INORGANIC`), so the old statue
