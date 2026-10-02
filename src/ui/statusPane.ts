@@ -84,6 +84,8 @@ const BUFF_ICON: Record<string, number> = {
 	bless: 37,
 	//BERSERK = 40
 	berserk: 40,
+	//MOMENTUM = 51 (`BuffIndicator.java`, tag `v3.3.8`)
+	momentum: 51,
 	//RECHARGING = 34; HASTE = 41 (`BuffIndicator.java`, tag `v3.3.8`)
 	recharging: 34,
 	//`BuffIndicator.WAND` (`ScrollEmpower.java`, tag `v3.3.8`).
@@ -175,6 +177,10 @@ export interface StatusPaneState {
 	buffs: { id: BuffId | 'hungry' | 'starving'; turns: number | undefined }[];
 	/** Java `Berserk.iconFadePercent()`/`iconTextDisplay()` are state-dependent rather than a timer. */
 	berserk?: { mode: 'normal' | 'berserk' | 'recovering'; power: number; maxPower: number; shield: number; maxShield: number; levelRecovery: number; turnRecovery: number; deathlessFuryRank: number };
+	/** Java `Momentum.tintIcon()`/`iconTextDisplay()`/`iconFadePercent()` (Momentum.java
+	 * 127-161, tag `v3.3.8`) are state-dependent rather than a timer; absent while the icon
+	 * is hidden. */
+	momentum?: { stacks: number; freerunTurns: number; freerunCooldown: number };
 	staff: { current: number; max: number } | null;
 	ammo: number | null;
 	carriedCount: number;
@@ -459,7 +465,7 @@ export class StatusPane extends Container {
 		);
 		this.statsText.setColor(state.hunger === 'starving' ? 0xff8800 : 0xcccccc);
 
-		this.layoutBuffs([...state.buffs, ...(state.hunger === 'none' ? [] : [{ id: state.hunger, turns: undefined }])], state.berserk);
+		this.layoutBuffs([...state.buffs, ...(state.hunger === 'none' ? [] : [{ id: state.hunger, turns: undefined }])], state.berserk, state.momentum);
 	}
 
 	/**
@@ -474,8 +480,8 @@ export class StatusPane extends Container {
 	 * every other icon - all small ones, large ones with no text - gets the `iconFadePercent()`
 	 * grey wash growing down from the top as the buff expires.
 	 */
-	private layoutBuffs(buffs: { id: BuffId | 'hungry' | 'starving'; turns: number | undefined }[], berserk?: StatusPaneState['berserk']): void {
-		const key = `${buffs.map((buff) => `${buff.id}:${buff.turns ?? ''}`).join(',')}|${berserk ? `${berserk.mode}:${berserk.power}:${berserk.maxPower}:${berserk.shield}:${berserk.maxShield}:${berserk.levelRecovery}:${berserk.turnRecovery}:${berserk.deathlessFuryRank}` : ''}`;
+	private layoutBuffs(buffs: { id: BuffId | 'hungry' | 'starving'; turns: number | undefined }[], berserk?: StatusPaneState['berserk'], momentum?: StatusPaneState['momentum']): void {
+		const key = `${buffs.map((buff) => `${buff.id}:${buff.turns ?? ''}`).join(',')}|${berserk ? `${berserk.mode}:${berserk.power}:${berserk.maxPower}:${berserk.shield}:${berserk.maxShield}:${berserk.levelRecovery}:${berserk.turnRecovery}:${berserk.deathlessFuryRank}` : ''}|${momentum ? `${momentum.stacks}:${momentum.freerunTurns}:${momentum.freerunCooldown}` : ''}`;
 		if (key === this.lastBuffs) return;
 		this.lastBuffs = key;
 		this.buffLayer.removeChildren().forEach((child) => child.destroy());
@@ -514,6 +520,12 @@ export class StatusPane extends Container {
 			if (buff === 'berserk' && berserk) {
 				icon.tint = berserk.mode === 'recovering' ? 0x0000ff : berserk.mode === 'berserk' || berserk.power >= 1 ? 0xff0000 : 0xff8000;
 			}
+			//`Momentum.tintIcon()` (Momentum.java 137-143, tag v3.3.8): yellow while a run
+			//is available or running, blue (0.5, 0.5, 1) while resting off the cooldown -
+			//a multiply tint's closest form of Java's hardlight values.
+			if (buff === 'momentum' && momentum) {
+				icon.tint = momentum.freerunCooldown === 0 || momentum.freerunTurns > 0 ? 0xffff00 : 0x8080ff;
+			}
 			icon.x = x;
 			icon.scale.set(SCALE);
 			//`WndInfoBuff`: Java opens the buff's own info window on click. `onBuffClick` reads
@@ -533,7 +545,15 @@ export class StatusPane extends Container {
 					: berserk.mode === 'berserk' ? String(Math.max(0, Math.trunc(berserk.shield)))
 						: berserk.levelRecovery > 0 ? String(Number(berserk.levelRecovery.toFixed(2))) : String(Math.max(0, Math.trunc(berserk.turnRecovery)))
 				: null;
-			const text = this.large ? rageText ?? buffIconText(buff, turns) : null;
+			//`Momentum.iconTextDisplay()` (Momentum.java 145-152): turns left while running,
+			//the cooldown while resting, nothing while building - and the momentum id never
+			//falls through to the generic sentinel countdown below (9999 is not a timer).
+			const momentumText = momentum && buff === 'momentum'
+				? momentum.freerunTurns > 0 ? String(Math.max(0, Math.trunc(momentum.freerunTurns)))
+					: momentum.freerunCooldown > 0 ? String(Math.max(0, Math.trunc(momentum.freerunCooldown)))
+						: null
+				: null;
+			const text = this.large ? rageText ?? momentumText ?? (buff === 'momentum' ? null : buffIconText(buff, turns)) : null;
 			if (text !== null) {
 				const overlay = new Label({ text, size: 7 });
 				overlay.setColor(buffIconTextColor(buff));
@@ -555,6 +575,14 @@ export class StatusPane extends Container {
 							: berserk.levelRecovery > 0
 								? berserk.levelRecovery / Math.max(1, 4 - berserk.deathlessFuryRank)
 								: berserk.turnRecovery / 100))
+					//`Momentum.iconFadePercent()` (Momentum.java 154-161, tag v3.3.8): the
+					//running run drains as `(20 - turns)/20`, the resting cooldown as `cd/30`
+					//(`cd` is at most 30 once a run has finished, so the fraction stays <=1),
+					//and a building momentum shows no wash.
+					: buff === 'momentum' && momentum
+					? Math.min(1, Math.max(0, momentum.freerunTurns > 0
+						? (20 - momentum.freerunTurns) / 20
+						: momentum.freerunCooldown > 0 ? momentum.freerunCooldown / 30 : 0))
 					: buffIconFade(buff, turns);
 				const fadeHeight = fade * buffSize;
 				const snapped = fadeHeight <= 0 ? 0

@@ -59,10 +59,6 @@ export function canImproviseProjectile(classId: ClassId, rank: number, stones: n
 	return classId === 'warrior' && rank > 0 && stones > 0;
 }
 
-export function evasiveArmorBonus(subclass: string | null, rank: number, armorLevel: number): number {
-	return subclass === 'freerunner' ? rank * armorLevel : 0;
-}
-
 export function assassinReachBonus(subclass: string | null, rank: number): number {
 	return subclass === 'assassin' ? rank : 0;
 }
@@ -118,8 +114,17 @@ export function soulSiphonCharge(subclass: string | null, rank: number): number 
 	return subclass === 'warlock' ? rank : 0;
 }
 
-export function projectileMomentumBonus(subclass: string | null, rank: number, ready: boolean): number {
-	return subclass === 'freerunner' && ready ? rank : 0;
+/** `MissileWeapon.damageRoll()` (MissileWeapon.java 511-512, tag `v3.3.8`): while the owner's
+ * `Momentum` buff is live and freerunning, the whole rolled damage is multiplied by
+ * `1 + 0.15 * PROJECTILE_MOMENTUM ranks` before armor is applied. Returns `1` (no-op) otherwise.
+ * This replaced an additive `+rank` bow bonus that was only ever applied to SpiritBow shots -
+ * neither the additive shape nor the bow-only gating exists in Java (the R115 row cites both);
+ * `SpiritArrow.damageRoll` delegates to the bow's own roll without this line, so the bow keeps
+ * the accuracy branch alone and thrown weapons get accuracy *and* this multiplier. */
+export function projectileMomentumDamageMultiplier(subclass: string | null, rank: number, freerunning: boolean): number {
+	if (subclass !== 'freerunner' || !freerunning) return 1;
+	//Java's 0.15f factor and multiplication are float32 before Math.round(int).
+	return Math.fround(1 + Math.fround(Math.fround(0.15) * Math.max(0, rank)));
 }
 
 export function enragedCatalystBonus(subclass: string | null, rank: number, hp: number, maxHp: number): number {

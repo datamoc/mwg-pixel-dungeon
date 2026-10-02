@@ -189,6 +189,14 @@ export const panelsSingleUseMethods = {
 		this.healingFlat = s.healingFlat ?? 0;
 		this.sungrassPos = s.sungrassPos ?? -1;
 		this.deathlessFuryUsed = s.deathlessFuryUsed ?? false;
+		this.momentumState = {
+			attached: s.momentumState?.attached ?? false,
+			stacks: s.momentumState?.stacks ?? 0,
+			freerunTurns: s.momentumState?.freerunTurns ?? 0,
+			freerunCooldown: s.momentumState?.freerunCooldown ?? 0,
+			//Java's Momentum.restoreFromBundle does not bundle movedLastTurn; it remains false.
+			movedLastTurn: false,
+		};
 		this.weaponLevel = s.weaponLevel;
 		this.weaponTier = s.weaponTier ?? 1;
 		this.armorLevel = s.armorLevel;
@@ -479,6 +487,7 @@ export const panelsSingleUseMethods = {
 		this.hero.recallItemClass = s.recallItemClass ?? undefined;
 		if (this.hero.recallItemClass === undefined) delete this.hero.buffs['recallUsed'];
 		this.syncHeroFromStats();
+		this.momentumSync();
 		//Preparation's attack/blink tier is derived from the restored Java `turnsInvis`
 		//payload and the restored invisibility buff; rebuild that mirror before the level loads.
 		this.syncPreparation();
@@ -690,9 +699,17 @@ export const panelsSingleUseMethods = {
 			maxHp: this.hero.maxHp,
 			armorBuffedLevel: Math.max(0, this.degradedLevel(this.armorLevel)),
 		} : undefined;
+		//`Momentum.desc()` (Momentum.java 165-175) picks its three texts off the live
+		//state, so the icon click needs those counters the way berserk passes its rage
+		//state; without them `buffInfo` degrades to the title-only fallback (R115).
+		const momentum = buff === 'momentum' ? {
+			stacks: this.momentumState.stacks,
+			freerunTurns: this.momentumState.freerunTurns,
+			freerunCooldown: this.momentumState.freerunCooldown,
+		} : undefined;
 		const info = buffInfo(buff as BuffId | 'hungry' | 'starving', turns,
 			buff === 'prismaticGuard' ? prismaticGuardMaxHp(this.progression.level) : undefined,
-			buff === 'recallUsed' ? this.recallTrackedItemName() : undefined, berserk);
+			buff === 'recallUsed' ? this.recallTrackedItemName() : undefined, berserk, momentum);
 		if (!info) return;
 		const window = showBuffInfoWindow(info);
 		this.buffInfoOpen = window;
@@ -1068,6 +1085,7 @@ export const panelsSingleUseMethods = {
 		if (option === 'berserker') addBuff(this.hero, 'berserk');
 		if (option === 'monk_sub') addBuff(this.hero, 'focus');
 		this.syncHeroFromStats();
+		this.momentumSync();
 		this.refresh();
 		//`TengusMask.choose()`: `curUser.spend(Actor.TICK)` - wearing it costs a turn.
 		this.spendHeroTurn(1);

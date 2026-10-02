@@ -9140,6 +9140,20 @@ export const gameData = {
 								"column": 13
 							},
 							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "momentum",
+								"duration": "9999"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 577,
+								"column": 13
+							},
+							"gettext": []
 						}
 					],
 					"location": {

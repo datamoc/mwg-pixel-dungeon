@@ -2171,7 +2171,9 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 	// HolyWeapon.HolyWepBuff/HolyWard.HolyArmBuff 50 are both classes' real DURATIONs;
 	// Illuminated/WasIlluminatedTracker 9999 are the effectively-permanent stand-in
 	// (duration-less Java buffs). All tag `v3.3.8`.
-	// port's own documented conventions, not Java values: paralysis 3 / roots 3 each
+	// port's own documented conventions, not Java values: Momentum's 9999 is only a no-clock
+	// sentinel for scene-owned stack/run/cooldown counters (the buff UI reads those counters);
+	// paralysis 3 / roots 3 each
 	// equal a real Java application site (see PORT_COVERAGE.md's BUFF_DURATION row), poison 6
 	// and bleeding 0 have no Java DURATION to match, magicalSleep 0 lasts until woken,
 	// fury/berserk/cloak/focus/monkEnergy 9999 are state markers, combo 5 is Combo.comboTime, frostImbue/fireImbue 15 (each imbue's class DURATION 50, granted at 0.3 by its plant) and lethalHasteCooldown 100
@@ -2206,7 +2208,7 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 			//Java DURATION - stated at `resolveWallOfLight`), tracking the 20-turn
 			//`WallOfLight` terrain clock it stands in for.
 			lanceCooldown: 30, auraProtection: 20, smiteTracker: 1, guidingPriestCooldown: 50, searingLightCooldown: 20,
-			lightWallActive: 20,
+			lightWallActive: 20, momentum: 9999,
 		},
 		'buff durations match the authored table',
 	);

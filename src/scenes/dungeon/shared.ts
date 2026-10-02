@@ -703,6 +703,8 @@ export interface SaveShape {
  	healingFlat?: number;
 	sungrassPos?: number;
 	deathlessFuryUsed?: boolean;
+	/** `Momentum` bundle fields; Java deliberately does not persist `movedLastTurn`. */
+	momentumState?: { attached: boolean; stacks: number; freerunTurns: number; freerunCooldown: number };
 	/** Timed Char buffs survive a save instead of silently clearing on reload. */
 	buffs?: [BuffId, number][];
 	/** `Preparation.turnsInvis`, persisted separately from the invisibility buff in Java's

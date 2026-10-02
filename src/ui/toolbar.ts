@@ -37,18 +37,20 @@ export class SpdToolbar extends Container {
 	 * an ability chosen, carrying its name and charge percent the way `ClassArmor.status()` does. */
 	private readonly armorAbilityButton: SpdButton;
 	private readonly berserkButton: SpdButton;
+	private readonly momentumButton: SpdButton;
 	private readonly slotCells: { root: Container; base: Sprite; icon: Sprite | null; qty: Label }[] = [];
 	private readonly rowWidth = 218;
 	private zoom = 2;
-	/** Both contextual buttons stack above the toolbar row - Preparation at `-19`, the armor
-	 *  ability above it at `-40`, and Berserk at `-61` - so what the interface layout has to
-	 *  clear is the *highest* visible button's own top edge, not one row per button. Counting
+	/** The contextual buttons stack above the toolbar row - Preparation at `-19`, the armor
+	 *  ability above it at `-40`, Berserk at `-61` and the Freerunner's freerun at `-82` - so
+	 *  what the interface layout has to clear is the *highest* visible button's own top edge,
+	 *  not one row per button. Counting
 	 *  a row each would reserve 21 units for a button whose box reaches 40 above the row, and
 	 *  the game log is anchored off this number (`positionInterface`), so the newest lines
 	 *  would land underneath the armor button. */
 	get occupiedHeight(): number {
 		let contextual = 0;
-		for (const button of [this.preparationButton, this.armorAbilityButton, this.berserkButton]) {
+		for (const button of [this.preparationButton, this.armorAbilityButton, this.berserkButton, this.momentumButton]) {
 			if (button.visible) contextual = Math.max(contextual, -button.y);
 		}
 		return (this.extras.visible ? 143 : 26) * this.zoom + contextual * this.zoom;
@@ -73,6 +75,13 @@ export class SpdToolbar extends Container {
 		this.berserkButton.position.set(this.rowWidth - 110, -61);
 		this.berserkButton.visible = false;
 		this.actions.addChild(this.berserkButton);
+		//Java's `Momentum` `ActionIndicator.Action` (`Momentum.java` 226-231, tag `v3.3.8`):
+		//the freerun button, labeled with the action name plus the live stack count where
+		//Java carries that in the buff window rather than on the button (R115 row).
+		this.momentumButton = new SpdButton({ width: 110, height: 19, text: '', onClick: () => onAction('freerun') });
+		this.momentumButton.position.set(this.rowWidth - 110, -82);
+		this.momentumButton.visible = false;
+		this.actions.addChild(this.momentumButton);
 		//Contextual buttons live in one container so `occupiedHeight` moves the interface above
 		//the toolbar once, whichever of them appears.
 		this.actions.visible = false;
@@ -175,7 +184,7 @@ export class SpdToolbar extends Container {
 	setPreparationAvailable(available: boolean): boolean {
 		if (this.preparationButton.visible === available) return false;
 		this.preparationButton.visible = available;
-		this.actions.visible = this.preparationButton.visible || this.armorAbilityButton.visible || this.berserkButton.visible;
+		this.actions.visible = this.preparationButton.visible || this.armorAbilityButton.visible || this.berserkButton.visible || this.momentumButton.visible;
 		return true;
 	}
 
@@ -188,7 +197,7 @@ export class SpdToolbar extends Container {
 		if (label !== null) this.armorAbilityButton.setText(label);
 		this.armorAbilityLabel = label;
 		this.armorAbilityButton.visible = label !== null;
-		this.actions.visible = this.preparationButton.visible || this.armorAbilityButton.visible || this.berserkButton.visible;
+		this.actions.visible = this.preparationButton.visible || this.armorAbilityButton.visible || this.berserkButton.visible || this.momentumButton.visible;
 		return changed;
 	}
 
@@ -196,9 +205,23 @@ export class SpdToolbar extends Container {
 	setBerserkAvailable(available: boolean): boolean {
 		if (this.berserkButton.visible === available) return false;
 		this.berserkButton.visible = available;
-		this.actions.visible = this.preparationButton.visible || this.armorAbilityButton.visible || available;
+		this.actions.visible = this.preparationButton.visible || this.armorAbilityButton.visible || available || this.momentumButton.visible;
 		return true;
 	}
+
+	/** Java's Freerunner `Momentum` `ActionIndicator.Action` (`Momentum.java` 226-231, tag
+	 * `v3.3.8`): shown while the buff is idle with stacks banked, carrying the stack count in
+	 * the label; `null` hides it. Returns whether anything changed, for the re-layout reason
+	 * `setPreparationAvailable` reports its own. */
+	setMomentum(label: string | null): boolean {
+		const changed = this.momentumButton.visible !== (label !== null) || this.momentumLabel !== label;
+		if (label !== null) this.momentumButton.setText(label);
+		this.momentumLabel = label;
+		this.momentumButton.visible = label !== null;
+		this.actions.visible = this.preparationButton.visible || this.armorAbilityButton.visible || this.berserkButton.visible || this.momentumButton.visible;
+		return changed;
+	}
+	private momentumLabel: string | null = null;
 	private armorAbilityLabel: string | null = null;
 
 	/** Reflects the scene's six quickslot assignments: each cell draws its item's own sprite

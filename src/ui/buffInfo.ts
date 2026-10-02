@@ -103,6 +103,14 @@ export interface BerserkBuffInfoState {
 	armorBuffedLevel: number;
 }
 
+/** The three live counters `Momentum.desc()` (Momentum.java 165-175, tag `v3.3.8`) selects
+ * its text from - the buff-map sentinel is not a duration, like `berserk`'s above. */
+export interface MomentumBuffInfoState {
+	stacks: number;
+	freerunTurns: number;
+	freerunCooldown: number;
+}
+
 /**
  * `Hunger`'s two icon states (`hungry`/`starving`) are a real buff too, just not one this
  * port's `BUFF_MESSAGE_KEY` table can drive generically: its name key varies by state and its
@@ -131,7 +139,7 @@ function hungerInfo(state: 'hungry' | 'starving'): BuffInfo {
  * item (`%1$s`), which the scene maps back from its Java class. `undefined` prints
  * `?` - reachable only if the tracker lapsed without detaching.
  */
-export function buffInfo(id: BuffId | 'hungry' | 'starving', turns: number | undefined, maxHp?: number, itemName?: string, berserk?: BerserkBuffInfoState): BuffInfo | null {
+export function buffInfo(id: BuffId | 'hungry' | 'starving', turns: number | undefined, maxHp?: number, itemName?: string, berserk?: BerserkBuffInfoState, momentum?: MomentumBuffInfoState): BuffInfo | null {
 	if (id === 'hungry' || id === 'starving') return hungerInfo(id);
 	//`ScrollEmpower.desc()` takes fixed +2 level boost and its remaining zap count
 	//(actors/buffs/ScrollEmpower.java, tag `v3.3.8`); this is an action count, not turns.
@@ -157,6 +165,23 @@ export function buffInfo(id: BuffId | 'hungry' | 'starving', turns: number | und
 		const nextShield = berserkShieldBoost(berserk.hp, berserk.maxHp, berserk.armorBuffedLevel, berserk.power);
 		return { name: titleCase(t('actors.buffs.berserk.angered')),
 			desc: t('actors.buffs.berserk.angered_desc', { 0: Math.floor(berserk.power * 100), 1: damageBonus, 2: nextShield }) };
+	}
+	//`Momentum.desc()` (Momentum.java 165-175, tag v3.3.8) selects freerunning, recovering
+	//or building text from the live state: turns left while running, the cooldown while
+	//resting, and the banked stack count otherwise; without the state the icon degrades to
+	//the caller's title-only fallback like an unmapped buff (no key row here, same as
+	//`berserk`).
+	if (id === 'momentum' && momentum) {
+		if (momentum.freerunTurns > 0) {
+			return { name: titleCase(t('actors.buffs.momentum.running')),
+				desc: t('actors.buffs.momentum.running_desc', { 0: Math.max(0, Math.trunc(momentum.freerunTurns)) }) };
+		}
+		if (momentum.freerunCooldown > 0) {
+			return { name: titleCase(t('actors.buffs.momentum.resting')),
+				desc: t('actors.buffs.momentum.resting_desc', { 0: Math.max(0, Math.trunc(momentum.freerunCooldown)) }) };
+		}
+		return { name: titleCase(t('actors.buffs.momentum.momentum')),
+			desc: t('actors.buffs.momentum.momentum_desc', { 0: Math.max(0, Math.trunc(momentum.stacks)) }) };
 	}
 	const key = BUFF_MESSAGE_KEY[id];
 	if (!key) return null;

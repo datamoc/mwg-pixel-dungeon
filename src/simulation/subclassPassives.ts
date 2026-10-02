@@ -175,21 +175,6 @@ export function freerunCooldown(stacks: number): number {
 	return 10 + 4 * Math.max(0, stacks);
 }
 
-/**
- * `Momentum.evasionBonus()`: `heroLvl/2 + excessArmorStr x EVASIVE_ARMOR
- * ranks`, while freerunning only. Called from `Armor.java` with
- * `max(0, -aEnc)` (excess STR over the armor requirement, floored at 0);
- * `heroLvl/2` is Java int division.
- */
-export function freerunEvasion(heroLevel: number, excessStr: number, evasiveArmorRank: number): number {
-	return Math.floor(Math.max(0, heroLevel) / 2) + Math.max(0, excessStr) * Math.max(0, evasiveArmorRank);
-}
-
-/** `Momentum.speedMultiplier()`: x2 while freerunning. */
-export function freerunSpeedMultiplier(freerunning: boolean): number {
-	return freerunning ? 2 : 1;
-}
-
 /** `Hero.attackSkill()`'s freerun branch: `accuracy x (1 + PROJECTILE_MOMENTUM ranks/2)`. */
 export function projectileMomentumAccuracy(projectileMomentumRank: number): number {
 	return 1 + Math.max(0, projectileMomentumRank) / 2;

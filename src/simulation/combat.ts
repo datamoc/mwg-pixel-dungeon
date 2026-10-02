@@ -241,6 +241,9 @@ export function rollDamage(attacker: Readonly<Combatant>, defender: Readonly<Com
 		if (attacker.str !== undefined && attacker.strReq !== undefined && attacker.str > attacker.strReq) {
 			roll += random.range(0, attacker.str - attacker.strReq);
 		}
+		//`MissileWeapon.damageRoll()` applies PROJECTILE_MOMENTUM and rounds the
+		//individual weapon roll before Char.attack()'s later modifiers and armor.
+		if (attacker.damageRollMultiplier !== undefined) roll = Math.round(Math.fround(roll * attacker.damageRollMultiplier));
 		return roll;
 	};
 	//Char.attack() 404-412: with Preparation up the damage roll is *replaced* - the best of

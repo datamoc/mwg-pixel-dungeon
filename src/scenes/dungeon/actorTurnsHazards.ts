@@ -269,7 +269,6 @@ export const actorTurnsHazardsMethods = {
  				this.sungrassPartial = 0;
  				this.sungrassPos = -1;
  			}
-			this.projectileMomentumReady = this.subclass() === 'freerunner' && this.talentRank('projectile_momentum') > 0;
 			this.trampleHighGrass(target.x, target.y);
 			const targetCell = this.level.index(target.x, target.y);
 			const delayedFeature = this.portedFeatures.kindAt(targetCell)?.startsWith('plant:') ?? false;
@@ -285,6 +284,11 @@ export const actorTurnsHazardsMethods = {
 			this.checkTenguArenaRetreat();
 			if (!(this.timeBubbleTurns > 0 && delayedTrap)) this.triggerTrapAt(target.x, target.y);
 			if (this.fallThroughChasm(target.x, target.y)) return;
+			//`Hero.java` 1856-1858 (tag v3.3.8): a completed step credits Freerunner
+			//Momentum (`Buff.affect(Momentum.class).gainStack()`). The gate reads the hero's
+			//actual post-move position, so a step that did not move it (in-place trample,
+			//blocked cell) earns nothing, and a chasm fall returned just above.
+			if (this.hero.x !== from.x || this.hero.y !== from.y) this.momentumGainStack();
 			if (this.miningBranchActive && this.miningBranchEntrance
 				&& target.x === this.miningBranchEntrance.x && target.y === this.miningBranchEntrance.y) {
 				this.tryLeaveMiningBranch();
@@ -1846,10 +1850,13 @@ export const actorTurnsHazardsMethods = {
 		//step pays), NOT the adapter's attack rate: Furor/augment/weapon delay never
 		//touch non-attacks in Java either. 305's `hero.busy()` (`ready = false`) is
 		//what a consumed turn implies here already; 300-303's Freerunner Momentum
-		//credit needs the system R115 opens. The flag marks the step handled so the
+		//credit lands in `momentumGainStack` just below (R115). The flag marks the step handled so the
 		//move adapter reports it spent, and tells the interact dispatch (in
 		//`takeHeroTurn`) to skip `finishFreeHeroAction`: `awaitHeroInput` re-arms
 		//input after the spend instead.
+		//`Char.java` 300-303 (tag v3.3.8): a completed place-swap credits Freerunner
+		//Momentum exactly like a step (`Buff.affect(Momentum.class).gainStack()`).
+		this.momentumGainStack();
 		this.actionSpentTurn = true;
 		this.spendHeroTurn(this.getActionTurnCostMod());
 		return true;

@@ -569,6 +569,15 @@
             buff: "beamingRayBoost",
             duration: 10,
           },
+          {
+            // The Freerunner's `Momentum` (`Momentum.java`, tag `v3.3.8`) is a state
+            // carrier like `berserk`/`cloak`: the live stacks/freerun/cooldown counters
+            // ride the scene, and the icon attaches while either counter is non-zero
+            // (`momentumSync`), so the sentinel duration stands for "drawn, no clock".
+            tag: "row",
+            buff: "momentum",
+            duration: 9999,
+          },
         ],
       },
     ],

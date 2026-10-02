@@ -24,7 +24,7 @@ export const TURN_COSTS: Record<string, number> = {
 };
 
 export type AttemptAction = 'special' | 'eat' | 'quaff' | 'read' | 'upgrade';
-export type FreeAction = 'examine' | 'talents' | 'buyHeal' | 'buyId' | 'sellFood' | 'buyback' | 'save' | 'load' | 'preparation' | 'armorAbility' | 'berserk';
+export type FreeAction = 'examine' | 'talents' | 'buyHeal' | 'buyId' | 'sellFood' | 'buyback' | 'save' | 'load' | 'preparation' | 'armorAbility' | 'berserk' | 'freerun';
 export type HeroActionPlan =
 	| { kind: 'paralysed' | 'search' | 'unknown'; turnCost?: number }
 	| { kind: 'attempt'; action: AttemptAction; turnCost: number }
@@ -59,7 +59,10 @@ export function planHeroAction(action: string, paralysed: boolean, turnCostMod: 
 			return { kind: 'attempt', action, turnCost: (hasMealTalent ? 1 : TURN_COSTS.eat) * turnCostMod };
 		case 'special': case 'quaff': case 'read': case 'upgrade':
 			return { kind: 'attempt', action, turnCost: TURN_COSTS.ranged * turnCostMod };
-		case 'examine': case 'talents': case 'buyHeal': case 'buyId': case 'sellFood': case 'buyback': case 'save': case 'load': case 'preparation': case 'armorAbility':
+		//`Momentum.doAction()` (Momentum.java 234-245, tag `v3.3.8`) spends no turn of its own -
+		//like `berserk` and the armor ability, activating freerunning is a free action that the
+		//hero can take while awaiting input (R115).
+		case 'examine': case 'talents': case 'buyHeal': case 'buyId': case 'sellFood': case 'buyback': case 'save': case 'load': case 'preparation': case 'armorAbility': case 'freerun':
 			return { kind: 'free', action };
 		default: return Object.hasOwn(MOVES, action) ? { kind: 'move', step: { ...MOVES[action] }, turnCost: TURN_COSTS.move * turnCostMod } : { kind: 'unknown', turnCost: TURN_COSTS.move * turnCostMod };
 	}

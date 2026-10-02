@@ -12,7 +12,7 @@ import { ringElementsMultiplier, ringEnergyMultiplier, ringSharpshootingBonus } 
 import { weaponHitDisqualifiesDwarfKingChallenge } from '../../simulation/bossChallenge';
 import { has, t } from '../../i18n/index';
 import { onZoomChanged, screenShake, setZoomOffset, zoomForOffset, zoomOffset } from '../../settings';
-import { EMPOWERING_SCROLLS_BONUS, arcaneVisionDuration, canImproviseProjectile, enragedCatalystBonus, ironStomachReduction, lightReadingWandMult, monasticVigorShield, preservationChance, projectileMomentumBonus, soulMarkDuration, soulMarkProcThreshold } from '../../talentEffects';
+import { EMPOWERING_SCROLLS_BONUS, arcaneVisionDuration, canImproviseProjectile, enragedCatalystBonus, ironStomachReduction, lightReadingWandMult, monasticVigorShield, preservationChance, soulMarkDuration, soulMarkProcThreshold } from '../../talentEffects';
 import { directTomeCharge, findHolyTome } from '../../items/holyTome';
 import { talismanArtifactProcPlan } from '../../items/talisman';
 import { tomeChargeCap, tomeTickRate } from '../../simulation/clericSpells';
@@ -610,8 +610,9 @@ export const turnLoopAimingMethods = {
 				Roguelike.chebyshevDistance(this.hero, target) === 1,
 				true,
 				this.talentRank('point_blank'),
-			);
-			const hit = this.attack({ ...this.hero, kind: undefined, attackMode: 'throw', damage: thrownDamage }, target, thrownAccFactor);
+			) * this.projectileMomentumAccFactor();
+			const hit = this.attack({ ...this.hero, kind: undefined, attackMode: 'throw', damage: thrownDamage,
+				damageRollMultiplier: this.projectileMomentumDmgFactor() }, target, thrownAccFactor);
 			//`Crossbow.ChargedShot`: the forced hit above is the "always hits" half; the dart
 			//also applies on-hit effects to enemies in a 5x5 area around the target (tipped
 			//darts last longer than that area's ordinary coverage - see `TippedDart`).
@@ -728,11 +729,13 @@ export const turnLoopAimingMethods = {
 			if (this.naturesPowerTurns > 0) {
 				this.pendingBowNpDivisor = 1 + (8 + this.talentRank('growing_power')) / 24;
 			}
+			//`Hero.attackSkill()` applies PROJECTILE_MOMENTUM to every MissileWeapon while
+			//freerunning; `SpiritBow` inherits MissileWeapon's accuracy factor in Java.
 			const bowAccFactor = missileAdjacentAccFactor(
 				Roguelike.chebyshevDistance(this.hero, target) === 1,
 				true,
 				this.talentRank('point_blank'),
-			);
+			) * this.projectileMomentumAccFactor();
 			if (!rollHit(this.hero, target, false, false, bowAccFactor)) {
 				this.say(t('port.log.arrowmisses', { target: target.name }), 'negative');
 				//`GreatCrab.defenseSkill()`: the point-blank dodged bolt scores like a dodged swing.
@@ -745,7 +748,6 @@ export const turnLoopAimingMethods = {
 				const sharpshooting = ringSharpshootingBonus(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
 				const base = Random.normalRange(special.damage[0] + sharpshooting, special.damage[1] + 2 * sharpshooting);
 				const dr = Random.normalRange(target.armor[0], target.armor[1]);
-				const momentum = projectileMomentumBonus(this.subclass(), this.talentRank('projectile_momentum'), this.projectileMomentumReady);
 				let preArmorDamage = Math.round(base * multiplier * (this.subclass() === 'sniper' ? 1.15 : 1));
 				//Java's `Char.attack()` applies AuraOfProtection before `defenseProc()` and `drRoll()`.
 				//The shared damage dispatch skips that step below because the bow resolves it here.
@@ -762,8 +764,7 @@ export const turnLoopAimingMethods = {
 					} else target.earthrootArmorLevel = absorbed.level;
 					preArmorDamage = absorbed.damage;
 				}
-				const damage = Math.max(0, preArmorDamage - dr) + momentum;
-				this.projectileMomentumReady = false;
+				const damage = Math.max(0, preArmorDamage - dr);
 				//`Mob.defenseProc()` aggros the hit mob and stores the attacker's position even
 				//when the shooter is outside its sight radius. `Mimic.defenseProc()` reveals a
 				//disguised target on any landed hit; an adjacent bow shot must still count as a
@@ -1993,6 +1994,7 @@ export const turnLoopAimingMethods = {
 				//`Berserk.act()` is a buff actor in Java; this scene folds its shield/rage tick
 				//into the end of the hero's own buff phase, alongside the other actor-time adapters.
 				this.rageTurn();
+				this.momentumTurn();
 				}
 				return false;
 			},

@@ -54,7 +54,7 @@ function compile(source, destination) {
 try {
 	writeFileSync(join(output, 'package.json'), '{"type":"commonjs"}');
 	for (const file of ['simulation/movement', 'simulation/heroTurn', 'simulation/hunger', 'simulation/turns', 'simulation/mobLoot', 'adapters/sceneSimulation',
-		'adapters/hungerSimulation', 'simulation/random', 'simulation/combatState', 'simulation/mwlBuffDurations', 'simulation/mwlStatusImmunities', 'simulation/mwlMonsterImmunities', 'simulation/mwlMonsterStateStats', 'simulation/buffs', 'simulation/combat', 'simulation/entityId', 'talentEffects',
+		'adapters/hungerSimulation', 'simulation/random', 'simulation/combatState', 'simulation/momentum', 'simulation/subclassPassives', 'simulation/mwlBuffDurations', 'simulation/mwlStatusImmunities', 'simulation/mwlMonsterImmunities', 'simulation/mwlMonsterStateStats', 'simulation/buffs', 'simulation/combat', 'simulation/entityId', 'talentEffects',
 		'adapters/combatSimulation', 'adapters/mwgRandom', 'combat', 'simulation/heroActions', 'adapters/heroActionSimulation', 'adapters/heroActions',
 	'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/warriorAbilities', 'simulation/huntressAbilities', 'simulation/duelistAbilities', 'simulation/mageAbilities', 'simulation/rogueAbilities', 'simulation/ratmogrify', 'simulation/fishingSpearProc', 'talents', 'armorAbilities', 'simulation/tenguAbility', 'simulation/tenguBeam', 'simulation/gooBoss', 'simulation/ratKingBoss', 'simulation/dm300Boss', 'simulation/gnollGeomancer', 'simulation/yogBoss', 'simulation/defenderDamageCurves', 'simulation/preparation', 'simulation/disintegration', 'items/wands', 'items/missiles', 'mechanics/cone', 'dungeonConstants',
 	'simulation/javaBlob', 'simulation/prismaticWandLight', 'simulation/swarmIntelligence', 'simulation/crystalSpire', 'simulation/fireSpread', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops', 'simulation/plantTriggers', 'simulation/teleport', 'simulation/trapAreas', 'simulation/tenguDart', 'simulation/teleportAppear', 'simulation/timeBubble', 'simulation/targeting', 'simulation/ripperLeap', 'simulation/succubusBlink', 'simulation/prismatic', 'simulation/mirrorImage', 'simulation/sentryTurn', 'simulation/brews', 'simulation/levelPopulation', 'simulation/smoke', 'simulation/deathBursts', 'simulation/pourAuras', 'simulation/skeletonExplosion', 'simulation/vertigo', 'simulation/ringKnow', 'simulation/actorCollision', 'simulation/wandering', 'simulation/zoomStep', 'simulation/chasmJump', 'simulation/spareWands', 'simulation/clericSpells', 'simulation/shockArc', 'simulation/geyserTrap', 'simulation/cursedWand', 'ui/buffOverlays', 'settings',
@@ -106,6 +106,7 @@ try {
 	const { runHungerStep } = require('./adapters/hungerSimulation');
 	const { runMovement } = require('./adapters/movementSimulation');
 	const { resolveAttack } = require('./simulation/attackResolution');
+	const momentum = require('./simulation/momentum');
 	const { fishingSpearPiranhaDamage } = require('./simulation/fishingSpearProc');
 	const { runAttackResolution } = require('./adapters/attackSimulation');
 	const { stepTenguAbility, tenguTargetAbilityUses, tenguAbilityCost } = require('./simulation/tenguAbility');
@@ -992,9 +993,49 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		const defender = { id: 'rat-1', x: 2, y: 1, hp: 10, maxHp: 10, accuracy: 5, evasion: 0, damage: [1, 2], armor: [1, 1], buffs: {}, isHero: false };
 		assert.deepEqual(resolveAttack(attacker, defender, random), { hit: true, damage: 2 });
 		assert.deepEqual(runAttackResolution(attacker, defender, random), { hit: true, damage: 2 });
+		assert.deepEqual(runAttackResolution({ ...attacker, damageRollMultiplier: Math.fround(1.3) }, defender, random), { hit: true, damage: 3 },
+			'MissileWeapon momentum rounds its damage roll before armor');
 		const untargetable = { ...defender, evasion: 1000000 };
 		assert.deepEqual(resolveAttack(attacker, untargetable, random), { hit: false, damage: 0 });
 		assert.deepEqual(runAttackResolution(attacker, untargetable, random), { hit: false, damage: 0 });
+	});
+	check('Freerunner Momentum banks, runs, and follows Java save cadence', () => {
+		let state = { ...momentum.NEW_MOMENTUM };
+		for (let i = 0; i < 12; i++) state = momentum.momentumGainStack(state);
+		assert.equal(state.stacks, 10);
+		assert.equal(momentum.momentumActionAvailable(state), true);
+		state = momentum.momentumDoAction(state);
+		assert.deepEqual([state.stacks, state.freerunTurns, state.freerunCooldown], [0, 20, 50]);
+		state = momentum.momentumAct(state, { invisible: true, speedyStealthRank: 2 });
+		assert.deepEqual([state.freerunTurns, state.freerunCooldown], [20, 49]);
+		assert.equal(momentum.momentumSpeedFactor(state, false, 0), 2);
+		assert.equal(momentum.momentumEvasion(state, 9, 3, 2), 10);
+		const restored = { ...state, movedLastTurn: false };
+		assert.deepEqual(momentum.momentumAct(restored, { invisible: false, speedyStealthRank: 0 }), {
+			...restored, freerunTurns: 19, freerunCooldown: 48, movedLastTurn: false,
+		});
+		assert.equal(momentum.momentumEvasion({ ...state, freerunTurns: 0 }, 9, 3, 2), 0);
+		assert.equal(momentum.momentumSpeedFactor(momentum.NEW_MOMENTUM, true, 3), 1);
+		assert.equal(momentum.momentumSpeedFactor({ ...momentum.NEW_MOMENTUM, attached: true }, true, 3), 2);
+	});
+	check('Freerunner Momentum is wired into movement, turn costs, combat and saves', () => {
+		const turnLoop = readFileSync('src/scenes/dungeon/turnLoopAiming.ts', 'utf8');
+		const turnCosts = readFileSync('src/scenes/dungeon/panelsSingleUse.ts', 'utf8');
+		const save = readFileSync('src/scenes/dungeon/deathSaveRefresh.ts', 'utf8');
+		const load = readFileSync('src/scenes/dungeon/panelsSingleUse.ts', 'utf8');
+		const spawn = readFileSync('src/scenes/dungeon/coreSpawnTiles.ts', 'utf8');
+		const heroMomentum = readFileSync('src/scenes/dungeon/hero/momentum.ts', 'utf8');
+		assert.ok(turnLoop.includes('this.momentumTurn()'), 'Momentum ticks once in the hero buff phase');
+		assert.ok(turnCosts.includes('mod /= this.momentumSpeedFactor()'), 'freerun modifies every hero action cost');
+		assert.ok(turnLoop.includes('damageRollMultiplier: this.projectileMomentumDmgFactor()'), 'thrown missiles use the rounded damage-roll factor');
+		assert.ok(turnLoop.includes('this.projectileMomentumAccFactor()'), 'thrown weapons and the Spirit Bow use the accuracy factor');
+		assert.ok(spawn.includes('this.momentumEvasionBonus()'), 'cached hero evasion uses the active freerun bonus');
+		const ringEvasionReset = spawn.indexOf('if (relevantStats.size > 0)');
+		const resolvedEvasion = spawn.indexOf('this.hero.evasion = this.heroStats.get(\'evasion\') + this.momentumEvasionBonus()', ringEvasionReset);
+		assert.ok(ringEvasionReset >= 0 && resolvedEvasion > ringEvasionReset, 'ring stat refresh rebuilds evasion with Momentum after modifiers');
+		assert.ok(spawn.indexOf('if (this.guardTurns > 0) this.hero.evasion = 1000000', resolvedEvasion) > resolvedEvasion, 'ring stat refresh preserves stance, guard and healing evasion factors');
+		assert.ok(save.includes('momentumState: {') && load.includes('movedLastTurn: false'), 'stacks and timers save; restore resets the unsaved movement flag');
+		assert.ok(heroMomentum.includes('if (this.subclass() !== \'freerunner\') return'), 'stack credits require the Freerunner subclass');
 	});
 	check('recent talent effects cover thresholds, class gates, and rank scaling', () => {
 		//ironWillReduction was removed (2026-09-14): Iron Will's real effect is a Warrior-only
@@ -1022,8 +1063,8 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.equal(talents.cachedRationChance('warrior', 2), 0);
 		assert.equal(talents.canImproviseProjectile('warrior', 1, 1), true);
 		assert.equal(talents.canImproviseProjectile('warrior', 1, 0), false);
-		assert.equal(talents.evasiveArmorBonus('freerunner', 2, 3), 6);
-		assert.equal(talents.evasiveArmorBonus('assassin', 2, 3), 0);
+		assert.equal(momentum.momentumEvasion({ attached: true, stacks: 0, freerunTurns: 2, freerunCooldown: 0, movedLastTurn: false }, 9, 3, 2), 10);
+		assert.equal(momentum.momentumEvasion(momentum.NEW_MOMENTUM, 9, 3, 2), 0);
 		assert.equal(talents.assassinReachBonus('assassin', 2), 2);
 		assert.equal(talents.empoweredStrikeBonus('battlemage', 2), 2);
 		//Bounty Hunter: Java's real term is a drop-chance *multiplier* of `0.02 * 2^(prep-1) *
@@ -1040,8 +1081,9 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.equal(talents.sharedUpgradeArmor('sniper', 1, 3), 0);
 		assert.equal(talents.twinUpgradeArmor('champion', 1, 1), 1);
 		assert.equal(talents.soulSiphonCharge('warlock', 2), 2);
-		assert.equal(talents.projectileMomentumBonus('freerunner', 2, true), 2);
-		assert.equal(talents.projectileMomentumBonus('sniper', 2, true), 0);
+		assert.equal(talents.projectileMomentumDamageMultiplier('freerunner', 2, true), Math.fround(1.3));
+		assert.equal(talents.projectileMomentumDamageMultiplier('freerunner', 2, false), 1);
+		assert.equal(talents.projectileMomentumDamageMultiplier('sniper', 2, true), 1);
 		assert.equal(talents.enragedCatalystBonus('berserker', 2, 10, 20), 2);
 		assert.equal(talents.enragedCatalystBonus('berserker', 2, 11, 20), 0);
 		assert.equal(talents.cleaveComboSeed('gladiator', 2), 2);

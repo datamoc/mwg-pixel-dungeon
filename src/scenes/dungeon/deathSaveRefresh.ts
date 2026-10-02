@@ -1325,6 +1325,14 @@ export const deathSaveRefreshMethods = {
 				turnRecovery: this.rageState.turnRecovery,
 				deathlessFuryRank: this.talentRank('deathless_fury'),
 			} : undefined,
+			//`Momentum.tintIcon()`/`iconTextDisplay()`/`iconFadePercent()` (Momentum.java
+			//127-161, tag v3.3.8) read the live stacks/turns/cooldown like Berserk's three
+			//read rage state - never the 9999 sentinel (R115).
+			momentum: this.hero.buffs['momentum'] !== undefined ? {
+				stacks: this.momentumState.stacks,
+				freerunTurns: this.momentumState.freerunTurns,
+				freerunCooldown: this.momentumState.freerunCooldown,
+			} : undefined,
 			staff: this.heroClass === 'mage' ? { current: this.wandCharges.current, max: this.wandCharges.max } : null,
 			ammo: CLASS_AMMO.has(this.heroClass) ? this.ammo : null,
 			carriedCount,
@@ -1706,6 +1714,12 @@ export const deathSaveRefreshMethods = {
  			healingFlat: this.healingFlat,
 			sungrassPos: this.sungrassPos,
 			deathlessFuryUsed: this.deathlessFuryUsed,
+			momentumState: {
+				attached: this.momentumState.attached,
+				stacks: this.momentumState.stacks,
+				freerunTurns: this.momentumState.freerunTurns,
+				freerunCooldown: this.momentumState.freerunCooldown,
+			},
 			alchemyEnergy: this.alchemyEnergy,
 			weaponAffix: this.weaponAffix,
 			weaponCurseDurability: this.weaponCurseDurability,

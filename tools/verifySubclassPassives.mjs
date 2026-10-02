@@ -19,10 +19,13 @@ export function verifySubclassPassives(require, check) {
 		COMBO_MOVE_THRESHOLDS, warlockMarkThreshold, soulMarkDuration,
 		soulMarkHeal, soulEaterOnEatChance, sniperMarkDuration, sniperMarkBonus,
 		SNIPER_MARK_BASE_DURATION, momentumDecay, MOMENTUM_MAX_STACKS,
-		freerunTurns, freerunCooldown, freerunEvasion, freerunSpeedMultiplier,
+		freerunTurns, freerunCooldown,
 		projectileMomentumAccuracy, monkEnergyBaseGain, monkEnergyCap,
 		unencumberedEnergyMultiplier, BATTLEMAGE_STAFF_PARTIAL_CHARGE,
 	} = require('./simulation/subclassPassives');
+	// R115 moved the two freerun transitions out of `subclassPassives` into the buff's own
+	// module (`Momentum.speedMultiplier()`/`evasionBonus()` now gate on the live state).
+	const { momentumEvasion, momentumSpeedFactor, NEW_MOMENTUM } = require('./simulation/momentum');
 
 	check('berserk rage accrues (damage/HT)/4 under the endless-rage cap', () => {
 		assert.equal(berserkMaxPower(0), 1);
@@ -40,8 +43,10 @@ export function verifySubclassPassives(require, check) {
 		assert.ok(Math.abs(berserkDecayPower(1, 40, 40) - 0.95) < 1e-9);
 		//Half HP: 0.05 x 0.25 = 0.0125 - fades four times slower.
 		assert.ok(Math.abs(berserkDecayPower(1, 20, 40) - 0.9875) < 1e-9);
-		//Below 0.1 power the gate floors the drain rate at 0.1 x 0.05.
-		assert.ok(Math.abs(berserkDecayPower(0.05, 40, 40) - 0.0475) < 1e-9);
+		//Below 0.1 power the gate floors the drain rate at 0.1 x 0.05 = 0.005, so 0.05 - 0.005
+		//(the pin said 0.0475 - an arithmetic slip in a file that has no caller and was never run;
+		//Berserk.java 136 gate(0.1, power, 1) * 0.05 * (HP/HT)^2 gives 0.045, corrected with R115).
+		assert.ok(Math.abs(berserkDecayPower(0.05, 40, 40) - 0.045) < 1e-9);
 	});
 
 	check('berserk damage factor caps at x1.5 with 50% at full rage', () => {
@@ -69,9 +74,7 @@ export function verifySubclassPassives(require, check) {
 
 	check('gladiator combo refreshes to 5 per hit, 15/30/45 on a kill', () => {
 		assert.equal(COMBO_HIT_WINDOW, 5);
-		assert.equal(comboKillWindow(0), 15);
-		assert.equal(comboKillWindow(1), 15);
-		assert.equal(comboKillWindow(2), 45);
+		//15/30/45 = 15 + 15 x Cleave rank (the rank-1 pin said 15, contradicting this check's\n\t\t//own title - an arithmetic slip in a file that has no caller and was never run).\n\t\tassert.equal(comboKillWindow(0), 15);\n\t\tassert.equal(comboKillWindow(1), 30);\n\t\tassert.equal(comboKillWindow(2), 45);
 		assert.deepEqual(COMBO_MOVE_THRESHOLDS, [2, 4, 6, 8, 10]);
 	});
 
@@ -112,14 +115,15 @@ export function verifySubclassPassives(require, check) {
 	check('momentum decays by thirds, freerun spends 2 turns per stack', () => {
 		assert.equal(MOMENTUM_MAX_STACKS, 10);
 		assert.equal(momentumDecay(10), 7);
-		assert.equal(momentumDecay(3), 1);
+		//Momentum.java 81: gate(0, stacks - 1, round(stacks x 0.667)) -> 3 stacks decay to\n\t\t//2 (the pin said 1 - an arithmetic slip in a file that has no caller and was never run).\n\t\tassert.equal(momentumDecay(3), 2);
 		assert.equal(momentumDecay(1), 0);
 		assert.equal(freerunTurns(7), 14);
 		assert.equal(freerunCooldown(7), 38);
-		assert.equal(freerunSpeedMultiplier(true), 2);
-		assert.equal(freerunSpeedMultiplier(false), 1);
-		//Level-20 freerunner: floor(20/2) = 10, plus 3 x 2 excess STR.
-		assert.equal(freerunEvasion(20, 2, 3), 16);
+		//`Momentum.speedMultiplier()`: x2 while the run is live on an attached buff, else 1.
+		assert.equal(momentumSpeedFactor({ ...NEW_MOMENTUM, attached: true, freerunTurns: 2 }, false, 0), 2);
+		assert.equal(momentumSpeedFactor(NEW_MOMENTUM, false, 0), 1);
+		//Level-20 freerunner: floor(20/2) = 10, plus 3 x 2 excess STR, while freerunning.
+		assert.equal(momentumEvasion({ ...NEW_MOMENTUM, attached: true, freerunTurns: 2 }, 20, 2, 3), 16);
 		assert.equal(projectileMomentumAccuracy(2), 2);
 	});
 

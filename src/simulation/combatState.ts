@@ -37,6 +37,8 @@ export interface Combatant extends Step {
 	prepLevel?: number;
 	/** Plain rule identifier; the scene narrows it to its MonsterId catalogue. */
 	kind?: string;
+	/** `MissileWeapon.damageRoll()` post-roll multiplier, rounded before Char.attack modifiers. */
+	damageRollMultiplier?: number;
 	/**
 	 * `AscensionChallenge.AscensionBuffBlocker` (`AscensionChallenge.java:416`, tag `v3.3.8`):
 	 * chars holding it are not boosted by the ascension table. Java's marker is an (empty, no

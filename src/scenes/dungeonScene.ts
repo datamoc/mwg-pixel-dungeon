@@ -119,7 +119,8 @@ import { StatusPane } from '../ui/statusPane';
 import { DungeonHud } from '../ui/dungeonHud';
 import { SpdAudio } from '../audio';
 import { onBrightnessChanged, onZoomChanged, screenShake, setZoomOffset, uiMode, zoomForOffset, zoomOffset } from '../settings';
-import { arcaneVisionDuration, assassinReachBonus, bountyHunterDropBonus, canImproviseProjectile, cleaveComboSeed, deathlessFuryTriggers, EMPOWERING_SCROLLS_BONUS, enhancedRingsDuration, enragedCatalystBonus, evasiveArmorBonus, empoweredStrikeBonus, farsightMultiplier, ironStomachReduction, lethalHasteDuration, lightCloakArtifactBonus, lightCloakRechargeRate, allyWarpRange, monasticVigorShield, preservationChance, projectileMomentumBonus, rejuvenatingStepHeal, seerShotDuration, SEER_SHOT_COOLDOWN, shieldBatteryGain, soulSiphonCharge, unencumberedSpiritEvasion, weaponRechargingDamage } from '../talentEffects';
+import { arcaneVisionDuration, assassinReachBonus, bountyHunterDropBonus, canImproviseProjectile, cleaveComboSeed, deathlessFuryTriggers, EMPOWERING_SCROLLS_BONUS, enhancedRingsDuration, enragedCatalystBonus, empoweredStrikeBonus, farsightMultiplier, ironStomachReduction, lethalHasteDuration, lightCloakArtifactBonus, lightCloakRechargeRate, allyWarpRange, monasticVigorShield, preservationChance, rejuvenatingStepHeal, seerShotDuration, SEER_SHOT_COOLDOWN, shieldBatteryGain, soulSiphonCharge, unencumberedSpiritEvasion, weaponRechargingDamage } from '../talentEffects';
+import { NEW_MOMENTUM, type Momentum } from '../simulation/momentum';
 import pixelFontUrl from '../assets/pixel_font.ttf';
 import { SpdJavaRandom, spdScramble, spdSeedForDepth, SpdRandom } from '../spdRng';
 import {
@@ -329,6 +330,7 @@ import { armorAbilityUseMethods } from './dungeon/hero/armorAbilityUse'; import 
 import { skeletonKeyMethods } from './dungeon/hero/skeletonKeyScene';
 import { dropThrowMethods } from './dungeon/hero/dropThrowScene';
 import { comboMovesMethods } from './dungeon/hero/comboMoves'; import { monkAbilitiesMethods } from './dungeon/hero/monkAbilities'; import { berserkRageMethods } from './dungeon/hero/berserkRage';
+import { momentumMethods } from './dungeon/hero/momentum';
 import type { KeyReplacementTracker } from '../items/skeletonKey';
 import { cursedWandCastMethods } from './dungeon/hero/cursedWandCast';
 import { tippedDartEffectsMethods } from './dungeon/hero/tippedDartEffects';
@@ -402,6 +404,9 @@ export class DungeonScene extends Scene2D {
 			armorAbility: () => this.useArmorAbility(),
 			//`Berserk` implements Java's `ActionIndicator.Action` independently from ClassArmor.
 			berserk: () => this.rageAction(),
+			//`Momentum.doAction()` (Momentum.java 234-245, tag v3.3.8) spends no turn - the
+			//ability key is only reachable while the hero awaits input, like `berserk` (R115).
+			freerun: () => this.momentumAction(),
 			talents: () => {
 				this.talentOpen = this.subclassChoiceOpen || this.armorChoiceOpen || this.augmentChoiceOpen || this.itemPickerOpen || !this.talentOpen;
 				this.refreshTalentPanel();
@@ -998,6 +1003,10 @@ export class DungeonScene extends Scene2D {
 	healingFlat = 0;
 	sungrassPos = -1;
 	rageState = { mode: 'normal' as 'normal' | 'berserk' | 'recovering', power: 0, powerLossBuffer: 0, levelRecovery: 0, turnRecovery: 0, zeroHp: false }; rageBarrier = new Actors.Barrier(); //`Berserk` (Berserker, `hero/berserkRage.ts`): the rage state machine (+ the death-berserk's 0-HP stand-in) and its extra shield pool
+	/** `Momentum` (Freerunner, `hero/momentum.ts`): stacks banked by completed steps, the live
+	 * freerun run and its cooldown (R115). Restored with `movedLastTurn` false, exactly what
+	 * Java's own `restoreFromBundle` does - that flag is deliberately not saved. */
+	momentumState: Momentum = { ...NEW_MOMENTUM };
 	deathlessFuryUsed = false;
 	freeTurnNext = false;
 	followupTarget: Creature | null = null;
@@ -1007,7 +1016,6 @@ export class DungeonScene extends Scene2D {
 	 * `SpiritBow.SpiritArrow` throws from marking it - structurally unreachable here, since
 	 * the Duelist (the only class with this talent) has no SpiritBow. */
 	deadlyFollowupTarget: Creature | null = null;
-	projectileMomentumReady = false;
 	/** worn ring {id, level} or null; ring modifiers live on heroStats under source 'ring' */
 	equippedRing: EquippedRing | null = null;
 	/**
@@ -2609,5 +2617,5 @@ export class DungeonScene extends Scene2D {
 
 /** The method groups in `./dungeon/` are typed with `this: DungeonScene` and merged onto the prototype here. */
 type Mixed<T> = { [K in keyof T]: OmitThisParameter<T[K]> };
-export interface DungeonScene extends Mixed<typeof coreSpawnTilesMethods>, Mixed<typeof npcShopBlacksmithMethods>, Mixed<typeof environmentFireTrapsMethods>, Mixed<typeof pitfallCollapseMethods>, Mixed<typeof turnLoopAimingMethods>, Mixed<typeof actorTurnsHazardsMethods>, Mixed<typeof monsterAiMethods>, Mixed<typeof bossLogicMethods>, Mixed<typeof gnollMineMethods>, Mixed<typeof crystalMineMethods>, Mixed<typeof combatResolutionMethods>, Mixed<typeof attackSeamMethods>, Mixed<typeof deathSaveRefreshMethods>, Mixed<typeof panelsSingleUseMethods>, Mixed<typeof inventoryQuickslotMethods>, Mixed<typeof heroQuickslotMethods>, Mixed<typeof clericSpellFlowsMethods>, Mixed<typeof armorAbilityUseMethods>, Mixed<typeof powerOfManyMethods>, Mixed<typeof skeletonKeyMethods>, Mixed<typeof dropThrowMethods>, Mixed<typeof cursedWandCastMethods>, Mixed<typeof tippedDartEffectsMethods>, Mixed<typeof weaponSpellsGearMethods>, Mixed<typeof comboMovesMethods>, Mixed<typeof monkAbilitiesMethods>, Mixed<typeof berserkRageMethods> {}
-Object.assign(DungeonScene.prototype, coreSpawnTilesMethods, npcShopBlacksmithMethods, environmentFireTrapsMethods, pitfallCollapseMethods, turnLoopAimingMethods, actorTurnsHazardsMethods, monsterAiMethods, bossLogicMethods, gnollMineMethods, crystalMineMethods, combatResolutionMethods, attackSeamMethods, deathSaveRefreshMethods, panelsSingleUseMethods, inventoryQuickslotMethods, heroQuickslotMethods, clericSpellFlowsMethods, armorAbilityUseMethods, powerOfManyMethods, skeletonKeyMethods, dropThrowMethods, cursedWandCastMethods, tippedDartEffectsMethods, weaponSpellsGearMethods, comboMovesMethods, berserkRageMethods);
+export interface DungeonScene extends Mixed<typeof coreSpawnTilesMethods>, Mixed<typeof npcShopBlacksmithMethods>, Mixed<typeof environmentFireTrapsMethods>, Mixed<typeof pitfallCollapseMethods>, Mixed<typeof turnLoopAimingMethods>, Mixed<typeof actorTurnsHazardsMethods>, Mixed<typeof monsterAiMethods>, Mixed<typeof bossLogicMethods>, Mixed<typeof gnollMineMethods>, Mixed<typeof crystalMineMethods>, Mixed<typeof combatResolutionMethods>, Mixed<typeof attackSeamMethods>, Mixed<typeof deathSaveRefreshMethods>, Mixed<typeof panelsSingleUseMethods>, Mixed<typeof inventoryQuickslotMethods>, Mixed<typeof heroQuickslotMethods>, Mixed<typeof clericSpellFlowsMethods>, Mixed<typeof armorAbilityUseMethods>, Mixed<typeof powerOfManyMethods>, Mixed<typeof skeletonKeyMethods>, Mixed<typeof dropThrowMethods>, Mixed<typeof cursedWandCastMethods>, Mixed<typeof tippedDartEffectsMethods>, Mixed<typeof weaponSpellsGearMethods>, Mixed<typeof comboMovesMethods>, Mixed<typeof monkAbilitiesMethods>, Mixed<typeof berserkRageMethods>, Mixed<typeof momentumMethods> {}
+Object.assign(DungeonScene.prototype, coreSpawnTilesMethods, npcShopBlacksmithMethods, environmentFireTrapsMethods, pitfallCollapseMethods, turnLoopAimingMethods, actorTurnsHazardsMethods, monsterAiMethods, bossLogicMethods, gnollMineMethods, crystalMineMethods, combatResolutionMethods, attackSeamMethods, deathSaveRefreshMethods, panelsSingleUseMethods, inventoryQuickslotMethods, heroQuickslotMethods, clericSpellFlowsMethods, armorAbilityUseMethods, powerOfManyMethods, skeletonKeyMethods, dropThrowMethods, cursedWandCastMethods, tippedDartEffectsMethods, weaponSpellsGearMethods, comboMovesMethods, berserkRageMethods, momentumMethods);

@@ -151,10 +151,8 @@ export function createPotionEffects(scene: PotionEffectsContext): Record<string,
 		},
 		potionInvis: () => {
 			//`PotionOfInvisibility.apply()` (tag `v3.3.8`) only prolongs `Invisibility`
-			//(20 turns) - the freerunner duration extension that stood here was
-			//invented: real `SPEEDY_STEALTH` lives in `Momentum.java` (momentum while
-			//already invisible), and this port has no Momentum system for it to act
-			//through. Removed; the talent does nothing until Momentum exists.
+			//(20 turns). `SPEEDY_STEALTH` gains its two Momentum stacks on each later
+			//invisible actor tick (`Momentum.act()`), not as a potion-specific extension.
 			//Found by the 15th monster-analysis matrix (potions).
 			addBuff(scene.hero, 'invisibility');
 			scene.say(t('port.log.invisible'), 'positive');

@@ -81,7 +81,8 @@ export const BUFF_DURATION_DATA = {
   "rejuvenatingStepsFurrow": 9999,
   "burningActed": 9999,
   "oozeActed": 9999,
-  "beamingRayBoost": 10
+  "beamingRayBoost": 10,
+  "momentum": 9999
 } as const;
 export const NEGATIVE_BUFF_DATA = [
   "poison",

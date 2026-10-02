@@ -15,7 +15,7 @@ import { shatterHasEffect } from '../../items/dropThrow';
 import { releaseBeeFromPot } from '../../items/honeypot';
 import { combinedStatBonusLevel, ringDef, ringEnergyMultiplier, ringMightBonus, RING_DEFS } from '../../items/ringModifiers';
 import { MOB_KEYS, has, t } from '../../i18n/index';
-import { evasiveArmorBonus, unencumberedSpiritEvasion } from '../../talentEffects';
+import { unencumberedSpiritEvasion } from '../../talentEffects';
 import { SpdJavaRandom, spdScramble, spdSeedForDepth } from '../../spdRng';
 import { isPortedDepth, miningBranchFloor, portedFloor, toGameTerrain } from '../../spdLevelGen/gameBridge';
 import { CITY_BOTTOM_DOOR, CITY_TOP_DOOR, HALLS_EXIT_CELL } from '../../spdLevelGen/bossLevels';
@@ -359,7 +359,12 @@ export const coreSpawnTilesMethods = {
 		this.heroStats.setBase('accuracy', Math.floor(this.heroAttackSkill * (this.heroClass === 'cleric' && this.weaponId === 'startingWeapon' ? 1.4 : 1)) + this.talentAccuracy);
 		this.heroStats.setBase('evasion', this.heroDefenseSkill + this.talentEvasion);
 		this.hero.accuracy = this.heroStats.get('accuracy');
-		this.hero.evasion = this.heroStats.get('evasion') + evasiveArmorBonus(this.subclass(), this.talentRank('evasive_armor'), this.armorLevel) + unencumberedSpiritEvasion(this.subclass(), this.talentRank('unencumbered_spirit'));
+		//`Momentum.evasionBonus()` reads final `Hero.STR()` at this point in Java; refresh
+		//the same ring/adrenaline/Strongman total before resolving its excess-armor term.
+		this.hero.str = this.heroStr + ringMightBonus(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
+		if (this.hero.buffs['adrenalineSurge']) this.hero.str += 1;
+		this.hero.str += Math.floor(this.heroStr * (0.03 + 0.05 * this.talentRank('strongman')));
+		this.hero.evasion = this.heroStats.get('evasion') + this.momentumEvasionBonus() + unencumberedSpiritEvasion(this.subclass(), this.talentRank('unencumbered_spirit'));
 		//`Quarterstaff` defensive stance: triples evasion while up (`ability_desc`).
 		if (this.defensiveStanceTurns > 0) this.hero.evasion *= 3;
 		//Guard (`Hero.defenseSkill`, tag `v3.3.8`): infinite evasion while the tracker
@@ -367,10 +372,7 @@ export const coreSpawnTilesMethods = {
 		//hit model in 	akeHeroDamage` is gone with it.
 		if (this.guardTurns > 0) this.hero.evasion = 1000000;
 		if (this.healingEvasionTurns > 0) this.hero.evasion = this.talentRank('restored_agility') >= 2 ? 1000000 : this.hero.evasion * 4;
-		this.hero.str = this.heroStr + ringMightBonus(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
-		if (this.hero.buffs['adrenalineSurge']) this.hero.str += 1;
-		//Strongman is the one always-on T1/T2 talent that changes Hero.STR directly.
-		this.hero.str += Math.floor(this.heroStr * (0.03 + 0.05 * this.talentRank('strongman')));
+		//Strongman and dynamic STR were resolved above before Momentum's Evasive Armor bonus.
 		//MeleeWeapon: min = tier+lvl, max = 5*(tier+1)+lvl*(tier+1). Tier affects scaling:
 		//tier 1: [1+lvl, 10+2*lvl], tier 2: [2+lvl, 15+3*lvl], etc.
 		//Starting values (from CLASSES) are ignored; tier determines base damage.
@@ -458,7 +460,16 @@ export const coreSpawnTilesMethods = {
 					this.heroStats.addModifier({ ...modifier, source: 'ring' });
 				}
 			}
-			if (relevantStats.size > 0) this.hero.evasion = this.heroStats.get('evasion') + (this.heroClass === 'rogue' ? 3 : 0);
+			if (relevantStats.size > 0) {
+				// Rebuild every cached evasion term after ring modifiers. The previous assignment
+				// dropped Momentum, stance, guard, and healing bonuses whenever a ring affected stats.
+				this.hero.evasion = this.heroStats.get('evasion') + this.momentumEvasionBonus()
+					+ unencumberedSpiritEvasion(this.subclass(), this.talentRank('unencumbered_spirit'))
+					+ (this.heroClass === 'rogue' ? 3 : 0);
+				if (this.defensiveStanceTurns > 0) this.hero.evasion *= 3;
+				if (this.guardTurns > 0) this.hero.evasion = 1000000;
+				if (this.healingEvasionTurns > 0) this.hero.evasion = this.talentRank('restored_agility') >= 2 ? 1000000 : this.hero.evasion * 4;
+			}
 		}
 		//`Weapon.accuracyFactor(this, target)`: while the cursed weapon's own
 		//`Wayward.WaywardBuff` is up, the weapon's `ACC` (1 for every ordinary weapon) is divided
