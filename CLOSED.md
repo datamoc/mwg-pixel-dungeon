@@ -4285,3 +4285,7 @@ Every family named in the section below is matrixed (55 matrices under `garbage/
 # R020. Post-victory ascent
 
 - [x] **R020** _(Post-victory ascent through the surface win)_ **Simplified (2026-09-30):** Amulet pickup, the immediate-win/continue choice, floor-by-floor ascent, surface win, saved `highestAscent`, rankings, badges, stack escalation, and enemy beckon/haste are implemented and documented in `coverage/rows-terrain-traps-and-levelgen.md`. The presentation uses a shared choice window rather than Java's illustrated scene; hero-speed scheduler ordering is recorded separately under R021. The remains badge remains open because its item family is absent.
+
+# R021. Ascension challenge hero speed
+
+- [x] **R021** _(Ascension challenge hero speed cap at 6+ stacks)_ **Simplified (2026-09-30):** `spendHeroTurn()` doubles inverse action cost with a 1x speed cap. Java interleaves independently scheduled actors; this port groups hero effect ticks before scheduled mob turns, so effect order can differ within the longer action. See `coverage/rows-hero-and-armor-abilities.md`.
