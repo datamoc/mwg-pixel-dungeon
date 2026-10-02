@@ -1585,6 +1585,8 @@ export const panelsSingleUseMethods = {
 	applyCharacterDamage(this: DungeonScene, c: Creature, rawDamage: number, options: CharacterDamageOptions): boolean {
 		let damage = rawDamage;
 		if (c.isHero) {
+			//`Char.damage()` detaches `MagicalSleep` on any damage (tag `v3.3.8`); the attack tail carries the same line.
+			if (this.hero.buffs['magicalSleep'] !== undefined) delete this.hero.buffs['magicalSleep'];
 			damage = this.absorbHeroDamage(damage, options.magical === true, false, options.heroAbsorb);
 			this.hero.hp -= damage;
 			this.showDamage(this.hero, damage);
@@ -1630,6 +1632,8 @@ export const panelsSingleUseMethods = {
 		}
 		//This shared blast/bomb/ability path models Char.damage() for non-hero targets;
 		//apply Doom after Aura and before the target-specific curve and shields.
+		//`Char.damage()` detaches `MagicalSleep` on any damage, after PowerOfMany and before Doom (tag `v3.3.8`); the attack tail carries the same line.
+		if (c.buffs['magicalSleep'] !== undefined) delete c.buffs['magicalSleep'];
 		if (!options.skipDoom) damage = doomDamage(damage, c);
 		//`ShadowAlly.defenseProc()`'s AntiMagic/Viscosity shares (`ShadowClone.java`
 		//249-257, tag `v3.3.8`): a CLONED_ARMOR-gated clone defends with the *hero's*

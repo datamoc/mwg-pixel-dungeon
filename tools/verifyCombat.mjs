@@ -394,6 +394,15 @@ export function verifyCombat(require, check) {
 		assert.match(blastSource, /auraProtectedDamage\(c, damage\)[\s\S]*?c\.buffs\['powerOfMany'\] !== undefined[\s\S]*?powerOfManyDamageFactor\(this\.talentRank\('life_link'\)\)[\s\S]*?doomDamage\(damage, c\)/,
 			'shared dispatch reduces powered defenders between Aura and Doom');
 	});
+	check('the shared Char.damage dispatch detaches MagicalSleep on any damage (T63)', () => {
+		//`Char.damage()` detaches `MagicalSleep` on any damage (`Char.java`, tag `v3.3.8`).
+		//The attack tail carries the same line, so the dispatch must too - otherwise a wand
+		//zap or a bomb leaves a magically-sleeping victim asleep where a sword wakes it.
+		assert.match(blastSource, /if \(this\.hero\.buffs\['magicalSleep'\] !== undefined\) delete this\.hero\.buffs\['magicalSleep'\];[\s\S]*?this\.hero\.hp -= damage/,
+			'dispatched hero damage detaches MagicalSleep before the HP write');
+		assert.match(blastSource, /if \(c\.buffs\['magicalSleep'\] !== undefined\) delete c\.buffs\['magicalSleep'\];[\s\S]*?if \(!options\.skipDoom\) damage = doomDamage\(damage, c\)/,
+			'dispatched mob damage detaches MagicalSleep after PowerOfMany and before Doom');
+	});
 	check('the shared Char.damage dispatch applies champion damageTakenFactor to every source (T63)', () => {
 		//`Char.damage()` runs every defender ChampionEnemy's `damageTakenFactor()` with a
 		//ceiling per buff (`Char.java`, tag `v3.3.8`) - for every source, not just the
