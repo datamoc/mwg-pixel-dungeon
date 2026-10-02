@@ -416,6 +416,8 @@ check('the moved hero plant-effect switch fires every branch', () => {
 		};
 		const ctx = {
 			subclass: () => subclass,
+			heroClass: () => 'none',
+			talentRank: () => 0,
 			level: 12,
 			depth: 12,
 			say: (line, level) => { rec.said.push({ line, level }); },
@@ -633,8 +635,8 @@ check('the moved mob plant-effect switch fires every branch', () => {
 		};
 		if (presetBuffs) Object.assign(creature.buffs, presetBuffs);
 		const rec = {
-			grants: [], prolongs: [], fires: [], gases: [], freezes: [],
 			hazards: [], areas: [], shakes: [], placed: [], teleports: [], patrols: [],
+			heroBarkskin: null,
 		};
 		const ctx = {
 			depth: 12,
@@ -654,6 +656,9 @@ check('the moved mob plant-effect switch fires every branch', () => {
 			isVisibleCell: () => true,
 			shake: (intensity, duration) => { rec.shakes.push([intensity, duration]); },
 			isImmovableKind: () => false,
+			heroClass: () => 'none',
+			talentRank: () => 0,
+			setHeroBarkskin: (level, interval) => { rec.heroBarkskin = [level, interval]; },
 			...ctxOverrides,
 		};
 		runMobPlantEffect(kind, 77, creature, ctx);
@@ -711,6 +716,16 @@ check('the moved mob plant-effect switch fires every branch', () => {
 	assert.deepEqual(m.rec.placed, [['rat', 8, 8]]);
 	assert.deepEqual(m.rec.teleports, [[[5, 5], [8, 8]]]);
 	assert.deepEqual(m.rec.hazards, ['rat'], 'the mark lands before the teleport');
+	//A mob stepping on a plant the hero sees still barks the hero's skin, even for
+	//an immovable stepper Java refuses to teleport - the plant still withers.
+	m = driveMob('firebloom', { heroClass: () => 'huntress', talentRank: () => 2 });
+	assert.deepEqual(m.rec.heroBarkskin, [2, 5]);
+	m = driveMob('firebloom');
+	assert.equal(m.rec.heroBarkskin, null);
+	m = driveMob('fadeleaf', { heroClass: () => 'huntress', talentRank: () => 1, isImmovableKind: () => true });
+	assert.deepEqual(m.rec.heroBarkskin, [2, 3], 'the clause sits above the immovable refusal');
+	m = driveMob('firebloom', { heroClass: () => 'huntress', talentRank: () => 1, isVisibleCell: () => false });
+	assert.equal(m.rec.heroBarkskin, null, 'out-of-sight plants never bark');
 	//An immovable stepper is refused before the mark; a missing cell keeps the mark.
 	m = driveMob('fadeleaf', { isImmovableKind: () => true });
 	assert.deepEqual([m.creature.x, m.creature.y], [5, 5]);
