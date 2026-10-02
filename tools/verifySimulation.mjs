@@ -635,6 +635,7 @@ check('the moved mob plant-effect switch fires every branch', () => {
 		};
 		if (presetBuffs) Object.assign(creature.buffs, presetBuffs);
 		const rec = {
+			grants: [], prolongs: [], fires: [], gases: [], freezes: [],
 			hazards: [], areas: [], shakes: [], placed: [], teleports: [], patrols: [],
 			heroBarkskin: null,
 		};
