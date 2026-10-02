@@ -113,14 +113,17 @@ export const dropThrowMethods = {
 		if (!this.groundItems.includes(ground)) return false;
 		//`Heap.explode()` breaks open plain chests (and skeletons, which this port
 		//never spawns as a heap kind) instead of destroying them, and leaves every
-		//other non-HEAP container - locked/crystal chests, shop stands - untouched
-		//(tag `v3.3.8`). Clearing the flag is the open: contents stay on the cell.
+		//other non-HEAP container - locked/crystal chests, shop stands, tombs -
+		//untouched (tag `v3.3.8`). Clearing the flag is the open: contents stay on
+		//the cell. Tomb-marked levelgen drops carry the marker onto the scene heap
+		//at floor build, so a blast meets the same early return Java's non-`HEAP`
+		//branch takes.
 		//The heap-sprite drop/link has no port equivalent (see PORT_COVERAGE.md).
 		if (ground.chest === 'normal' && !ground.forSale) {
 			ground.chest = undefined;
 			return false;
 		}
-		if (ground.chest !== undefined || ground.forSale) return false;
+		if (ground.chest !== undefined || ground.forSale || ground.tomb) return false;
 		//`unique || isUpgradable() || EquipableItem` entries are skipped before any shatter/detonate
 		//branch (Heap.explode()); see `survivesHeapExplosion` for the Java-to-port kind mapping.
 		if (survivesHeapExplosion(ground.kind, ground.item?.id)) return false;
@@ -139,11 +142,11 @@ export const dropThrowMethods = {
 	 * FrozenCarpaccio, every non-unique potion shatters where it lies (through `shatterPotionAt`, so a frozen
 	 * Toxic flask spills), and represented active bomb fuses are snuffed. Java's triggered NoisemakerFuse refuses
 	 * to freeze; `noisemakerArmed` preserves that state here. The port has no DoubleBomb triggered phase. Chests
-	 * and shop shelves are not plain heaps and are left alone.
+	 * and shop shelves - plus tomb-marked heaps - are not plain heaps and are left alone.
 	 */
 	freezeHeapAt(this: DungeonScene, x: number, y: number): void {
 		for (const entry of [...this.heapItemsAt(x, y)].reverse()) {
-			if (entry.chest || entry.forSale || !this.groundItems.includes(entry)) continue;
+			if (entry.chest || entry.forSale || entry.tomb || !this.groundItems.includes(entry)) continue;
 			if (entry.kind === 'meat' && (entry.item === undefined || entry.item.id === 'meat')) {
 				//`FrozenCarpaccio.cook(meat)` keeps the quantity; a payload-less meat heap is one MysteryMeat
 				entry.item = { id: 'frozenCarpaccio', quantity: Math.max(1, entry.item?.quantity ?? 1), identified: true, sourceClass: 'FrozenCarpaccio' };

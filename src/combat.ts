@@ -442,6 +442,8 @@ export interface GroundItem extends Step {
 	chest?: 'normal' | 'locked' | 'crystal';
 	/** Java Heap.Type.FOR_SALE: a shop stand - priced, never free loot. */
 	forSale?: boolean;
+	/** Java Heap.Type.TOMB: blast and freeze leave the heap untouched (`Heap.explode()`/`freeze()` early-return for non-`HEAP` types). */
+	tomb?: boolean;
 	/**
 	 * `MissileWeapon` lineage for thrown-ammo heaps (see `src/missiles.ts`): the `missileLevel`
 	 * the heap was scattered or dropped at, and the missile set it belongs to. Absent on every

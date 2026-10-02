@@ -751,6 +751,13 @@ export const environmentFireTrapsMethods = {
 					const heap = this.groundItemAt(item.x, item.y);
 					if (heap) heap.autoExplored = true;
 				}
+				//Crypt/grassy-grave `level.drop(..., 'tomb')` notes ride onto the scene heap
+				//like `autoExplored` above: Java `Heap.Type.TOMB` heaps (`Heap.java`, tag
+				//`v3.3.8`) survive `explode()` and `freeze()` untouched.
+				if (item.note?.split(',').includes('tomb')) {
+					const tombHeap = this.groundItemAt(item.x, item.y);
+					if (tombHeap) tombHeap.tomb = true;
+				}
 			} else this.placeQueuedPortedItem(item.kind, floor.rooms, payload);
 		}
 		// Java's RegularLevel places Level.itemsToSpawn after ordinary room drops using a valid

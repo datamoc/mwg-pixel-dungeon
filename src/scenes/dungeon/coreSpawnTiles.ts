@@ -1038,7 +1038,7 @@ export const coreSpawnTilesMethods = {
 			sacrificialFireCharge: this.sacrificialFireCharge,
 			sacrificialFireCell: this.sacrificialFireCell,
 			sacrificialFirePrize: this.sacrificialFirePrize,
-			groundItems: this.groundItems.map(({ kind, x, y, item, chest, forSale, missileLevel, missileSet, tippedSeed, autoExplored }) => ({ kind, x, y, item, chest, forSale, missileLevel, missileSet, tippedSeed, autoExplored })),
+			groundItems: this.groundItems.map(({ kind, x, y, item, chest, forSale, missileLevel, missileSet, tippedSeed, autoExplored, tomb }) => ({ kind, x, y, item, chest, forSale, missileLevel, missileSet, tippedSeed, autoExplored, tomb })),
 			fallingRocks: this.fallingRocks.map((v) => ({ cells: v.cells.map((c) => ({ ...c })), turns: v.turns })),
 			cavesBossEnergyCells: [...this.cavesBossEnergyCells],
 			manualPlants: [...this.manualPlants.entries()],
@@ -1113,6 +1113,7 @@ export const coreSpawnTilesMethods = {
 				heap.missileSet = item.missileSet;
 				heap.tippedSeed = item.tippedSeed;
 				heap.autoExplored = item.autoExplored;
+				heap.tomb = item.tomb;
 			}
 		}
 

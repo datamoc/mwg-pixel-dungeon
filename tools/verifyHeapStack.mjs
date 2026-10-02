@@ -48,3 +48,22 @@ check('a fallen item lands through GameScene arrival: potion shatters, seed plan
 	assert.ok(/export function shatterHoneypotFlow[\s\S]*?if \(!releaseBeeFromPot\(ctx, at\)\) return;\s*ctx\.consumePot\(instanceId\);\s*ctx\.spendTurn\(\);/.test(honeypot),
 		'the throw flow still consumes the pot and spends the turn');
 });
+check('tomb heaps ride out blasts and freezes like Java non-HEAP types (R009)', () => {
+	//`Heap.explode()` and `Heap.freeze()` (tag `v3.3.8`) return early for every
+	//non-`HEAP` type but `CHEST`/`SKELETON`-break-open: crypt/grassy-grave
+	//`level.drop(..., 'tomb')` notes ride onto the scene heap, and both seams
+	//leave tomb entries alone. Skeletons/remains never spawn and
+	//`ShatteredPot` ground items are unmodelled, so `destroyPot` stays
+	//triggerless (rowed in rows-items row 44).
+	assert.ok(/item\.note\?\.split\(','\)\.includes\('tomb'\)[\s\S]{0,300}\.tomb = true/.test(scene),
+		'the tomb note lands on the scene heap');
+	assert.ok(scene.includes('ground.chest !== undefined || ground.forSale || ground.tomb'),
+		'blast leaves tomb heaps');
+	assert.ok(scene.includes('entry.chest || entry.forSale || entry.tomb'),
+		'freeze leaves tomb heaps');
+	assert.ok(/heap\.tomb = item\.tomb;/.test(scene), 'tomb restores from the save');
+	const floor = readFileSync(new URL('../src/scenes/floorState.ts', import.meta.url), 'utf8');
+	assert.ok(floor.includes('tomb?: boolean'), 'tomb persists in the floor save');
+	const combat = readFileSync(new URL('../src/combat.ts', import.meta.url), 'utf8');
+	assert.ok(combat.includes('tomb?: boolean'), 'GroundItem carries the tomb flag');
+});
