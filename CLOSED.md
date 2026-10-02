@@ -4289,3 +4289,7 @@ Every family named in the section below is matrixed (55 matrices under `garbage/
 # R021. Ascension challenge hero speed
 
 - [x] **R021** _(Ascension challenge hero speed cap at 6+ stacks)_ **Simplified (2026-09-30):** `spendHeroTurn()` doubles inverse action cost with a 1x speed cap. Java interleaves independently scheduled actors; this port groups hero effect ticks before scheduled mob turns, so effect order can differ within the longer action. See `coverage/rows-hero-and-armor-abilities.md`.
+
+# R023. Key depth identity and sealed exits
+
+- [x] **R023** _(Key.depth/isSimilar() and heap/door presentation (tag v3.3.8): every key only counts toward the depth it was found on)_ **Closed 2026-10-01:** both halves ported. WornKey half: the Goo-floor sealed exit unseals through `bumpLockedExit` (a depth-matched `wornKey` is consumed, the paint becomes `UNLOCKED_EXIT` 22 with the stairs anchor moved onto it; without the key the bump refuses like a locked door), pinned in `test:simulation`. SkeletonKey half: the artifact is ported whole (`src/items/skeletonKey.ts` - charge/exp arithmetic, recharge curve, the full INSERT targeter tree including the LOCKED_EXIT refusal, the door-lock push-aside, the wall shape, and the KeyReplacementTracker excess rule), pinned in `test:skeletonkey`.
