@@ -42,7 +42,7 @@ assert.equal(gooChargeStep(2), false);
 	const context = {
 		hero: { x: 2, y: 1, hp: 20, maxHp: 20 }, inWater: () => false, strongerBosses: true,
 		stats: () => ({ accuracy: 10, damage: [1, 2] }), attack: () => assert.fail('pump roll must not attack'),
-		showHeal: () => {}, say: () => {}, foulBossChallenge: () => {},
+		showHeal: () => {}, say: () => {}, foulBossChallenge: () => {}, noteBossScore: () => {},
 		onChallengePump: () => challengePumpCosts++, random: { chance: () => true },
 		messages: { slam: 'slam', pump: 'pump', pumpMore: 'pump-more' },
 	};
@@ -72,7 +72,7 @@ assert.ok(!turn.includes('hp * 2 <='), 'no duplicated enrage gate remains in the
 		hero: { x: 2, y: 1, hp: 20, maxHp: 20 }, inWater: () => true, strongerBosses: true,
 		stats: () => ({ accuracy: 10, damage: [1, 2] }), attack: () => assert.fail('first pump turn must not attack'),
 		showHeal: (target, amount) => healed.push([target, amount]), onWaterHeal: (amount) => lockTime.push(amount),
-		say: (message) => messages.push(message), foulBossChallenge: () => {},
+		say: (message) => messages.push(message), foulBossChallenge: () => {}, noteBossScore: () => {},
 		random: { int: (min) => min, chance: () => true },
 		messages: { slam: 'slam', pump: 'pump', pumpMore: 'pump-more' },
 	});
@@ -90,5 +90,32 @@ assert.match(bossScene,
 assert.match(bossScene,
 	/onChallengePump: \(\) => \{[\s\S]*?pendingMonsterTurnCost = Math\.min\(3, Math\.max\(1, Math\.ceil\(this\.getAttackTurnCostMod\(\)\)\)\);/,
 	'Goo challenge pump maps Java gated spend through the scene scheduler');
+
+// Optional Java runtime trace: actual Goo.doAttack() calls with fixed Java RNG seeds exercise
+// the same enrage/pump predicates and challenge target used by takeGooTurn().
+if (process.argv[2]) {
+	const lines = readFileSync(process.argv[2], 'utf8').trim().split(/\r?\n/).map((line) => JSON.parse(line));
+	assert.equal(lines[0].tool, 'parityGooPhase-java');
+	assert.equal(lines.at(-1).cases, 64);
+	const rows = lines.filter((row) => row.kind === 'pump');
+	assert.equal(rows.length, 64);
+	for (const row of rows) {
+		const enraged = gooEnraged(row.hp, 400);
+		const bound = enraged ? 2 : 5;
+		assert.equal(row.bound, bound, `Java Random.Int bound at HP ${row.hp}`);
+		assert.ok(row.roll >= 0 && row.roll < bound, `Java roll is inside bound ${bound}`);
+		assert.equal(gooPumpChance(enraged), 1 / bound);
+		const startsPump = row.roll === 0;
+		assert.equal(row.pumped, startsPump ? gooPumpTarget(row.stronger) : 0,
+			`Java pump target at seed ${row.seed}, HP ${row.hp}, stronger=${row.stronger}`);
+		assert.equal(row.attackCalls, startsPump ? 0 : 1, 'only a failed pump roll calls the attack path');
+		assert.equal(row.pumpWarns, startsPump ? gooPumpTarget(row.stronger) : 0,
+			'Java warns at the charge distance selected by the challenge');
+		assert.equal(row.returned, startsPump, 'pump turn spends immediately; visible attack animation yields');
+		assert.ok(Math.abs(row.spent - (startsPump ? (row.stronger ? 3 : 1) : 0)) < 0.001,
+			'Java challenge pump uses the clamped one-to-three turn spend');
+	}
+	console.log('Java v3.3.8 Goo.doAttack trace: enrage, pump probability/target and challenge spend match');
+}
 
 console.log('goo phase seam: all checks pass');

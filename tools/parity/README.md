@@ -49,6 +49,8 @@ and the boss-bar bleeding flag against `dwarfKingPhase.ts` across eight live cas
 supplies a real `MobSprite` in a `Group`; the test double replaces camera placement and provides
 emitters/yell counting. It does not visually compare the emitter, audio, or boss-bar presentation.
 
+The `goo` stage invokes Java's actual `Goo.doAttack()` for 64 fixed-seed cases: HP 200/201 around the enrage boundary, normal and STRONGER_BOSSES, and seeds 0-15. It checks the Java `Random.Int(2|5)` bound/roll, resulting pump target, attack-animation call, and actor spend against `gooBoss.ts`. The sprite test double records animation requests and suppresses only rendering/emitter work; the stage does not compare the later pumped attack or Goo's water-heal path.
+
 ## How the Java half is made reproducible
 
 Nothing here modifies your SPD checkout. For each stage the runner:
