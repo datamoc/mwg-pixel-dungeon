@@ -49,7 +49,7 @@ and the boss-bar bleeding flag against `dwarfKingPhase.ts` across eight live cas
 supplies a real `MobSprite` in a `Group`; the test double replaces camera placement and provides
 emitters/yell counting. It does not visually compare the emitter, audio, or boss-bar presentation.
 
-The `goo` stage invokes Java's actual `Goo.doAttack()` for 64 fixed-seed cases: HP 200/201 around the enrage boundary, normal and STRONGER_BOSSES, and seeds 0-15. It checks the Java `Random.Int(2|5)` bound/roll, resulting pump target, attack-animation call, and actor spend against `gooBoss.ts`. The sprite test double records animation requests and suppresses only rendering/emitter work; the stage does not compare the later pumped attack or Goo's water-heal path.
+The `goo` stage invokes Java's actual `Goo.doAttack()` for 64 fixed-seed cases: HP 200/201 around the enrage boundary, normal and STRONGER_BOSSES, and seeds 0-15. It checks the Java `Random.Int(2|5)` bound/roll, resulting pump target, attack-animation call, and actor spend against `gooBoss.ts`. Thirty-two more seeded cases call actual `attackSkill()`/`damageRoll()` on a primed Goo, comparing double accuracy, triple damage range, pump reset, badge foul and score penalty. Four actual water `Goo.act()` cases cover capped healing, challenge increment timing, LockedFloor and boss-bar state. Sixteen seeds call actual `Goo.attackProc()` and compare the one-in-three Ooze attach and unchanged damage with the production predicate. The sprite test double suppresses only rendering/emitter work. The full generic `Char.attack()` hit/defense/death exchange and five-black-particle hit burst remain outside the trace.
 
 ## How the Java half is made reproducible
 

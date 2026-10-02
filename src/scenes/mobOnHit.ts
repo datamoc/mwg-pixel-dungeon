@@ -4,6 +4,7 @@ import { WATER } from '../dungeonConstants';
 import { capitalize, t } from '../i18n/index';
 import { BASE_KIND_ALIASES, type AnyMonsterId, type MonsterId } from '../monsters';
 import { STARVING } from '../simulation/hunger';
+import { gooAttackOozeProc } from '../simulation/gooBoss';
 import { shadowCloneArmorProc } from '../simulation/rogueAbilities';
 import type { Step } from '../simulation/combatState';
 import { lethalDefenseShield } from '../talentEffects';
@@ -261,9 +262,10 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	}
 	//`Goo.attackProc()` (`Goo.java`, tag `v3.3.8`): a third of landed hits
 	//afflict Ooze for its full duration - the same `addBuff` the FetidRat
-	//branch just above uses. The burst is presentation-only; the death-by-ooze
-	//badge has no bucket here (see the death-badge note), so only the buff lands.
-	if (attacker.kind === 'goo' && Random.int(3) === 0) {
+	//branch just above uses. Java also emits five black sprite particles; this
+	//port has no Goo sprite burst adapter, so it keeps the visible status log and buff.
+	//The death-by-ooze badge also has no bucket here (see the death-badge note).
+	if (attacker.kind === 'goo' && gooAttackOozeProc(Random.int(3))) {
 		addBuff(defender, 'ooze');
 		ctx.say(t(defender.isHero ? 'port.log.oozedhero' : 'port.log.oozed', { who: capitalize(defender.name) }), 'negative');
 	}

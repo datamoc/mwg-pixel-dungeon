@@ -3,6 +3,12 @@ import type { SimulationRandom } from './random';
 
 export interface GooBossStats { accuracy: number; damage: [number, number] }
 
+/** `Goo.attackProc()` (`Goo.java`, tag `v3.3.8`) rolls `Random.Int(3) == 0`
+ * after the shared attack proc chain and applies Ooze to one third of landed hits. */
+export function gooAttackOozeProc(roll: number): boolean {
+	return roll === 0;
+}
+
 export interface GooBossContext {
 	readonly hero: Creature;
 	readonly inWater: (x: number, y: number) => boolean;

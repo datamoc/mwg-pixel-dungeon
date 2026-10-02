@@ -15,7 +15,7 @@
  *   node tools/parity/run-parity.mjs --stage blacksmith  Blacksmith spawn gate + type + reward rolls per (seed, depth), Java v3.3.8 vs TS
  *   node tools/parity/run-parity.mjs --stage tengu       Tengu.damage() bracket clamp, deferred jump + phase-1 edge, Java v3.3.8 vs TS
  *   node tools/parity/run-parity.mjs --stage king        DwarfKing.damage() phase-2 clamp + phase-3 low-HP edge, Java v3.3.8 vs TS
- *   node tools/parity/run-parity.mjs --stage goo         Goo.doAttack() pump/enrage branches, Java v3.3.8 vs TS
+ *   node tools/parity/run-parity.mjs --stage goo         Goo pump, slam damage, water heal and attackProc, Java v3.3.8 vs TS
  *   options: --spd <SPD checkout>   (default $SPD_CHECKOUT or ~/dev/shattered-pixel-dungeon; a git repo with the tags/commits)
  *            --work <dir>           scratch dir for the Java trees (default <os tmp>/mwg-parity; reused between runs)
  *            --combat-ref v3.3.8    Java ref for the combat oracle
@@ -352,7 +352,7 @@ function kingStage() {
 
 /** B3, Goo: real v3.3.8 doAttack() pump chance/enrage/target branches vs production predicates. */
 function gooStage() {
-	console.log(`\n== goo: Java ${combatRef} Goo.doAttack() pump branches vs production TypeScript ==`);
+	console.log(`\n== goo: Java ${combatRef} Goo pump, heal and attackProc traces vs production TypeScript ==`);
 	const dir = join(work, `spd-${combatRef}`);
 	exportTree(dir, combatRef);
 	installHarness(dir, { goo: true });
@@ -363,7 +363,7 @@ function gooStage() {
 	if (!existsSync(javaOut) || readFileSync(javaOut, 'utf8').trim().length === 0) { gate('Goo Java dump produced', false, g.out.slice(-2500)); return; }
 	const r = run(process.execPath, [join(ROOT, 'tools', 'verifyGooPhase.mjs'), javaOut]);
 	console.log(r.out.trim());
-	gate('Goo actual Java pump/enrage branches match the production seam', r.status === 0, `report: ${javaOut}`);
+	gate('Goo actual Java pump/heal/slam/Ooze branches match the production seams', r.status === 0, `report: ${javaOut}`);
 }
 
 function levelgenStage() {
