@@ -85,11 +85,13 @@ function standardRoomChances(depth: number): number[] {
 }
 
 /**
- * `RegularLevel.initRooms()`. `EntranceRoom`/`ExitRoom` both extend `StandardRoom` in Java, so
- * `new EntranceRoom()`/`new ExitRoom()` each burn one auto sizeCat roll via the same instance
- * initializer `StandardRoom.createRoom()`'s constructions do - and Java constructs them (the very
- * first two lines of `initRooms()`) *before* `standardRooms()`'s own `Random.chances()` count
- * roll. An earlier version of this function took `standards`/`specials` as pre-computed
+ * `RegularLevel.initRooms()`. `EntranceRoom`/`ExitRoom` both extend `StandardRoom` in Java. Their
+ * `createEntrance()`/`createExit()` methods first roll a concrete room subclass, then construction
+ * burns an auto sizeCat roll. This port uses generic entrance/exit rooms, so it omits that first
+ * subclass-selection draw and burns only the sizeCat draw; the resulting room graph and later RNG
+ * sequence can differ from Java. Java constructs them (the very first two lines of `initRooms()`)
+ * before `standardRooms()`'s own `Random.chances()` count roll. An earlier version of this function
+ * took `standards`/`specials` as pre-computed
  * parameters, which meant the caller had already rolled those counts before entrance/exit were
  * ever constructed - a real ordering bug found via the Phase 2 Java-fixture comparison, alongside
  * the builder-before-counts bug this function's caller (`buildRoomGraph`) already documents.
