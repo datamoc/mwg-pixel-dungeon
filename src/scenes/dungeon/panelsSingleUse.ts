@@ -1018,6 +1018,9 @@ export const panelsSingleUseMethods = {
 		//RingOfHaste.speedMultiplier(): a higher Char.speed() means less time per action in
 		//real Java; this port's turn-cost multiplier expresses the same relationship inverted.
 		mod /= ringHasteMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
+		//`Momentum.speedMultiplier()` applies to every hero action while freerunning,
+		//and to invisible SPEEDY_STEALTH rank 3 exactly as Java's Hero.speed() does.
+		mod /= this.momentumSpeedFactor();
 		return mod;
 	},
 
