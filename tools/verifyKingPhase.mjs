@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
@@ -41,5 +41,37 @@ for (const name of ['kingPhase2Entry', 'kingPhase2Threshold', 'kingPhase3Entry',
 	assert.ok(table.includes(name), `kingPhaseRules delegates to ${name}`);
 }
 assert.ok(!table.includes('? 100 : 50'), 'no duplicated threshold ternary remains in the table');
+
+// Optional live trace from the project-authored Java harness, invoking the real v3.3.8
+// DwarfKing.damage() under a small GDX launcher and checking the same production predicates.
+if (process.argv[2]) {
+	const javaFile = process.argv[2];
+	assert.ok(existsSync(javaFile), `Java trace exists: ${javaFile}`);
+	const lines = readFileSync(javaFile, 'utf8').trim().split(/\r?\n/).map((line) => JSON.parse(line));
+	assert.equal(lines[0].tool, 'parityDwarfKingPhase-java');
+	const summary = lines.at(-1);
+	assert.equal(summary.phaseTwoCases, 6);
+	assert.equal(summary.phaseThreeCases, 1);
+	const phaseTwo = lines.filter((row) => row.kind === 'phase2');
+	assert.equal(phaseTwo.length, 6);
+	for (const row of phaseTwo) {
+		const afterDamage = row.preHp - row.damage;
+		const enters = kingPhase2Entry(1, afterDamage, row.stronger);
+		assert.equal(row.phase, enters ? 2 : 1, `Java P1->P2 phase at ${row.preHp}-${row.damage}, stronger=${row.stronger}`);
+		assert.equal(row.hp, enters ? kingPhase2Threshold(row.stronger) : afterDamage,
+			`Java HP clamp at ${row.preHp}-${row.damage}, stronger=${row.stronger}`);
+		if (enters) {
+			assert.equal(row.summonsMade, 0, 'phase 2 resets summonsMade');
+			assert.equal(row.shield, 400, 'phase 2 grants a full-HT barrier');
+		}
+	}
+	const phaseThree = lines.find((row) => row.kind === 'phase3');
+	assert.ok(phaseThree, 'Java P3 edge trace exists');
+	assert.equal(phaseThree.hp, 19);
+	assert.equal(phaseThree.phase, 3);
+	assert.equal(kingLosingYell(phaseThree.hp), true);
+	assert.equal(phaseThree.losingYells, 1, 'Java emits the losing yell on the crossing below 20 HP');
+	console.log('Java v3.3.8 DwarfKing damage trace: phase thresholds/clamps and P3 low-HP edge match');
+}
 
 console.log('king phase seam: all checks pass');

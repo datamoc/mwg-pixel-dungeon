@@ -14,6 +14,7 @@
  *   node tools/parity/run-parity.mjs --stage imp         Imp spawn gate + alternative flag + reward ring per seed, checkout oracle + S6 deck backport vs TS
  *   node tools/parity/run-parity.mjs --stage blacksmith  Blacksmith spawn gate + type + reward rolls per (seed, depth), Java v3.3.8 vs TS
  *   node tools/parity/run-parity.mjs --stage tengu       Tengu.damage() bracket clamp, deferred jump + phase-1 edge, Java v3.3.8 vs TS
+ *   node tools/parity/run-parity.mjs --stage king        DwarfKing.damage() phase-2 clamp + phase-3 low-HP edge, Java v3.3.8 vs TS
  *   options: --spd <SPD checkout>   (default $SPD_CHECKOUT or ~/dev/shattered-pixel-dungeon; a git repo with the tags/commits)
  *            --work <dir>           scratch dir for the Java trees (default <os tmp>/mwg-parity; reused between runs)
  *            --combat-ref v3.3.8    Java ref for the combat oracle
@@ -80,7 +81,7 @@ function exportTree(dir, ref) {
 }
 
 /** Copies our harness classes in, inserts the trace hook into Random.java and makes sure the Gradle tasks exist. */
-function installHarness(dir, { combat, levelgen, loot, mobdata, ghost, imp, blacksmith, wandmaker, tengu }) {
+function installHarness(dir, { combat, levelgen, loot, mobdata, ghost, imp, blacksmith, wandmaker, tengu, king }) {
 	const put = (name, rel) => { mkdirSync(dirname(join(dir, rel)), { recursive: true }); copyFileSync(join(JAVA_SRC, name), join(dir, rel)); };
 	if (combat) { put('CombatHarness.java', `${CORE}/actors/mobs/CombatHarness.java`); put('CombatHarnessLauncher.java', `${DESKTOP}/CombatHarnessLauncher.java`); }
 	if (levelgen) { put('LevelGenHarness.java', `${CORE}/levels/LevelGenHarness.java`); put('LevelGenHarnessLauncher.java', `${DESKTOP}/LevelGenHarnessLauncher.java`); }
@@ -91,6 +92,7 @@ function installHarness(dir, { combat, levelgen, loot, mobdata, ghost, imp, blac
 	if (blacksmith) { put('BlacksmithRewardHarness.java', `${CORE}/actors/mobs/npcs/BlacksmithRewardHarness.java`); put('BlacksmithRewardHarnessLauncher.java', `${DESKTOP}/BlacksmithRewardHarnessLauncher.java`); }
 	if (wandmaker) { put('WandmakerSpawnHarness.java', `${CORE}/actors/mobs/npcs/WandmakerSpawnHarness.java`); put('WandmakerSpawnHarnessLauncher.java', `${DESKTOP}/WandmakerSpawnHarnessLauncher.java`); }
 	if (tengu) { put('TenguDamageHarness.java', `${CORE}/actors/mobs/TenguDamageHarness.java`); put('TenguDamageHarnessLauncher.java', `${DESKTOP}/TenguDamageHarnessLauncher.java`); }
+	if (king) { put('DwarfKingPhaseHarness.java', `${CORE}/actors/mobs/DwarfKingPhaseHarness.java`); put('DwarfKingPhaseHarnessLauncher.java', `${DESKTOP}/DwarfKingPhaseHarnessLauncher.java`); }
 
 	const randomFile = join(dir, 'SPD-classes/src/main/java/com/watabou/utils/Random.java');
 	let random = readFileSync(randomFile, 'utf8');
@@ -117,6 +119,7 @@ function installHarness(dir, { combat, levelgen, loot, mobdata, ghost, imp, blac
 	if (blacksmith && !gradle.includes("'runBlacksmithReward'")) gradle += task('runBlacksmithReward', 'BlacksmithRewardHarnessLauncher');
 	if (wandmaker && !gradle.includes("'runWandmakerSpawn'")) gradle += task('runWandmakerSpawn', 'WandmakerSpawnHarnessLauncher');
 	if (tengu && !gradle.includes("'runTenguDamage'")) gradle += task('runTenguDamage', 'TenguDamageHarnessLauncher');
+	if (king && !gradle.includes("'runDwarfKingPhase'")) gradle += task('runDwarfKingPhase', 'DwarfKingPhaseHarnessLauncher');
 	writeFileSync(gradleFile, gradle);
 }
 
@@ -328,6 +331,22 @@ function tenguStage() {
 	gate('tengu: actual Java damage clamp, jump scheduling and phase-1 threshold match the production seam', r.status === 0, `report: ${javaOut}`);
 }
 
+/** B3, Dwarf King: actual v3.3.8 phase-2 HP clamp (including STRONGER_BOSSES) and phase-3 low-HP edge. */
+function kingStage() {
+	console.log(`\n== king: Java ${combatRef} DwarfKing.damage() phase branches vs production TypeScript ==`);
+	const dir = join(work, `spd-${combatRef}`);
+	exportTree(dir, combatRef);
+	installHarness(dir, { king: true });
+	const outDir = join(work, 'king'); mkdirSync(outDir, { recursive: true });
+	const javaOut = join(outDir, 'dwarf_king_phase_java_out.txt');
+	rmSync(javaOut, { force: true });
+	const g = gradle(dir, 'runDwarfKingPhase', { DWARF_KING_PHASE_OUT: javaOut });
+	if (!existsSync(javaOut) || readFileSync(javaOut, 'utf8').trim().length === 0) { gate('Dwarf King Java dump produced', false, g.out.slice(-2500)); return; }
+	const r = run(process.execPath, [join(ROOT, 'tools', 'verifyKingPhase.mjs'), javaOut]);
+	console.log(r.out.trim());
+	gate('Dwarf King Java phase-2 clamps and phase-3 low-HP edge match the production seam', r.status === 0, `report: ${javaOut}`);
+}
+
 function levelgenStage() {
 
 	console.log(`\n== levelgen: floor-generation RNG draws, oracle ${prebuiltLevelgenTree ? prebuiltLevelgenTree : levelgenRef} vs this port (depths 3-9, 4 seeds) ==`);
@@ -367,6 +386,7 @@ try {
 	if (stage === 'all' || stage === 'imp') impStage();
 	if (stage === 'all' || stage === 'blacksmith') blacksmithStage();
 	if (stage === 'all' || stage === 'tengu') tenguStage();
+	if (stage === 'all' || stage === 'king') kingStage();
 	if (stage === 'all' || stage === 'levelgen') levelgenStage();
 } catch (e) {
 	gate('runner', false, e.message);

@@ -41,6 +41,13 @@ The `tengu` stage calls Java's actual `Tengu.damage()` for 102 HP-bracket cases 
 phase-edge cases (360 compared fields total). The phase fixture's `PrisonBossLevel` subclass records the real
 override's `progress()` call and switches to FIGHT_PAUSE; it does not run arena map/layout presentation.
 
+The `king` stage calls Java's actual `DwarfKing.damage()` for six phase-2 threshold/clamp cases
+(normal and STRONGER_BOSSES) and one phase-3 crossing below 20 HP through Java's own
+`Viscosity.DeferedDamage`. It compares HP, phase, summon counter, full-HT barrier and the losing
+yell against `dwarfKingPhase.ts`. The launcher supplies a real `MobSprite` in a `Group`; the test
+double suppresses only camera placement and counts the yell. The phase-2-to-phase-3 presentation
+branch is not exercised by this stage.
+
 ## How the Java half is made reproducible
 
 Nothing here modifies your SPD checkout. For each stage the runner:
