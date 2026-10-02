@@ -73,6 +73,10 @@ export function placeGroundItems(context: GroundPlacementContext): number {
 	}
 	//`RegularLevel.createItems()` (`RegularLevel.java:474-489`, tag `v3.3.8`) drops one
 	//Torch under DARKNESS and a second on LARGE floors, after ordinary generated heaps.
+	//Generic floors now retain LARGE through `genericLargeFeeling` (a dedicated depth-seeded
+	//Int(14) draw, `spdRng.ts`) - the torch loop above and the mob-count ceiling read it -
+	//while candidate-cell selection stays on the live RNG with the room-list filter below,
+	//and the separate pushed seed stream is still not reproduced.
 	//The Java path uses its own pushed RNG seeded from the level stream; this adapter
 	//uses the live RNG for candidate selection because the framework scene has no Java
 	//Random generator stack. It preserves the item count and eligible-cell constraints.

@@ -22,7 +22,7 @@ import { startTransmutationPick } from '../../items/transmutation';
 import { RING_DEFS } from '../../items/ringModifiers';
 import { CLASS_KEYS, RING_KEYS, WAND_KEYS, capitalize, has, language, t } from '../../i18n/index';
 import { SPD_STATUS_COLOR } from '../../ui/spdTheme';
-import { SpdRandom } from '../../spdRng';
+import { SpdRandom, genericLargeFeeling } from '../../spdRng';
 import { vaultCenterVisualFrames, vaultCenterWallFrames, vaultFloorFrames } from '../../spdLevelGen/vaultVisuals';
 import { buybackPrice, getShopPrice } from '../../items/shopPricing';
 import { Terrain } from '../../spdLevelGen/paintLevel';
@@ -328,7 +328,7 @@ export const npcShopBlacksmithMethods = {
 		const population = planMonsterPopulation(
 			this.depth,
 			mobRosterForDepth(this.depth),
-			this.portedFloorActive && this.portedPaint?.feeling === 4,
+			(this.portedFloorActive && this.portedPaint?.feeling === 4) || genericLargeFeeling(this.runSeedLong, this.depth),
 			simulationRandom,
 			simulationRoguelike,
 		);
@@ -1492,7 +1492,7 @@ export const npcShopBlacksmithMethods = {
 		this.upgradeScrollDrops = placeGeneratedGroundItems({
 			depth: this.depth,
 			isBossDepth: this.depth in BOSSES,
-			largeFeeling: this.portedPaint?.feeling === 4,
+			largeFeeling: (this.portedPaint?.feeling === 4) || genericLargeFeeling(this.runSeedLong, this.depth),
 			darknessChallenge: isChallengeEnabled('darkness'),
 			upgradeScrollDrops: this.upgradeScrollDrops,
 			noScrolls: isChallengeEnabled('no_scrolls'),
@@ -1516,8 +1516,9 @@ export const npcShopBlacksmithMethods = {
 					this.level.set(x, y, GRASS);
 					if (this.portedPaint?.map[cell] === Terrain.HIGH_GRASS) this.portedPaint.map[cell] = Terrain.GRASS;
 				}
-				//Only the ported painter exposes the Java Feeling enum. The generic floor
-				//fallback has no LARGE state, so it receives the standard single Torch.
+				//Only the ported painter exposes the full Java Feeling enum. Generic floors
+				//retain LARGE through `genericLargeFeeling` (the `largeFeeling` flag above),
+				//so a LARGE generic floor drops the second Torch; other feelings stay unmodeled.
 				this.furrowedGrass.delete(cell);
 			},
 			canPlaceKey: (x, y) => this.level.passable(x, y) && !this.creatureAt(x, y)

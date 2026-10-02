@@ -73,6 +73,20 @@ export function spdSeedForDepth(seed: bigint, depth: number, branch: number = 0)
 }
 
 /**
+ * Java `Level`'s feeling roll for floors this port generates itself: past depth 1,
+ * `Random.Int(14)` picks one of the seven feelings at ~7.1% each, so LARGE (`case 4`,
+ * `Level.java`, tag `v3.3.8`) lands on `=== 4`. Only LARGE is retained - the port
+ * consumes no other feeling (DARK view distance, GRASS growth and the rest are separate
+ * unmodeled systems) - drawn from a dedicated depth-seeded generator (branch 7, a fresh
+ * object per call) so the levelgen parity streams never shift and revisits re-roll the
+ * same value with no save field.
+ */
+export function genericLargeFeeling(runSeed: bigint, depth: number): boolean {
+	if (depth <= 1) return false;
+	return new SpdJavaRandom(spdSeedForDepth(runSeed, depth, 7)).nextInt(14) === 4;
+}
+
+/**
  * `Random.java`'s stack of generators (`Level.create()` pushes a *second*, distinct generator
  * seeded from `seedForDepth()`'s result - scrambled again via `pushGenerator(long)` - on top of
  * whatever generator is already current; `createItems()` later pushes a third, substream
