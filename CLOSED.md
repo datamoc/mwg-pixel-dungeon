@@ -4297,3 +4297,7 @@ Every family named in the section below is matrixed (55 matrices under `garbage/
 # R027. DeathMark dead-branch audit
 
 - [x] **R027** _(Combat rolls/damage/status/turn-timing verification)_ **Closed 2026-09-30 (stale residual):** the only listed behavior, `DeathMark.processFearTheReaper`, runs in Java's dead-but-still-alive post-zero-HP branch, which is unreachable in the port's death model. The correction is recorded in the DeathMark coverage row.
+
+# R031. Warrior seal glyph transfer
+
+- [x] **R031** _(Armor.doEquip() seal transfer with BrokenSeal glyph, tag v3.3.8)_ **Ported (2026-10-01):** reforge preserves an attached glyph on the dropped BrokenSeal; using a curse-glyph seal on cursed armor is allowed and inscribes it; the outgoing seal glyph gates Warrior transfer to cursed armor. Typecheck, build and item workflow suite pass; the new reforge/use/transfer paths were live-verified in Chrome on the built game with no console errors. The distinct Runic Transference glyph-choice flow remains outside this item. See `coverage/rows-items-equipment-and-artifacts.md`.
