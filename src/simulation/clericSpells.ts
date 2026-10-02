@@ -470,14 +470,6 @@ export const HALLOWED_GROUND_TICK = 1;
 /** `HallowedGround`'s opening root on grounded enemies: `Roots` 2. */
 export const HALLOWED_GROUND_ROOTS_TURNS = 2;
 
-/**
- * `HallowedTerrain.evolve()`'s grass roll (tag `v3.3.8`): each grass cell upgrades
- * on `1-in-(10+10*points)` (tall grass, or furrowed past the tracker's 100).
- */
-export function hallowedGrassChance(talentRank: number): number {
-	return 10 + 10 * Math.max(0, Math.min(3, talentRank));
-}
-
 /** `HallowedGround.HallowedFurrowTracker`'s furrow threshold (tag `v3.3.8`): 100. */
 export const HALLOWED_FURROW_COUNT = 100;
 
