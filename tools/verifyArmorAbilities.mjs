@@ -726,7 +726,8 @@ export function verifyArmorAbilities(require, check) {
 		assert.match(scene, /const returningFast = \(returningLightAlly \|\| returningShadowClone \|\| returningGhost\) && heroDistance > 1;/, 'LightAlly, ShadowClone and GhostHero double return speed only beyond adjacency');
 		//PERFECT_COPY's free place-swap: pure range helper, scene method, bump wiring.
 		assert.match(scene, /tryShadowCloneSwap\(this: DungeonScene, ally: Creature\): boolean \{/, 'ShadowAlly.interact(PERFECT_COPY) is a dedicated scene seam');
-		assert.match(scene, /if \(occupant!\.isAlly && !occupant!\.isNPC && this\.tryShadowCloneSwap\(occupant!\)\) return;/, 'the ally bump tries ShadowAlly.interact before ALLY_WARP');
+		assert.match(scene, /if \(occupant!\.isAlly && !occupant!\.isNPC && this\.tryShadowCloneSwap\(occupant!\)\) \{\s*this\.finishFreeHeroAction\(\);\s*return;\s*\}\s*if \(occupant!\.isAlly && !occupant!\.isNPC && this\.tryAllyWarp\(occupant!\)\)/,
+			'the ally bump tries ShadowAlly.interact before ALLY_WARP and re-readies after the free swap');
 		assert.match(scene, /if \(!this\.level\.passable\(ally\.x, ally\.y\) && this\.hero\.buffs\['levitation'\] === undefined\) return true;/, 'Java refuses the swap on an impassable clone cell while the hero is not flying');
 		assert.match(scene, /if \(\(reach\[this\.level\.index\(ally\.x, ally\.y\)\] \?\? -1\) < 0\) return true;/, 'Java refuses the swap when the pathfinder cannot reach the clone');
 		//`Hero.handle`'s ranged Interact: a FOV ally click runs tryShadowCloneSwap before travel.
