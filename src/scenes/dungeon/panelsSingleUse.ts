@@ -67,9 +67,9 @@ import { useStoneById as routeStoneAction, type StoneActionContext } from '../..
 import { setWandmakerQuestType, setWandmakerQuestWands, wandmakerQuestType } from '../../spdLevelGen/wandmaker';
 import { WATER } from '../../dungeonConstants';
 import { BUFF_DURATION, absorbShield, addBuff, doomDamage, setAnnounceBuff, setAttachBacklash, setBuffDurationModifier, type BuffId, type Creature, type GroundItem, type Step } from '../../combat';
-import { scoreStateFor } from '../../rankings';
 import { BOSSES } from '../../monsters';
 import { APPEARANCE_TABLES, AUGMENT_OPTIONS, BLACKSMITH_QUEST, IMP_QUEST, SAD_GHOST_QUEST, SPD_LEVEL_CURVE, SUBCLASS_OPTIONS, SUBCLASS_TRACK, WANDMAKER_QUEST } from './shared';
+import { addBossScore, scoreStateFor } from '../../rankings';
 
 /**
  * Java's `RemainsItem` subclasses (`items/remains/`, tag `v3.3.8`) whose presence in
@@ -1810,7 +1810,12 @@ export const panelsSingleUseMethods = {
 			kingDamageHook: (target) => this.kingDamageHook(target),
 			tenguBracketJump: (target, previousHp) => this.tenguBracketJump(target, previousHp),
 			onNonWeaponBossDamage: (target) => this.disqualifyBossChallenge(target),
-		onTenguBombHeroHit: () => this.foulBossChallenge(),
+		//`BombAbility.act()`: presence in Tengu's blast both fouls the bosses challenge
+		//and scores -100, outside the `dmg > 0` guard (`Tengu.java`, tag `v3.3.8`).
+		onTenguBombHeroHit: () => {
+			this.foulBossChallenge();
+			addBossScore(this, 1, -100);
+		},
 		};
 	},
 

@@ -11,6 +11,7 @@ import { aimYogDeathGaze, fistHalfHpCrossed, yogPhase4Floor, yogPhaseAdvance, yo
 import { preparationLevel } from '../../../simulation/preparation';
 import { isOpenSpace } from '../../../simulation/crystalSpire';
 import { CLASS_KEYS, has, t, titleCase } from '../../../i18n/index';
+import { addBossScore } from '../../../rankings';
 import { bountyHunterDropBonus, rejuvenatingStepHeal } from '../../../talentEffects';
 import { SpdRandom, spdSeedForDepth } from '../../../spdRng';
 import { CAVES_BOSS_ARENA, CITY_BOTTOM_DOOR, CITY_THRONE, CITY_TOP_DOOR, HALLS_EXIT_CELL } from '../../../spdLevelGen/bossLevels';
@@ -113,7 +114,12 @@ export const bossLogicMethods = {
 		if (!occupant || occupant === tengu || occupant.hp <= 0) return;
 		//Java fouls the hero on the cone cell even when fire-immune (the foul sits
 		//outside the `!isImmune(Fire)` burn guard), so foul before the immunity return.
-		if (occupant.isHero) this.foulBossChallenge();
+		if (occupant.isHero) {
+			//Java pairs the badge foul with `Statistics.bossScores[1] -= 100` when the hero
+			//takes the cone fire (`Tengu.java` FireAbility blob, tag `v3.3.8`).
+			this.foulBossChallenge();
+			addBossScore(this, 1, -100);
+		}
 		if (occupant.fireImmune || occupant.buffs.blobImmunity !== undefined) return;
 		reigniteBuff(occupant, 'burning');
 	},
@@ -169,8 +175,12 @@ export const bossLogicMethods = {
 			//absorb / mob Doom + curves + shields, floater). `deferKill` keeps the tail `kill` below.
 			this.applyCharacterDamage(target, raw, { pierceArmor: true, cause: 'foe', skipAura: true, magical: true, deferKill: true });
 //`ShockerAbility`'s pulse fouls the bosses challenge when it strikes the
-				//hero (`Tengu.java`, tag `v3.3.8`).
-				if (target.isHero) this.foulBossChallenge();
+				//hero, with `Statistics.bossScores[1] -= 100` beside it (`Tengu.java`,
+				//tag `v3.3.8`).
+				if (target.isHero) {
+					this.foulBossChallenge();
+					addBossScore(this, 1, -100);
+				}
 				if (target.hp <= 0) this.kill(target);
 			}
 			if (shocker.turns < 3) remaining.push(shocker);
@@ -458,7 +468,15 @@ export const bossLogicMethods = {
 			//tail `kill` (and its `trap`/`foe` cause split) below, so the hero cannot die twice.
 			const hpBefore = target.hp;
 			this.applyCharacterDamage(target, damage, { pierceArmor: true, cause: target.isHero ? 'trap' : 'foe', skipAura: true, deferKill: true });
-			if (target.isHero) this.say(t('port.log.affliction', { damage: hpBefore - target.hp }), 'negative');
+			if (target.isHero) {
+				//`CavesBossLevel.PylonEnergy.evolve()`: the hero half fouls the bosses
+				//challenge (the field runs off active pylons - Java's `energySourceSprite
+				//instanceof PylonSprite` supercharged window) and scores -200
+				//(`CavesBossLevel.java`, tag `v3.3.8`).
+				this.foulBossChallenge();
+				addBossScore(this, 2, -200);
+				this.say(t('port.log.affliction', { damage: hpBefore - target.hp }), 'negative');
+			}
 			if (target.hp <= 0) {
 				this.kill(target, target.isHero ? 'trap' : 'foe');
 				if (target.isHero) return true;
@@ -1149,6 +1167,9 @@ if (monster.hp <= 0) {
 		}
 		this.say(t('port.log.yogbeam'), 'warning');
 		for (const target of affected) {
+			//`YogDzewa.act()`: a hero caught in the beam's path scores -500 the moment
+			//it is caught, before the hit roll (`YogDzewa.java`, tag `v3.3.8`).
+			if (target.isHero) addBossScore(this, 4, -500);
 			if (!rollHit(yog, target, true)) continue;
 			//No armor: `YogDzewa`'s beam calls `ch.damage(Random.NormalIntRange(20, 30), new
 			//Eye.DeathGaze())` directly (30-50 under Stronger Bosses), and `Char.damage()`
@@ -1454,6 +1475,9 @@ if (monster.hp <= 0) {
 			showHeal: (target, amount) => { if (this.fov.isVisible(target.x, target.y)) this.showHeal(target, amount); },
 			say: (message, level) => this.say(message, level),
 			foulBossChallenge: () => this.foulBossChallenge(),
+			//`Goo.java`'s two `bossScores[0] -= 100` pump sites net one write per slam
+			//(tag `v3.3.8`) - see `GooBossContext.noteBossScore`.
+			noteBossScore: (delta) => addBossScore(this, 0, delta),
 			onWaterHeal: (healInc) => this.lockedFloorGooHeal(healInc),
 			onChallengePump: () => {
 				//`Goo.doAttack()` (`Goo.java:210-213`, tag `v3.3.8`) spends

@@ -1304,12 +1304,15 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		const goo = { x: 3, y: 4, hp: 100, maxHp: 100, pumped: 0 };
 		const attacks = [];
 		const messages = [];
+		const scores = [];
 		const gooContext = {
 			hero, inWater: () => false, strongerBosses: false,
 			stats: () => ({ accuracy: 10, damage: [2, 4] }),
 			attack: (attacker, defender) => attacks.push({ attacker, defender }),
 			showHeal: () => assert.fail('dry Goo must not heal'), say: (message) => messages.push(message), random,
 			foulBossChallenge: () => { fouled++; },
+			//R015: the pumped slam pairs its badge foul with `bossScores[0] -= 100` (Goo.java).
+			noteBossScore: (delta) => { scores.push(delta); },
 			messages: { slam: 'slam', pump: 'pump', pumpMore: 'pump-more' },
 		};
 		let fouled = 0;
@@ -1319,8 +1322,9 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.deepEqual(attacks[0].attacker.damage, [6, 12]);
 		assert.equal(attacks[0].attacker.accuracy, 20);
 		assert.deepEqual(messages, ['pump', 'pump-more', 'slam']);
-		//The pumped slam fouls the bosses challenge exactly once per slam.
+		//The pumped slam fouls the bosses challenge exactly once per slam, and scores once.
 		assert.equal(fouled, 1);
+		assert.deepEqual(scores, [-100]);
 		assert.deepEqual(planRatKingWave(0, 300, false, random), { adds: ['ghoul'], nextSummonsMade: 1, announcement: 'wave_1', arrivalDelay: 3, cadence: 3 });
 		assert.deepEqual(ratKingP1Summon(8, true, random), 'golem');
 		assert.deepEqual(planRatKingWave(12, 150, true, random), { adds: ['warlock', 'monk', 'ghoul', 'ghoul'], nextSummonsMade: 16, announcement: 'wave_3', arrivalDelay: 3, cadence: 3 });

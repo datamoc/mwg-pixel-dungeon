@@ -53,6 +53,7 @@ import { ETERNAL_FIRE_BURN, wardTexture, type BonesShape } from './shared';
 import { spawnTrapSpecks } from '../../ui/effectBursts';
 import { nonSolidDistanceMap } from '../../simulation/trapAreas';
 import { tenguDartPoisonAmount } from '../../simulation/tenguDart';
+import { addBossScore } from '../../rankings';
 
 /** Java traps flood cells where `!level.solid`; this floor model exposes passability plus pit identity. */
 function trapAreaDistances(scene: DungeonScene, x: number, y: number, maxDistance: number): number[] {
@@ -744,8 +745,16 @@ export const environmentFireTrapsMethods = {
 			//authored cell when valid; otherwise use the normal valid-cell chooser.
 			const validCell = this.level.inside(item.x, item.y) && this.level.passable(item.x, item.y)
 				&& !(this.hasStairs && this.stairs.x === item.x && this.stairs.y === item.y);
-			if (validCell) this.spawnGroundItem(kind, item.x, item.y, payload, chest, item.note?.includes('forSale'));
-			else this.placeQueuedPortedItem(item.kind, floor.rooms, payload);
+			if (validCell) {
+				this.spawnGroundItem(kind, item.x, item.y, payload, chest, item.note?.includes('forSale'));
+				//`CrystalChoiceRoom`: the choice chest carries Java's `Heap.autoExplored = true`
+				//(`CrystalChoiceRoom.java:130`, tag `v3.3.8`) through its `chest,autoExplored`
+				//note, so it never counts against the floor's exploration score.
+				if (item.note?.includes('autoExplored')) {
+					const heap = this.groundItemAt(item.x, item.y);
+					if (heap) heap.autoExplored = true;
+				}
+			} else this.placeQueuedPortedItem(item.kind, floor.rooms, payload);
 		}
 		// Java's RegularLevel places Level.itemsToSpawn after ordinary room drops using a valid
 		// StandardRoom cell. The generator bridge preserves the queue; consume it here so crystal
@@ -1519,6 +1528,13 @@ export const environmentFireTrapsMethods = {
 			this.applyCharacterDamage(this.hero, damage, { pierceArmor: true, cause: 'trap', skipAura: true, deferKill: true });
 			damage = dartBefore - this.hero.hp;
 			this.say(t('port.log.trap.poisondart', { damage }), 'negative');
+			//`PoisonDartTrap.activate()`: at the Tengu fight (Java's own `Dungeon.depth == 10`
+			//gate) a dart striking the hero fouls the bosses challenge and scores -100
+			//(`PoisonDartTrap.java`, tag `v3.3.8`).
+			if (this.depth === 10) {
+				this.foulBossChallenge();
+				addBossScore(this, 1, -100);
+			}
 			addBuff(this.hero, 'poison');
 			const poisonAmount = kind === 'tenguDart'
 				? tenguDartPoisonAmount(isChallengeEnabled('stronger_bosses'))

@@ -3,7 +3,9 @@
 // held-item value, cap 20,000), exploration (each floor's fraction times floors x 50),
 // the positive boss/quest sums - with the CorpseDust `questScores[1] = 2000` override -
 // times the win multiplier (1, 2 on a win, 2.5 ascended) and the challenge multiplier,
-// truncated like Java's `int` total. Run through `npm run test:score`.
+// truncated like Java's `int` total. It also pins `explorePercentOf`'s missed-room
+// algebra - `RegularLevel.levelExplorePercent()`'s 1/0.5/0.2/0 switch and each rule that
+// marks a room missed. Run through `npm run test:score`.
 import {
 	addBossScore,
 	addQuestScore,
@@ -15,6 +17,7 @@ import {
 	setQuestScore,
 	type ScoreInput,
 } from '../src/rankings';
+import { explorePercentOf, KEY_ITEM_IDS, type ExploreEvidence, type ExploreRoom } from '../src/explorePercent';
 
 let failed = 0;
 const check = (name: string, ok: boolean, detail = ''): void => {
@@ -96,6 +99,83 @@ check('ordinary belongings hold value',
 	heldItemValue([{ id: 'potion', quantity: 2, identified: true }]) > 0);
 check('unknown ids are worthless',
 	heldItemValue([{ id: 'no-such-item', quantity: 3, identified: true }]) === 0);
+
+//The room-missed exploration algebra (`RegularLevel.levelExplorePercent`, tag `v3.3.8`):
+//its switch is 1 / 0.5 / 0.2 / 0 for 0 / 1 / 2 / 3+ missed rooms, and every rule that
+//marks a room missed maps one Java check.
+{
+	//Four filler rooms in a row; `Room.inside` is the strict interior, so room 1's
+	//interior cells are x,y in 2..4.
+	const filler = (label: string, left: number): ExploreRoom => ({ left, top: 1, right: left + 4, bottom: 5, label });
+	const over = (patch: Partial<ExploreEvidence>): ExploreEvidence => ({
+		rooms: [filler('standard:plain', 1), filler('standard:tunnel', 6), filler('standard:plain', 11), filler('standard:tunnel', 16)],
+		heaps: [], eternalFireBurning: false, sacrificialFireBurning: false,
+		liveLevelGenStatue: false, liveMimics: [], blockedCells: [], unusedCrystalKey: false,
+		...patch,
+	});
+	const unseenHeap = { x: 2, y: 2, seen: false, autoExplored: false, openable: false } satisfies ExploreEvidence['heaps'][number];
+
+	check('no missed rooms explores fully', explorePercentOf(over({})) === 1);
+	check('one missed room halves it', explorePercentOf(over({ heaps: [unseenHeap] })) === 0.5);
+	check('two missed rooms take 0.2',
+		explorePercentOf(over({ heaps: [unseenHeap], liveMimics: [{ x: 7, y: 2 }] })) === 0.2);
+	check('three missed rooms explore nothing',
+		explorePercentOf(over({ heaps: [unseenHeap], liveMimics: [{ x: 7, y: 2 }], blockedCells: [{ x: 16, y: 2 }] })) === 0);
+	//A heap on a room's border cell belongs to no room (strict interior).
+	check('a border heap marks no room', explorePercentOf(over({ heaps: [{ ...unseenHeap, x: 1, y: 1 }] })) === 1);
+
+	//Java's heap sweep: openable containers and key payloads miss even when seen, a seen
+	//non-openable heap without a key does not, and `autoExplored` skips the heap whole.
+	check('a seen openable chest still misses',
+		explorePercentOf(over({ heaps: [{ x: 2, y: 2, seen: true, autoExplored: false, openable: true }] })) === 0.5);
+	check('a seen key heap misses',
+		explorePercentOf(over({ heaps: [{ x: 2, y: 2, seen: true, autoExplored: false, openable: false, itemKind: 'ironKey' }] })) === 0.5);
+	check('a seen keyless heap is explored',
+		explorePercentOf(over({ heaps: [{ x: 2, y: 2, seen: true, autoExplored: false, openable: false, itemKind: 'potion' }] })) === 1);
+	check('autoExplored heaps never miss',
+		explorePercentOf(over({ heaps: [{ x: 2, y: 2, seen: false, autoExplored: true, openable: true }] })) === 1);
+	//Java's `instanceof Key`: the Skeleton Key artifact is not one (`SkeletonKey.java`).
+	check('the skeleton artifact is not a Key',
+		!KEY_ITEM_IDS.has('skeletonkey') && KEY_ITEM_IDS.has('crystalKey') && KEY_ITEM_IDS.has('wornKey'));
+
+	//The fires and the live level-gen statue mark their special rooms by label (first
+	//room with that label, Java's `room(Class)`); mimics mark their own cell.
+	check('eternal fire misses the magical-fire room',
+		explorePercentOf(over({ rooms: [filler('special:magicalFire', 1), filler('standard:plain', 6)], eternalFireBurning: true })) === 0.5);
+	check('sacrificial fire misses the sacrifice room',
+		explorePercentOf(over({ rooms: [filler('special:sacrifice', 1), filler('standard:plain', 6)], sacrificialFireBurning: true })) === 0.5);
+	check('a live statue misses the statue room',
+		explorePercentOf(over({ rooms: [filler('special:statue', 1), filler('standard:plain', 6)], liveLevelGenStatue: true })) === 0.5);
+	check('a live mimic misses its own room',
+		explorePercentOf(over({ liveMimics: [{ x: 7, y: 2 }] })) === 0.5);
+
+	//Door cells (barricade/locked/unfound secret) credit exactly one adjacent room, by
+	//Java's candidate walk (`RegularLevel.java:842-852`): neighbour rooms in NEIGHBOURS4
+	//order, replacing a candidate that is not yet missed - so the scan freezes on the
+	//first already-missed neighbour ("prefer rooms already missed"), and with nothing
+	//missed yet the last fresh neighbour wins ("it only counts one"). The wall cell
+	//(5,2) touches room 1 (interior 2..4) and room 2 (interior 6..8).
+	check('a blocked cell freezes on the already-missed neighbour',
+		explorePercentOf(over({
+			rooms: [filler('standard:plain', 1), filler('standard:plain', 5)],
+			heaps: [unseenHeap], blockedCells: [{ x: 5, y: 2 }],
+		})) === 0.5);
+	check('a blocked cell bordering two fresh rooms counts one',
+		explorePercentOf(over({
+			rooms: [filler('standard:plain', 1), filler('standard:plain', 5)],
+			blockedCells: [{ x: 5, y: 2 }],
+		})) === 0.5);
+	//Connection rooms are skipped (Java's comment promises it; Java's own loop does not
+	//filter, and the port is deliberately never harsher than Java's stated intent).
+	check('a blocked cell next to only a connection room marks nothing',
+		explorePercentOf(over({
+			rooms: [filler('connection:tunnel', 1), filler('standard:plain', 11)],
+			blockedCells: [{ x: 4, y: 2 }],
+		})) === 1);
+	//An unused crystal key for the floor misses every `CRYSTAL_KEY_SPECIALS` room.
+	check('an unused crystal key misses the crystal specials',
+		explorePercentOf(over({ rooms: [filler('standard:plain', 1), filler('special:pit', 6)], unusedCrystalKey: true })) === 0.5);
+}
 
 //The run-state mutators accumulate behind the scene key and ignore bad indices.
 {

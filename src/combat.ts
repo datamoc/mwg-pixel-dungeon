@@ -451,6 +451,14 @@ export interface GroundItem extends Step {
 	missileSet?: string;
 	/** A scattered tipped-dart heap's tip seed (`TippedDart` only) - same side channel as the set. */
 	tippedSeed?: string;
+	/**
+	 * `Heap.autoExplored` (`Heap.java`, tag `v3.3.8`): levelgen-marked heaps that never count
+	 * against the floor's exploration. Only levelgen's own notes emit it here (the
+	 * crystal-choice chest, `CrystalChoiceRoom.java:130`); Java additionally flags every
+	 * `GameScene.add()` runtime drop (`GameScene.java:1131-1136`), which is not carried -
+	 * see `levelExplorePercent`'s stated reduction.
+	 */
+	autoExplored?: boolean;
 	/** Concrete inventory payload; absent only for legacy scripted/cosmetic drops. */
 	item?: { id: string; quantity: number; level?: number; tier?: number; sandBags?: number; charges?: number; warmUpDelay?: number; affix?: string; cursed?: boolean; cursedKnown?: boolean; identified?: boolean; instanceId?: string; sourceClass?: string; depth?: number;
 		/** Ring of Wealth's presentation-only bonus tier, retained through pickup/save for its item-detail tag. */

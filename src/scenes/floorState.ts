@@ -54,7 +54,7 @@ export interface FloorState {
 	sacrificialFireCell?: number;
 	sacrificialFirePrize?: GroundItem['item'];
 	portedFeatures?: { cells: [number, string][] };
-	groundItems: { kind: GroundItemKind; x: number; y: number; item?: GroundItem['item']; chest?: 'normal' | 'locked' | 'crystal'; forSale?: boolean; missileLevel?: number; missileSet?: string; tippedSeed?: string }[];
+	groundItems: { kind: GroundItemKind; x: number; y: number; item?: GroundItem['item']; chest?: 'normal' | 'locked' | 'crystal'; forSale?: boolean; missileLevel?: number; missileSet?: string; tippedSeed?: string; autoExplored?: boolean }[];
 	fallingRocks?: { cells: { x: number; y: number }[]; turns: number }[];
 	cavesBossEnergyCells?: number[];
 	manualPlants?: [number, string][];

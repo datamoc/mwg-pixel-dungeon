@@ -54,6 +54,7 @@ import { heldItemValue, noteFloorExplored, scoreStateFor, type RunEndScore, type
 import { monsterSpawnProfile } from '../../actors/monsterSpawn';
 import { ritualSiteState } from '../../spdLevelGen/rooms/standard/ritualSiteRoom';
 import { DOOR, GAME_KIND_CODES, HIGH_GRASS, SOLID, TERRAIN_KINDS, TILE, WALL, WATER, type GroundItemKind } from '../../dungeonConstants';
+import { levelExplorePercent } from './levelExplorePercent';
 import { REGION_GRASS, REGION_WATER, generateSpdDungeon, regionForDepth, type Region } from '../../genericDungeon';
 import { INFINITE_EVASION, addBuff, baseCreature, rollHit, setAscensionActive, type BuffId, type Creature, type GroundItem, type Step } from '../../combat';
 import { BOSSES, MONSTERS, heroSheet, type AnyMonsterId } from '../../monsters';
@@ -828,26 +829,24 @@ export const coreSpawnTilesMethods = {
 	},
 
 	/**
-	 * R015 (`Dungeon.updateLevelExplored()`, tag `v3.3.8`): remember the floor being
-	 * left as explored-fraction = seen cells over non-wall cells. Java scores rooms
-	 * (unexplored rooms over all rooms, boss/branch floors excluded); this port keeps no
-	 * room ledger at runtime, so the `fov.explored` cell fraction stands in, and the MWL
-	 * chapter arenas plus the mining branch stand in for Java's non-Regular/boss levels.
-	 * Runs at every floor capture (transitions and saves) plus explicitly before each
-	 * `recordRun`, mirroring Java's saveAll/fail/win call sites.
+	 * R015 (`Dungeon.updateLevelExplored()`, tag `v3.3.8`): remember the floor being left
+	 * at Java's room-missed exploration fraction. Java records only
+	 * `branch == 0 && level instanceof RegularLevel && !bossLevel()` floors; the mining
+	 * branch, the MWL chapter arenas and the boss depths 5/10/15/20/25 stand in for that
+	 * gate. Runs at every floor capture (transitions and saves) plus explicitly before
+	 * each `recordRun`, mirroring Java's saveAll/fail/win call sites.
 	 */
 	snapshotFloorExplored(this: DungeonScene): void {
 		const depth = this.activeFloorDepth ?? this.depth;
 		if (this.miningBranchActive) return;
 		if (MWL_SCENARIO_CHAPTERS.some((chapter) => chapter.bossDepth === depth)) return;
-		let open = 0;
-		for (let y = 0; y < this.level.height; y++) {
-			for (let x = 0; x < this.level.width; x++) {
-				if (this.level.get(x, y) !== WALL) open++;
-			}
-		}
-		if (open <= 0) return;
-		noteFloorExplored(this, depth, this.fov.explored.size / open);
+		if (depth === 5 || depth === 10 || depth === 15 || depth === 20 || depth === 25) return;
+		noteFloorExplored(this, depth, this.levelExplorePercent(depth));
+	},
+
+	/** Scene-side handle over the free `levelExplorePercent` (its own file owns the budget headroom). */
+	levelExplorePercent(this: DungeonScene, depth: number): number {
+		return levelExplorePercent(this, depth);
 	},
 
 	/**
@@ -1031,7 +1030,7 @@ export const coreSpawnTilesMethods = {
 			sacrificialFireCharge: this.sacrificialFireCharge,
 			sacrificialFireCell: this.sacrificialFireCell,
 			sacrificialFirePrize: this.sacrificialFirePrize,
-			groundItems: this.groundItems.map(({ kind, x, y, item, chest, forSale, missileLevel, missileSet, tippedSeed }) => ({ kind, x, y, item, chest, forSale, missileLevel, missileSet, tippedSeed })),
+			groundItems: this.groundItems.map(({ kind, x, y, item, chest, forSale, missileLevel, missileSet, tippedSeed, autoExplored }) => ({ kind, x, y, item, chest, forSale, missileLevel, missileSet, tippedSeed, autoExplored })),
 			fallingRocks: this.fallingRocks.map((v) => ({ cells: v.cells.map((c) => ({ ...c })), turns: v.turns })),
 			cavesBossEnergyCells: [...this.cavesBossEnergyCells],
 			manualPlants: [...this.manualPlants.entries()],
@@ -1105,6 +1104,7 @@ export const coreSpawnTilesMethods = {
 				heap.missileLevel = item.missileLevel;
 				heap.missileSet = item.missileSet;
 				heap.tippedSeed = item.tippedSeed;
+				heap.autoExplored = item.autoExplored;
 			}
 		}
 

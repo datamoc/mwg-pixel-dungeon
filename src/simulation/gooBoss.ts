@@ -18,6 +18,10 @@ export interface GooBossContext {
 	/** Java clears the bosses-challenge flag when Goo heals in water or lands a
 	 * pumped slam (`Goo.java`, tag `v3.3.8` - found by the 41st matrix). */
 	readonly foulBossChallenge: () => void;
+	/** `Statistics.bossScores[0] -= 100` for the pumped slam (`Goo.java:75,237`, tag
+	 * `v3.3.8` - the damageRoll/attack pair nets one write per slam against the hero).
+	 * The scene binds the index; only the slam half writes, the water heal only fouls. */
+	readonly noteBossScore: (delta: number) => void;
 	/** `Goo.act()`'s water heal also calls `LockedFloor.removeTime` with the heal increment. */
 	readonly onWaterHeal?: (healInc: number) => void;
 	/** STRONGER_BOSSES pump-up spends `gate(attackDelay, ceil(hero.cooldown), 3*attackDelay)`.
@@ -85,6 +89,7 @@ export function takeGooTurn(goo: Creature, context: GooBossContext): void {
 		const { accuracy, damage } = context.stats(goo);
 		context.say(context.messages.slam, 'warning');
 		context.foulBossChallenge();
+		context.noteBossScore(-100);
 		context.attack({ ...goo, kind: undefined, accuracy: accuracy * 2, damage: [damage[0] * 3, damage[1] * 3] }, context.hero);
 		return;
 	}

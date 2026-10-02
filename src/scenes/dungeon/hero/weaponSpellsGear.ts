@@ -1589,11 +1589,13 @@ export const weaponSpellsGearMethods = {
 	 * The reverse direction of `disqualifyBossChallenge` (which covers the hero's
 	 * non-weapon boss damage): Java clears `Statistics.qualifiedForBossChallengeBadge`
 	 * when a boss itself fouls - Goo's pumped slam and water heal (`Goo.java`, tag
-	 * `v3.3.8`), Tengu's bomb blast and shocker pulses striking the hero
-	 * (`Tengu.java`). Found by the 41st behavior matrix (Goo/Tengu kits), which also
-	 * records what stays open: the `bossScores` Â±100/1000 economy has no equivalent
-	 * here (the port's score is depth/level/gold in `rankings.ts`), and Tengu's
-	 * fire-cone foul cannot be attributed (field-fire ticks carry no source).
+	 * `v3.3.8`), Tengu's bomb blast, cone fire and shocker pulses striking the hero
+	 * (`Tengu.java`), the DM-300 pylon shock and supercharge-energy field, and the
+	 * depth-10 poison darts (`PoisonDartTrap.java`). Found by the 41st behavior matrix
+	 * (Goo/Tengu kits). Each foul's paired `bossScores` write (±100/200 plus the five
+	 * boss `die()` bonuses) lands beside it through `rankings.addBossScore` - the
+	 * full economy is listed on the `ScoreState` note (the Dwarf King warlock zap is
+	 * score-only in Java, so it writes without fouling).
 	 */
 	foulBossChallenge(this: DungeonScene): void {
 		this.qualifiedForBossChallenge = false;

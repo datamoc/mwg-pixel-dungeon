@@ -35,7 +35,7 @@ import { NEGATIVE_BUFFS, addBuff, applyElementalBacklash, buffBlocked, doomDamag
 import { applyChillFreeze } from '../../../simulation/buffs';
 import { IMMOVABLE_KINDS, liveStats } from '../../../monsters';
 import { TENGU_CIRCLE8 } from '../shared';
-import { addQuestScore } from '../../../rankings';
+import { addBossScore, addQuestScore } from '../../../rankings';
 
 /** Java's ShamanSprite selects both its shared-sheet colour block and MagicMissile particle family by subtype. */
 const SHAMAN_BOLT_TINT: Record<NonNullable<Creature['shamanType']>, number> = {
@@ -341,6 +341,10 @@ export const monsterAiMethods = {
 				//Hero half of the same `Pylon.act()` `Char.damage()`: the dispatch's hero branch with
 				//`deferKill`, so this tail `kill` is the only one that fires.
 				this.applyCharacterDamage(target, raw, { pierceArmor: true, cause: 'foe', skipAura: true, deferKill: true });
+				//`Pylon.shockChar()`: the hero half fouls the bosses challenge and scores
+				//-100 (`Pylon.java`, tag `v3.3.8`) - the port's badge clear was missing here too.
+				this.foulBossChallenge();
+				addBossScore(this, 2, -100);
 				if (target.hp <= 0) this.kill(target, 'foe');
 			} else {
 				//Non-hero victims take the shared `Char.damage()` dispatch: Doom, defender overrides, shields, hooks, wake and death.
@@ -907,6 +911,11 @@ export const monsterAiMethods = {
 	zapHero(this: DungeonScene, monster: Creature, damage: [number, number]): void {
 		const target = this.rangedTarget(monster, 8);
 		if (!target) return;
+		//`DKWarlock.zap()` (the Dwarf King's summon): a bolt aimed at the hero scores -400
+		//before the hit roll (`DwarfKing.java`, tag `v3.3.8`). The city `Warlock.zap()`
+		//never scores, so membership in `kingAdds` - what makes this warlock a DKWarlock -
+		//gates the write.
+		if (monster.kind === 'warlock' && target.isHero && this.kingAdds.has(monster)) addBossScore(this, 3, -400);
 		//`DM100.zap()`/`Shaman.zap()`/`Warlock.zap()` play `sprite.zap()` (tag `v3.3.8`).
 		this.playMonsterZap(monster);
 		if (this.fov.isVisible(monster.x, monster.y) || this.fov.isVisible(target.x, target.y)) runState.audio.cue('zap');

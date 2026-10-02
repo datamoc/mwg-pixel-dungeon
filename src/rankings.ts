@@ -69,9 +69,11 @@ export function recordRun(record: Omit<RunRecord, 'score'>, score: RunEndScore):
  * R015: Java `Statistics`' score half (`Statistics.java`/`Rankings.java`, tag `v3.3.8`),
  * one per run. `questScores[0..4]`/`bossScores[0..4]` collect the quest/boss writes (only
  * positive entries count); `goldCollected` is lifetime gold picked up; `floorsExplored`
- * maps each left floor to its explored fraction. The mine `[2]` penalty writes landed with
- * R055/R056; the boss writes belong to the boss kits and still arrive as zeros until those
- * land - the formula already sums both the way Java does.
+ * maps each left floor to its room-missed explored fraction
+ * (`RegularLevel.levelExplorePercent`, gathered in `levelExplorePercent`). The mine `[2]`
+ * penalty writes landed with R055/R056 and the boss `±100..+5000` writes with R015's two
+ * residuals (14 sites across the five boss kits, each beside its Java line) - the formula
+ * already summed both the way Java did.
  */
 export interface ScoreState {
 	questScores: number[];
@@ -106,7 +108,9 @@ export function addQuestScore(scene: object, index: number, delta: number): void
 	scoreStateFor(scene).questScores[index]! += delta;
 }
 
-/** Seam for the boss kits' `bossScores` writes; no callers yet (see the `ScoreState` note). */
+/** `Statistics.bossScores[i] += delta`: the boss kits' score writes - five `die()`
+ * bonuses (Goo +1000, Tengu +2000, DM-300 +3000, King +4000, Yog +5000+1250 per live
+ * spawner) plus the foul sites' ±100/200/400/500 (see the `ScoreState` note). */
 export function addBossScore(scene: object, index: number, delta: number): void {
 	if (index < 0 || index > 4) return;
 	scoreStateFor(scene).bossScores[index]! += delta;

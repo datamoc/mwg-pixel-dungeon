@@ -12,7 +12,7 @@ import { GROUND_ITEM_KEYS, MOB_KEYS, REGION_KEYS, capitalize, has, t } from '../
 import { lethalHasteDuration, soulSiphonCharge } from '../../talentEffects';
 import { SpdRandom } from '../../spdRng';
 import { runState } from '../../runState';
-import { addQuestScore, noteGoldCollected, recordRun, scoreStateFor } from '../../rankings';
+import { addBossScore, addQuestScore, noteGoldCollected, recordRun, scoreStateFor } from '../../rankings';
 import { isChallengeEnabled, isItemBlocked, runChallengeIds } from '../../challenges';
 import { PRISMATIC_FADE_TURNS } from '../../simulation/prismatic';
 import { shieldOfLightRange } from '../../simulation/clericSpells';
@@ -802,18 +802,26 @@ export const deathSaveRefreshMethods = {
 			if (creature.kind === 'goo') {
 				this.awardBadge('boss_goo');
 				if (this.qualifiedForBossChallenge) this.awardBadge('boss_challenge_goo');
+				//`Goo.die()`: `bossScores[0] += 1000` right after the badge block (`Goo.java`, tag `v3.3.8`).
+				addBossScore(this, 0, 1000);
 			}
 			if (creature.kind === 'tengu') {
 				this.awardBadge('boss_tengu');
 				if (this.qualifiedForBossChallenge) this.awardBadge('boss_challenge_tengu');
+				//`Tengu.die()`: `bossScores[1] += 2000` (`Tengu.java`, tag `v3.3.8`).
+				addBossScore(this, 1, 2000);
 			}
 			if (creature.kind === 'dm300') {
 				this.awardBadge('boss_dm300');
 				if (this.qualifiedForBossChallenge) this.awardBadge('boss_challenge_dm300');
+				//`DM300.die()`: `bossScores[2] += 3000` (`DM300.java`, tag `v3.3.8`).
+				addBossScore(this, 2, 3000);
 			}
 			if (creature.kind === 'king') {
 				this.awardBadge('boss_king');
 				if (this.qualifiedForBossChallenge) this.awardBadge('boss_challenge_king');
+				//`DwarfKing.die()`: `bossScores[3] += 4000` (`DwarfKing.java`, tag `v3.3.8`).
+				addBossScore(this, 3, 4000);
 				for (const add of [...this.kingAdds]) if (add.hp > 0) this.kill(add);
 				//`DwarfKing.die()`: the real `defeated` yell, the Warlock Degrade
 				//cleanse ("mainly for convenience"), and the LloydsBeacon upgrade.
@@ -834,6 +842,9 @@ export const deathSaveRefreshMethods = {
 				//the general weapon-only qualification flag.
 				const livingSpawners = this.creatures.filter((c) => c.kind === 'demonSpawner' && c.hp > 0).length;
 				if (yogBossChallengeQualified(isChallengeEnabled('stronger_bosses'), livingSpawners)) this.awardBadge('boss_challenge_yog');
+				//`YogDzewa.die()`: `bossScores[4] += 5000 + 1250*spawnersAlive` with the
+				//same live-spawner count the badge above used (`YogDzewa.java`, tag `v3.3.8`).
+				addBossScore(this, 4, 5000 + 1250 * livingSpawners);
 				//`YogDzewa.die()` kills every summoned minion: Larva, YogRipper, YogEye,
 				//YogScorpio (fists die through their own `YogFist.die()` cascade). The list
 				//used to omit `'larva'`, so larvae outlived their summoner - found by the
