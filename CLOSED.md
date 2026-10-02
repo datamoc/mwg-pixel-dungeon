@@ -4293,3 +4293,7 @@ Every family named in the section below is matrixed (55 matrices under `garbage/
 # R023. Key depth identity and sealed exits
 
 - [x] **R023** _(Key.depth/isSimilar() and heap/door presentation (tag v3.3.8): every key only counts toward the depth it was found on)_ **Closed 2026-10-01:** both halves ported. WornKey half: the Goo-floor sealed exit unseals through `bumpLockedExit` (a depth-matched `wornKey` is consumed, the paint becomes `UNLOCKED_EXIT` 22 with the stairs anchor moved onto it; without the key the bump refuses like a locked door), pinned in `test:simulation`. SkeletonKey half: the artifact is ported whole (`src/items/skeletonKey.ts` - charge/exp arithmetic, recharge curve, the full INSERT targeter tree including the LOCKED_EXIT refusal, the door-lock push-aside, the wall shape, and the KeyReplacementTracker excess rule), pinned in `test:skeletonkey`.
+
+# R027. DeathMark dead-branch audit
+
+- [x] **R027** _(Combat rolls/damage/status/turn-timing verification)_ **Closed 2026-09-30 (stale residual):** the only listed behavior, `DeathMark.processFearTheReaper`, runs in Java's dead-but-still-alive post-zero-HP branch, which is unreachable in the port's death model. The correction is recorded in the DeathMark coverage row.
