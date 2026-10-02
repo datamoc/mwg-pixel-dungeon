@@ -22,6 +22,15 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const SNAP = `(() => {
 	const s = mwg.currentScene, h = s.hero;
 	const creatures = s.creatures.filter((c) => !c.isHero).map((c) => [c.kind || c.name, c.hp, c.x, c.y, c.allyKind ?? null, c.allyDefendCell ?? null, c.allyMovingToDefend ?? null]).sort((a, b) => JSON.stringify(a) < JSON.stringify(b) ? -1 : 1);
+	// Boss actor state drives future turns and phase changes, not just presentation. Keep it in
+	// the round-trip snapshot so B3's boss-floor cases catch a reset-to-spawn restore.
+	const bossStates = s.creatures.filter((c) => !c.isHero && ['goo', 'tengu', 'dm300', 'king', 'yog'].includes(c.kind)).map((c) => ({
+		kind: c.kind, pumped: c.pumped ?? null, gooHealInc: c.gooHealInc ?? null,
+		tenguPhase: c.tenguPhase ?? null, tenguAbilityCd: c.tenguAbilityCd ?? null, tenguAbilityUses: c.tenguAbilityUses ?? null,
+		kingPhase: c.kingPhase ?? null, kingShield: c.kingShield ?? null, kingSummonsMade: c.kingSummonsMade ?? null,
+		dmSupercharged: c.dmSupercharged ?? null, dmPylonsActivated: c.dmPylonsActivated ?? null, dmBarrier: c.dmBarrier ?? null,
+		yogPhase: c.yogPhase ?? null, yogSummonCd: c.yogSummonCd ?? null, yogBeamCd: c.yogBeamCd ?? null,
+	})).sort((a, b) => a.kind.localeCompare(b.kind));
 	const rose = s.bag?.items?.find((item) => item.id === 'rose');
 	return {
 		depth: s.depth, deepest: s.deepestDepth,
@@ -30,7 +39,7 @@ const SNAP = `(() => {
 		hunger: s.hunger !== undefined ? JSON.stringify(s.hunger) : null,
 		terrain: (() => { let h = 0; const t = s.level.terrain; for (let i = 0; i < t.length; i++) h = (h * 31 + t[i]) | 0; return h; })(),
 		secretDoors: [...(s.secretDoorCells || [])].sort((a, b) => a - b).map((i) => i + ':' + s.level.terrain[i]),
-		creatures, groundItems: (s.groundItems || []).length, bag: s.bag && s.bag.items ? s.bag.items.map((i) => i.id + ':' + (i.quantity ?? 1)).sort() : null,
+		creatures, bossStates, groundItems: (s.groundItems || []).length, bag: s.bag && s.bag.items ? s.bag.items.map((i) => i.id + ':' + (i.quantity ?? 1)).sort() : null,
 		rose: { firstSummon: s.roseFirstSummon === true, activeGhost: s.roseGhost ? [s.roseGhost.kind, s.roseGhost.hp, s.roseGhost.x, s.roseGhost.y, [...s.roseGhost.damage], [...s.roseGhost.armor], s.roseGhost.str ?? null, s.roseGhost.weaponDefense ?? null, s.roseGhost.allyDefendCell ?? null, s.roseGhost.allyMovingToDefend ?? null] : null,
 			weapon: rose?.ghostWeapon ?? null, armor: rose?.ghostArmor ?? null },
 	};
@@ -50,8 +59,8 @@ const SCENARIOS = [
 	{ name: 'active Rose GhostHero with weapon, armor and DIRECT defend order', setup: `(() => { const s = mwg.currentScene; s.bag.add({ id: 'rose', instanceId: 'save-rose', quantity: 1, identified: true, level: 0, charge: 100, ghostWeapon: { id: 'sword', instanceId: 'save-sword', sourceClass: 'sword', tier: 1, level: 0 }, ghostArmor: { id: 'armor', instanceId: 'save-armor', sourceClass: 'armor', tier: 1, level: 0 } }); const originalStatus = s.quests.status.bind(s.quests); s.quests.status = (id) => id === 'sadGhost' ? 'complete' : originalStatus(id); s.useRose('save-rose'); const rows = (s.itemPickerEntries ?? []).map((entry) => entry.instanceId); const summon = rows.indexOf('rose-summon'); if (summon < 0) throw new Error('Rose did not offer AC_SUMMON'); s.chooseItemPicker(summon); const ghost = s.roseGhost; if (!ghost) throw new Error('AC_SUMMON did not create GhostHero'); ghost.allyDefendCell = s.randomFreeCell(s.hero); ghost.allyMovingToDefend = true; return { ghost: [ghost.hp, ghost.x, ghost.y, [...ghost.damage], [...ghost.armor]], defend: ghost.allyDefendCell }; })()` },
 	{ name: 'hurt hero, gold, bless + weakness buffs', setup: `(() => { const s = mwg.currentScene; s.hero.hp = Math.max(1, s.hero.maxHp - 7); s.heroStats.setBase && s.heroStats.setBase('gold', 137); s.hero.buffs.bless = 20; s.hero.buffs.weakness = 12; return 1; })()` },
 	{ name: 'floor 3 via the real level transition', setup: `(() => { const s = mwg.currentScene; s.depth = 3; s.deepestDepth = 3; s.enterLevel(); return 1; })()`, wait: 4000 },
-	{ name: 'boss floor 5 (Goo), hero damaged', setup: `(() => { const s = mwg.currentScene; s.depth = 5; s.deepestDepth = 5; s.enterLevel(); s.hero.hp = Math.max(1, s.hero.hp - 5); return 1; })()`, wait: 4000 },
-	{ name: 'boss floor 10 (Tengu prison level)', setup: `(() => { const s = mwg.currentScene; s.depth = 10; s.deepestDepth = 10; s.enterLevel(); return 1; })()`, wait: 5000 },
+	{ name: 'boss floor 5 (Goo), primed pump survives save/load', setup: `(() => { const s = mwg.currentScene; s.depth = 5; s.deepestDepth = 5; s.enterLevel(); s.hero.hp = Math.max(1, s.hero.hp - 5); return 1; })()`, prepare: `(() => { const goo = mwg.currentScene.creatures.find((c) => c.kind === 'goo'); if (!goo) throw new Error('Goo was not generated on depth 5'); goo.pumped = 2; goo.gooHealInc = 3; return 1; })()`, wait: 4000, boss: 'goo', expectedBoss: { pumped: 2, gooHealInc: 3 } },
+	{ name: 'boss floor 10 (Tengu prison level), paused phase survives save/load', setup: `(() => { const s = mwg.currentScene; s.depth = 10; s.deepestDepth = 10; s.enterLevel(); return 1; })()`, prepare: `(() => { const s = mwg.currentScene; s.hero.y = 30; s.checkTenguFightStart(); const tengu = s.creatures.find((c) => c.kind === 'tengu'); if (!tengu) throw new Error('Tengu did not spawn when the hero entered the prison cell'); tengu.tenguPhase = 'paused'; tengu.tenguAbilityCd = 2; tengu.tenguAbilityUses = 4; return 1; })()`, wait: 5000, boss: 'tengu', expectedBoss: { tenguPhase: 'paused', tenguAbilityCd: 2, tenguAbilityUses: 4 } },
 ];
 
 let failed = 0;
@@ -77,11 +86,17 @@ for (const browser of browsers) {
 		for (const sc of SCENARIOS) {
 			try {
 				await game.eval(sc.setup); await sleep(sc.wait ?? 500);
+				if (sc.prepare) await game.eval(sc.prepare);
 				const saved = await game.eval(SNAP);
+				if (sc.boss) {
+					const boss = saved.bossStates.find((row) => row.kind === sc.boss);
+					const matches = boss && Object.entries(sc.expectedBoss).every(([field, value]) => boss[field] === value);
+					check(browser, `${sc.name}: snapshot contains the requested boss state`, matches === true, JSON.stringify(boss ?? saved.bossStates));
+				}
 				await game.eval('mwg.currentScene.saveRun()'); await sleep(300);
 				const payload1 = await game.eval(PAYLOAD);
 				// mutate everything the save is supposed to carry
-				await game.eval(`(() => { const s = mwg.currentScene; s.hero.hp = 1; s.hero.buffs = {}; s.heroStats.setBase && s.heroStats.setBase('gold', 1); s.depth = 1; return 1; })()`);
+				await game.eval(`(() => { const s = mwg.currentScene; s.hero.hp = 1; s.hero.buffs = {}; s.heroStats.setBase && s.heroStats.setBase('gold', 1); for (const c of s.creatures) { if (c.kind === 'goo') { c.pumped = 0; c.gooHealInc = 1; } if (c.kind === 'tengu') { c.tenguPhase = 'cell'; c.tenguAbilityCd = 99; c.tenguAbilityUses = 0; } } s.depth = 1; return 1; })()`);
 				await game.eval('mwg.currentScene.loadRun()'); await sleep(sc.wait ?? 1500);
 				const restored = await game.eval(SNAP);
 				check(browser, `${sc.name}: load restores the saved state`, JSON.stringify(saved) === JSON.stringify(restored), diff(saved, restored));
