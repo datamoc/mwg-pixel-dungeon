@@ -19,6 +19,7 @@ import { Room } from './room';
 import { PaintLevel } from './paintLevel';
 import { randomUsingDefaults, Cat } from '../items/generator';
 import { ritualSiteState } from './rooms/standard/ritualSiteRoom';
+import { wandmakerSpawnDecision } from '../simulation/wandmakerQuest';
 
 interface WandmakerState {
 	/** 0 = undecided, 1 = corpse dust (MassGraveRoom), 2 = elemental embers (RitualSiteRoom),
@@ -83,9 +84,9 @@ export function resetWandmakerRunState(): void {
  */
 export function wandmakerSpawnRoom(rooms: Room[], depth: number): Room[] {
 	state.questRoomSpawned = false;
-	if (!state.spawned && (state.type !== 0 || (depth > 6 && SpdRandom.int(10 - depth) === 0))) {
-		// decide between 1, 2, or 3 for quest type
-		if (state.type === 0) state.type = SpdRandom.int(3) + 1;
+	const decision = wandmakerSpawnDecision(state.type, state.spawned, depth, (max) => SpdRandom.int(max));
+	state.type = decision.type;
+	if (decision.spawnRoom) {
 
 		switch (state.type) {
 			case 2:

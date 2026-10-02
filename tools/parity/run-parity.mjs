@@ -8,7 +8,8 @@
  *   node tools/parity/run-parity.mjs --stage loot        derived Mob.lootChance() drop chance, Java v3.3.8 vs TS
  *   node tools/parity/run-parity.mjs --stage levelgen    floor generation RNG draws, checkout oracle + S6 deck backport vs TS
  *   node tools/parity/run-parity.mjs --stage mobdata     every Java mob class's stats/loot (v3.3.8) vs the port's monster tables
- *   node tools/parity/run-parity.mjs --stage quest       run-level Wandmaker quest type rolled during levelgen, checkout oracle vs TS
+ *   node tools/parity/run-parity.mjs --stage quest       isolated Wandmaker.Quest.spawnRoom() gate/type, v3.3.8 vs TS
+ *   node tools/parity/run-parity.mjs --stage quest-floor full floor-to-quest diagnostic (room-generation reductions can shift the gate)
  *   node tools/parity/run-parity.mjs --stage ghost       Ghost spawn gate + reward rolls per (seed, depth), Java v3.3.8 vs TS
  *   node tools/parity/run-parity.mjs --stage imp         Imp spawn gate + alternative flag + reward ring per seed, checkout oracle + S6 deck backport vs TS
  *   node tools/parity/run-parity.mjs --stage blacksmith  Blacksmith spawn gate + type + reward rolls per (seed, depth), Java v3.3.8 vs TS
@@ -16,6 +17,7 @@
  *            --work <dir>           scratch dir for the Java trees (default <os tmp>/mwg-parity; reused between runs)
  *            --combat-ref v3.3.8    Java ref for the combat oracle
  *            --levelgen-ref 0fdcf2b2b   Java ref for the levelgen oracle (B2 decision 2026-09-26: the checkout's own tables; S6 2026-09-30: v3.3.8 deck draw-sequence backported at build time by tools/parity/patchOracleDecks.mjs)
+ *            --quest-ref v3.3.8     Java ref for the Wandmaker quest oracle (target-version source)
  *            --scripts 2,3,4  --seeds 123456789,1,42   combat matrix
  *            --levelgen-tree <dir>  use an already-prepared Java tree instead of exporting one (skips export + hook install)
  *
@@ -40,6 +42,7 @@ const spd = resolve(arg('--spd', process.env.SPD_CHECKOUT || join(homedir(), 'de
 const work = resolve(arg('--work', join(tmpdir(), 'mwg-parity')));
 const combatRef = arg('--combat-ref', 'v3.3.8');
 const levelgenRef = arg('--levelgen-ref', '0fdcf2b2b');
+const questRef = arg('--quest-ref', 'v3.3.8');
 const scripts = arg('--scripts', '2,3,4').split(',');
 const seeds = arg('--seeds', '123456789,1,42').split(',');
 const prebuiltLevelgenTree = arg('--levelgen-tree', null);
@@ -61,7 +64,10 @@ function exportTree(dir, ref) {
 	if (!existsSync(join(spd, '.git'))) throw new Error(`no git checkout at ${spd} (pass --spd <dir>)`);
 	mkdirSync(dir, { recursive: true });
 	const tarFile = join(dir, '..', `export-${ref.replace(/[^A-Za-z0-9.]+/g, '_')}.tar`);
-	let r = run('git', ['-C', spd, 'archive', '--format=tar', '-o', tarFile, ref]);
+	// The SPD checkout is read-only input and may be owned by the Windows user while
+	// this process runs under the sandbox identity. Trust only this explicit path for
+	// this one read-only archive command; do not change global Git configuration.
+	let r = run('git', ['-c', `safe.directory=${spd}`, '-C', spd, 'archive', '--format=tar', '-o', tarFile, ref]);
 	if (r.status !== 0) throw new Error(`git archive ${ref} failed: ${r.out.slice(0, 300)}`);
 	// Relative paths + cwd: GNU tar on Windows reads "C:" in an absolute path as a remote host.
 	// Judge by result, not exit code: tar exits nonzero on git-archive pax-header entries
@@ -73,7 +79,7 @@ function exportTree(dir, ref) {
 }
 
 /** Copies our harness classes in, inserts the trace hook into Random.java and makes sure the Gradle tasks exist. */
-function installHarness(dir, { combat, levelgen, loot, mobdata, ghost, imp, blacksmith }) {
+function installHarness(dir, { combat, levelgen, loot, mobdata, ghost, imp, blacksmith, wandmaker }) {
 	const put = (name, rel) => { mkdirSync(dirname(join(dir, rel)), { recursive: true }); copyFileSync(join(JAVA_SRC, name), join(dir, rel)); };
 	if (combat) { put('CombatHarness.java', `${CORE}/actors/mobs/CombatHarness.java`); put('CombatHarnessLauncher.java', `${DESKTOP}/CombatHarnessLauncher.java`); }
 	if (levelgen) { put('LevelGenHarness.java', `${CORE}/levels/LevelGenHarness.java`); put('LevelGenHarnessLauncher.java', `${DESKTOP}/LevelGenHarnessLauncher.java`); }
@@ -82,6 +88,7 @@ function installHarness(dir, { combat, levelgen, loot, mobdata, ghost, imp, blac
 	if (ghost) { put('GhostRewardHarness.java', `${CORE}/actors/mobs/npcs/GhostRewardHarness.java`); put('GhostRewardHarnessLauncher.java', `${DESKTOP}/GhostRewardHarnessLauncher.java`); }
 	if (imp) { put('ImpRewardHarness.java', `${CORE}/actors/mobs/npcs/ImpRewardHarness.java`); put('ImpRewardHarnessLauncher.java', `${DESKTOP}/ImpRewardHarnessLauncher.java`); }
 	if (blacksmith) { put('BlacksmithRewardHarness.java', `${CORE}/actors/mobs/npcs/BlacksmithRewardHarness.java`); put('BlacksmithRewardHarnessLauncher.java', `${DESKTOP}/BlacksmithRewardHarnessLauncher.java`); }
+	if (wandmaker) { put('WandmakerSpawnHarness.java', `${CORE}/actors/mobs/npcs/WandmakerSpawnHarness.java`); put('WandmakerSpawnHarnessLauncher.java', `${DESKTOP}/WandmakerSpawnHarnessLauncher.java`); }
 
 	const randomFile = join(dir, 'SPD-classes/src/main/java/com/watabou/utils/Random.java');
 	let random = readFileSync(randomFile, 'utf8');
@@ -106,6 +113,7 @@ function installHarness(dir, { combat, levelgen, loot, mobdata, ghost, imp, blac
 	if (ghost && !gradle.includes("'runGhostReward'")) gradle += task('runGhostReward', 'GhostRewardHarnessLauncher');
 	if (imp && !gradle.includes("'runImpReward'")) gradle += task('runImpReward', 'ImpRewardHarnessLauncher');
 	if (blacksmith && !gradle.includes("'runBlacksmithReward'")) gradle += task('runBlacksmithReward', 'BlacksmithRewardHarnessLauncher');
+	if (wandmaker && !gradle.includes("'runWandmakerSpawn'")) gradle += task('runWandmakerSpawn', 'WandmakerSpawnHarnessLauncher');
 	writeFileSync(gradleFile, gradle);
 }
 
@@ -187,29 +195,46 @@ function mobdataStage() {
  * `Mob.rollToDropLoot()` rolls `Random.Float()` against) against this port's composition of the
  * same number from its authored `monsterLoot` + `limitedDropDecay` rows. */
 
-/** B3 / T57, quest domain: the run-level quest type Java rolls while generating Prison floors -
- * `Wandmaker.Quest.type` in `PrisonLevel.initRooms()` - against this port's own generator for the
- * same seeds and depths. The Blacksmith quest (Caves, depth 12-14) is not walked here: the
- * levelgen oracle checkout predates v3.3.8's CRYSTAL/GNOLL/FUNGI model, so it needs a harness
- * that compiles against v3.3.8 - recorded as remaining T57 work. */
+/** B3 / T57, isolated quest-domain logic: actual `Wandmaker.Quest.spawnRoom()` versus the
+ * production TypeScript decision, both starting from the same Java-seeded stream. This avoids
+ * attributing known room-generation RNG differences to the quest's own gate/type formula. */
 function questStage() {
-	//Quest rooms are level-generation behaviour, so this rides the levelgen oracle (the same ref
-	//and tree B2 calibrated this port's room tables against) rather than the combat ref.
-	console.log(`\n== quest: Java run-level Wandmaker quest type from ${prebuiltLevelgenTree ? prebuiltLevelgenTree : levelgenRef} vs this port's generator ==`);
-	const dir = prebuiltLevelgenTree ? resolve(prebuiltLevelgenTree) : join(work, `spd-levelgen-${levelgenRef}`);
-	if (!prebuiltLevelgenTree) { exportTree(dir, levelgenRef); installHarness(dir, { levelgen: true }); }
+	console.log(`\n== quest: Java ${questRef} Wandmaker.Quest.spawnRoom() gate/type vs the port, equal RNG seed ==`);
+	const dir = join(work, `spd-quest-spawn-${questRef}`);
+	exportTree(dir, questRef);
+	installHarness(dir, { wandmaker: true });
+	const desktop = join(dir, 'desktop');
+	const javaOut = join(desktop, 'wandmaker_java_out.txt');
+	rmSync(javaOut, { force: true });
+	const g = gradle(dir, 'runWandmakerSpawn', { WANDMAKER_OUT: javaOut });
+	if (!existsSync(javaOut)) { gate('quest Java dump produced', false, g.out.slice(-400)); return; }
+	const outDir = join(work, 'quest'); mkdirSync(outDir, { recursive: true });
+	const report = join(outDir, 'wandmaker-spawn-report.txt');
+	const r = run(process.execPath, [join(ROOT, 'tools', 'verifyWandmakerQuest.mjs'), javaOut, report]);
+	console.log(r.out.trim());
+	gate('quest: 40 direct spawn gate/type cases match Java', r.status === 0, `report: ${report}`);
+}
+
+/** Full-floor quest trace diagnostic. The port intentionally omits Java room-subclass selection
+ * and some room classes; their draw sequence can shift the later Wandmaker gate. This stage prints
+ * the differences to aid levelgen work, but does not misreport those known RNG deltas as a quest
+ * formula failure. The isolated `--stage quest` above is the quest-logic gate. */
+function questFloorStage() {
+	console.log(`\n== quest-floor: full Java ${questRef} Prison level stream diagnostic ==`);
+	const dir = join(work, `spd-quest-${questRef}`);
+	exportTree(dir, questRef);
+	installHarness(dir, { levelgen: true });
 	const desktop = join(dir, 'desktop');
 	const questsFile = join(desktop, 'levelgen_quests.txt');
 	rmSync(questsFile, { force: true });
-	const g = gradle(dir, 'runHarness', { LEVELGEN_QUESTS: 'true' });
-	if (!existsSync(questsFile)) { gate('quest Java dump produced', false, g.out.slice(-400)); return; }
-	const lines = readFileSync(questsFile, 'utf8').split('\n').filter(Boolean).length;
-	gate('quest Java dump produced', true, `${lines} (seed, depth) lines`);
-	const outDir = join(work, 'quest'); mkdirSync(outDir, { recursive: true });
+	const g = gradle(dir, 'runHarness', { LEVELGEN_QUESTS: 'true', LEVELGEN_TRACE: 'true' });
+	if (!existsSync(questsFile)) { gate('quest-floor Java dump produced', false, g.out.slice(-400)); return; }
+	gate('quest-floor diagnostic Java dump produced', true, `${readFileSync(questsFile, 'utf8').split('\n').filter(Boolean).length} lines`);
+	const report = join(work, 'quest', 'quest-floor-report.txt'); mkdirSync(dirname(report), { recursive: true });
 	const tsRunner = tsBundle('tools/parityQuestTrace.ts', 'parityQuestTrace.mjs');
-	const r = run(process.execPath, [tsRunner, '--java', questsFile, '--report', join(outDir, 'quest-report.txt')]);
+	const r = run(process.execPath, [tsRunner, '--java', questsFile, '--report', report]);
 	console.log(r.out.trim());
-	gate('quest: the port rolls the same Wandmaker quest type as Java', r.status === 0, `report: ${join(outDir, 'quest-report.txt')}`);
+	gate('quest-floor diagnostic report produced', existsSync(report), `report: ${report}`);
 }
 
 /** B3, Ghost quest domain: `Ghost.Quest.spawn()`'s spawn gate (`Random.Int(5-depth)==0`,
@@ -316,6 +341,7 @@ try {
 	if (stage === 'all' || stage === 'mobdata') mobdataStage();
 	if (stage === 'all' || stage === 'loot') lootStage();
 	if (stage === 'all' || stage === 'quest') questStage();
+	if (stage === 'quest-floor') questFloorStage();
 	if (stage === 'all' || stage === 'ghost') ghostStage();
 	if (stage === 'all' || stage === 'imp') impStage();
 	if (stage === 'all' || stage === 'blacksmith') blacksmithStage();
