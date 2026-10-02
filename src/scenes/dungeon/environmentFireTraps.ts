@@ -2231,7 +2231,13 @@ export const environmentFireTrapsMethods = {
 	 * handler above owns player-specific Barrier/ring/anti-magic ordering; this companion
 	 * keeps the represented trap effects usable for ordinary monsters and summons. */
 	triggerMobTrapAt(this: DungeonScene, monster: Creature): void {
-		if (monster.isHero || monster.isNPC || monster.flying || monster.hp <= 0) return;
+		//No blanket flying skip: Java exempts flyers only per trap (`GrippingTrap`
+		//47, `OozeTrap` 47, `PitfallTrap` 106-108, tag v3.3.8) - darts, grim,
+		//explosive, gases, fire, electricity, frost, rockfall and storm all hit
+		//a flying stepper, and the utility branches gate `!flying` at their own
+		//call sites. The old blanket skip left flying steppers on darts, grim
+		//and the gas/fire seeds with the trap unspent, which Java never does.
+		if (monster.isHero || monster.isNPC || monster.hp <= 0) return;
 		const cell = this.level.index(monster.x, monster.y);
 		if (!this.trapKinds.has(cell) || this.secrets.isSecret(monster.x, monster.y) || this.spentTrapCells.has(cell)) return;
 		const kind = this.trapKinds.get(cell)!;

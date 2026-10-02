@@ -217,6 +217,26 @@ const { selectRangedTarget, findEnemyAlly, pursueTarget } = require('./simulatio
 		assert.ok(/this\.markHazardMob\(ch\);\s*\n\s*let damage = Math\.max\(0, Random\.normalRange\(5 \+ this\.depth/.test(traps), 'rockfall marks before the hit');
 		assert.ok(/reigniteBuff\(c, 'cripple'\);\s*\n\s*\/\/[^\n]*\n\s*this\.markHazardMob\(c\);/.test(traps), 'gripping marks the non-flying mob stepper');
 	});
+	check('flying steppers spring every trap Java does not exempt (R071)', () => {
+		//Scene-seam source pin (the suite's convention): `GrippingTrap`,
+		//`OozeTrap` and the pitfall collapse exempt flyers at their own call
+		//sites (`GrippingTrap.java` 47, `OozeTrap.java` 47, `PitfallTrap.java`
+		//106-108, tag v3.3.8), so the mob entry seam must not blanket-skip
+		//them - darts, grim, explosive, gases, fire, electricity, frost,
+		//rockfall and storm all hit a flying stepper like Java.
+		const traps = readFileSync(new URL('../src/scenes/dungeon/environmentFireTraps.ts', import.meta.url), 'utf8');
+		assert.ok(traps.includes("\t\tif (monster.isHero || monster.isNPC || monster.hp <= 0) return;"), 'mob entry guard has no flying term');
+		const start = traps.indexOf('triggerMobTrapAt(this: DungeonScene, monster: Creature): void {');
+		assert.ok(start >= 0, 'mob trap seam exists');
+		const body = traps.slice(start, traps.indexOf('applyTrapBlast(this: DungeonScene'));
+		const code = body.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
+		assert.ok(!code.includes('flying'), 'no flying term in the mob seam code');
+		for (const gate of ['if (c && c.hp > 0 && !c.flying)', 'if (ch && ch.hp > 0 && !ch.flying)']) {
+			assert.ok(traps.includes(gate), `per-kind flying gate kept: ${gate}`);
+		}
+		const collapse = readFileSync(new URL('../src/scenes/dungeon/pitfallCollapse.ts', import.meta.url), 'utf8');
+		assert.ok(/!target\.flying/.test(collapse), 'pitfall collapse still skips flyers');
+	});
 	check('Health well satiates like Java instead of force-feeding hunger', () => {
 		//`WaterOfHealth.affectHero()` (tag `v3.3.8`) runs `buff(Hunger).satisfy(STARVING)`,
 		//i.e. hunger minus 450 floored at zero - never a jump toward HUNGRY.
