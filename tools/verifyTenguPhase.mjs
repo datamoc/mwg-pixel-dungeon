@@ -50,8 +50,11 @@ assert.ok(!hooks.includes('Math.floor(preHp / bracket)'), 'no duplicated bracket
 
 if (javaPath) {
 	const javaCases = readFileSync(javaPath, 'utf8').split(/\r?\n/).filter(Boolean)
-		.map(line => JSON.parse(line)).filter(row => Number.isInteger(row.preHp));
+		.map(line => JSON.parse(line)).filter(row => row.kind === 'damage' && Number.isInteger(row.preHp));
 	assert.ok(javaCases.length >= 90, 'Java Tengu harness covers the bracket boundary matrix');
+	const phaseCases = readFileSync(javaPath, 'utf8').split(/\r?\n/).filter(Boolean)
+		.map(line => JSON.parse(line)).filter(row => row.kind === 'phase1');
+	assert.equal(phaseCases.length, 9, 'Java Tengu harness covers the half-HP edge matrix');
 	let fields = 0;
 	for (const javaCase of javaCases) {
 		assert.equal(javaCase.error, undefined, `Java HP ${javaCase.preHp} / damage ${javaCase.damage} had no error`);
@@ -64,7 +67,22 @@ if (javaPath) {
 			`Java schedules a jump exactly when the bracket changes at HP ${javaCase.preHp}`);
 		fields += 3;
 	}
-	console.log(`tengu phase seam: ${javaCases.length} actual Java damage cases, ${fields} fields match; source and delegation checks pass`);
+	for (const javaCase of phaseCases) {
+		assert.equal(javaCase.error, undefined, `Java phase edge HP ${javaCase.preHp} / damage ${javaCase.damage} had no error`);
+		const bracket = tenguHpBracket(javaCase.maxHp);
+		const afterBracketClamp = tenguBracketClamp(javaCase.preHp, javaCase.preHp - javaCase.damage, bracket);
+		const startsPhase = tenguPhase1Edge('cell', afterBracketClamp, javaCase.maxHp);
+		assert.equal(javaCase.phaseStarted, startsPhase, `Java phase-1 gate at HP ${javaCase.preHp}, damage ${javaCase.damage}`);
+		assert.equal(javaCase.progressCalls, startsPhase ? 1 : 0, 'Java calls level progress once only at the phase edge');
+		assert.equal(javaCase.hp, startsPhase ? Math.floor(javaCase.maxHp / 2) : afterBracketClamp,
+			`Java phase-1 HP landing at HP ${javaCase.preHp}, damage ${javaCase.damage}`);
+		assert.equal(javaCase.state, startsPhase ? 'FIGHT_PAUSE' : 'FIGHT_START', 'Java phase state after the recorded progression call');
+		assert.equal(javaCase.jumpScheduled,
+			!startsPhase && tenguBracketChanged(javaCase.preHp, javaCase.hp, bracket),
+			'phase-1 progression takes precedence over the deferred bracket jump');
+		fields += 6;
+	}
+	console.log(`tengu phase seam: ${javaCases.length} Java damage cases + ${phaseCases.length} phase-edge cases, ${fields} fields match; source and delegation checks pass`);
 } else {
 	console.log('tengu phase seam: source and delegation checks pass (pass Java output path for runtime parity)');
 }

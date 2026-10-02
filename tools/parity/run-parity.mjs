@@ -13,7 +13,7 @@
  *   node tools/parity/run-parity.mjs --stage ghost       Ghost spawn gate + reward rolls per (seed, depth), Java v3.3.8 vs TS
  *   node tools/parity/run-parity.mjs --stage imp         Imp spawn gate + alternative flag + reward ring per seed, checkout oracle + S6 deck backport vs TS
  *   node tools/parity/run-parity.mjs --stage blacksmith  Blacksmith spawn gate + type + reward rolls per (seed, depth), Java v3.3.8 vs TS
- *   node tools/parity/run-parity.mjs --stage tengu       Tengu.damage() HP bracket clamp + deferred jump, Java v3.3.8 vs TS
+ *   node tools/parity/run-parity.mjs --stage tengu       Tengu.damage() bracket clamp, deferred jump + phase-1 edge, Java v3.3.8 vs TS
  *   options: --spd <SPD checkout>   (default $SPD_CHECKOUT or ~/dev/shattered-pixel-dungeon; a git repo with the tags/commits)
  *            --work <dir>           scratch dir for the Java trees (default <os tmp>/mwg-parity; reused between runs)
  *            --combat-ref v3.3.8    Java ref for the combat oracle
@@ -310,11 +310,11 @@ function blacksmithStage() {
 	gate('blacksmith: spawn/reward fields and actual Java completion outcomes match the port', r.status === 0, `report: ${join(outDir, 'blacksmith-report.txt')}`);
 }
 
-/** B3, boss transition domain: actual `Tengu.damage()` bracket clamp + the actor it schedules
- * when a hit crosses a bracket. FIGHT_PAUSE keeps the test away from arena presentation and
- * phase progression while retaining the production override's HP and jump branches. */
+/** B3, boss transition domain: actual `Tengu.damage()` bracket clamp + jump scheduling and
+ * its FIGHT_START half-HP phase edge. The progress test double records the transition without
+ * running arena map/layout presentation. */
 function tenguStage() {
-	console.log(`\n== tengu: Java ${combatRef} Tengu.damage() HP bracket clamp + deferred jump vs production TypeScript ==`);
+	console.log(`\n== tengu: Java ${combatRef} Tengu.damage() bracket clamp, deferred jump + phase-1 edge vs production TypeScript ==`);
 	const dir = join(work, `spd-${combatRef}`);
 	exportTree(dir, combatRef);
 	installHarness(dir, { tengu: true });
@@ -325,7 +325,7 @@ function tenguStage() {
 	if (!existsSync(javaOut)) { gate('tengu Java dump produced', false, g.out.slice(-500)); return; }
 	const r = run(process.execPath, [join(ROOT, 'tools', 'verifyTenguPhase.mjs'), javaOut]);
 	console.log(r.out.trim());
-	gate('tengu: actual Java damage clamp and jump scheduling match the production seam', r.status === 0, `report: ${javaOut}`);
+	gate('tengu: actual Java damage clamp, jump scheduling and phase-1 threshold match the production seam', r.status === 0, `report: ${javaOut}`);
 }
 
 function levelgenStage() {

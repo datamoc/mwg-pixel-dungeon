@@ -37,6 +37,10 @@ combinations. The production `blacksmithTurnInFavor()` matches the Java favor an
 consuming the ore, retaining the quest pickaxe, completion state, and the 2500-favor free-pickaxe threshold (60 completion fields),
 in addition to its 1350 spawn/reward fields.
 
+The `tengu` stage calls Java's actual `Tengu.damage()` for 102 HP-bracket cases and nine FIGHT_START half-HP
+phase-edge cases (360 compared fields total). The phase fixture's `PrisonBossLevel` subclass records the real
+override's `progress()` call and switches to FIGHT_PAUSE; it does not run arena map/layout presentation.
+
 ## How the Java half is made reproducible
 
 Nothing here modifies your SPD checkout. For each stage the runner:
