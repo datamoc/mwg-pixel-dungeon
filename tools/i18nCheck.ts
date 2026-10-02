@@ -16,7 +16,7 @@
  */
 
 import { SPD_MESSAGES } from '../src/generated/spdMessages';
-import { PORT_STRINGS, PORT_TRANSLATION_ORIGIN } from '../src/i18n/portStrings';
+import { PORT_STRINGS, PORT_STRINGS_BE, PORT_STRINGS_EO, PORT_STRINGS_SV, PORT_STRINGS_ZH_HANT, PORT_TRANSLATION_ORIGIN } from '../src/i18n/portStrings';
 import { CLASSES, CLASS_UNLOCK_HINT } from '../src/classes';
 import { readFileSync } from 'node:fs';
 import { LANGUAGES, detectLanguage } from '../src/i18n/languages';
@@ -136,17 +136,25 @@ for (const [, keys] of tables) {
 	for (const key of keys) check(`${key} is not its own value`, base[key] !== key);
 }
 
-// 3. every port-only catalogue is a complete, token-preserving translation of English. SPD's
+// 3. every full port-only catalogue is a complete, token-preserving translation of English. SPD's
 //    own keys need no such check: a locale that omits one falls back to the base catalog by
 //    design. This is the check that would have caught five locales (de/es/pt/it/pl) silently
 //    falling 24-31 keys behind when the EN table grew past them - a fallback is *safe*, so
 //    nothing else notices, but the player then reads English mid-sentence.
 const tokensOf = (text: string): string[] => [...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
-for (const [code, catalog] of Object.entries(PORT_STRINGS)) {
+// These four catalogs intentionally translate badges only (portStrings.ts / R074).
+// Check their authored badge entries directly: the assembled English badge fallback would
+// otherwise hide a missing translation. Other prose uses mwg's documented English fallback.
+const badgeCatalogs: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+	be: PORT_STRINGS_BE, eo: PORT_STRINGS_EO, sv: PORT_STRINGS_SV, 'zh-hant': PORT_STRINGS_ZH_HANT,
+};
+for (const [code, assembledCatalog] of Object.entries(PORT_STRINGS)) {
 	if (code === 'en') continue;
+	const catalog = badgeCatalogs[code] ?? assembledCatalog;
 	const englishKeys = Object.keys(PORT_STRINGS_EN);
-	const missing = englishKeys.filter((key) => catalog[key] === undefined);
-	check(`${code} has every English port string`, missing.length === 0, `${missing.length} missing: ${missing.slice(0, 6).join(', ')}`);
+	const requiredKeys = badgeCatalogs[code] ? englishKeys.filter((key) => key.startsWith('port.badges.')) : englishKeys;
+	const missing = requiredKeys.filter((key) => catalog[key] === undefined);
+	check(`${code} has every required ${badgeCatalogs[code] ? 'badge' : 'English port'} string`, missing.length === 0, `${missing.length} missing: ${missing.slice(0, 6).join(', ')}`);
 	const extra = Object.keys(catalog).filter((key) => !(key in PORT_STRINGS_EN));
 	check(`${code} adds no key English lacks`, extra.length === 0, extra.slice(0, 6).join(', '));
 	for (const key of englishKeys) {
