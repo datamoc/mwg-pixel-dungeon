@@ -394,7 +394,7 @@ export class DungeonScene extends Scene2D {
 			quaff: () => this.quaffPotion(), read: () => this.readScroll(), upgrade: () => this.upgradeGear(),
 		},
 		free: {
-			examine: () => this.examineTile(this.hero.x, this.hero.y),
+			examine: () => this.beginLookAim(),
 			//Preparation's blink: opening its aim costs nothing, and the attack it resolves into
 			//is what spends the turn (Java's own `HeroAction.Attack` from the cell picker).
 			preparation: () => this.usePreparationBlink(),

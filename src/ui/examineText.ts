@@ -117,9 +117,9 @@ export type TileExamineOutcome = { kind: 'say'; text: string } | { kind: 'alchem
 
 /**
  * `Level.java`'s `tileName`/`tileDesc`, bound to a free "Look" action - Java shows this
- * through `GameScene`'s cell-examine long-press, which this port has no pointer/keyboard
- * equivalent of, so the action just reports the hero's own cell rather than an arbitrary
- * selected one. Every region's own `*Level.java` overrides a different subset of
+ * through `GameScene`'s cell-examine tap, which this port opens as the shared map aim
+ * (`beginLookAim`: cursor starts on the hero, any visited-or-mapped cell confirms).
+ * Every region's own `*Level.java` overrides a different subset of
  * `water_name`/`grass_name`/`high_grass_name`(+`_desc`)/`entrance_desc`/`exit_desc` - all
  * reachable from `regionForDepth` alone (see the exact per-key region lists below,
  * checked directly against each real `*Level.java`), so they work whether or not this

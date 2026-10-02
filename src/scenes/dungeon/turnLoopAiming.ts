@@ -1170,6 +1170,27 @@ export const turnLoopAimingMethods = {
 	},
 
 	/**
+	 * The free Look action's cell picker (`GameScene.examineCell`, tag `v3.3.8`): Java
+	 * examines any tapped cell whose `visited` or `mapped` flag is set and stays silent
+	 * otherwise, so the validate hook is this port's `fov.isExplored`/`isVisible` pair
+	 * over the whole map (`requireLineOfSight: false`, like the armor-ability aim - a
+	 * remembered wall across the level is examinable). Cancelling a previous aim first
+	 * is always free (`beginAiming` consumes nothing until confirm). The cursor starts
+	 * on the hero, preserving the old hero-cell-only behavior as the default pick.
+	 */
+	beginLookAim(this: DungeonScene): void {
+		this.cancelAiming();
+		this.beginAiming({
+			range: Math.max(this.level.width, this.level.height),
+			requireLineOfSight: false,
+			initial: { x: this.hero.x, y: this.hero.y },
+			validate: (cell) => this.level.inside(cell.x, cell.y)
+				&& (this.fov.isVisible(cell.x, cell.y) || this.fov.isExplored(cell.x, cell.y)),
+			onConfirm: (cell) => this.examineTile(cell.x, cell.y),
+		});
+	},
+
+	/**
 	 * `Preparation`'s own action (`Preparation.doAction()` and its cell listener,
 	 * `Preparation.java` 264-334): the prepared strike, which is what makes the Assassin's
 	 * stealth state worth holding. Java opens a cell picker; on a visible hostile it either
