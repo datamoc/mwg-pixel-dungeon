@@ -2,7 +2,7 @@ import { ParticleEmitter, type ParticleEmitterOptions } from 'mwg';
 import { Container, Texture } from 'mwg/two-d/pixi-interop';
 import { TILE } from '../dungeonConstants';
 import type { DeathBurstSpec } from '../simulation/deathBursts';
-import { pourAurasFor, type PourAuraSpec } from '../simulation/pourAuras';
+import { gooWarnPourSpec, lotusLeafPourSpec, pourAurasFor, type PourAuraSpec, type RemoteAuraCell } from '../simulation/pourAuras';
 import type { Creature } from '../combat';
 import { missingBlobCellEmitterOptions } from './blobCellEmitters';
 
@@ -106,7 +106,7 @@ export function spawnCrystalSplash(layer: Container, alive: LiveBurst[], x: numb
  * tag `v3.3.8`). SPD's directional film particles are not available in the generic
  * white-pixel backend; burst counts, colors and broad direction are carried where known,
  * while timed emitter cadence and film artwork are simplified. */
-export type TrapSpeckKind = 'scream' | 'light' | 'frost' | 'ooze' | 'wool' | 'wound' | 'rock' | 'pitfall' | 'steam' | 'flame';
+export type TrapSpeckKind = 'scream' | 'light' | 'frost' | 'ooze' | 'wool' | 'wound' | 'rock' | 'pitfall' | 'steam' | 'flame' | 'leaf' | 'blast' | 'elmo';
 export function spawnTrapSpecks(layer: Container, alive: LiveBurst[], x: number, y: number, kind: TrapSpeckKind): void {
 	const options: Record<TrapSpeckKind, ParticleEmitterOptions & { count: number; duration: number }> = {
 		scream: { texture: Texture.WHITE, max: 3, rate: 0, life: 0.8, speed: [10, 18] as [number, number], angle: [-Math.PI * 0.72, -Math.PI * 0.28] as [number, number], scale: [4, 0] as [number, number], alpha: (t) => 1 - t, tint: 0xFFFF88, spawn: { shape: 'rect', width: TILE / 3, height: TILE / 3 }, count: 3, duration: 0.8 },
@@ -119,6 +119,15 @@ export function spawnTrapSpecks(layer: Container, alive: LiveBurst[], x: number,
 		pitfall: { texture: Texture.WHITE, max: 8, rate: 0, life: 0.8, speed: [8, 22] as [number, number], angle: [Math.PI * 0.35, Math.PI * 0.65] as [number, number], gravity: { x: 0, y: 36 }, scale: [4, 0] as [number, number], alpha: (t) => 1 - t, tint: 0x806044, spawn: { shape: 'rect', width: TILE, height: TILE }, count: 8, duration: 0.8 },
 		steam: { texture: Texture.WHITE, max: 10, rate: 0, life: 1, speed: [10, 15] as [number, number], angle: [-Math.PI * 0.55, -Math.PI * 0.45] as [number, number], spin: [0, Math.PI] as [number, number], scale: (t) => 1 + t, alpha: (t) => Math.sqrt(Math.min(t, 1 - t) * 0.5), tint: 0xCCCCCC, spawn: { shape: 'rect', width: TILE / 2, height: TILE / 2 }, count: 10, duration: 1 },
 		flame: { texture: Texture.WHITE, max: 10, rate: 0, life: 0.6, speed: 0, angle: [-Math.PI / 2, -Math.PI / 2] as [number, number], gravity: { x: 0, y: -80 }, scale: (t) => 4 * (1 - t), alpha: (t) => t < 1 / 5 ? t * 5 : 1 - t, tint: 0xEE7722, spawn: { shape: 'rect', width: TILE, height: TILE }, count: 10, duration: 0.6 },
+		//`Plant.wither()` (tag `v3.3.8`): `LeafParticle.GENERAL` bursts 6 leaves tinted
+		//at random from 0x004400 to 0x88CC44 - the white-pixel stand-in takes the
+		//midpoint 0x448822 as a single tint.
+		leaf: { texture: Texture.WHITE, max: 6, rate: 0, life: 0.6, speed: [8, 28] as [number, number], angle: [0, Math.PI * 2] as [number, number], scale: [3, 0] as [number, number], alpha: (t) => 1 - t, tint: 0x448822, spawn: { shape: 'rect', width: TILE / 2, height: TILE / 2 }, count: 6, duration: 0.6 },
+		//`Bomb.explode()` (tag `v3.3.8`): `BlastParticle.FACTORY` bursts 30 orange
+		//(0xEE7722) motes when the blast is destructive, FOV-gated by the caller.
+		blast: { texture: Texture.WHITE, max: 30, rate: 0, life: 0.8, speed: [32, 64] as [number, number], angle: [-Math.PI, 0] as [number, number], gravity: { x: 0, y: 50 }, scale: [8, 0] as [number, number], alpha: (t) => 1 - t, tint: 0xEE7722, spawn: { shape: 'rect', width: TILE, height: TILE }, count: 30, duration: 0.8 },
+		//`GooSprite.triggerEmitters()` (tag `v3.3.8`): every warn emitter bursts 10 `ElmoParticle` (0x22EE66, 0.6s, static start rising at -80, shrinking from 4) - the same white-pixel stand-in shape as `flame`, only the tint differs.
+		elmo: { texture: Texture.WHITE, max: 10, rate: 0, life: 0.6, speed: 0, angle: [-Math.PI / 2, -Math.PI / 2] as [number, number], gravity: { x: 0, y: -80 }, scale: (t) => 4 * (1 - t), alpha: (t) => t < 1 / 5 ? t * 5 : 1 - t, tint: 0x22EE66, spawn: { shape: 'rect', width: TILE, height: TILE }, count: 10, duration: 0.6 },
 	};
 	const { count, duration, ...emitterOptions } = options[kind];
 	const emitter = new ParticleEmitter(emitterOptions);
@@ -143,8 +152,10 @@ export function spawnShadowBurst(layer: Container, alive: LiveBurst[], x: number
 	track(layer, alive, emitter, x, y, count, 1);
 }
 
-/** A continuous pour aura owned by `syncPourAuras` below. */
+/** A continuous pour aura owned by `syncPourAuras` below, pinned to its own cell so remote warn emitters can sit off-creature. */
 export interface LiveAura {
+	x: number;
+	y: number;
 	emitter: ParticleEmitter;
 	key: string;
 }
@@ -177,9 +188,9 @@ function spawnPourAura(layer: Container, spec: PourAuraSpec, x: number, y: numbe
 				? (t: number) => { const remaining = 1 - t; return remaining > 0.8 ? 1 - remaining : remaining * 0.25; }
 				: (t: number) => 1 - t,
 		tint: spec.tint,
-		spawn: { shape: 'rect', width: TILE, height: TILE },
+		spawn: { shape: 'rect', width: spec.spawnRect?.[0] ?? TILE, height: spec.spawnRect?.[1] ?? TILE },
 	});
-	emitter.position.set(x * TILE, y * TILE);
+	emitter.position.set(x * TILE + (spec.spawnRect?.[2] ?? 0), y * TILE + (spec.spawnRect?.[3] ?? 0));
 	layer.addChild(emitter);
 	emitter.start();
 	return emitter;
@@ -195,12 +206,16 @@ export interface PourAuraScene {
 	fov: { isVisible(x: number, y: number): boolean };
 	effectLayer: Container;
 	gnollHasSapper?: (creature: Creature) => boolean;
+	/** Remote warn cells for a charging Goo (`simulation/pourAuras.ts`'s `gooPumpWarnCells`); absent (or returning undefined) means no remote emitters. */
+	gooPumpWarnCells?: (creature: Creature) => RemoteAuraCell[] | undefined;
+	/** Leaf-range cells for a Lotus ally (`simulation/pourAuras.ts`'s `lotusLeafCells`); absent (or returning undefined) means no remote emitters. */
+	lotusLeafCells?: (creature: Creature) => RemoteAuraCell[] | undefined;
 }
 
 /**
  * Continuous pour auras (`simulation/pourAuras.ts`), synced every frame the
  * way Java's sprite `update()` re-poses its emitters: a creature whose spec
- * set changed (supercharge lit, goo bloodied, eye charged) is rebuilt, a
+ * set changed (supercharge lit, goo bloodied or pumped, eye charged, warn ring moved) is rebuilt, a
  * creature with none loses its emitter, and everything follows cells and FOV.
  */
 export function syncPourAuras(scene: PourAuraScene, dt = 0): void {
@@ -209,6 +224,8 @@ export function syncPourAuras(scene: PourAuraScene, dt = 0): void {
 		live = new Map();
 		aurasByScene.set(scene, live);
 	}
+	const warnSpec = gooWarnPourSpec();
+	const leafSpec = lotusLeafPourSpec();
 	const seen = new Set<unknown>();
 	for (const creature of scene.creatures) {
 		seen.add(creature);
@@ -216,13 +233,18 @@ export function syncPourAuras(scene: PourAuraScene, dt = 0): void {
 			...creature,
 			hasGnollSapper: creature.kind === 'gnollGeomancer' && (scene.gnollHasSapper?.(creature) ?? false),
 		});
-		const key = auraKey(specs);
+		//Remote pour rings (Goo's pump-up warn cells, the Lotus ally's leaf range) pour their own spec onto remote cells; each gets its own emitter so it can sit (and FOV-gate) at its own cell instead of following the creature.
+		const warn = scene.gooPumpWarnCells?.(creature) ?? [];
+		const leaves = scene.lotusLeafCells?.(creature) ?? [];
+		const key = `${auraKey(specs)}|${warn.map((cell) => `${cell.x},${cell.y}`).join(';')}|${leaves.map((cell) => `${cell.x},${cell.y}`).join(';')}`;
+		const placements: { spec: PourAuraSpec; x: number; y: number }[] = [...specs.map((spec) => ({ spec, x: creature.x, y: creature.y })), ...warn.map((cell) => ({ spec: warnSpec, x: cell.x, y: cell.y })), ...leaves.map((cell) => ({ spec: leafSpec, x: cell.x, y: cell.y }))];
 		const current = live.get(creature);
-		if (current && current[0]?.key === key && current.length === specs.length) {
-			for (let i = 0; i < specs.length; i++) {
+		if (current && current[0]?.key === key && current.length === placements.length) {
+			for (let i = 0; i < placements.length; i++) {
 				const aura = current[i]!;
-				aura.emitter.position.set(creature.x * TILE, creature.y * TILE);
-				aura.emitter.visible = scene.fov.isVisible(creature.x, creature.y);
+				const placement = placements[i]!;
+				aura.emitter.position.set(placement.x * TILE + (placement.spec.spawnRect?.[2] ?? 0), placement.y * TILE + (placement.spec.spawnRect?.[3] ?? 0));
+				aura.emitter.visible = scene.fov.isVisible(placement.x, placement.y);
 				if (aura.emitter.visible && dt > 0) aura.emitter.update(dt);
 			}
 			continue;
@@ -231,12 +253,12 @@ export function syncPourAuras(scene: PourAuraScene, dt = 0): void {
 			for (const aura of current) aura.emitter.destroy();
 			live.delete(creature);
 		}
-		if (specs.length === 0) continue;
-		const built: LiveAura[] = specs.map((spec) => {
-			const emitter = spawnPourAura(scene.effectLayer, spec, creature.x, creature.y);
-			emitter.visible = scene.fov.isVisible(creature.x, creature.y);
+		if (placements.length === 0) continue;
+		const built: LiveAura[] = placements.map((placement) => {
+			const emitter = spawnPourAura(scene.effectLayer, placement.spec, placement.x, placement.y);
+			emitter.visible = scene.fov.isVisible(placement.x, placement.y);
 			if (emitter.visible && dt > 0) emitter.update(dt);
-			return { emitter, key };
+			return { emitter, key, x: placement.x, y: placement.y };
 		});
 		live.set(creature, built);
 	}
@@ -475,7 +497,7 @@ export function syncBlobCells(scene: BlobVisualScene, layers: readonly BlobVisua
 		if (!current) {
 			const emitter = new ParticleEmitter(blobCellEmitterOptions(layer));
 			emitter.position.set(x * TILE, y * TILE); scene.effectLayer.addChild(emitter); emitter.start();
-			current = { emitter, key }; live.set(key, current);
+			current = { emitter, key, x, y }; live.set(key, current);
 		} else current.emitter.position.set(x * TILE, y * TILE);
 		current.emitter.visible = scene.fov.isVisible(x, y);
 		if (current.emitter.visible && dt > 0) current.emitter.update(dt);

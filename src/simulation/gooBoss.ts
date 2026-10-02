@@ -28,6 +28,10 @@ export interface GooBossContext {
 	 * There is no actor cooldown field here; the scene maps the hero's attack cost through the
 	 * same clamped one-to-three turn window used by other telegraphed actors. */
 	readonly onChallengePump?: () => void;
+	/** `GooSprite.pumpUp(warnDist)` presentation: the `pump` anim plus `CHARGEUP` at `warnDist == 1 ? 0.8 : 1` rate. Fires on each charge transition (start and step), not on every sprite refresh the way Java's `updateSpriteState` re-arms it. */
+	readonly onPumpWarn?: (warnDist: number) => void;
+	/** Primed-slam presentation hook: Java bursts every warn emitter (`triggerEmitters`, 10 `ElmoParticle` each, plus `BURNING`) only when Goo is unseen, and plays the `pumpAttack` anim with no burst when seen. The scene owns visibility, so it gates on its own FOV. Fires before `pumped` zeroes so the scene still sees the charge it is discharging. */
+	readonly onPumpSlam?: () => void;
 }
 
 /**
@@ -85,6 +89,7 @@ export function takeGooTurn(goo: Creature, context: GooBossContext): void {
 
 	const pumped = goo.pumped ?? 0;
 	if (gooSlamReady(pumped)) {
+		context.onPumpSlam?.();
 		goo.pumped = 0;
 		const { accuracy, damage } = context.stats(goo);
 		context.say(context.messages.slam, 'warning');
@@ -95,6 +100,7 @@ export function takeGooTurn(goo: Creature, context: GooBossContext): void {
 	}
 	if (gooChargeStep(pumped)) {
 		goo.pumped = 2;
+		context.onPumpWarn?.(2);
 		context.say(context.messages.pumpMore, 'warning');
 		return;
 	}
@@ -105,9 +111,9 @@ export function takeGooTurn(goo: Creature, context: GooBossContext): void {
 		//cost is applied by the scene at the same point as Java's `spend(...)`.
 		goo.pumped = gooPumpTarget(context.strongerBosses);
 		if (context.strongerBosses) context.onChallengePump?.();
+		context.onPumpWarn?.(goo.pumped);
 		context.say(context.messages.pump, 'warning');
 		return;
 	}
 	context.attack(goo, context.hero);
 }
-

@@ -1,5 +1,5 @@
 import { Random, Roguelike } from 'mwg';
-import { absorbShield, addBuff, BUFF_DURATION, buffBlocked, doomDamage, reigniteBuff, type Creature, type GroundItem, type Step } from '../combat';
+import { absorbShield, addBuff, BUFF_DURATION, buffBlocked, doomDamage, npcHasNoOpDamageAndBuff, reigniteBuff, type Creature, type GroundItem, type Step } from '../combat';
 import { isUndeadOrDemonic } from '../monsters';
 import { MWL_BOMB_RULES, mwlItemEffectValue } from '../mwlContent';
 import type { DamageSourceElement } from '../simulation/buffs';
@@ -31,6 +31,10 @@ export interface BombEffectsContext {
 	readonly absorbHeroDamage: (amount: number) => number;
 	readonly protectDamage?: (target: Creature, amount: number) => number;
 	readonly showDamage: (target: Creature, amount: number) => void;
+	/** `Bomb.explode()` presentation (tag `v3.3.8`): BLAST always, plus the 30-mote
+	 * burst when the blast is destructive. Scene callers wire it; headless item-rule
+	 * callers omit it, like `applyCharacterDamage`. */
+	readonly blastPresentation?: (x: number, y: number, destructive: boolean) => void;
 	readonly kill: (target: Creature, cause?: 'poison' | 'fire' | 'hunger' | 'trap' | 'foe') => void;
 	readonly say: (message: string, level?: 'positive' | 'negative' | 'warning') => void;
 	readonly yogShielded: (target: Creature) => boolean;
@@ -108,10 +112,10 @@ export function applyBlastDamage(target: Creature, amount: number, pierceArmor: 
 	if (target.allyKind === 'sheep') return false;
 	//`SentryRoom$Sentry.damage()` (tag `v3.3.8`) is likewise a no-op.
 	if (target.kind === 'sentry') return false;
-	//Every NPC's `damage(int, Object)` is a no-op - "do nothing" (tag `v3.3.8`).
+	//The named quest/shop NPCs override `damage(int, Object)` with a no-op (tag `v3.3.8`); Ward inherits Char.damage.
 	//The scene dispatch (`applyCharacterDamage`) carries this gate for live callers;
 	//this headless compatibility half needs its own copy, exactly like the two above.
-	if (target.isNPC) return false;
+	if (npcHasNoOpDamageAndBuff(target)) return false;
 	//`Challenge.SpectatorFreeze` makes `Char.isInvulnerable()` true for every damage
 	//source (tag `v3.3.8`), not only melee attacks. Keep the bomb's damage roll above
 	//this seam, then discard the HP change just as Java's `Char.damage()` does.
@@ -177,6 +181,10 @@ export function detonateBomb(ground: GroundItem, chained: Set<string>, context: 
 	const ruleKey = tengu ? 'tengu' : variant === 'shrapnelBomb' || variant === 'regrowthBomb' || variant === 'arcaneBomb' ? variant : variant && SPECIALTY_BOMB_IDS.has(variant) ? 'specialty' : 'standard';
 	const rule = MWL_BOMB_RULES[ruleKey] ?? MWL_BOMB_RULES.standard;
 	if (!rule) throw new Error(`MWL bomb rule is missing: ${ruleKey}`);
+	//`Bomb.explode()` (tag `v3.3.8`) plays BLAST on every detonation and bursts 30
+	//motes only when `explodesDestructively()` - the MWL `baseBlast` flag already
+	//encodes exactly that split (false only for regrowth/arcane/shrapnel).
+	context.blastPresentation?.(at.x, at.y, rule.baseBlast);
 	const lo = rule.minBase + rule.minPerDepth * context.depth;
 	const hi = rule.maxBase + rule.maxPerDepth * context.depth;
 	let heroDied = false;
@@ -204,7 +212,7 @@ export function detonateBomb(ground: GroundItem, chained: Set<string>, context: 
 		}
 	}
 	if (rule.baseBlast) for (const target of [...context.creatures]) {
-		if (target.isNPC || target.hp <= 0 || !context.level.passable(target.x, target.y) || Roguelike.chebyshevDistance(at, target) > rule.affectedRadius) continue;
+		if (npcHasNoOpDamageAndBuff(target) || target.hp <= 0 || !context.level.passable(target.x, target.y) || Roguelike.chebyshevDistance(at, target) > rule.affectedRadius) continue;
 		if (magicalBomb && target.magicImmune) continue;
 		if (applyBlastDamage(target, Math.max(0, Random.normalRange(lo, hi)), false, context)) heroDied = true;
 	}
@@ -214,7 +222,7 @@ export function detonateBomb(ground: GroundItem, chained: Set<string>, context: 
 		&& Roguelike.chebyshevDistance(at, context.hero) <= rule.affectedRadius) {
 		context.onTenguBombHeroHit?.();
 	}
-	const affected = [...context.creatures].filter((target) => !target.isNPC && target.hp > 0 && context.level.passable(target.x, target.y) && Roguelike.chebyshevDistance(at, target) <= rule.affectedRadius);
+	const affected = [...context.creatures].filter((target) => !npcHasNoOpDamageAndBuff(target) && target.hp > 0 && context.level.passable(target.x, target.y) && Roguelike.chebyshevDistance(at, target) <= rule.affectedRadius);
 	const payload: string = String(variant ?? '');
 	if (payload === 'frostBomb') for (const target of affected) {
 		delete target.buffs['burning'];

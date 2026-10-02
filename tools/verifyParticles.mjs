@@ -39,15 +39,68 @@ export function verifyParticles(require, check) {
 		assert.deepEqual(pourAurasFor({ kind: 'eye' }), []);
 		assert.equal(one({ kind: 'goo', hp: 10, maxHp: 20 }).tint, 0x000000);
 		assert.deepEqual(pourAurasFor({ kind: 'goo', hp: 11, maxHp: 20 }), []);
-		//Sites with no representable trigger stay silent: the lotus and the
+		//A pumped Goo pours its own cell even at full health (Java's warn set
+		//includes distance 0); a bloodied pumped Goo pours spray plus warn.
+		assert.deepEqual(pourAurasFor({ kind: 'goo', hp: 20, maxHp: 20, pumped: 1 }).map((spec) => spec.rate), [1 / 0.04]);
+		assert.equal(pourAurasFor({ kind: 'goo', hp: 10, maxHp: 20, pumped: 2 }).length, 2);
+		//A lotus ally pours leaves over its own cell at the ring's 0.5 beat.
+		assert.equal(one({ kind: 'ward', allyKind: 'lotus' }).rate, 2);
+		//Sites with no representable trigger stay silent: the
 		//necromancer/spectral summonings pour at remote cells off unported
-		//state, the golem pours while teleporting (no such state here), and
-		//the phantom piranha has no kind at all.
-		assert.deepEqual(pourAurasFor({ kind: 'ward', allyKind: 'lotus' }), []);
+		//state, and the phantom piranha has no kind at all.
 		assert.deepEqual(pourAurasFor({ kind: 'necromancer' }), []);
 		assert.deepEqual(pourAurasFor({ kind: 'spectralNecromancer' }), []);
 		assert.deepEqual(pourAurasFor({ kind: 'golem' }), []);
 		assert.deepEqual(pourAurasFor({ kind: 'rat' }), []);
+	});
+	check('goo pump-up warn cells follow Java\u2019s ring rule', () => {
+		const { gooPumpWarnCells, gooWarnPourSpec } = require('./simulation/pourAuras');
+		const open = () => true;
+		//No charge warns nowhere; the own cell rides the creature emitter.
+		assert.deepEqual(gooPumpWarnCells(5, 5, 0, open, open), []);
+		assert.deepEqual(gooPumpWarnCells(5, 5, -1, open, open), []);
+		//Warn distance 1 rings the eight neighbours in scan order.
+		assert.deepEqual(gooPumpWarnCells(5, 5, 1, open, open), [
+			{ x: 4, y: 4 }, { x: 5, y: 4 }, { x: 6, y: 4 },
+			{ x: 4, y: 5 }, { x: 6, y: 5 },
+			{ x: 4, y: 6 }, { x: 5, y: 6 }, { x: 6, y: 6 },
+		]);
+		//Warn distance 2 reaches the whole 5x5 ring minus the centre.
+		assert.equal(gooPumpWarnCells(5, 5, 2, open, open).length, 24);
+		//Unseen cells stay dry, and either blocked ray direction vetoes.
+		assert.ok(!gooPumpWarnCells(5, 5, 1, (x, y) => x !== 6 || y !== 5, open).some((cell) => cell.x === 6 && cell.y === 5));
+		assert.ok(!gooPumpWarnCells(5, 5, 1, open, (fromX, fromY, toX, toY) => !(fromX === 5 && toX === 6 && toY === 5)).some((cell) => cell.x === 6 && cell.y === 5));
+		assert.ok(!gooPumpWarnCells(5, 5, 1, open, (fromX, fromY, toX, toY) => !(fromX === 6 && fromY === 5 && toX === 5)).some((cell) => cell.x === 6 && cell.y === 5));
+		//The ring pour is the bloodied-spray spec: same factory, same 0.04 beat.
+		assert.equal(gooWarnPourSpec().rate, 1 / 0.04);
+		assert.equal(gooWarnPourSpec().tint, 0x000000);
+	});
+	check('goo pump-up presentation stays wired to the aura sync and the slam', () => {
+		const bursts = readFileSync(new URL('../src/ui/effectBursts.ts', import.meta.url), 'utf8');
+		assert.ok(bursts.includes('scene.gooPumpWarnCells?.(creature) ?? []'),
+			'the aura sync must keep consulting the goo warn hook');
+		const source = readSceneSource();
+		assert.ok(source.includes('onPumpWarn: (warnDist) => {'),
+			'a Goo charge must keep cueing CHARGEUP through the scene');
+		assert.ok(source.includes('this.gooPumpWarnCells(goo) ?? []'),
+			'an unseen primed slam must keep bursting the warn cells');
+	});
+	check('lotus leaf range follows Java\u2019s Euclidean ring', () => {
+		const { lotusLeafCells, lotusLeafPourSpec } = require('./simulation/pourAuras');
+		const open = () => true;
+		//Level 0 reaches nothing remote; the own cell rides the creature emitter.
+		assert.deepEqual(lotusLeafCells(5, 5, 0, open, open), []);
+		//Level 1 rings the four orthogonals (diagonals are past trueDistance 1).
+		assert.deepEqual(lotusLeafCells(5, 5, 1, open, open), [
+			{ x: 5, y: 4 }, { x: 4, y: 5 }, { x: 6, y: 5 }, { x: 5, y: 6 },
+		]);
+		//Level 2 adds the diagonals and the two-step orthogonals: twelve cells.
+		assert.equal(lotusLeafCells(5, 5, 2, open, open).length, 12);
+		//Closed and unseen cells stay dry.
+		assert.ok(!lotusLeafCells(5, 5, 2, () => false, open).length);
+		assert.ok(!lotusLeafCells(5, 5, 2, open, () => false).length);
+		//The ring pour is leaves at the ring's own 0.5 beat.
+		assert.equal(lotusLeafPourSpec().rate, 2);
 	});
 	check('death bursts carry Java\u2019s counts, colors and samples', () => {
 		const { deathBurstsFor, wardZapBursts } = require('./simulation/deathBursts');

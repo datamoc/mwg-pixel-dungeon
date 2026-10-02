@@ -1988,6 +1988,63 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.ok(scene.includes('elemental.evasion = 5 * regionScale;'), 'newborns scale evasion by region');
 		assert.ok(scene.includes('elemental.maxHp = 15 * regionScale;'), 'newborns scale HT by region');
 	});
+	check('withered plants burst leaves in hero FOV', () => {
+		//`Plant.wither()` (tag `v3.3.8`, R070): the wither bursts `LeafParticle.GENERAL`
+		//x6 (tinted 0x004400-0x88CC44, midpoint 0x448822 here) when the plant cell sits
+		//in the hero's FOV - on the hero, mob and empty-root wither paths alike.
+		const scene = readSceneSource();
+		const bursts = readFileSync(new URL('../src/ui/effectBursts.ts', import.meta.url), 'utf8');
+		assert.equal((scene.match(/'leaf'\)/g) ?? []).length, 3,
+			'hero, mob and empty-root withers all burst leaves');
+		assert.ok(/tint: 0x448822/.test(bursts), 'leaf carries the GENERAL midpoint tint');
+		assert.ok(/leaf: \{[\s\S]*?count: 6/.test(bursts), 'leaf bursts six');
+		assert.ok(/triggerPortedPlantAt\(this: DungeonScene[\s\S]{0,1500}portedFeatures\.remove\(cell\)/.test(scene),
+			'hero wither uproots the feature like the mob and root paths');
+	});
+	check('bomb detonations play BLAST and burst when destructive', () => {
+		//`Bomb.explode()` (tag `v3.3.8`, R062): BLAST on every detonation, plus the
+		//30-mote 0xEE7722 burst when `explodesDestructively()` - the MWL `baseBlast`
+		//flag already encodes that split (false only for regrowth/arcane/shrapnel).
+		//The item-domain blast stays headless-safe behind an optional callback the
+		//scene wires with the FOV-gated speck seam.
+		const items = readFileSync(new URL('../src/items/bombEffects.ts', import.meta.url), 'utf8');
+		const scene = readSceneSource();
+		const bursts = readFileSync(new URL('../src/ui/effectBursts.ts', import.meta.url), 'utf8');
+		assert.ok(/context\.blastPresentation\?\.\(at\.x, at\.y, rule\.baseBlast\)/.test(items), 'detonation calls presentation with the destructive flag');
+		assert.ok(/blastPresentation: \(x, y, destructive\) => \{ runState\.audio\.cue\('blast', 1\)/.test(scene), 'scene cues BLAST at volume 1');
+		assert.ok(/destructive && this\.fov\.isVisible\(x, y\)\) spawnTrapSpecks\(this\.effectLayer, this\.effectBursts, x, y, 'blast'\)/.test(scene), 'burst is destructive- and FOV-gated');
+		assert.ok(/tint: 0xEE7722/.test(bursts), 'blast carries Java shard color');
+		assert.ok(/blast: \{[\s\S]*?count: 30/.test(bursts), 'blast bursts thirty');
+	});
+	check('lotus leaf range pours over the wand radius', () => {
+		//`LotusSprite.link` (tag `v3.3.8`, R059): every non-solid cell within Euclidean wand-level range pours leaves at 0.5 (fixed GENERAL greens for Java's level-palette `LEVEL_SPECIFIC`); the scene recovers the wand level from the lotus's undropping `maxHp` and FOV-gates each cell like every other speck seam.
+		const scene = readSceneSource();
+		const bursts = readFileSync(new URL('../src/ui/effectBursts.ts', import.meta.url), 'utf8');
+		assert.ok(/lotusLeafCells\(this: DungeonScene, creature: Creature\)/.test(scene), 'scene computes the lotus ring under the sync hook name');
+		assert.ok(/scene\.lotusLeafCells\?\.\(creature\)/.test(bursts), 'the aura sync calls the lotus hook');
+		assert.ok(/Math\.round\(\(\(creature\.maxHp \?\? 0\) - 25\) \/ 3\)/.test(scene), 'wand level is recovered from maxHp');
+	});
+	check('goo pump-up warns, then bursts elmo when the slam lands unseen', () => {
+		//`GooSprite.pumpUp/updateEmitters/triggerEmitters` (tag `v3.3.8`, R059): a charge warns at its distance (CHARGEUP pitched `warnDist == 1 ? 0.8 : 1`), warn cells pour `GooParticle` at 0.04, and the primed slam bursts 10 `ElmoParticle` per warn cell plus BURNING when Goo is unseen (a seen slam just plays the `pumpAttack` anim, which has no emitter change). Presentation stays headless-safe behind optional sim callbacks the scene wires with its FOV.
+		const scene = readSceneSource();
+		const bursts = readFileSync(new URL('../src/ui/effectBursts.ts', import.meta.url), 'utf8');
+		assert.ok(/onPumpWarn: \(warnDist\) => \{ runState\.audio\.cue\('chargeup', 0\.7, warnDist === 1 \? 0\.8 : 1\); \}/.test(scene), 'charge cues CHARGEUP at Java warn rate');
+		assert.ok(/onPumpSlam: \(\) => \{[\s\S]*?if \(this\.fov\.isVisible\(goo\.x, goo\.y\)\) return;/.test(scene), 'a seen slam skips the trigger burst');
+		assert.ok(/spawnTrapSpecks\(this\.effectLayer, this\.effectBursts, cell\.x, cell\.y, 'elmo'\)/.test(scene), 'an unseen slam bursts elmo over the warn cells');
+		assert.ok(/scene\.gooPumpWarnCells\?\.\(creature\)/.test(bursts), 'the aura sync calls the warn hook under the scene method\u2019s own name');
+		assert.ok(/cell\.x, cell\.y, 'elmo'\);[\s\S]{0,200}cue\('burning', 0\.7\)/.test(scene), 'an unseen slam plays BURNING');
+		assert.ok(/tint: 0x22EE66/.test(bursts), 'elmo carries Java particle color');
+		assert.ok(/elmo: \{[\s\S]*?count: 10/.test(bursts), 'elmo bursts ten per cell');
+	});
+	check('deferring a plant press under the bubble plays TRAMPLE', () => {
+		//`Level.pressCell()` (tag `v3.3.8`, R070): a plant stepped on or landed on
+		//while the TimeBubble holds plays TRAMPLE at volume 1 with a 0.96-1.05 pitch
+		//wobble. Trap deferrals play TRAP instead (out of scope); the wobble rides
+		//Math.random so cosmetic audio stays out of the seeded sim stream.
+		const scene = readSceneSource();
+		assert.equal((scene.match(/cue\('trample', 1, 0\.96 \+ Math\.random\(\) \* 0\.09\)/g) ?? []).length, 2,
+			'step and teleport plant deferrals both cue trample');
+	});
 	check('Fire spreads onto webbed cells without destroying the floor', () => {
 		//`Web.onUpdateCellFlags()` (tag `v3.3.8`) marks webbed cells flammable so
 		//`Fire.evolve()` ignites them; the web decays on its own clock and the

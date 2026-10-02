@@ -3,6 +3,9 @@ import { faceCharacter } from '../../../ui/characterPlacement';
 import { AnimatedSprite, Blob, Easing, Random, ReactionTable, Roguelike, Tweener, type ReactionRule } from 'mwg';
 import { simulationRandom } from '../../../adapters/mwgRandom';
 import { takeGooTurn as runGooTurn } from '../../../simulation/gooBoss';
+import { gooPumpWarnCells as computeGooPumpWarnCells } from '../../../simulation/pourAuras';
+import { traceRayToTarget } from '../../../mechanics/rays';
+import { spawnTrapSpecks } from '../../../ui/effectBursts';
 import { runVertigoStep } from '../../../adapters/gameSimulation';
 import { planRatKingWave, ratKingP1Summon, type RatKingAddKind, type RatKingWavePlan } from '../../../simulation/ratKingBoss';
 import { chooseDM300Ability, dm300VentPath, planDM300Knockback, planDM300Rockfall } from '../../../simulation/dm300Boss';
@@ -1487,7 +1490,27 @@ if (monster.hp <= 0) {
 				this.pendingMonsterTurnCost = Math.min(3, Math.max(1, Math.ceil(this.getAttackTurnCostMod())));
 			},
 			random: simulationRandom,
+			//`GooSprite.pumpUp(warnDist)` (`GooSprite.java`, tag `v3.3.8`) plays the `pump` anim plus `CHARGEUP` pitched by the warn distance (`warnDist == 1 ? 0.8 : 1`); the port has no sprite anims, so the cue at Java's own rate carries it.
+			onPumpWarn: (warnDist) => { runState.audio.cue('chargeup', 0.7, warnDist === 1 ? 0.8 : 1); },
+			//`Goo.doAttack()` (`Goo.java:196-204`, tag `v3.3.8`): a seen Goo plays the `pumpAttack` anim with no emitter change (no sprite anims here, so nothing to do); an unseen one bursts every warn emitter (`triggerEmitters`) and plays `BURNING`. The warn list clears with `pumped`, so the pour dies on the next aura sync.
+			onPumpSlam: () => {
+				if (this.fov.isVisible(goo.x, goo.y)) return;
+				for (const cell of this.gooPumpWarnCells(goo) ?? []) {
+					if (this.fov.isVisible(cell.x, cell.y)) spawnTrapSpecks(this.effectLayer, this.effectBursts, cell.x, cell.y, 'elmo');
+				}
+				runState.audio.cue('burning', 0.7);
+			},
 			messages: { slam: t('port.log.gooslam'), pump: t('port.log.goopump'), pumpMore: t('port.log.goopumpmore') },
+		});
+	},
+
+	/** Goo's pump-up warn cells for the aura sync (`GooSprite.updateEmitters`, tag `v3.3.8`): the `pumped` counter is Java's `pumpedUp` warn distance, gated on the hero's FOV with the port's standard projectile ray both ways (see `gooPumpWarnCells` for the stated reductions). A non-charging Goo reports undefined, so the sync keeps it to the creature-following spray. */
+	gooPumpWarnCells(this: DungeonScene, creature: Creature): Array<{ x: number; y: number }> | undefined {
+		if (creature.kind !== 'goo' || (creature.pumped ?? 0) <= 0) return undefined;
+		return computeGooPumpWarnCells(creature.x, creature.y, creature.pumped ?? 0, (x, y) => this.fov.isVisible(x, y), (fromX, fromY, toX, toY) => {
+			const path = traceRayToTarget(this.level, { x: fromX, y: fromY }, { x: toX, y: toY }, (x, y) => this.creatureAt(x, y));
+			const last = path[path.length - 1];
+			return last !== undefined && last.x === toX && last.y === toY;
 		});
 	},
 

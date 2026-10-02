@@ -1679,8 +1679,12 @@ export const environmentFireTrapsMethods = {
 				const cell = this.level.index(x, y);
 				const delayedTrap = this.trapKinds.has(cell);
 				const delayedFeature = this.portedFeatures.kindAt(cell)?.startsWith('plant:') ?? false;
-				if (this.timeBubbleTurns > 0 && (delayedTrap || delayedFeature)) this.timeBubblePresses.add(cell);
-				else this.portedFeatures.interact(cell, this);
+				if (this.timeBubbleTurns > 0 && (delayedTrap || delayedFeature)) {
+					this.timeBubblePresses.add(cell);
+					//`Level.pressCell()` (tag `v3.3.8`): deferring a plant press under the bubble
+					//plays TRAMPLE at volume 1; pitch wobble rides Math.random (music precedent).
+					if (delayedFeature) runState.audio.cue('trample', 1, 0.96 + Math.random() * 0.09);
+				} else this.portedFeatures.interact(cell, this);
 				if (!(this.timeBubbleTurns > 0 && delayedTrap)) this.triggerTrapAt(x, y);
 			} else {
 				this.trampleMobGrass(creature);

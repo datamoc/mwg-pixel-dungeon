@@ -17,6 +17,7 @@ import { ringElementsMultiplier } from '../../items/ringModifiers';
 import { capitalize, has, t } from '../../i18n/index';
 import { SPD_STATUS_COLOR } from '../../ui/spdTheme';
 import { Terrain, type PaintLevel } from '../../spdLevelGen/paintLevel';
+import { spawnTrapSpecks } from '../../ui/effectBursts';
 import { runState } from '../../runState';
 import { isChallengeEnabled } from '../../challenges';
 import { SPIRIT_HAWK_LIFESPAN, goForTheEyesEffect, spiritHawkSpeed, spiritHawkViewDistance } from '../../simulation/huntressAbilities';
@@ -273,8 +274,13 @@ export const actorTurnsHazardsMethods = {
 			const targetCell = this.level.index(target.x, target.y);
 			const delayedFeature = this.portedFeatures.kindAt(targetCell)?.startsWith('plant:') ?? false;
 			const delayedTrap = this.trapKinds.has(targetCell);
-			if (this.timeBubbleTurns > 0 && (delayedFeature || delayedTrap)) this.timeBubblePresses.add(targetCell);
-			else this.portedFeatures.interact(targetCell, this);
+			if (this.timeBubbleTurns > 0 && (delayedFeature || delayedTrap)) {
+				this.timeBubblePresses.add(targetCell);
+				//`Level.pressCell()` (tag `v3.3.8`): deferring a plant press under the bubble
+				//plays TRAMPLE at volume 1. The pitch wobble (0.96-1.05) rides Math.random so
+				//cosmetic audio stays out of the seeded sim stream (the music precedent).
+				if (delayedFeature) runState.audio.cue('trample', 1, 0.96 + Math.random() * 0.09);
+			} else this.portedFeatures.interact(targetCell, this);
 			this.pickupGroundItemAt(target.x, target.y);
 			this.checkCavesBossPylonGate();
 			this.checkCityBossSeal();
@@ -575,6 +581,9 @@ export const actorTurnsHazardsMethods = {
 			if (index >= 0) this.portedPaint.plants.splice(index, 1);
 		}
 		this.manualPlants.delete(cell);
+	//`Plant.wither()` (tag `v3.3.8`): the wither bursts `LeafParticle.GENERAL`
+	//x6 when the plant cell sits in the hero's FOV.
+	if (this.fov.isVisible(x, y)) spawnTrapSpecks(this.effectLayer, this.effectBursts, x, y, 'leaf');
 		if (this.portedFeatures.kindAt(cell)?.startsWith('plant:')) this.portedFeatures.remove(cell);
 		switch (kind) {
 			case 'firebloom': this.fire.seed(x, y, 2); break;
@@ -604,6 +613,10 @@ export const actorTurnsHazardsMethods = {
 		if (index >= 0) this.portedPaint!.plants.splice(index, 1);
 		this.manualPlants.delete(cell);
 
+	if (this.portedFeatures.kindAt(cell)?.startsWith('plant:')) this.portedFeatures.remove(cell);
+	//`Plant.wither()` (tag `v3.3.8`): the wither bursts `LeafParticle.GENERAL`
+	//x6 when the plant cell sits in the hero's FOV.
+	if (this.fov.isVisible(x, y)) spawnTrapSpecks(this.effectLayer, this.effectBursts, x, y, 'leaf');
 		runHeroPlantEffect(kind, x, y, cell, this.hero, this.heroPlantContext());
 		this.featuresMap?.setLayerData('features', this.featureFrames());
 	},
@@ -718,6 +731,9 @@ setHeroBarkskin(this: DungeonScene, level: number, interval: number): void {
 		const kind = this.plantKindAt(cell);
 		if (index >= 0) this.portedPaint!.plants.splice(index, 1);
 		this.manualPlants.delete(cell);
+	//`Plant.wither()` (tag `v3.3.8`): the wither bursts `LeafParticle.GENERAL`
+	//x6 when the plant cell sits in the hero's FOV.
+	if (this.fov.isVisible(creature.x, creature.y)) spawnTrapSpecks(this.effectLayer, this.effectBursts, creature.x, creature.y, 'leaf');
 		if (this.portedFeatures.kindAt(cell)?.startsWith('plant:')) this.portedFeatures.remove(cell);
 		if (!kind) return true;
 		runMobPlantEffect(kind, cell, creature, this.mobPlantContext());

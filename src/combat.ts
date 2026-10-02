@@ -578,6 +578,12 @@ const FIRE_IMMUNITY_BUFFS = new Set<string>(STATUS_IMMUNITIES.fire);
 const MAGIC_IMMUNITY_BUFFS = new Set<string>(STATUS_IMMUNITIES.magic);
 const CHILL_IMMUNITY_BUFFS = new Set<string>(STATUS_IMMUNITIES.chill);
 
+/** NPC subclasses with explicit no-op `damage`/`add(Buff)` overrides at tag v3.3.8.
+ * WandOfWarding.Ward is the exception: it inherits both Char methods despite `npc` membership. */
+export function npcHasNoOpDamageAndBuff(c: Pick<Creature, 'isNPC' | 'kind'>): boolean {
+	return c.isNPC === true && c.kind !== 'ward';
+}
+
 /** The immunity gates Java applies before a buff can attach, shared by `addBuff`,
  * `reigniteBuff`, and every direct negative-buff write below so no caller can route
  * around them (`Char.add()` refuses in Java no matter which `affect`/`prolong` path
@@ -609,10 +615,9 @@ export function buffBlocked(c: Creature, id: BuffId): boolean {
 	if (c.allyKind === 'lightAlly' && (id === 'bleeding' || id === 'poison')) return true;
 	//Every quest-giver/shop NPC's `add(Buff)` returns false unconditionally (tag
 	//`v3.3.8`): `RatKing`, `Shopkeeper`, `Ghost`, `Wandmaker`, `Blacksmith` and
-	//`Imp` (plus the `ImpShopkeeper` subclass, which inherits `Shopkeeper`'s).
-	//No NPC can ever be buffed - or debuffed - by anything. The flag is MWL's
-	//`npc` actor set, so all seven ids refuse here through the one `isNPC` bit.
-	if (c.isNPC) return true;
+	//`Imp` (plus `ImpShopkeeper`, which inherits `Shopkeeper`'s). Ward inherits
+	//`Char.add(Buff)`, so it proceeds to its own property/status immunity checks.
+	if (npcHasNoOpDamageAndBuff(c)) return true;
 	//`Elemental.add(Buff)` (tag `v3.3.8`) returns false for hate-listed opposite-
 	//element attaches (Fire: Frost/Chill; Frost: Burning) - the damage half rides
 	//`applyElementalBacklash` at the `addBuff`/`reigniteBuff` boundary, this refusal

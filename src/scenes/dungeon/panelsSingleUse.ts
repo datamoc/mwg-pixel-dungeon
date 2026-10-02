@@ -38,6 +38,7 @@ import { StatusPane } from '../../ui/statusPane';
 import { DungeonHud } from '../../ui/dungeonHud';
 import { lightCloakArtifactBonus, lightCloakRechargeRate } from '../../talentEffects';
 import { resetPortedRun } from '../../spdLevelGen/gameBridge';
+import { spawnTrapSpecks } from '../../ui/effectBursts';
 import { runState } from '../../runState';
 import { isChallengeEnabled, restoreRunChallenges } from '../../challenges';
 import { CLASS_TALENTS, TALENT_TIERS, armorTalentDefinitions, hasClassTier3Row, subclassTalentDefinitions, talentDescKey, talentTitleKey, type TalentDefinition } from '../../talents';
@@ -66,7 +67,7 @@ import { useAlchemizeFlow, useStylusFlow, type AlchemizeContext, type StylusCont
 import { useStoneById as routeStoneAction, type StoneActionContext } from '../../items/stoneActions';
 import { setWandmakerQuestType, setWandmakerQuestWands, wandmakerQuestType } from '../../spdLevelGen/wandmaker';
 import { WATER } from '../../dungeonConstants';
-import { BUFF_DURATION, absorbShield, addBuff, doomDamage, setAnnounceBuff, setAttachBacklash, setBuffDurationModifier, type BuffId, type Creature, type GroundItem, type Step } from '../../combat';
+import { BUFF_DURATION, absorbShield, addBuff, doomDamage, npcHasNoOpDamageAndBuff, setAnnounceBuff, setAttachBacklash, setBuffDurationModifier, type BuffId, type Creature, type GroundItem, type Step } from '../../combat';
 import { BOSSES } from '../../monsters';
 import { APPEARANCE_TABLES, AUGMENT_OPTIONS, BLACKSMITH_QUEST, IMP_QUEST, SAD_GHOST_QUEST, SPD_LEVEL_CURVE, SUBCLASS_OPTIONS, SUBCLASS_TRACK, WANDMAKER_QUEST } from './shared';
 import { addBossScore, scoreStateFor } from '../../rankings';
@@ -1600,12 +1601,11 @@ export const panelsSingleUseMethods = {
 		//`Sheep.damage()` and `SentryRoom$Sentry.damage()` (tag `v3.3.8`) are no-ops for
 		//every source, not just bombs.
 		if (c.allyKind === 'sheep' || c.kind === 'sentry') return false;
-		//Every NPC's `damage(int, Object)` is a no-op - "do nothing" (tag `v3.3.8`):
+		//These NPCs override `damage(int, Object)` with a no-op (tag `v3.3.8`):
 		//`RatKing`, `Shopkeeper`, `Ghost`, `Wandmaker`, `Blacksmith` and `Imp` (plus
-		//`ImpShopkeeper`, which inherits `Shopkeeper`'s). No source routed through this
-		//dispatch - blast, blob or otherwise - can damage an NPC, the same shape as
-		//the sheep/sentry gates just above.
-		if (c.isNPC) return false;
+		//`ImpShopkeeper`, which inherits `Shopkeeper`'s). `WandOfWarding.Ward` is also
+		//flagged NPC but inherits `Char.damage()`, so keep that exception damageable.
+		if (npcHasNoOpDamageAndBuff(c)) return false;
 		//`Challenge.SpectatorFreeze` makes `Char.isInvulnerable()` true for every
 		//damage source (tag `v3.3.8`). Bombs, Stone of Blast and the other blast
 		//callers all converge here, so preserve their roll but discard HP damage.
@@ -1623,7 +1623,7 @@ export const panelsSingleUseMethods = {
 		//`AuraOfProtection.AuraBuff` is a defender-side `Char.damage()` modifier (tag `v3.3.8`),
 		//so blast damage must pass through the same nearby same-alignment reduction as attacks.
 		if (!options.skipAura) damage = this.auraProtectedDamage(c, damage);
-//`Char.damage()` (tag `v3.3.8`): a PowerOfMany-powered defender takes 25% less
+		//`Char.damage()` (tag `v3.3.8`): a PowerOfMany-powered defender takes 25% less
 		//damage, or `30% + 5% per LIFE_LINK rank` with that talent - the same reduction
 		//the attack() tails apply, now shared by every source through this dispatch,
 		//in Java's own Aura-then-PowerBuff-then-Doom order.
@@ -1816,6 +1816,9 @@ export const panelsSingleUseMethods = {
 			this.foulBossChallenge();
 			addBossScore(this, 1, -100);
 		},
+		//`Bomb.explode()` (tag `v3.3.8`): BLAST always, the 30-mote burst only when
+		//destructive, FOV-gated like every other speck seam.
+		blastPresentation: (x, y, destructive) => { runState.audio.cue('blast', 1); if (destructive && this.fov.isVisible(x, y)) spawnTrapSpecks(this.effectLayer, this.effectBursts, x, y, 'blast'); },
 		};
 	},
 

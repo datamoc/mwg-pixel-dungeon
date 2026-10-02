@@ -12,6 +12,7 @@ import { SceneSimulationAdapter } from '../../adapters/sceneSimulation';
 import { weaponAbilityFor } from '../../items/weaponAbilities';
 import { shatterPotionAt } from '../../items/potionEffects';
 import { shatterHasEffect } from '../../items/dropThrow';
+import { lotusLeafCells as computeLotusLeafCells } from '../../simulation/pourAuras';
 import { releaseBeeFromPot } from '../../items/honeypot';
 import { combinedStatBonusLevel, ringDef, ringEnergyMultiplier, ringMightBonus, RING_DEFS } from '../../items/ringModifiers';
 import { MOB_KEYS, has, t } from '../../i18n/index';
@@ -826,6 +827,13 @@ export const coreSpawnTilesMethods = {
 		lotus.accuracy = 0;
 		lotus.damage = [0, 0];
 		return lotus;
+	},
+
+	/** The Lotus ally's leaf range for the aura sync (`LotusSprite.link`, tag `v3.3.8`): the wand level is recovered the same way `lotusPreservesSeed` does (`maxHp` never drops, while `hp`/`sheepTurns` count the remaining turns), and the ring uses Java's Euclidean `inRange` (see `lotusLeafCells` for the stated reductions). A dead lotus reports undefined, so the sync keeps it to nothing at all. */
+	lotusLeafCells(this: DungeonScene, creature: Creature): Array<{ x: number; y: number }> | undefined {
+		if (creature.allyKind !== 'lotus' || (creature.hp ?? 0) <= 0) return undefined;
+		const wandLvl = Math.max(0, Math.round(((creature.maxHp ?? 0) - 25) / 3));
+		return computeLotusLeafCells(creature.x, creature.y, wandLvl, (x, y) => this.level.passable(x, y), (x, y) => this.fov.isVisible(x, y));
 	},
 
 	/**
