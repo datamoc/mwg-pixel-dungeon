@@ -21,7 +21,8 @@ import { sourceElementResisted } from '../../simulation/buffs';
 import { isBagId } from '../../items/bags';
 import { isResurrectKeepCandidate, partitionResurrectKeeps } from '../../items/resurrect';
 import { useStoneOfAggression as useItemStoneOfAggression, useStoneOfAugmentation as useItemStoneOfAugmentation, useStoneOfBlast as useItemStoneOfBlast, useStoneOfBlink as useItemStoneOfBlink, useStoneOfClairvoyance as useItemStoneOfClairvoyance, useStoneOfDeepSleep as useItemStoneOfDeepSleep, useStoneOfEnchantment as useItemStoneOfEnchantment, useStoneOfFear as useItemStoneOfFear, useStoneOfFlock as useItemStoneOfFlock, useStoneOfShock as useItemStoneOfShock } from '../../items/stones';
-import { type AlchemyFlowContext } from '../../items/alchemy';
+import { openAlchemySlots, type AlchemySlotsContext } from '../../items/alchemySlots';
+import { createAlchemyWindowHost } from '../../ui/alchemyWindow';
 import { applyDefenderDamageCurves } from '../../simulation/defenderDamageCurves';
 import { shadowCloneArmorProc } from '../../simulation/rogueAbilities';
 import { absorbCreatureShields } from '../../simulation/allyShields';
@@ -1154,6 +1155,14 @@ export const panelsSingleUseMethods = {
 		this.refresh();
 	},
 
+	/** The bag's own frame resolution for an item id, including a dealt potion/scroll appearance (`Potion.reset()`); shared by the item picker and the alchemy window. */
+	bagItemFrame(this: DungeonScene, id: string): number | undefined {
+		const category = id.startsWith('potion') ? 'potion' as const : id.startsWith('scroll') ? 'scroll' as const : null;
+		let appearance: number | undefined;
+		if (category) { try { appearance = appearanceItemFrame(category, this.appearances.appearanceOf(category, id)); } catch { appearance = undefined; } }
+		return itemFrameFor(id, appearance);
+	},
+
 	/** Opens the generic item picker over a snapshot of eligible bag entries. The pick
 	 * callback runs with the chosen entry's id/instanceId; a cancel row closes the panel with
 	 * no callback (the consuming item is never spent on a cancel - Java's known-scroll cancel
@@ -1183,13 +1192,7 @@ export const panelsSingleUseMethods = {
 				const item = this.bag.items.find((candidate) => candidate.id === id && (candidate.instanceId ?? undefined) === (instanceId ?? undefined)) as (typeof this.bag.items[number] & { sourceClass?: string }) | undefined;
 				return itemDescription(id, item?.sourceClass, this.subclass() === 'warden');
 			},
-			iconFrame: (id) => {
-				//The bag's own frame resolution, including a dealt potion/scroll appearance (`Potion.reset()`).
-				const category = id.startsWith('potion') ? 'potion' as const : id.startsWith('scroll') ? 'scroll' as const : null;
-				let appearance: number | undefined;
-				if (category) { try { appearance = appearanceItemFrame(category, this.appearances.appearanceOf(category, id)); } catch { appearance = undefined; } }
-				return itemFrameFor(id, appearance);
-			},
+			iconFrame: (id) => this.bagItemFrame(id),
 			onPick: (index) => this.chooseItemPicker(index),
 			onCancel: () => this.clearItemPicker(),
 		});
@@ -1224,9 +1227,10 @@ export const panelsSingleUseMethods = {
 	 * (pickers, craft tail, recipe list) lives in `items/alchemy.ts` behind
 	 * `AlchemyFlowContext` - the file-size refactor's first extraction, behavior-identical.
 	 */
-	alchemyFlowContext(this: DungeonScene): AlchemyFlowContext {
+	alchemyFlowContext(this: DungeonScene): AlchemySlotsContext {
 		const scene = this;
-		return {
+		const slotWindow = createAlchemyWindowHost((window) => scene.gameWindows.push(window), () => scene.windowViewport().width);
+		const context: AlchemySlotsContext = {
 			bag: scene.bag,
 			get alchemyEnergy() { return scene.alchemyEnergy; },
 			set alchemyEnergy(value: number) { scene.alchemyEnergy = value; },
@@ -1239,7 +1243,12 @@ export const panelsSingleUseMethods = {
 			openItemPicker: (title, entries, onPick) => this.openItemPicker(title, entries, onPick),
 			itemDisplayName: (id, identified) => this.itemDisplayName(id, identified),
 			refreshInventoryPanel: this.refreshInventoryPanel.bind(this),
+			openAlchemySlots: () => openAlchemySlots(context),
+			showAlchemyWindow: slotWindow.show,
+			closeAlchemyWindow: slotWindow.close,
+			itemFrame: (id) => scene.bagItemFrame(id),
 		};
+		return context;
 	},
 
 	/** Runestone use-action dispatch, one entry per ported stone id (was a 7-branch else-if

@@ -158,6 +158,7 @@ exports.buffBlocked = () => false;
 	writeFileSync(join(out, 'i18n', 'index.js'),
 		'exports.t = (key, params) => key + (params ? "[" + Object.values(params).join(",") + "]" : "");\n');
 	compile(join(root, 'src/items/alchemy.ts'), 'items/alchemy.js');
+	compile(join(root, 'src/items/alchemyFind.ts'), 'items/alchemyFind.js');
 	// R112's run-wide potion class store (the potion twin of `simulation/ringKnow.ts`,
 	// scene-keyed the same way; exotic ids normalize through `potionRegularCounterpart`).
 	compile(join(root, 'src/items/potionKnow.ts'), 'items/potionKnow.js');
@@ -617,6 +618,30 @@ assert.equal(missileAdjacentAccFactor(false, true, 3), 1.5, 'thrown weapons and 
 	identifiedGateBag.items[0].identified = true;
 	assert.equal(canCraftAlchemy(identifiedGateBag, 'magicalInfusion'), true, 'identifying the scroll enables the recipe');
 	assert.equal(craftAlchemy(identifiedGateBag, 'magicalInfusion'), true, 'the identified spell recipe crafts');
+	// R012: `Recipe.findRecipes` over the slot window's units (`items/alchemyFind.ts`, `Recipe.java` findRecipes, tag `v3.3.8`) - order-independent,
+	// every satisfied recipe listed, and the same unit gates the picker flows used.
+	{
+		const { findAlchemyRecipes, selectionFor } = require('./items/alchemyFind.js');
+		const ids = (units) => findAlchemyRecipes(units).map((match) => match.recipe.id);
+		assert.deepEqual(ids([]), [], 'no slotted unit finds no recipe');
+		assert.equal(ids([{ id: 'potionLevitation', identified: false }]).includes('featherFall'), false, 'an unidentified Levitation potion cannot brew the elixir (Java gates exact recipes on identification)');
+		assert.ok(ids([{ id: 'potionLevitation', identified: true }]).includes('featherFall'), 'an identified Levitation potion finds Feather Fall');
+		// a plain scroll satisfies both ScrollToStone and ScrollToExotic, each its own result row (Java lists every match)
+		const mirror = ids([{ id: 'scrollMirror', identified: false }]);
+		assert.ok(mirror.includes('scrollToStone'), 'a Mirror Image scroll lists ScrollToStone');
+		// slot order never matters
+		const meatPie = [{ id: 'meat' }, { id: 'pasty' }, { id: 'food' }];
+		assert.ok(ids(meatPie).includes('meatPie'), 'MeatPie accepts its three categories in any order');
+		assert.deepEqual(ids([{ id: 'meat' }, { id: 'food' }, { id: 'food' }]).includes('meatPie'), false, 'two rations are not a pasty');
+		const found = findAlchemyRecipes(meatPie).find((match) => match.recipe.id === 'meatPie');
+		assert.deepEqual(selectionFor(found), { kind: 'meatPie', ingredients: { pasty: { id: 'pasty', instanceId: undefined }, ration: { id: 'food', instanceId: undefined }, meat: { id: 'meat', instanceId: undefined } } }, 'the selection names each unit by its category slot, not its slot position');
+		// three seeds brew a potion; two seeds do not, and a seed plus a runestone is Alchemize
+		const seed = { id: 'seedSungrass' };
+		assert.ok(ids([seed, seed, seed]).includes('potionSeed'), 'three seeds find SeedToPotion');
+		assert.equal(ids([seed, seed]).includes('potionSeed'), false, 'two seeds are not enough');
+		assert.ok(ids([seed, { id: 'stoneOfBlink' }]).includes('alchemize'), 'a seed and a runestone find Alchemize');
+		assert.equal(ids([seed, seed, seed, seed]).length, 0, 'more than three slotted units never match');
+	}
 	const featherRecipe = alchemyRecipe('featherFall');
 	assert.deepEqual(ALCHEMY_RECIPE_MANIFEST.find((entry) => entry.id === 'featherFall'), {
 		id: 'featherFall', group: 'one', javaRecipe: 'ElixirOfFeatherFall.Recipe',

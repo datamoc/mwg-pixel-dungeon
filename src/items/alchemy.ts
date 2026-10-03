@@ -224,8 +224,8 @@ export function craftAlchemy(inventory: Inventory, id: string): boolean {
 	return recipe && canCraftAlchemy(inventory, id) ? craft(inventory, recipe) : false;
 }
 
-const MEAT_PIE_PASTY_IDS = new Set(['pasty', 'phantomMeat']);
-const MEAT_PIE_MEAT_IDS = new Set(['meat', 'stewedMeat', 'chargrilledMeat', 'frozenCarpaccio']);
+export const MEAT_PIE_PASTY_IDS = new Set(['pasty', 'phantomMeat']);
+export const MEAT_PIE_MEAT_IDS = new Set(['meat', 'stewedMeat', 'chargrilledMeat', 'frozenCarpaccio']);
 export interface MeatPieIngredientSelection {
 	readonly pasty: AlchemyUnitRef;
 	readonly ration: AlchemyUnitRef;
@@ -535,9 +535,11 @@ export interface AlchemyFlowContext {
 	readonly itemDisplayName: (id: string, identified: boolean) => string;
 	readonly refreshInventoryPanel: () => void;
 	readonly magicImmune?: boolean;
+	/** The slot window (`items/alchemySlots.ts`, R012): when the scene supplies it, `openAlchemyRecipes` opens it instead of the recipe picker. */
+	readonly openAlchemySlots?: () => void;
 }
 
-function alchemyEnergyAvailable(scene: AlchemyFlowContext): number {
+export function alchemyEnergyAvailable(scene: AlchemyFlowContext): number {
 	return scene.alchemyEnergy + (scene.viaToolkit ? toolkitAvailableEnergy({ bag: scene.bag }) : 0);
 }
 
@@ -557,7 +559,9 @@ export type AlchemyIngredientSelection =
 	| { kind: 'seeds'; units: AlchemyUnitRef[] }
 	| { kind: 'scroll'; unit: AlchemyUnitRef }
 	| { kind: 'meatPie'; ingredients: MeatPieIngredientSelection }
-	| { kind: 'alchemize'; seed: AlchemyUnitRef; stone: AlchemyUnitRef };
+	| { kind: 'alchemize'; seed: AlchemyUnitRef; stone: AlchemyUnitRef }
+	/** exact-id recipes: the bag transaction takes the authored ingredients by id */
+	| { kind: 'exact' };
 
 // Java's alchemy window adds specific carried units; the recipe row only names the
 // recipe, so these five category recipes pause here for one ingredient picker per unit
@@ -656,13 +660,38 @@ export function completeAlchemyRecipe(scene: AlchemyFlowContext, recipe: Alchemy
 		return;
 	}
 	if (!spendAlchemyEnergy(scene, recipeCost)) return;
-	const resultId = craftedResult?.id ?? recipe.result.id;
+	//The authored scrollToStone/scrollToExotic/potionToExotic rows carry one representative result; the brewed class depends on the chosen unit,
+	//so the log names the real product (the slot window made this visible: a Mirror Image scroll announced a Stone of Intuition).
+	const chosenScroll = selected.kind === 'scroll' ? selected.unit.id : undefined;
+	const mappedResult = chosenScroll === undefined ? undefined
+		: recipe.id === 'scrollToStone' ? SCROLL_TO_STONE[chosenScroll]
+		: recipe.id === 'scrollToExotic' ? scrollExoticResult(chosenScroll)
+		: recipe.id === 'potionToExotic' ? potionExoticResult(chosenScroll) : undefined;
+	const resultId = craftedResult?.id ?? mappedResult ?? recipe.result.id;
 	const resultIdentified = craftedResult?.identified ?? true;
 	scene.say(t('port.log.alchemy.crafted', { item: scene.itemDisplayName(resultId, resultIdentified) }), 'positive');
 	scene.refreshInventoryPanel();
 }
 
+/** Whether the carried Alchemist's Toolkit can take `energizeCost` from the pool right now (`AlchemistsToolkit.AC_ENERGIZE`). */
+export function toolkitCanEnergize(scene: AlchemyFlowContext): boolean {
+	const toolkit = scene.bag.find('toolkit');
+	return toolkit !== undefined && !toolkit.cursed && scene.magicImmune !== true
+		&& (toolkit.level ?? 0) < mwlItemEffectValue('toolkit', 'levelCap')
+		&& scene.alchemyEnergy >= mwlItemEffectValue('toolkit', 'energizeCost');
+}
+
+/** The energize action itself: moves pool energy into the toolkit's own charge. */
+export function energizeCarriedToolkit(scene: AlchemyFlowContext): void {
+	const cost = energizeToolkit({ bag: scene.bag }, scene.alchemyEnergy, scene.magicImmune === true);
+	if (cost <= 0) { scene.say(t('port.log.alchemy.unavailable'), 'negative'); return; }
+	scene.alchemyEnergy -= cost;
+	scene.say(t('items.artifacts.alchemiststoolkit.ac_energize'), 'positive');
+	scene.refreshInventoryPanel();
+}
+
 export function openAlchemyRecipes(scene: AlchemyFlowContext): void {
+	if (scene.openAlchemySlots) { scene.openAlchemySlots(); return; }
 	const availableEnergy = alchemyEnergyAvailable(scene);
 	const recipes = ALCHEMY_RECIPES.filter((recipe) => recipe.energyCost <= availableEnergy && (
 		recipe.id === 'potionSeed' ? canCraftPotionSeed(scene.bag) : recipe.id === 'meatPie' ? canCraftMeatPie(scene.bag) : recipe.id === 'scrollToStone' ? canCraftScrollToStone(scene.bag) : recipe.id === 'scrollToExotic' ? canCraftScrollToExotic(scene.bag) : recipe.id === 'potionToExotic' ? canCraftPotionToExotic(scene.bag) : recipe.id === 'alchemize'
@@ -670,10 +699,7 @@ export function openAlchemyRecipes(scene: AlchemyFlowContext): void {
 				&& scene.bag.items.some((item) => item.quantity > 0 && item.id.startsWith('stoneOf'))
 			: canCraftAlchemy(scene.bag, recipe.id)
 	));
-	const toolkit = scene.bag.find('toolkit');
-	const canEnergize = toolkit !== undefined && !toolkit.cursed && scene.magicImmune !== true
-		&& (toolkit.level ?? 0) < mwlItemEffectValue('toolkit', 'levelCap')
-		&& scene.alchemyEnergy >= mwlItemEffectValue('toolkit', 'energizeCost');
+	const canEnergize = toolkitCanEnergize(scene);
 	if (recipes.length === 0 && !canEnergize) {
 		scene.say(t('port.log.alchemy.noingredients'), 'negative');
 		return;
@@ -686,11 +712,7 @@ export function openAlchemyRecipes(scene: AlchemyFlowContext): void {
 			...(canEnergize ? [{ id: 'toolkit', instanceId: 'toolkit-energize', identified: true, quantity: 1 }] : [])],
 		(entry) => {
 			if (entry.instanceId === 'toolkit-energize') {
-				const cost = energizeToolkit({ bag: scene.bag }, scene.alchemyEnergy, scene.magicImmune === true);
-				if (cost <= 0) { scene.say(t('port.log.alchemy.unavailable'), 'negative'); return; }
-				scene.alchemyEnergy -= cost;
-				scene.say(t('items.artifacts.alchemiststoolkit.ac_energize'), 'positive');
-				scene.refreshInventoryPanel();
+				energizeCarriedToolkit(scene);
 				return;
 			}
 			const recipe = ALCHEMY_RECIPES.find((candidate) => candidate.id === entry.instanceId);
