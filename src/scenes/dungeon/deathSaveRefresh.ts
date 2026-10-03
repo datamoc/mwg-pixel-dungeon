@@ -1,3 +1,7 @@
+import { idProgressFor } from './passiveId';
+import { dropMimicExtras } from './ebonyMimic';
+import { exoticConsumableChance } from '../../simulation/trinkets';
+import { trinketLevelOf } from './trinkets';
 import { visualGrid } from '../../settings';
 import type { DungeonScene } from '../dungeonScene';
 import type { SaveShape } from './shared';
@@ -26,7 +30,11 @@ import { buildYogMinionDeck, chooseYogSpawnCell, yogBossChallengeQualified, yogF
 import { deathBurstsFor } from '../../simulation/deathBursts';
 import { colorblind, highContrast } from '../../settings';
 import { ringTypesKnownFor } from '../../simulation/ringKnow';
+import { mindFormDiscoveriesFor } from '../../items/mindFormDiscovery';
 import { potionKindsKnownFor } from '../../items/potionKnow';
+import { masteredItemsFor } from '../../items/mastery';
+import { metamorphedFor } from '../../items/metamorphosis';
+import { divineStateFor } from '../../items/divineInspiration';
 import { staffImbueFor } from '../../items/wands';
 import { Banner } from '../../ui/banner';
 import { bruteLootArmor, randomArmor, randomMissile, randomUsingDefaults, randomUsingDefaultsAnyCategory, Cat, type GenItem } from '../../items/generator';
@@ -40,6 +48,8 @@ import { BUFF_DURATION, addBuff, buffBlocked, doomDamage, reigniteBuff, rollHit,
 import { BOSSES, BOSS_KINDS, LIMITED_DROP_DECAY, MINIBOSS_KINDS, MOB_LOOT, MONSTERS, type AnyMonsterId, type MonsterId } from '../../monsters';
 import { ASCENSION_MOD } from '../../simulation/combat';
 import { SPD_LEVEL_CURVE, isStatueLoot } from './shared';
+import { applyMagicalSight } from './magicalSight';
+import { eyeOfNewtSenses, isStealthyMimic, shardLootBonus } from './trinkets';
 
 /** DungeonScene methods, moved verbatim from `dungeonScene.ts` (group `deathSaveRefresh`). Each takes the scene as 	his`;
  * `dungeonScene.ts` merges them back onto the class prototype. */
@@ -53,7 +63,7 @@ export const deathSaveRefreshMethods = {
 	 * talent branch has no target-indicator state. Java's second RockArmor ratio-rounding pass
 	 * can zero an odd hit discontinuously; the port keeps LivingEarth's ordinary half-block once
 	 * rather than reproducing that bug. */
-	skeletonBoneExplosion(this: DungeonScene, skeleton: Creature, cause: 'foe' | 'trap' | 'fire' | 'poison' | 'hunger' | 'falling'): void {
+	skeletonBoneExplosion(this: DungeonScene, skeleton: Creature, cause: 'foe' | 'trap' | 'fire' | 'poison' | 'hunger' | 'falling' | 'friendlyMagic'): void {
 		if (cause === 'falling') return;
 		let heroKilled = false;
 		for (const [dx, dy] of SKELETON_BONE_NEIGHBOURS) {
@@ -153,7 +163,7 @@ export const deathSaveRefreshMethods = {
 		creature.stuckAmmo = 0;
 	},
 
-	kill(this: DungeonScene, creature: Creature, cause: 'foe' | 'trap' | 'fire' | 'poison' | 'hunger' | 'falling' = 'foe'): void {
+	kill(this: DungeonScene, creature: Creature, cause: 'foe' | 'trap' | 'fire' | 'poison' | 'hunger' | 'falling' | 'friendlyMagic' = 'foe'): void {
 		const index = this.creatures.indexOf(creature);
 		if (index < 0) return;
 		//`Challenge.DuelParticipant.detach()` on death: a dueling target that dies (or a
@@ -255,8 +265,12 @@ export const deathSaveRefreshMethods = {
 			//1:1; a chasm landing maps to `DEATH_FROM_FALLING` (image 21). Gas and
 			//enemy-magic variants stay collapsed into 'foe' - no systems here produce
 			//them distinctly.
-			this.awardBadge(
-				cause === 'trap' ? 'death_trap' : cause === 'fire' ? 'death_fire' : cause === 'poison' ? 'death_poison' : cause === 'hunger' ? 'death_hunger' : cause === 'falling' ? 'death_falling' : 'death_foe'
+			//`Bleeding.act()`: a fatal bleed whose `source` is `Sacrificial.class` books
+			//`validateDeathFromFriendlyMagic()`; the merged DoT tick reports it as 'poison', so
+			//`bleedSource` is what tells them apart (the same trick the chasm fall uses).
+			const sacrificialBleed = cause === 'poison' && creature.buffs['bleeding'] !== undefined && creature.bleedSource === 'sacrificial';
+			this.awardBadge(sacrificialBleed ? 'death_friendly_magic' :
+				cause === 'friendlyMagic' ? 'death_friendly_magic' : cause === 'trap' ? 'death_trap' : cause === 'fire' ? 'death_fire' : cause === 'poison' ? 'death_poison' : cause === 'hunger' ? 'death_hunger' : cause === 'falling' ? 'death_falling' : 'death_foe'
 			);
 			this.awaitingInput = false;
 			this.gameOver = true;
@@ -278,7 +292,8 @@ export const deathSaveRefreshMethods = {
 			this.skeletonBoneExplosion(creature, cause);
 		}
 		//ChampionEnemy.Blazing.detach() (tag v3.3.8): a grounded blazing champion seeds
-		//Fire volume 2 in each eligible cell of NEIGHBOURS9 (the champion plus its eight neighbours) when it
+		//Fire volume 2 in each eligible cell of NEIGHBOURS9 (the champion's cell plus its
+		//eight neighbours) when it
 		//dies. The Java hook suppresses this only when the champion is flying over a pit; use
 		//the port's chasm predicate for that pit test and the existing floor Fire blob for the
 		//same short-lived environmental effect. This runs before ordinary hostile-death
@@ -412,6 +427,7 @@ export const deathSaveRefreshMethods = {
 					// deliberately, so a malformed legacy payload simply has no statue equipment.
 				}
 			}
+			if (creature.kind === 'mimic') dropMimicExtras(this, creature);
 			if ((creature.kind === 'mimic' || creature.kind === 'crystalMimic') && creature.mimicLoot) {
 				const [bonusSpec, heldGoldText] = creature.mimicLoot.split(';heldGold:', 2);
 				const [bonusPayload, heldItem] = bonusSpec.split(';held:', 2);
@@ -619,7 +635,7 @@ export const deathSaveRefreshMethods = {
 					decay,
 					decayCount: this.limitedDrops[counterKind as MonsterId] ?? 0,
 					generationDivisor,
-					dropBonus: ringWealthMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()) + this.bountyHunterLootBonus(),
+					dropBonus: ringWealthMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()) + this.bountyHunterLootBonus() + shardLootBonus(this),
 				});
 				const drop = Actors.rollLoot({ entries: [{ id: entry.kind, weight: 1 }], chance });
 				if (drop) {
@@ -667,13 +683,13 @@ export const deathSaveRefreshMethods = {
 			}
 			//NewbornFireElemental.die(): an enemy newborn always drops its `Embers` where it
 			//died (plus the music effect, which no system here exists to play). No
-				//`Elemental.die()` (tag `v3.3.8`): `questScores[1] += 2000` on an enemy kill -
-				//assigned here, since the player may keep the embers instead of turning them in.
-				if (!creature.isAlly) addQuestScore(this, 1, 2000);
 			//MOB_LOOT roll - guaranteed, outside the decay/wealth machinery above.
 			if (creature.kind === 'newbornElemental') {
 				this.spawnGroundItem('embers', creature.x, creature.y, { id: 'embers', quantity: 1, identified: true, sourceClass: 'Embers' });
 				this.say(t('port.log.emberdrop'), 'positive');
+				//`Elemental.die()` (tag `v3.3.8`): `questScores[1] += 2000` on an enemy kill -
+				//assigned here, since the player may keep the embers instead of turning them in.
+				if (!creature.isAlly) addQuestScore(this, 1, 2000);
 			}
 			//a slain thief returns what it stole, plus the gold it drops fleeing-or-dead.
 			//Bandit extends Thief and shares this unchanged - previously excluded here too by
@@ -742,10 +758,10 @@ export const deathSaveRefreshMethods = {
 			//cell - but only on a real die(): Burning destroys the heart through destroy(),
 			//skipping death processing entirely (no seed, and none of the +2000 quest score
 			//either). The kill cause carries the distinction (`fire` for the burn path).
+			if (cause !== 'fire') {
 				//`RotHeart.die()`: `questScores[1] += 2000` - the player may keep the seed,
 				//so the score lands on the kill, not the turn-in.
 				addQuestScore(this, 1, 2000);
-			if (cause !== 'fire') {
 				this.spawnGroundItem('seed', creature.x, creature.y, sourceInventoryItem('seed', 'Rotberry', (kind) => this.newItemInstanceId(kind)));
 			}
 		}
@@ -865,6 +881,10 @@ export const deathSaveRefreshMethods = {
 			//below are this port's `unseal()`s; each opens its own exit stairs in place of
 			//the old shared `depth++`/`enterLevel()`.
 			if (creature.kind === 'goo') {
+								//`Goo.die()` (tag `v3.3.8`): drops a depth-stamped `WornKey` at its
+				//cell (stamped at pickup, like every ground key). The exit niche
+				//stays `LOCKED_EXIT` until the key opens it - see `applyGooDeathUnseal`.
+				this.spawnGroundItem('wornKey', creature.x, creature.y, { id: 'wornKey', quantity: 1, identified: true });
 				applyGooDeathUnseal(this.bossUnsealContext());
 				return;
 			}
@@ -889,14 +909,14 @@ export const deathSaveRefreshMethods = {
 		}
 
 		//Ghost.Quest.process() on any of the three minibosses' deaths
-		//`Ghost.Quest.process()` (tag `v3.3.8`): `questScores[0] += 1000` when the quest
-		//mob dies while given and unprocessed - `active` here, so neither an ungiven
-		//nor an already-turned-in quest scores.
-		const ghostActive = this.quests.status('sadGhost') === 'active';
-		if (ghostActive) addQuestScore(this, 0, 1000);
 		if (creature.kind === 'fetidRat' || creature.kind === 'gnollTrickster' || creature.kind === 'greatCrab') {
+			//`Ghost.Quest.process()` (tag `v3.3.8`): `questScores[0] += 1000` when the quest
+			//mob dies while given and unprocessed - `active` here, so neither an ungiven
+			//nor an already-turned-in quest scores.
+			const ghostActive = this.quests.status('sadGhost') === 'active';
 			this.gameState.setSwitch('ghostTargetSlain', true);
 			this.quests.advanceStage('sadGhost', this.gameState);
+			if (ghostActive) addQuestScore(this, 0, 1000);
 			this.say(t('port.npc.ghost.echo'));
 		}
 		if (creature.kind === 'gnollSapper' || creature.kind === 'gnollGeomancer') this.gnollMineDied(creature);
@@ -927,7 +947,7 @@ export const deathSaveRefreshMethods = {
 			//ring slot, so it sees a single level, but the cap rule is kept in the helper because it is
 			//what makes the number for a hero wearing two.
 			const trackers: WealthTrackers = { triesToDrop: this.wealthTriesToDrop, dropsToEquip: this.wealthDropsToEquip };
-			const { plans, tiers, trackers: next } = planWealthDrops(trackers, rolls, bonus, wealthEquipBonus([bonus]), rng);
+			const { plans, tiers, trackers: next } = planWealthDrops(trackers, rolls, bonus, wealthEquipBonus([bonus]), rng, exoticConsumableChance(trinketLevelOf(this, 'trinketExoticCrystals')));
 			this.wealthTriesToDrop = next.triesToDrop;
 			this.wealthDropsToEquip = next.dropsToEquip;
 			for (let i = 0; i < plans.length; i++) {
@@ -1237,6 +1257,7 @@ export const deathSaveRefreshMethods = {
 		//A changed `SPDSettings.visualGrid()` applies on the next refresh (Java's `GridTileMap.updateMap()` reads it each redraw).
 		if (this.gridMap && this.gridApplied !== visualGrid()) this.refreshVisualGrid();
 		this.fov.update(this.hero.x, this.hero.y, this.viewRadius());
+		applyMagicalSight(this);
 		this.shareAllyVision();
 		this.pruneSmokeFromSight(this.fov, this.hero.x, this.hero.y);
 
@@ -1263,13 +1284,15 @@ export const deathSaveRefreshMethods = {
 			//`Talent.SEER_SHOT`: cells under a seer-shot reveal stay creature-visible while
 			//their own timer runs (see `procSeerShot`) - area-limited `mindvision`.
 			this.sprite(creature).visible = creature.isHero === true || this.fov.isVisible(creature.x, creature.y)
-				|| (mindVision && !creature.isNPC) || this.awareCreatures.has(creature)
+				|| (mindVision && !creature.isNPC && !isStealthyMimic(this, creature)) || this.awareCreatures.has(creature)
 				|| this.seerCells.has(this.level.index(creature.x, creature.y))
 				//`DivineSenseTracker` (`Level.updateVisibility()`, tag `v3.3.8`): the same
 				//reveal while the 50-turn tracker runs. Java limits it to `4+4*points`
 				//tiles; this port's `mindvision` channel is already range-unbounded
 				//(stated at its site), so the tracker rides it with no new divergence.
-				|| (!!this.hero.buffs['divineSense'] && !creature.isNPC);
+				|| (!!this.hero.buffs['divineSense'] && !creature.isNPC)
+				//`EyeOfNewt.mindVisionRange()` (`Level.java:1425`): hostile mobs within `2 + level` are sensed through walls.
+				|| eyeOfNewtSenses(this, creature);
 		}
 		if (this.stairsSprite) {
 			this.stairsSprite.visible = this.fov.isExplored(this.stairs.x, this.stairs.y);
@@ -1368,6 +1391,7 @@ export const deathSaveRefreshMethods = {
 				iron: keyOfDepth('ironKey'),
 				golden: keyOfDepth('goldenKey'),
 				crystal: keyOfDepth('crystalKey'),
+				worn: keyOfDepth('wornKey'),
 			},
 		});
 		this.refreshInventoryPanel();
@@ -1409,7 +1433,11 @@ export const deathSaveRefreshMethods = {
 			|| (creature.kind === 'gnollGeomancer' && (creature.geomancerHits ?? 0) >= 3)
 			//`BossHealthBar.assignBoss(CrystalSpire)` from its third pickaxe strike (`hits == 3`).
 			|| (creature.kind === 'crystalSpire' && (creature.spireHits ?? 0) >= 3)));
-		if ((boss ?? null) !== this.currentBoss) this.bossBleedLatched = false;
+		//Java `DM300.restoreFromBundle()` may call `BossHealthBar.bleed(true)` before
+		//this fresh scene's first boss-bar refresh, while `currentBoss` is still null.
+		//Preserve that restored latch on initial assignment; only a transition away from
+		//an already-tracked boss clears it.
+		if (this.currentBoss && (boss ?? null) !== this.currentBoss) this.bossBleedLatched = false;
 		this.currentBoss = boss ?? null;
 		if (boss && boss.hp > 0) {
 			this.bossChrome.visible = true;
@@ -1427,14 +1455,9 @@ export const deathSaveRefreshMethods = {
 				this.bossBleeding = bleeding;
 				this.bossHealthBar.setColor(bleeding ? 0xff7777 : 0xffffff);
 				this.bossNameLabel.setColor(bleeding ? 0xff3030 : theme().color.textHighlight);
-				//R107: re-evaluate boss music live on the bleed edge (this covers DM300's
-				//fraction bleed plus every latch - DK P3, Yog P5 - through the one transition
-				//Java's bar already computes). Java evaluates boss music only at scene entry,
-				//so it would keep the boss track until a save/load re-entry; switching live
-				//is the deliberate improvement (row states it), and the audio players skip
-				//re-requesting an unchanged selection, so non-finale bosses never restart.
-				//The mining branch keeps its entry music: no replay there.
-				if (!this.miningBranchActive) this.replayDungeonMusic();
+				if (this.depth in BOSSES && !this.bossUnsealedDepths.has(this.depth)) {
+					runState.audio.bossBleeding(regionForDepth(this.depth), bleeding);
+				}
 			}
 		} else {
 			this.bossChrome.visible = false;
@@ -1521,6 +1544,7 @@ export const deathSaveRefreshMethods = {
 			ammoSetId: this.ammoSetId,
 			missileThresholds: [...this.missileThresholds],
 			dustSpawnPower: this.dustSpawnPower,
+			boomerangReturns: this.boomerangReturns.map((pending) => ({ ...pending, inFlight: false })),
 			frostWand: this.frostWand,
 			wandType: this.wandType,
 			ghostSpawned: this.ghostSpawned,
@@ -1541,6 +1565,8 @@ export const deathSaveRefreshMethods = {
 			] as [number, { potions: number; identifies: number; buyback: { id: string; quantity: number; identified?: boolean }[] }])),
 			blacksmithSpawned: this.blacksmithSpawned,
 			impSpawned: this.impSpawned,
+			impNeed: this.impNeed,
+			impReward: this.impReward ? { ...this.impReward } : null,
 			limitedDrops: Object.entries(this.limitedDrops) as [MonsterId, number][],
 			droppedBags: [...this.droppedBags],
 			reclaimedTrap: this.reclaimedTrap,
@@ -1553,6 +1579,7 @@ export const deathSaveRefreshMethods = {
 			wealthDropsToEquip: this.wealthDropsToEquip,
 			suckerPunchTargets: [...this.suckerPunchTargets],
 			upgradeScrollDrops: this.upgradeScrollDrops,
+			trinketCatalystDropped: this.trinketCatalystDropped,
 			cookingHpCount: this.cookingHpCount,
 			blacksmithAlternative: this.blacksmithAlternative,
 			blacksmithQuestType: this.blacksmithQuestType,
@@ -1641,6 +1668,10 @@ export const deathSaveRefreshMethods = {
 				returnY: (item as typeof item & { returnY?: number }).returnY,
 				missileSet: (item as typeof item & { missileSet?: string }).missileSet,
 				tippedSeed: (item as typeof item & { tippedSeed?: string }).tippedSeed,
+				//`Blandfruit.storeInBundle()` (`POTIONATTRIB`, tag `v3.3.8`): the
+				//cooked fruit's imbued potion rides the same side channel (the framework
+				//inventory serializes only declared fields).
+				potionAttrib: (item as typeof item & { potionAttrib?: string }).potionAttrib,
 				//`HolyTome` charge/exp/level (`bagSources` side channel, like the spare-wand
 				//`wandCur` trio - `bagState` itself is not trusted with them).
 				tomeCharge: (item as typeof item & { charge?: number }).charge,
@@ -1662,7 +1693,12 @@ export const deathSaveRefreshMethods = {
 			questStages: this.quests.toJSON().stageIndex,
 			equippedRing: this.equippedRing,
 			ringTypesKnown: [...ringTypesKnownFor(this)],
+			mindFormDiscoveredTypes: [...mindFormDiscoveriesFor(this)],
 			potionKindsKnown: [...potionKindsKnownFor(this)],
+			masteryItems: [...masteredItemsFor(this)],
+			idProgress: Object.fromEntries([...idProgressFor(this)].map(([id, p]) => [id, { ...p }])),
+			metamorphedTalents: { ...metamorphedFor(this) },
+			divineInspiration: { boosted: [...divineStateFor(this).boosted], granted: [...divineStateFor(this).granted] },
 			ringHtBonus: this.ringHtBonus,
 			advancement: this.advancement.toJSON(),
 			talentPoints: this.talentPoints,
@@ -1704,7 +1740,7 @@ export const deathSaveRefreshMethods = {
 			blockingBarrierState: this.blockingBarrier.toJSON(),
 			blockingTurnsLeft: this.blockingTurnsLeft,
 			sealBarrierState: this.sealBarrier.toJSON(),
-			sealPartialGain: this.sealPartialGain,
+			sealState: { ...this.sealState },
 			armorSealed: this.armorSealed,
 			stealthTalentTicks: this.stealthTalentTicks,
 			empoweredZaps: this.empoweredZaps,
@@ -1728,9 +1764,11 @@ export const deathSaveRefreshMethods = {
 			healingEvasionTurns: this.healingEvasionTurns,
 			sungrassHealing: this.sungrassHealing,
 			sungrassPartial: this.sungrassPartial,
+			aquaHealingLeft: this.aquaHealingLeft,
  			healingLeft: this.healingLeft,
  			healingPercent: this.healingPercent,
  			healingFlat: this.healingFlat,
+ 			healingLimited: this.healingLimited,
 			sungrassPos: this.sungrassPos,
 			deathlessFuryUsed: this.deathlessFuryUsed,
 			momentumState: {

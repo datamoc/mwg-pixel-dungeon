@@ -155,9 +155,8 @@ export interface FireblastWandContext {
 	inside: (x: number, y: number) => boolean;
 	creatureAt: (x: number, y: number) => Creature | null;
 	fadeMirrorOnDamage: (target: Creature, damage: number) => boolean;
-	/** Direct `Char.damage()` call after this effect applies its fire-specific resistance. */
+	/** Direct `Char.damage()` dispatch for the raw wand roll; the scene adapter supplies WandOfFireblast as source. */
 	applyDamage: (target: Creature, damage: number) => void;
-	showDamage: (target: Creature, damage: number) => void;
 	setColorAdd: (target: Creature, red: number, green: number, blue: number) => void;
 	kill: (target: Creature) => void;
 	rollDamage: (min: number, max: number) => number;
@@ -219,12 +218,14 @@ export function useFireblastWand(context: FireblastWandContext): void {
 		if (victim.magicImmune) continue;
 		//`Char.Property.FIERY` halves WandOfFireblast damage before Java's one final
 		//round in Char.damage(); its FIERY holders are the Elementals and BurningFist.
-		const damageAfterFireResistance = fieryResistedDamage(
-			context.rollDamage(minimum, maximum), victim.kind, victim.elementalType, victim.yogFistType,
+		const rawDamage = context.rollDamage(minimum, maximum);
+		//The preview is used only by MirrorImage's first-positive-hit fade and log presentation;
+		//the real Aura, Doom and FIERY source-resistance reductions run inside the shared seam.
+		const damage = fieryResistedDamage(
+			doomDamage(rawDamage, victim), victim.kind, victim.elementalType, victim.yogFistType,
 		);
-		const damage = doomDamage(damageAfterFireResistance, victim);
 		if (context.fadeMirrorOnDamage(victim, damage)) continue;
-		context.applyDamage(victim, damage);
+		context.applyDamage(victim, rawDamage);
 		context.setColorAdd(victim, 0.6, 0.7, 1);
 		context.say(context.message(victim, damage), 'positive');
 		if (victim.hp <= 0) continue;

@@ -16,14 +16,10 @@ export const runState: {
 	audio: SpdAudio;
 	/** set by ClassSelectScene, read once by DungeonScene.create() */
 	pendingClass: ClassId;
-	/** Set by the class-select daily button; the next run start consumes it as a
-	 * date-seeded daily run, then clears it (`HeroSelectScene` daily flow). */
-	pendingDaily: boolean;
 } = {
 	sprites: undefined as unknown as SpdSprites,
 	audio: undefined as unknown as SpdAudio,
 	pendingClass: 'warrior',
-	pendingDaily: false,
 };
 
 /** Where the language override is persisted - see `main.ts`'s `main()` for why `localStorage`

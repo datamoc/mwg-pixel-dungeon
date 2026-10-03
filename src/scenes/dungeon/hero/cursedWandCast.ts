@@ -1,3 +1,4 @@
+import { setupChallengeArena } from '../challengeArena';
 import type { DungeonScene } from '../../dungeonScene';
 import { Random, Roguelike } from 'mwg';
 import { BUFF_DURATION, addBuff, buffBlocked, doomDamage, reigniteBuff, type Creature, type Step } from '../../../combat';
@@ -20,6 +21,8 @@ import { generatedInventoryItem } from '../../../items/generatedItems';
 import { groundKindForItem } from '../../../items/itemKinds';
 import { arcaneVisionDuration, soulMarkDuration, soulMarkProcThreshold } from '../../../talentEffects';
 import { talismanArtifactProcPlan } from '../../../items/talisman';
+import { resinExtraCurseChance, resinPositiveCurseChance } from '../../../simulation/trinkets';
+import { trinketLevelOf } from '../trinkets';
 
 /** `CursedWand.cursedZap()` (`items/wands/CursedWand.java`, tag `v3.3.8`) - moved verbatim from
  * `armorAbilityUse.ts` as the file-size refactor's extraction once `activateWildMagic`'s cursed
@@ -28,17 +31,13 @@ import { talismanArtifactProcPlan } from '../../../items/talisman';
 /** The origin wand's `buffedLvl()` for the effect `castCursedWandEffect` is currently
  * dispatching. Java reads `origin.buffedLvl()` at each `tryForWandProc` call site, but the
  * tier handlers are dispatched without their origin (that exact dispatch text is pinned by
- * `verifyArmorAbilities.mjs`), so the level rides this slot for the duration of one effect.
- * `null` means "no wand origin": the ChaosElemental entry sets it, matching Java's
- * `origin instanceof Wand` guard failing for a chaos zap, so `applyCursedWandProc` skips. */
-let cursedProcWandLevel: number | null = 0;
+ * `verifyArmorAbilities.mjs`), so the level rides this slot for the duration of one effect. */
+let cursedProcWandLevel = 0;
 
 export const cursedWandCastMethods = {
 	/** `ForestFire.effect()` (`CursedWand.java`, tag `v3.3.8`): seed Regrowth 15 on every
-	 * level cell. This scene seam is shared by the full VeryRare dispatcher. Java's positiveOnly
-	 * fire suppression is not
-	 * reachable from WildMagic, so this path also seeds the existing Fire field at random free
-	 * destinations only when a caller supplies that mode later. */
+	 * level cell. This scene seam is shared by the VeryRare dispatcher. The caller separately
+	 * seeds Java's random Fire cells only when WondrousResin did not roll positiveOnly. */
 	castCursedWandForestFire(this: DungeonScene): void {
 		for (const seed of cursedForestFireSeeds(this.level.width, this.level.height)) this.regrowth.seed(seed.x, seed.y, seed.volume);
 	},
@@ -47,36 +46,32 @@ export const cursedWandCastMethods = {
 	 * spare in `activateWildMagic`'s firing loop in place of a normal `fireWandShot`. `target` is
 	 * the same resolved aim the normal branch computes (occupant, else the original target) and
 	 * may be `undefined`; `cell` is the bolt's own collision cell. */
-	castCursedWandEffect(this: DungeonScene, target: Creature | undefined, cell: Step, origin: { instanceId: string; level?: number }): void {
+	castCursedWandEffect(this: DungeonScene, target: Creature | undefined, cell: Step, origin: { instanceId: string; level?: number }, forcePositive = false): void {
 		//`tryForWandProc` reads `origin.buffedLvl()`; Java's `buffedLvl()` only subtracts
 		//Degrade, which this port never applies to wands, so the stored level is the figure.
+		//Java's `cursedZap()` rolls `Random.Float()` before selecting the tier, even without
+		//Resin (its chance is then zero); keep that draw ahead of every tier/effect draw.
+		//The Float roll still happens during Java's forcePositive callback; the static flag
+		//then overrides its result for the bonus zap.
+		const positiveRoll = Random.float();
+		const positiveOnly = forcePositive || positiveRoll < resinPositiveCurseChance(trinketLevelOf(this, 'trinketWondrousResin'));
 		cursedProcWandLevel = origin.level ?? 0;
 		const tier = pickCursedTier((bound) => Random.int(bound));
-		if (tier === 'common') this.castCursedWandCommonEffect(target, cell);
-		else if (tier === 'uncommon') this.castCursedWandUncommonEffect(target, cell);
-		else if (tier === 'rare') this.castCursedWandRareEffect(target, cell);
-		else this.castCursedWandVeryRareEffect(cell, origin);
+		if (tier === 'common') this.castCursedWandCommonEffect(target, cell, positiveOnly);
+		else if (tier === 'uncommon') this.castCursedWandUncommonEffect(target, cell, positiveOnly);
+		else if (tier === 'rare') this.castCursedWandRareEffect(target, cell, positiveOnly);
+		else this.castCursedWandVeryRareEffect(cell, origin, positiveOnly);
 	},
 
-	/** `ChaosElemental.meleeProc()`/`rangedProc()` (`Elemental.java`, tag `v3.3.8`): the chaos
-	 * elemental rolls the same cursed-wand table as WildMagic, with itself as `user`, a null
-	 * origin and `positiveOnly` false. Melee calls the rolled effect directly with no FX
-	 * (Java's own TODO notes the shortcut); ranged goes through `cursedZap`, whose rainbow
-	 * MagicMissile FX the `elementalRangedTurn` call site already plays as the port's bolt
-	 * visual plus zap pose, then lands here for the effect roll. `user` defaults every
-	 * user-scoped reference in the tier handlers below from the hero to this caster, and the
-	 * null proc level skips the whole wand-proc tail (Java's `origin instanceof Wand` guard).
-	 * `melee` selects the no-cone fallback in ConeOfColors (Java's `cone == null` branch,
-	 * which exists for exactly this melee case). The forced `Random.Float()` Resin draw the
-	 * dispatcher documents stays WildMagic-only: a chaos user is never the hero, so
-	 * `positiveOnly` can never roll true for it. */
-	castCursedChaosEffect(this: DungeonScene, target: Creature | undefined, cell: Step, user: Creature, melee: boolean): void {
-		cursedProcWandLevel = null;
-		const tier = pickCursedTier((bound) => Random.int(bound));
-		if (tier === 'common') this.castCursedWandCommonEffect(target, cell, user);
-		else if (tier === 'uncommon') this.castCursedWandUncommonEffect(target, cell, user);
-		else if (tier === 'rare') this.castCursedWandRareEffect(target, cell, user, melee);
-		else this.castCursedWandVeryRareEffect(cell, { instanceId: '' }, user, target);
+	/** `WildMagic.zapWand()` and `MindForm` set `WondrousResin.forcePositive` only around
+	 * the second cursed zap. Keep their callback chance draw separate from the inner
+	 * `cursedZap()` positive chance draw, which is still consumed even while forced. */
+	tryResinExtraCursedZap(this: DungeonScene, target: Creature | undefined, cell: Step,
+		origin: { instanceId: string; level?: number }): boolean {
+		const level = trinketLevelOf(this, 'trinketWondrousResin');
+		if (Random.float() >= resinExtraCurseChance(level)) return false;
+		this.castCursedWandEffect(target, cell, origin, true);
+		return true;
 	},
 
 	/** `CursedWand.tryForWandProc()` -> `Wand.wandProc(target, origin.buffedLvl(), 1)`
@@ -97,10 +92,7 @@ export const cursedWandCastMethods = {
 	 * by every call site as `cursedProcWandLevel`, which the dispatcher sets from
 	 * `origin`); `buffedLvl()` only subtracts Degrade, which this port never applies to
 	 * wands. */
-	applyCursedWandProc(this: DungeonScene, target: Creature | null | undefined, wandLevel: number | null): void {
-		//A null level is the ChaosElemental entry's "no wand origin" (`origin instanceof Wand`
-		//fails for a chaos zap, `CursedWand.java:135-138`, tag `v3.3.8`), so the whole tail skips.
-		if (wandLevel === null) return;
+	applyCursedWandProc(this: DungeonScene, target: Creature | null | undefined, wandLevel: number): void {
 		if (!target || target === this.hero || target.hp <= 0) return;
 		const rank = this.talentRank('arcane_vision');
 		if (rank > 0) {
@@ -135,42 +127,43 @@ export const cursedWandCastMethods = {
 		}
 	},
 
-	/** `CursedWand.cursedZap()`'s VeryRare tier (`CursedWand.java`, tag `v3.3.8`: all eight
-	 * effects are already in `v3.3.8`'s own `VERY_RARE_EFFECTS` catalog - the old "only four"
-	 * claim was researched against a stale tag alias and corrected 2026-10-03. Ported: `SinkHole`, `GravityChaos`, `SuperNova`,
-	 * All eight outcomes are dispatched. `SpawnGoldenMimic`, `RandomTransmogrify` and `HeroShapeShift` use generated loot, the exact Wild Magic wand instance and a temporary cosmetic class sheet respectively; Golden Mimic uses the existing Mimic visuals because this port has no dedicated golden sheet.
-	 * `user` carries the ChaosElemental entry's non-hero caster (`undefined` on the WildMagic
-	 * path, where the caster is the hero); `chaosTarget` is that entry's collision target for
-	 * `HeroShapeShift`'s validity gate. */
-	castCursedWandVeryRareEffect(this: DungeonScene, cell: Step, origin: { instanceId: string }, user?: Creature, chaosTarget?: Creature): void {
+	/** `CursedWand.cursedZap()`'s VeryRare tier (`CursedWand.java`, tag `v3.3.8`: eight effects). Ported: `SinkHole`, `GravityChaos`, `SuperNova`,
+	 * All eight outcomes are dispatched. `SpawnGoldenMimic`, `RandomTransmogrify` and `HeroShapeShift` use generated loot, the exact Wild Magic wand instance and a temporary cosmetic class sheet respectively; Golden Mimic uses the existing Mimic visuals because this port has no dedicated golden sheet. */
+	castCursedWandVeryRareEffect(this: DungeonScene, cell: Step, origin: { instanceId: string }, positiveOnly = false): void {
 		//`randomValidVeryRareEffect`: re-roll until `valid()`; SinkHole refuses on boss floors, past depth 25
 		//and off the main branch (`PitfallTrap`'s own gate). `RandomTransmogrify` also requires its
-		//exact origin Wand to remain in the bag - and always fails `valid()` for a chaos cast
-		//(`origin == null`, `CursedWand.java:1147`), which the chaos entry marks by passing an
-		//empty origin id no bag lookup can match. `HeroShapeShift` passes for a hero caster, or
-		//for a chaos cast whose collision target is the hero (Java shifts the target then).
+		//exact origin Wand to remain in the bag; `HeroShapeShift` passes because this caster is the hero.
 		const sinkHoleAllowed = !(this.depth in BOSSES) && this.depth <= 25 && !this.miningBranchActive;
 		let effect;
 		do effect = pickCursedVeryRareEffect((bound) => Random.int(bound));
 		while ((effect === 'sinkHole' && !sinkHoleAllowed)
-			|| (effect === 'randomTransmogrify' && (user !== undefined || !this.bag.find('wand', origin.instanceId)))
-			|| (effect === 'heroShapeShift' && user !== undefined && !(chaosTarget && chaosTarget.isHero)));
+			|| (effect === 'randomTransmogrify' && !positiveOnly && !this.bag.find('wand', origin.instanceId)));
 		if (effect === 'spawnGoldenMimic') {
 			const at = cursedGoldenMimicSpawnCell(cell, !!this.creatureAt(cell.x, cell.y),
 				(x, y) => this.level.inside(x, y) && this.level.passable(x, y),
 				(x, y) => this.creatureAt(x, y) !== null, (bound) => Random.int(bound));
 			if (!at) return;
-			const cat = Random.element([Cat.WEAPON, Cat.ARMOR, Cat.RING, Cat.WAND])!;
-			let reward = randomUsingDefaults(cat);
-			while ((reward.level ?? 0) < 1) reward = randomUsingDefaults(cat);
-			const family = cat === Cat.WEAPON ? 'weapon' : cat === Cat.ARMOR ? 'armor' : cat === Cat.RING ? 'ring' : 'wand';
-			const mimic = this.spawnMonster('mimic', at, false, `${family}|${reward.cls};level:${reward.level}`);
-			mimic.mimicRevealed = false;
+			let payload = '';
+			if (!positiveOnly) {
+				const cat = Random.element([Cat.WEAPON, Cat.ARMOR, Cat.RING, Cat.WAND])!;
+				let reward = randomUsingDefaults(cat);
+				while ((reward.level ?? 0) < 1) reward = randomUsingDefaults(cat);
+				const family = cat === Cat.WEAPON ? 'weapon' : cat === Cat.ARMOR ? 'armor' : cat === Cat.RING ? 'ring' : 'wand';
+				payload = `${family}|${reward.cls};level:${reward.level}`;
+			}
+			const mimic = this.spawnMonster('mimic', at, false, payload);
 			mimic.maxHp = Math.max(mimic.maxHp + 1, Math.round(mimic.maxHp * 1.33));
 			mimic.hp = mimic.maxHp;
 			mimic.damage = [Math.round(mimic.damage[0] * 1.33), Math.round(mimic.damage[1] * 1.33)];
 			this.revealMimic(mimic);
+			if (positiveOnly) mimic.isAlly = true;
 		} else if (effect === 'randomTransmogrify') {
+			if (positiveOnly) {
+				//Java opens ScrollOfMetamorphosis' item chooser here. This port has no equivalent
+				//choice window yet; do not consume the wand or invent a random target.
+				this.say(t('items.wands.cursedwand.transmogrify_wand'), 'positive');
+				return;
+			}
 			const categories = [Cat.WEAPON, Cat.ARMOR, Cat.RING, Cat.ARTIFACT] as const;
 			const cat = Random.element(categories)!;
 			let generated = randomUsingDefaults(cat);
@@ -192,40 +185,35 @@ export const cursedWandCastMethods = {
 			this.castCursedWandForestFire();
 			//Java: Fire 10 at `Level.randomDestination(null)` until `Random.Int(5) == 0`; the
 			//port's `randomFreeCell` stands in for randomDestination (it also skips occupied cells).
-			do {
-				const cell = this.randomFreeCell(this.hero);
-				if (cell) this.fire.seed(cell.x, cell.y, 10);
+			if (!positiveOnly) do {
+				const fireCell = this.randomFreeCell(this.hero);
+				if (fireCell) this.fire.seed(fireCell.x, fireCell.y, 10);
 			} while (Random.int(5) !== 0);
 			runState.audio.cue('teleport', 0.7);
 			this.say(t('items.wands.cursedwand.grass'), 'positive');
-			this.say(t('items.wands.cursedwand.fire'), 'warning');
+			if (!positiveOnly) this.say(t('items.wands.cursedwand.fire'), 'warning');
 		} else if (effect === 'superNova') {
-			//`SuperNova.effect()`: `Buff.append(SuperNovaTracker)` at the bolt's collision cell. Java's
-			//`positiveOnly`/`harmsAllies=false` branch is unreachable from WildMagic (ROADMAP R061,
-			//WondrousResin), so the blast always harms everyone.
-			this.superNova = { x: cell.x, y: cell.y, depth: this.depth, turnsLeft: 10 };
-			this.say(t('items.wands.cursedwand.supernova'), 'warning');
+			//`SuperNova.effect()`: `harmsAllies` is the inverse of WondrousResin's positiveOnly.
+			this.superNova = { x: cell.x, y: cell.y, depth: this.depth, turnsLeft: 10, harmsAllies: !positiveOnly };
+			this.say(t('items.wands.cursedwand.supernova'), positiveOnly ? 'positive' : 'warning');
 		} else if (effect === 'gravityChaos') {
-			//`GravityChaos.effect()`: `Buff.append(GravityChaosTracker)` on the caster (`positiveOnly`
-			//unreachable, so allies are pushed too). Lasts `NormalIntRange(30, 70)` pushes.
-			this.gravityChaos = { left: Math.round(Random.normalRange(30, 70)), wait: 0 };
+			//`GravityChaos.effect()`: `Buff.append(GravityChaosTracker)` on the caster with Java's
+			//positiveOnly ally filter. Lasts `NormalIntRange(30, 70)` pushes.
+			this.gravityChaos = { left: Math.round(Random.normalRange(30, 70)), wait: 0, positiveOnly };
 			runState.audio.cue('teleport', 0.7);
-			this.say(t('items.wands.cursedwand.gravity'), 'warning');
+			this.say(t('items.wands.cursedwand.gravity'), positiveOnly ? 'positive' : 'warning');
 		} else if (effect === 'sinkHole') {
-			//`SinkHole.effect()` (`CursedWand.java`, tag `v3.3.8`): Java builds the radius-5
-			//area around the caster (`user.pos`) and `DelayedPit` drops non-flying characters
-			//and ordinary heaps in it after one turn. This wand path remains simplified: it
+			//`SinkHole.effect()` (tag `v3.3.8`): Java queues a radius-5 `DelayedPit`, then after one turn drops
+			//non-flying characters and ordinary heaps in the area. This wand path remains simplified: it
 			//drops only the hero immediately and leaves mobs/heaps in place because it does not queue the
-			//area-collapse phase now used by the PitfallTrap path. The speck area follows the
-			//caster (the hero on the WildMagic path, the elemental on a chaos cast).
-			const caster = user ?? this.hero;
-			const reach = this.pathfinder.distanceMap({ x: caster.x, y: caster.y });
+			//area-collapse phase now used by the PitfallTrap path.
+			const reach = this.pathfinder.distanceMap({ x: this.hero.x, y: this.hero.y });
 			for (let y = 0; y < this.level.height; y++) for (let x = 0; x < this.level.width; x++) {
 				const steps = reach[this.level.index(x, y)] ?? -1;
 				if (steps >= 0 && steps <= 5 && this.fov.isVisible(x, y)) spawnTrapSpecks(this.effectLayer, this.effectBursts, x, y, 'pitfall');
 			}
-			this.say(t('items.wands.cursedwand.sinkhole'), 'warning');
-			this.pitfallDrop();
+			this.say(t('items.wands.cursedwand.sinkhole'), positiveOnly ? 'positive' : 'warning');
+			if (!positiveOnly) this.pitfallDrop();
 		} else if (effect === 'abortRetryFail') {
 			//Java saves, then shows an English-only "CURSED WAND ERROR" dialog whose every button calls
 			//`Game.instance.finish()`. Deliberate divergence: a web port must not close the tab, so the
@@ -234,7 +222,7 @@ export const cursedWandCastMethods = {
 		}
 	},
 
-	/** `SuperNovaTracker.act()` (`v4.0.0`), once per hero action: ten countdown ticks, then a
+	/** `SuperNovaTracker.act()` (tag `v3.3.8`), once per hero action: ten countdown ticks, then a
 	 * `ConjuredBomb` at every non-solid cell of a radius-8 field of view from the target cell (a
 	 * cell inside takes up to nine bombs). Java ticks per actor time unit and waits while the hero is
 	 * on another floor; this ticks per hero action on the same floor only. Deliberate reductions:
@@ -253,7 +241,7 @@ export const cursedWandCastMethods = {
 		}
 		runState.audio.cue('blast', 0.7);
 		this.shakeScreen(5, 2);
-		for (const cell of cells) this.explodeConjuredBomb(cell);
+		for (const cell of cells) this.explodeConjuredBomb(cell, nova.harmsAllies ?? true);
 	},
 
 	/** `GravityChaosTracker.act()` (`v4.0.0`), once per hero action: on each of its `left` turns (spaced
@@ -268,6 +256,7 @@ export const cursedWandCastMethods = {
 		const [dx, dy] = Random.element(Roguelike.neighbourOffsets(8) as ReadonlyArray<readonly [number, number]>)!;
 		for (const ch of [...this.creatures]) {
 			if (ch.hp <= 0 || (ch.kind !== undefined && IMMOVABLE_KINDS.has(ch.kind))) continue;
+			if (gravity.positiveOnly && (ch.isHero || ch.isAlly)) continue;
 			if (ch.sleeping) ch.sleeping = false;
 			let last: Step | undefined;
 			for (let step = 1, x = ch.x, y = ch.y; step <= 3; step++) {
@@ -286,7 +275,7 @@ export const cursedWandCastMethods = {
 	},
 
 	/** `new Bomb.ConjuredBomb().explode(cell)`, shared by `Explosion` and `SuperNova`. */
-	explodeConjuredBomb(this: DungeonScene, cell: { x: number; y: number }): void {
+	explodeConjuredBomb(this: DungeonScene, cell: { x: number; y: number }, harmsAllies = true): void {
 		const rule = MWL_BOMB_RULES.standard;
 		if (rule && rule.baseBlast) {
 			const context = this.bombEffectsContext();
@@ -304,7 +293,7 @@ export const cursedWandCastMethods = {
 			const lo = rule.minBase + rule.minPerDepth * this.depth;
 			const hi = rule.maxBase + rule.maxPerDepth * this.depth;
 			for (const victim of [...context.creatures]) {
-				if (victim.isNPC || victim.hp <= 0 || !this.level.passable(victim.x, victim.y)
+				if (victim.isNPC || victim.hp <= 0 || (!harmsAllies && (victim.isHero || victim.isAlly)) || !this.level.passable(victim.x, victim.y)
 					|| Roguelike.chebyshevDistance(cell, victim) > rule.affectedRadius) continue;
 				applyBlastDamage(victim, Math.max(0, Random.normalRange(lo, hi)), false, context);
 			}
@@ -313,22 +302,19 @@ export const cursedWandCastMethods = {
 
 	/** `CursedWand.cursedZap()`'s Common tier (all eight of Java's Common `CursedEffect`s,
 	 * picked uniformly). `RandomGas`/`Bubbles` run regardless of whether anything stands at
-	 * `cell`. `user` carries the ChaosElemental entry's non-hero caster (`undefined` on the
-	 * WildMagic path, where the caster is the hero). */
-	castCursedWandCommonEffect(this: DungeonScene, target: Creature | undefined, cell: Step, user?: Creature): void {
-		const caster = user ?? this.hero;
-		let effect = pickCursedCommonEffect((bound) => Random.int(bound));
-		//`randomValidCommonEffect`: `RandomWand.valid()` requires `user instanceof Hero`
-		//(`CursedWand.java:354`, tag `v3.3.8`), so a chaos cast re-rolls it - the other seven
-		//are unconditionally valid. A hero caster always passes, so the WildMagic path never loops.
-		while (user !== undefined && effect === 'randomWand') effect = pickCursedCommonEffect((bound) => Random.int(bound));
+	 * `cell`. */
+	castCursedWandCommonEffect(this: DungeonScene, target: Creature | undefined, cell: Step, positiveOnly = false): void {
+	const targetCanTeleport = target !== undefined && target.hp > 0
+			&& (target.kind === undefined || !IMMOVABLE_KINDS.has(target.kind));
+		let effect;
+		do effect = pickCursedCommonEffect((bound) => Random.int(bound));
+		while (positiveOnly && effect === 'randomTeleport' && !targetCanTeleport);
 		if (effect === 'burnAndFreeze') {
-			//`BurnAndFreeze.effect()`: the coin flip assigns one side Burning and the other
-			//Frost - the caster's half lands on `user` (Java's `Buff.affect(user, ...)`, always
-			//reached here since `positiveOnly` is false on both this port's paths).
 			const { userStatus, targetStatus } = pickBurnAndFreeze(Random.int(2) === 0);
-			if (userStatus === 'burning') reigniteBuff(caster, 'burning');
-			else caster.buffs['frost'] = Math.max(caster.buffs['frost'] ?? 0, BUFF_DURATION.frost);
+			if (!positiveOnly) {
+				if (userStatus === 'burning') reigniteBuff(this.hero, 'burning');
+				else this.hero.buffs['frost'] = Math.max(this.hero.buffs['frost'] ?? 0, BUFF_DURATION.frost);
+			}
 			if (target && target.hp > 0) {
 				if (targetStatus === 'burning') reigniteBuff(target, 'burning');
 				else target.buffs['frost'] = Math.max(target.buffs['frost'] ?? 0, BUFF_DURATION.frost);
@@ -337,11 +323,9 @@ export const cursedWandCastMethods = {
 		} else if (effect === 'randomTeleport') {
 			//RandomTeleport.effect(): a live, non-IMMOVABLE target teleports on a coin flip;
 			//anything else (no target, IMMOVABLE, or the flip losing) teleports the caster
-			//instead (`ScrollOfTeleportation.teleportChar(user)`). The hero is never IMMOVABLE,
-			//so the WildMagic fallback always lands; a chaos fallback moves the elemental.
-			const targetEligible = target !== undefined && target.hp > 0
-				&& (target.kind === undefined || !IMMOVABLE_KINDS.has(target.kind));
-			const mover = targetEligible && Random.int(2) === 0 ? target : caster;
+			//instead - the hero here, which is never IMMOVABLE, so that branch always lands.
+			const targetEligible = targetCanTeleport;
+			const mover = targetEligible && (positiveOnly || Random.int(2) === 0) ? target : this.hero;
 			const from = { x: mover.x, y: mover.y };
 			const destination = this.randomFreeCell(mover);
 			if (mover === target) this.applyCursedWandProc(target, cursedProcWandLevel);
@@ -363,8 +347,7 @@ export const cursedWandCastMethods = {
 		} else if (effect === 'randomWand') {
 			//RandomWand.effect(): a fresh Generator-drawn wand zaps the bolt once, at the
 			//caster's own level (or scalingDepth()/5 for a non-Wand origin, moot - WildMagic's
-			//origin is always a Wand, and a chaos cast never reaches this branch: `valid()`
-			//requires a hero user, re-rolled above). This port's fireWandShot needs a live creature target;
+			//origin is always a Wand). This port's fireWandShot needs a live creature target;
 			//Java's own onZap can resolve against empty terrain for some wand types, a stated
 			//reduction shared with WildMagic's normal shots.
 			if (target && target.hp > 0) {
@@ -376,10 +359,10 @@ export const cursedWandCastMethods = {
 			//(Java's own `PathFinder.buildDistanceMap(user.pos, ..., 2)`, a walkable-distance
 			//flood, not a raw radius) gets Ooze at its full duration; the splash particles are
 			//presentation-only and skipped.
-			const distances = this.pathfinder.distanceMap({ x: caster.x, y: caster.y });
+			const distances = this.pathfinder.distanceMap({ x: this.hero.x, y: this.hero.y });
 			for (const creature of this.creatures) {
 				const dist = distances[this.level.index(creature.x, creature.y)] ?? -1;
-				if (dist >= 0 && dist <= 2) addBuff(creature, 'ooze');
+				if (dist >= 0 && dist <= 2 && (!positiveOnly || (!creature.isHero && !creature.isAlly))) addBuff(creature, 'ooze');
 			}
 		} else if (effect === 'randomAreaEffect') {
 			this.applyCursedWandProc(target ?? this.creatureAt(cell.x, cell.y), cursedProcWandLevel);
@@ -409,12 +392,13 @@ export const cursedWandCastMethods = {
 	},
 
 	/** `CursedWand.cursedZap()`'s Uncommon tier, all eight of Java's real ids
-	 * (`simulation/cursedWand.ts` has the scoping rationale for what each one dropped).
-	 * `user` carries the ChaosElemental entry's non-hero caster (`undefined` on the
-	 * WildMagic path, where the caster is the hero). */
-	castCursedWandUncommonEffect(this: DungeonScene, target: Creature | undefined, cell: Step, user?: Creature): void {
-		const caster = user ?? this.hero;
-		const effect = pickCursedUncommonEffect((bound) => Random.int(bound), !isPlantBlocked());
+	 * (`simulation/cursedWand.ts` has the scoping rationale for what each one dropped). */
+	castCursedWandUncommonEffect(this: DungeonScene, target: Creature | undefined, cell: Step, positiveOnly = false): void {
+		let effect;
+		do effect = pickCursedUncommonEffect((bound) => Random.int(bound), !isPlantBlocked());
+		while ((effect === 'healthTransfer' && (!target || target.hp <= 0))
+			|| (effect === 'randomPlant' && (!this.level.passable(cell.x, cell.y) || this.isChasmCell(cell.x, cell.y)
+				|| this.portedFeatures.kindAt(this.level.index(cell.x, cell.y)) !== undefined)));
 		if (effect === 'healthTransfer') {
 			//HealthTransfer.effect(): a coin flip picks which side heals and which takes
 			//`scalingDepth()*2` raw damage (half the roll heals, matching Java's `damage/2`);
@@ -423,9 +407,9 @@ export const cursedWandCastMethods = {
 			if (!target || target.hp <= 0) return;
 			this.applyCursedWandProc(target, cursedProcWandLevel);
 			const damage = this.depth * 2;
-			const targetTakesDamage = Random.int(2) === 0;
-			const healer = targetTakesDamage ? caster : target;
-			const victim = targetTakesDamage ? target : caster;
+			const targetTakesDamage = positiveOnly || Random.int(2) === 0;
+			const healer = targetTakesDamage ? this.hero : target;
+			const victim = targetTakesDamage ? target : this.hero;
 			healer.hp = Math.min(healer.maxHp, healer.hp + Math.floor(damage / 2));
 			//`CursedWand` is one of `AntiMagic.RESISTS`' listed source classes: `Char.damage()`
 			//zeroes any hit whose source class is in that set for a `magicImmune` defender
@@ -476,18 +460,24 @@ export const cursedWandCastMethods = {
 			//for it), so the eligibility check mirrors that rather than touching `.flying`.
 			const alreadyFlying = (c: Creature) => c.buffs['levitation'] !== undefined
 				|| (c.kind !== undefined && FLYING_KINDS.has(c.kind));
-			const targetEligible = target !== undefined && target.hp > 0 && !alreadyFlying(target)
+			const targetEligible = target !== undefined && target.hp > 0
+				&& (!positiveOnly || target.kind === 'piranha') && !alreadyFlying(target)
 				&& (target.kind === undefined || !IMMOVABLE_KINDS.has(target.kind));
-			addBuff(targetEligible ? target : caster, 'levitation');
+			addBuff(targetEligible ? target : this.hero, 'levitation');
 		} else if (effect === 'alarm') {
 			//Alarm.effect(): every hostile mob wakes and heads for the caster's cell - the same
-			//wake-plus-lastSeen shape the port's own 'alarm' utility trap already uses. (The
-			//`ChallengeArena` setup is `positiveOnly`-gated in Java, unreachable on both paths here.)
+			//wake-plus-lastSeen shape the port's own 'alarm' utility trap already uses.
 			for (const mob of this.creatures) {
 				if (mob.isHero || mob.isNPC || mob.isAlly || mob.hp <= 0) continue;
 				if (mob.kind !== undefined && IMMOVABLE_KINDS.has(mob.kind)) continue;
 				mob.sleeping = false;
-				if (!mob.fleeing) mob.lastSeen = { x: caster.x, y: caster.y };
+				if (!mob.fleeing) mob.lastSeen = { x: this.hero.x, y: this.hero.y };
+			}
+			//`if (positiveOnly) Buff.affect(user, ScrollOfChallenge.ChallengeArena.class).setup(user.pos)`: a Wondrous Resin positive
+			//roll turns the alarm into a Challenge arena around the caster (R117, 2026-10-02).
+			if (positiveOnly) {
+				this.hero.buffs['challengeArena'] = BUFF_DURATION['challengeArena'];
+				setupChallengeArena(this);
 			}
 		} else if (effect === 'randomPlant') {
 			this.applyCursedWandProc(target ?? this.creatureAt(cell.x, cell.y), cursedProcWandLevel);
@@ -519,8 +509,8 @@ export const cursedWandCastMethods = {
 			//hero in that set gets an additional Recharging grant (this port's own full duration
 			//stands in for Java's `Recharging.DURATION/3` scale-down, matching how every other
 			//Recharging grant here works) - Java's damage/paralysis half below is unconditional
-			//on top of that (`positiveOnly`, the only thing that would exempt an ally from it,
-			//is never true here), so every affected character including the hero takes
+			//on top of that (positiveOnly exempts ALLY-aligned characters, including the hero,
+			//from damage/paralysis but retains the hero's Recharging grant), so every eligible character takes
 			//armor-piercing `NormalIntRange(5 + depth/4, 10 + depth/4)` Electricity damage
 			//(`applyBlastDamage`'s `pierceArmor` covers the same boss-hook/shield edge cases
 			//Explosion already reuses) plus Paralysis at this port's own reduced duration
@@ -528,7 +518,7 @@ export const cursedWandCastMethods = {
 			//call with no explicit override, the same documented global simplification).
 			const context = this.bombEffectsContext();
 			const affected: Creature[] = [];
-			for (const center of [{ x: caster.x, y: caster.y }, cell]) {
+			for (const center of [{ x: this.hero.x, y: this.hero.y }, cell]) {
 				for (const [dx, dy] of [[0, 0], ...Roguelike.neighbourOffsets(8)] as const) {
 					const victim = this.creatureAt(center.x + dx, center.y + dy);
 					if (victim && !affected.includes(victim)) affected.push(victim);
@@ -537,41 +527,31 @@ export const cursedWandCastMethods = {
 			const lo = 5 + Math.floor(this.depth / 4);
 			const hi = 10 + Math.floor(this.depth / 4);
 			for (const victim of affected) {
-				//The Hero branch is a separate, unconditional grant - Java's own damage/paralysis
-				//half below still applies to the hero too (only an ALLY is ever excluded, gated on
-				//`positiveOnly` this port never sets), so this is additive, not exclusive.
+				//The Hero branch is a separate, unconditional grant. In positiveOnly mode the hero
+				//still receives Recharging but is skipped with other ALLY-aligned characters below.
 				if (victim.isHero) reigniteBuff(this.hero, 'recharging');
-				if (victim.hp <= 0) continue;
+				if (victim.hp <= 0 || (positiveOnly && (victim.isHero || victim.isAlly))) continue;
 				applyBlastDamage(victim, Math.max(0, Random.normalRange(lo, hi)), true, context);
 				if (victim.hp > 0) reigniteBuff(victim, 'paralysis');
 			}
 		}
 	},
 
-	/** `CursedWand.cursedZap()`'s Rare tier, all eight of Java's effects. `user` carries
-	 * the ChaosElemental entry's non-hero caster (`undefined` on the WildMagic path, where
-	 * the caster is the hero); `chaosMelee` selects ConeOfColors' no-cone fallback. */
-	castCursedWandRareEffect(this: DungeonScene, target: Creature | undefined, cell: Step, user?: Creature, chaosMelee = false): void {
-		const caster = user ?? this.hero;
-		let effect = pickCursedRareEffect((bound) => Random.int(bound));
-		//`randomValidRareEffect`: `Petrify.valid()` is `user == Dungeon.hero`
-		//(`CursedWand.java:976`), so a chaos cast always re-rolls it. `SheepPolymorph.valid()`
-		//refuses hero/boss/neutral targets the same way - a chaos cast at the hero re-rolls
-		//rather than no-opping, matching Java's re-roll loop instead of this method's own
-		//WildMagic no-op below (kept: a WildMagic aim can still resolve without a live target).
-		const sheepTargetOk = target !== undefined && target.hp > 0 && !target.isHero && !target.isNPC
-			&& (target.kind === undefined || (!BOSS_KINDS.has(target.kind) && !MINIBOSS_KINDS.has(target.kind)));
-		while (user !== undefined && (effect === 'petrify' || (effect === 'sheepPolymorph' && !sheepTargetOk)))
-			effect = pickCursedRareEffect((bound) => Random.int(bound));
+	/** `CursedWand.cursedZap()`'s Rare tier, all eight of Java's effects. */
+	castCursedWandRareEffect(this: DungeonScene, target: Creature | undefined, cell: Step, positiveOnly = false): void {
+		let effect;
+		do effect = pickCursedRareEffect((bound) => Random.int(bound));
+		while (effect === 'sheepPolymorph' && (!target || target.hp <= 0 || target.isHero || target.isNPC
+			|| (target.kind !== undefined && (BOSS_KINDS.has(target.kind) || MINIBOSS_KINDS.has(target.kind)))));
 		if (effect === 'sheepPolymorph') {
 			//SheepPolymorph.valid()/effect(): a live, non-hero target that isn't a boss/miniboss
 			//and isn't a (neutral) NPC is silently destroyed - no death, no loot, the same
 			//teardown `destroyAlly` already uses for a non-death removal - and replaced with a
 			//fresh Sheep at its cell, reusing `spawnSheep`'s own factory (Java's real 10-turn
-			//lifespan). An ineligible or missing target makes this Rare draw a genuine no-op:
-			//Java would re-roll another Rare effect via `valid()` instead, a stated reduction on
-			//this path (chaos casts re-roll above, matching Java).
-			if (target && sheepTargetOk) {
+			//lifespan). An ineligible or missing target makes this Rare draw a genuine no-op,
+			//matching Java's own `valid()` gate rather than falling back to some other target.
+			if (target && target.hp > 0 && !target.isHero && !target.isNPC
+				&& (target.kind === undefined || (!BOSS_KINDS.has(target.kind) && !MINIBOSS_KINDS.has(target.kind)))) {
 				const at = { x: target.x, y: target.y };
 				this.scheduler.remove(target);
 				this.creatures.splice(this.creatures.indexOf(target), 1);
@@ -592,24 +572,31 @@ export const cursedWandCastMethods = {
 			return;
 		}
 		if (effect === 'summonMonsters') {
+			if (positiveOnly) {
+				//Java spawns two MirrorImages at the bolt cell; this port's helper registers a
+				//single image at an explicit cell, so place up to two in nearby open cells.
+				const candidates = [{ ...cell }, ...Roguelike.neighbourOffsets(8).map(([dx, dy]) => ({ x: cell.x + dx, y: cell.y + dy }))]
+					.filter((at) => this.level.inside(at.x, at.y) && this.level.passable(at.x, at.y)
+						&& !this.creatureAt(at.x, at.y));
+				for (const at of candidates.slice(0, 2)) this.spawnMirrorImage(at);
+				return;
+			}
 			//`SummonMonsters.effect()` (`CursedWand.java`, tag `v3.3.8`) activates a
 			//SummoningTrap at the bolt collision cell. Reuse this port's matching utility trap;
 			//Java uses the level mob rotation, supports avoid cells, delays each spawn by two turns
-			//and activates traps under new mobs. The utility instead picks a random depth-roster mob,
+			//and activates traps under new mobs. The ordinary branch's utility instead picks a random depth-roster mob,
 			//spawns immediately, and omits avoid-cell/chained-trap handling. Those are the stated
 			//simplifications for this shared utility-trap implementation.
 			this.activateUtilityTrap('summoning', cell.x, cell.y);
 			return;
 		}
 		if (effect === 'curseEquipment') {
-			//`CurseEquipment.effect()` calls `CursingTrap.curse(hero)` for WildMagic's Hero with
-			//`positiveOnly === false`. Java's other branch Hexes the collision target for positive
-			//or non-Hero casts (`Buff.affect(ch, Hex.class, Hex.DURATION)`); a chaos cast reaches
-			//it, at this port's table-default Hex duration like the existing monsterAi hex site.
-			if (caster !== this.hero) {
+			if (positiveOnly) {
 				if (target && target.hp > 0) addBuff(target, 'hex');
 				return;
 			}
+			//`CurseEquipment.effect()` calls `CursingTrap.curse(hero)` for ordinary WildMagic.
+			//With positiveOnly, the branch above Hexes the collision target instead.
 			//Java prioritizes an unenchanted weapon/unglyphed armor, then falls back
 			//to any non-Mage's-Staff weapon or armor, marks the curse known, and adds a matching
 			//curse affix only when none exists. Curse particles/audio are omitted because this
@@ -636,13 +623,10 @@ export const cursedWandCastMethods = {
 		if (effect === 'interFloorTeleport') {
 			//`InterFloorTeleport.effect()` (`CursedWand.java`, tag `v3.3.8`): WildMagic's
 			//Hero uses weighted inter-floor travel when permitted; Java's other cases use
-			//ScrollOfTeleportation's same-floor teleport (`teleportChar(user)` - a chaos cast
-			//always takes this branch, moving the elemental itself). Java checks Dungeon.level.locked;
+			//ScrollOfTeleportation's same-floor teleport. Java checks Dungeon.level.locked;
 			//floorLocked() is this port's live equivalent, including boss-specific unsealing.
 			//The mining branch, depth 1 and a carried Amulet also bar inter-floor travel.
-			//Inter-floor travel additionally requires the hero caster: a chaos cast's
-			//`user != Dungeon.hero` fails Java's gate, so it always falls through below.
-			const allowed = caster === this.hero && this.depth > 1 && !this.floorLocked()
+			const allowed = !positiveOnly && this.depth > 1 && !this.floorLocked()
 				&& !this.miningBranchActive && !this.bag.find('amulet');
 			const weights = allowed ? cursedInterfloorDepthWeights(this.depth) : [];
 			const destinationIndex = weights.length > 0 ? Random.weighted(weights) : null;
@@ -655,11 +639,11 @@ export const cursedWandCastMethods = {
 				this.beaconArrival = null;
 				this.enterLevel();
 			} else {
-				const from = { x: caster.x, y: caster.y };
-				const destination = this.randomFreeCell(caster);
+				const from = { x: this.hero.x, y: this.hero.y };
+				const destination = this.randomFreeCell(this.hero);
 				if (destination) {
-					this.moveTo(caster, destination);
-					this.playTeleportAppear(from, destination, caster);
+					this.moveTo(this.hero, destination);
+					this.playTeleportAppear(from, destination, this.hero);
 				}
 			}
 			return;
@@ -691,8 +675,9 @@ export const cursedWandCastMethods = {
 			fov.update(cell.x, cell.y, 3);
 			for (let y = 0; y < this.level.height; y++) for (let x = 0; x < this.level.width; x++) {
 				if (!fov.isVisible(x, y) || !this.level.transparent(x, y)) continue;
-				spawnTrapSpecks(this.effectLayer, this.effectBursts, x, y, 'flame');
 				const victim = this.creatureAt(x, y);
+				if (positiveOnly && (victim?.isHero || victim?.isAlly)) continue;
+				spawnTrapSpecks(this.effectLayer, this.effectBursts, x, y, 'flame');
 				if (victim && victim.hp > 0) {
 					reigniteBuff(victim, 'burning');
 					const damage = Math.max(0, Random.normalRange(5 + this.depth, 10 + 2 * this.depth));
@@ -707,15 +692,12 @@ export const cursedWandCastMethods = {
 		}
 		//ConeOfColors.effect(): Java re-does the bolt as `STOP_SOLID` (so it goes through
 		//characters) before building an 8-radius, 90-degree `ConeAOE` from it - `coneRay`'s own
-		//`stopAtTarget: false` is that same STOP_SOLID-alone stop mode. `positiveOnly` is never
-		//true from WildMagic, so the ally-exemption branch never fires and is skipped, matching
-		//every other tier's documented convention here; `tryForWandProc` (a generic wand-glyph
+		//`stopAtTarget: false` is that same STOP_SOLID-alone stop mode. `positiveOnly` skips
+		//allied targets, matching Java; `tryForWandProc` (a generic wand-glyph
 		//reaction hook) runs for its collision-cell character before the cone is applied.
-		//A chaos melee cast shortcuts the FX (`cone == null` in Java, which exists for exactly
-		//this case), so the affected set is just the collision cell instead of a cone.
 		this.applyCursedWandProc(target ?? this.creatureAt(cell.x, cell.y), cursedProcWandLevel);
-		const cone = chaosMelee ? { cells: [{ x: cell.x, y: cell.y }] } : coneCells({
-			source: { x: caster.x, y: caster.y },
+		const cone = coneCells({
+			source: { x: this.hero.x, y: this.hero.y },
 			target: cell,
 			degrees: 90,
 			maxDistance: 8,
@@ -724,8 +706,9 @@ export const cursedWandCastMethods = {
 			trace: (coneFrom, coneTo) => this.coneRay(coneFrom, coneTo, false),
 		});
 		for (const coneCell of cone.cells) {
-			if (coneCell.x === caster.x && coneCell.y === caster.y) continue;
+			if (coneCell.x === this.hero.x && coneCell.y === this.hero.y) continue;
 			const victim = this.creatureAt(coneCell.x, coneCell.y);
+			if (positiveOnly && (victim?.isHero || victim?.isAlly)) continue;
 			if (!victim || victim.hp <= 0) continue;
 			const dmg = Math.max(0, Random.normalRange(5 + this.depth, 10 + this.depth * 2));
 			const dealDamage = (): boolean => {

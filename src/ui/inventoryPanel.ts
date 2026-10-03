@@ -6,7 +6,7 @@ import type { InventoryDock } from './inventoryDock';
 import { MWL_CONSUMABLE_DESCRIPTION_KEYS, MWL_EQUIPMENT_DESCRIPTION_KEYS, MWL_ITEM_ACTION_RULES, MWL_ITEM_FRAMES, MWL_ITEM_SPECIFIC_FRAMES, MWL_MISSILE_DESCRIPTION_KEYS } from '../mwlContent';
 import { getArtifact, getAllArtifactIds } from '../items/artifacts';
 import { isClassArmorId } from '../items/catalog';
-import { normalizePlantKindName, seedInfoBody } from '../items/plantText';
+import { fruitGlowColor } from '../items/blandfruit';
 
 /** Real artifact ids, derived from the same `artifacts.mwl` roster `generatedInventoryItem`'s
  * generation switch routes to (see `getAllArtifactIds`), plus `holyTome` - a Cleric equip-slot
@@ -19,7 +19,7 @@ import { normalizePlantKindName, seedInfoBody } from '../items/plantText';
 const ARTIFACT_SLOT_IDS = new Set([...getAllArtifactIds(), 'holyTome']);
 
 interface InventoryItem {
-	id: string; quantity?: number; instanceId?: string; level?: number; identified?: boolean;
+	id: string; quantity?: number; instanceId?: string; level?: number; identified?: boolean; potionAttrib?: string;
 	cursed?: boolean; sourceClass?: string; wealthDropTier?: 1 | 2 | 3 | 4;
 }
 
@@ -55,10 +55,7 @@ export interface InventoryPanelContext {
 	 * context has no appearance table, in which case potions/scrolls keep the generic
 	 * family frame below. */
 	readonly appearanceFrame?: (id: string) => number | undefined;
-	readonly itemDescription?: (id: string, identified: boolean) => string | undefined;
-	/** Whether the viewing hero is a Warden: seed rows show their `warden_desc` paragraph
-	 * (`plants/Plant.java`, tag `v3.3.8`). Absent (non-scene callers) reads as non-Warden. */
-	readonly isWarden?: boolean;
+	readonly itemDescription?: (id: string, identified: boolean, instanceId?: string) => string | undefined;
 	/** Which extra verbs (`AC_DROP`, `AC_THROW`, a guarded drink) a carried entry offers. */
 	readonly itemVerbs?: (id: string, known: boolean) => { drop: boolean; throw: boolean; drink: boolean };
 	readonly addToStage: (panel: InventoryWindow) => void;
@@ -98,13 +95,13 @@ export function refreshInventoryPanel(context: InventoryPanelContext): void {
 			const translated = t(authoredAction.actionKey);
 			action = authoredAction.capitalize ? capitalize(translated) : translated;
 		}
-		const description = (id === 'seed' ? seedInfoBody(normalizePlantKindName(item.sourceClass) ?? '', context.isWarden === true) : undefined)
-			?? context.itemDescription?.(id, item.identified ?? false)
+		const description = context.itemDescription?.(id, item.identified ?? false, item.instanceId)
 			?? (MWL_CONSUMABLE_DESCRIPTION_KEYS[id] ? t(MWL_CONSUMABLE_DESCRIPTION_KEYS[id]!) : undefined)
 			?? (MWL_MISSILE_DESCRIPTION_KEYS[id] ? t(MWL_MISSILE_DESCRIPTION_KEYS[id]!) : undefined)
 			?? (MWL_EQUIPMENT_DESCRIPTION_KEYS[id] ? t(MWL_EQUIPMENT_DESCRIPTION_KEYS[id]!) : undefined)
 			?? (getArtifact(id) ? t(getArtifact(id)!.descriptionKey) : undefined);
-		return { ...item, quantity: item.quantity ?? 1, name: context.itemDisplayName(id, item.identified ?? false, item.instanceId), frame, action, description };
+		return { ...item, quantity: item.quantity ?? 1, name: context.itemDisplayName(id, item.identified ?? false, item.instanceId), frame, action, description,
+			...(id === 'blandfruit' && fruitGlowColor(item.potionAttrib) !== undefined ? { glowColor: fruitGlowColor(item.potionAttrib) } : {}) };
 	};
 	const rows = context.items.filter(item => (item.quantity ?? 0) > 0).map(entry)
 		.map((row) => ({ ...row, verbs: context.itemVerbs?.(row.id, row.identified === true) }))

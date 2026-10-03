@@ -4,12 +4,14 @@ import type { Step } from './combatState';
 export interface MovementWorld {
 	occupantAt(target: Step): 'npc' | 'enemy' | null;
 	closedDoorAt(target: Step): boolean;
+	/** A `LOCKED_EXIT` niche cell: impassable until a depth-matched `WornKey` opens it. */
+	lockedExitAt?(target: Step): boolean;
 	isRooted(): boolean;
 	passable(target: Step): boolean;
 }
 
 export type MovementPlan = { kind: 'wait' } | {
-	kind: 'interact' | 'attack' | 'door' | 'rooted' | 'move' | 'wall';
+	kind: 'interact' | 'attack' | 'door' | 'lockedExit' | 'rooted' | 'move' | 'wall';
 	target: Step;
 };
 
@@ -24,5 +26,6 @@ export function planMovement(position: Step, move: Step, world: MovementWorld): 
 	if (occupant) return { kind: occupant === 'npc' ? 'interact' : 'attack', target };
 	if (world.isRooted()) return { kind: 'rooted', target };
 	if (world.closedDoorAt(target)) return { kind: 'door', target };
+	if (world.lockedExitAt?.(target)) return { kind: 'lockedExit', target };
 	return { kind: world.passable(target) ? 'move' : 'wall', target };
 }

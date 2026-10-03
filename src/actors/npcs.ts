@@ -93,6 +93,7 @@ export interface ImpInteractionContext {
 	status: 'available' | 'complete' | 'active'; need: number; heldTokens: number;
 	startQuest(): void; advanceQuest(): void; removeTokens(quantity: number): void;
 	reward(): string; flee(): void; say(message: string): void;
+	completeQuest(): void;
 	messages: { offer: string; done: string; remind: string; reward: string };
 }
 /** `Imp.Quest.interact()`'s token gate and one-time reward/flee transition. */
@@ -102,7 +103,9 @@ export function interactWithImp(context: ImpInteractionContext): void {
 	}
 	if (context.status === 'complete') return context.say(context.messages.done);
 	if (context.heldTokens < context.need) return context.say(context.messages.remind);
-	context.removeTokens(context.need);
+	// `WndImp.takeReward()` (`WndImp.java`, tag `v3.3.8`) calls `tokens.detachAll(...)`;
+	// Java consumes the whole carried stack after acceptance, including tokens above the gate.
+	context.removeTokens(context.heldTokens);
 	const rewardMessage = context.reward();
-	context.advanceQuest(); context.flee(); context.say(rewardMessage || context.messages.reward);
+	context.flee(); context.completeQuest(); context.say(rewardMessage || context.messages.reward);
 }

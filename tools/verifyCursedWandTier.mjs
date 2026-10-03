@@ -13,8 +13,25 @@ writeFileSync(join(output, 'cursedWand.cjs'), ts.transpileModule(readFileSync(so
 }).outputText);
 const { CURSED_COMMON_EFFECT_IDS, CURSED_RANDOM_AREA_EFFECTS, CURSED_RARE_EFFECT_IDS, CURSED_VERY_RARE_EFFECT_IDS, pickCursedCommonEffect,
 	pickCursedRandomAreaEffect, pickCursedRareEffect, pickCursedVeryRareEffect, pickCursedUncommonEffect, cursedForestFireSeeds, cursedGoldenMimicSpawnCell, pickCursedEquipmentSlot, pickCursedTier } = createRequire(import.meta.url)(join(output, 'cursedWand.cjs'));
+const trinketSource = new URL('../src/simulation/trinkets.ts', import.meta.url);
+writeFileSync(join(output, 'trinkets.cjs'), ts.transpileModule(readFileSync(trinketSource, 'utf8'), {
+	compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
+}).outputText);
+const { resinPositiveCurseChance, resinExtraCurseChance } = createRequire(import.meta.url)(join(output, 'trinkets.cjs'));
+assert.deepEqual([-1, 0, 1, 2, 3].map((level) => resinPositiveCurseChance(level)), [0, 0.25, 0.5, 0.75, 1],
+	'WondrousResin positive cursed-effect chance follows its Java level formula');
+assert.deepEqual([-1, 0, 1, 2, 3].map((level) => resinPositiveCurseChance(level, true)), [1, 1, 1, 1, 1],
+	'WondrousResin forcePositive guarantees positive effects even without a carried Resin');
+assert.deepEqual([-1, 0, 1, 2, 3].map(resinExtraCurseChance), [0, 0.125, 0.25, 0.375, 0.5],
+	'WondrousResin extra cursed-effect chance follows its Java level formula');
 
 const scene = readFileSync(new URL('../src/scenes/dungeon/hero/cursedWandCast.ts', import.meta.url), 'utf8');
+assert.match(scene, /const positiveRoll = Random\.float\(\);[\s\S]*?const positiveOnly = forcePositive \|\| positiveRoll < resinPositiveCurseChance\(trinketLevelOf\(this, 'trinketWondrousResin'\)\);[\s\S]*?const tier = pickCursedTier/,
+	'the Resin Float draw happens before Java\'s category and effect draws, including when forcePositive is set');
+assert.match(scene, /tryResinExtraCursedZap[\s\S]*?Random\.float\(\) >= resinExtraCurseChance\(level\)[\s\S]*?castCursedWandEffect\(target, cell, origin, true\)/,
+	'extra Resin callback rolls its chance and forces only its second CursedWand cast positive');
+assert.match(scene, /castCursedWandCommonEffect\(target, cell, positiveOnly\)[\s\S]*?castCursedWandUncommonEffect\(target, cell, positiveOnly\)[\s\S]*?castCursedWandRareEffect\(target, cell, positiveOnly\)[\s\S]*?castCursedWandVeryRareEffect\(cell, origin, positiveOnly\)/,
+	'each CursedWand tier receives the same positiveOnly result');
 
 const rolls = [];
 for (let roll = 0; roll < 100; roll++) {
@@ -29,11 +46,11 @@ assert.deepEqual(rolls.slice(60, 90), Array(30).fill('uncommon'));
 assert.deepEqual(rolls.slice(90, 99), Array(9).fill('rare'));
 assert.deepEqual(rolls.slice(99), ['veryRare']);
 assert.match(readFileSync(new URL('../src/scenes/dungeon/hero/cursedWandCast.ts', import.meta.url), 'utf8'),
-	/else if \(tier === 'rare'\)[\s\S]*?else this\.castCursedWandVeryRareEffect\(cell, origin\);/);
-console.log('PASS CursedWand keeps Java 60/30/9/1 weights and routes the VeryRare tier to its own handler.');
+	/else if \(tier === 'rare'\) this\.castCursedWandRareEffect\(target, cell, positiveOnly\);[\s\S]*?else this\.castCursedWandVeryRareEffect\(cell, origin, positiveOnly\);/);
+console.log('PASS CursedWand keeps Java 60/30/9/1 weights, dispatches VeryRare, and rolls the carried Resin positiveOnly mode first.');
 assert.match(scene, /effect === 'spawnGoldenMimic'[\s\S]*?Cat\.WAND[\s\S]*?reward\.level \?\? 0\)[\s\S]*?spawnMonster\('mimic'[\s\S]*?revealMimic/);
 assert.match(scene, /effect === 'randomTransmogrify'[\s\S]*?randomUsingDefaults[\s\S]*?this\.bag\.remove\('wand', 1, origin\.instanceId\)[\s\S]*?spawnGroundItem/);
-assert.match(scene, /effect === 'randomTransmogrify' && !this\.bag\.find\('wand', origin\.instanceId\)/);
+assert.match(scene, /effect === 'randomTransmogrify' && !positiveOnly && !this\.bag\.find\('wand', origin\.instanceId\)/);
 assert.match(scene, /effect === 'heroShapeShift'[\s\S]*?heroDisguiseClass[\s\S]*?refreshHeroArmorSprite/);
 const deathLoot = readFileSync(new URL('../src/scenes/dungeon/deathSaveRefresh.ts', import.meta.url), 'utf8');
 assert.match(deathLoot, /const \[itemSpec, rewardLevelText\] = bonusPayload\.split\(';level:'/);
@@ -42,6 +59,15 @@ const armorAbility = readFileSync(new URL('../src/scenes/dungeon/hero/armorAbili
 assert.match(armorAbility, /castCursedWandEffect\(aim, cell, spare\.entry\)/);
 const turnLoop = readFileSync(new URL('../src/scenes/dungeon/turnLoopAiming.ts', import.meta.url), 'utf8');
 assert.match(turnLoop, /hadHeroDisguise[\s\S]*?delete this\.hero\.heroDisguiseClass[\s\S]*?refreshHeroArmorSprite/);
+assert.match(turnLoop, /fireWandShot\(this\.wandType, zapLevel, target, chargesPerCast, undefined, \(procTarget\) =>[\s\S]*?tryResinExtraCursedZap\(procTarget, target/,
+	'the ordinary Wand callback gates its extra Resin zap on the successful Warlock SoulMark roll');
+assert.match(turnLoop, /if \(targetCreature && targetCreature\.hp > 0 && !targetCreature\.isHero && this\.subclass\(\) === 'warlock'[\s\S]*?warlockBonusTarget = targetCreature[\s\S]*?onWarlockProc\?\.\(warlockBonusTarget\)/,
+	'the ordinary bonus callback runs after the main zap and only for the live target SoulMark proc');
+const armorAbilitySource = readFileSync(new URL('../src/scenes/dungeon/hero/armorAbilityUse.ts', import.meta.url), 'utf8');
+assert.match(armorAbilitySource, /fireMindWand:[\s\S]*?if \(fired\)[\s\S]*?tryResinExtraCursedZap\(procTarget, targetCell/,
+	'MindForm checks for a Resin bonus only after its ordinary zap');
+assert.match(armorAbilitySource, /spare\.entry\.cursed\) this\.castCursedWandEffect[\s\S]*?tryResinExtraCursedZap\(procTarget, cell, spare\.entry\)/,
+	'Wild Magic performs the extra Resin check only after a non-cursed spare wand zap');
 
 // R061 (closed 2026-10-01): the cursed path runs Java's whole
 // `Wand.wandProc(target, origin.buffedLvl(), 1)` tail (`CursedWand.java:135-138`), not just
@@ -49,7 +75,7 @@ assert.match(turnLoop, /hadHeroDisguise[\s\S]*?delete this\.hero\.heroDisguiseCl
 assert.match(scene, /cursedProcWandLevel = origin\.level \?\? 0;/,
 	'the dispatcher captures the origin wand level that tryForWandProc passes as buffedLvl()');
 assert.match(scene, /applyCursedWandProc\(this: DungeonScene, target: Creature \| null \| undefined, wandLevel: number\): void/,
-	'the proc entry point exists and takes Java wandProc\'s wand level as an argument');
+	'the cursed proc entry point takes Java wandProc\'s wand level');
 assert.match(scene, /if \(!target \|\| target === this\.hero \|\| target\.hp <= 0\) return;/,
 	"Java's tryForWandProc guard (non-null, non-hero target) plus the port's stated corpse gate");
 assert.match(scene, /soulMarkProcThreshold\(wandLevel, 1\)/,

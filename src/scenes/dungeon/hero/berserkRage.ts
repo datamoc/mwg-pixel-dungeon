@@ -46,14 +46,19 @@ export const berserkRageMethods = {
 		}
 	},
 
-	/** `Berserk.act()`, once per hero turn. */
-	rageTurn(this: DungeonScene): void {
+	/** `HoldFast.buffDecayFactor(hero)` (HoldFast.java, tag `v3.3.8`): rank 1/2/3 scales a decaying shield's
+	 * drain (Berserk's, the Warrior seal's idle count) by 0.5/0.25/0 while the hero remains on the wait cell;
+	 * anywhere else it detaches the buff - the same side effect Java's call has - and returns 1. */
+	holdFastDecayFactor(this: DungeonScene): number {
 		const holdFastRank = this.talentRank('hold_fast');
 		const holdingFast = holdFastRank > 0 && this.holdFastX === this.hero.x && this.holdFastY === this.hero.y;
 		if (!holdingFast) { this.holdFastX = null; this.holdFastY = null; }
-		//`HoldFast.buffDecayFactor()` (HoldFast.java, tag `v3.3.8`): rank 1/2/3 scales
-		//Berserk's shield drain by 0.5/0.25/0 while the hero remains on the wait cell.
-		const decayFactor = holdingFast ? [1, 0.5, 0.25, 0][holdFastRank] ?? 1 : 1;
+		return holdingFast ? [1, 0.5, 0.25, 0][holdFastRank] ?? 1 : 1;
+	},
+
+	/** `Berserk.act()`, once per hero turn. */
+	rageTurn(this: DungeonScene): void {
+		const decayFactor = this.holdFastDecayFactor();
 		if (this.subclass() !== 'berserker' || (this.rageState.power <= 0 && this.rageState.mode === 'normal')) return;
 		const result = rageTick(this.rageState, {
 			hp: this.rageState.zeroHp ? 0 : this.hero.hp, maxHp: this.hero.maxHp, shielding: this.heroShieldPoolTotal(), regenOn: this.regenOn(), roll: Random.float(), decayFactor,

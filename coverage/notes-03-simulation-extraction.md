@@ -609,7 +609,7 @@ and is consumed when bought back as an identified `pickaxe`.
 flag) caps the DarkGold half at 2000 and adds the quest-branch-boss bonus on a persisted
 `blacksmithBossBeaten` flag - set since 2026-09-23 by the `GnollGeomancer`'s death (see the
 "Blacksmith GNOLL mine roster" row) and, since the same day, by smashing the `CrystalSpire` (the
-"Blacksmith CRYSTAL mine roster" row); (open residual moved to `ROADMAP.md` R014) The legacy bat-blood alternative grants no favor and
+"Blacksmith CRYSTAL mine roster" row); The no-favor bat-blood option is a pre-v2.2 legacy-save path, not a v3.3.8 quest behavior; new runs use only GNOLL/CRYSTAL and the save-compatibility path stays load-only. The legacy alternative grants no favor and
 earns the free buy-back: old Java's flat `questScores[2] = 3000` observable half, recorded directly on the free flag because this port tracks no quest-score table
 (**corrected 2026-10-01, R015 restated**: the forge's favor logic is flag-based and complete; what the
 missing table still costs is endgame only - Java's `Rankings.record()` sums positive `questScores`,

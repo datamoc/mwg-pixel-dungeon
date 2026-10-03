@@ -11,7 +11,7 @@ function combatState(c: Combatant): Combatant {
 		damage: [...c.damage], armor: [...c.armor], buffs: { ...c.buffs },
 		isHero: c.isHero, isAlly: c.isAlly, boss: c.boss, miniboss: c.miniboss,
 		kind: c.kind, kingPhase: c.kingPhase, isNPC: c.isNPC, allyKind: c.allyKind, sleeping: c.sleeping,
-		champion: c.champion, str: c.str, strReq: c.strReq,
+		champion: c.champion, str: c.str, strReq: c.strReq, armorStrPenalty: c.armorStrPenalty,
 		raged: c.raged, championPower: c.championPower,
 	};
 }

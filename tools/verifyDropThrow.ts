@@ -38,7 +38,7 @@ const blobSim = readFileSync(join(process.cwd(), 'src/simulation/environmentalBl
 check('a blast breaks open plain chests (flag cleared, contents stay) and leaves locked/crystal/shop heaps untouched',
 	dropScene.includes("if (ground.chest === 'normal' && !ground.forSale) {")
 	&& dropScene.includes('ground.chest = undefined;')
-	&& dropScene.includes('if (ground.chest !== undefined || ground.forSale) return false;'));
+	&& dropScene.includes('if (ground.chest !== undefined || ground.forSale || ground.tomb) return false;'));
 check('a landed flask hard-presses its cell before shattering (trap/grass/plant/web)',
 	dropScene.includes('this.pressCellFromFlask(at.x, at.y);')
 	&& envScene.includes('pressCellFromFlask(this: DungeonScene, x: number, y: number)'));

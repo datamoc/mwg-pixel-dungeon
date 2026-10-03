@@ -1,0 +1,5 @@
+const fs=require('fs');
+function rep(p,a,b){let s=fs.readFileSync(p,'utf8');if(s.includes('\r\n')){a=a.replace(/\n/g,'\r\n');b=b.replace(/\n/g,'\r\n');}const i=s.indexOf(a);if(i<0||s.indexOf(a,i+1)>=0)throw new Error(p+': '+a);s=s.slice(0,i)+b+s.slice(i+a.length);fs.writeFileSync(p,s);}
+rep('src/scenes/dungeonScene.ts',"import { onBrightnessChanged, onZoomChanged, screenShake, setZoomOffset, zoomForOffset, zoomOffset } from '../settings';","import { onBrightnessChanged, onZoomChanged, screenShake, setZoomOffset, uiMode, zoomForOffset, zoomOffset } from '../settings';");
+rep('src/scenes/dungeonScene.ts',"	interfaceSize: 0 | 1 = 0;","	interfaceSize: 0 | 1 = uiMode() > 0 ? 1 : 0; //new runs follow `SPDSettings.interfaceSize()` (desktop default 2)");
+rep('src/scenes/dungeon/hero/weaponSpellsGear.ts',"			this.statusPane.x = 8;\n			this.statusPane.y = Math.max(0, height - 72 - 8);","			//Java's large pane sits flush in the corner (`status.setRect(0, height-39, ..)`).\n			const inset = this.interfaceSize === 1 ? 0 : 8;\n			this.statusPane.x = inset;\n			this.statusPane.y = Math.max(0, height - this.statusPane.paneHeight - inset);");

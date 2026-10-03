@@ -400,6 +400,11 @@ export const APPEARANCE_TABLES: Record<string, Actors.AppearanceTable> = {
 };
 
 /** flattened run state for mwg/core's SaveSystem (plain JSON, not the live object graph) */
+export interface BoomerangReturnState {
+	fromX: number; fromY: number; returnX: number; returnY: number; left: number; level: number; setId: string; depth: number;
+	branch?: boolean; spawnedForEffect?: boolean; inFlight?: boolean;
+}
+
 export interface SaveShape {
 	runSeed: number;
 	runSeedLong?: string;
@@ -456,7 +461,9 @@ export interface SaveShape {
 	/** `HeavyBoomerang.CircleBack`'s in-flight return, if one is pending - see the field's own
 	 * comment. Java's buff survives saves (`revivePersists`), so a boomerang thrown before a save
 	 * still flies home after the load. Absent on saves with nothing in flight. */
-	boomerangReturn?: { fromX: number; fromY: number; returnX: number; returnY: number; left: number; level: number; setId: string; depth: number };
+	boomerangReturns?: BoomerangReturnState[];
+	/** Legacy single-return save key, accepted when loading saves made before concurrent returns were modeled. */
+	boomerangReturn?: BoomerangReturnState;
 	frostWand: boolean;
 	wandType?: WandType;
 	ghostSpawned: boolean;
@@ -474,6 +481,10 @@ export interface SaveShape {
 	shops?: [number, { potions: number; identifies: number; buyback: { id: string; quantity: number; identified?: boolean; tier?: number; level?: number; affix?: string; cursed?: boolean; cursedKnown?: boolean; seal?: boolean }[] }][];
 	blacksmithSpawned?: boolean;
 	impSpawned?: boolean;
+	/** Imp's Monk/Golem token variant; absent in saves predating variant persistence. */
+	impNeed?: number;
+	/** Java-generated Imp reward, retained between quest spawn and turn-in. */
+	impReward?: { cat: number; cls: string; cursed: boolean; level: number; quantity: number; hasGoodEnchant: boolean } | null;
 	blacksmithAlternative?: boolean;
 	blacksmithQuestType?: BlacksmithQuestType;
 	blacksmithQuestStarted?: boolean;
@@ -537,6 +548,7 @@ export interface SaveShape {
 	suckerPunchTargets?: string[];
 	/** Java Dungeon.LimitedDrops.UPGRADE_SCROLLS count, including suppressed NO_SCROLLS drops. */
 	upgradeScrollDrops?: number;
+	trinketCatalystDropped?: boolean;
 	/** Java Dungeon.LimitedDrops.COOKING_HP count, persisted for SeedToPotion's healing reroll. */
 	cookingHpCount?: number;
 	bag: { id: string; quantity: number; instanceId?: string; identified?: boolean; level?: number; tier?: number; wealthDropTier?: 1 | 2 | 3 | 4; sourceClass?: string; sandBags?: number; affix?: string; cursed?: boolean; cursedKnown?: boolean; curseInfusionBonus?: boolean; ghostWeapon?: { id: string; instanceId?: string; sourceClass: string; tier: number; level: number; affix?: string; cursed?: boolean; cursedKnown?: boolean; identified?: boolean; hardened?: boolean; curseInfusionBonus?: boolean }; ghostArmor?: { id: string; instanceId?: string; sourceClass: string; tier: number; level: number; affix?: string; cursed?: boolean; cursedKnown?: boolean; identified?: boolean; hardened?: boolean; curseInfusionBonus?: boolean }; returnDepth?: number; returnBranch?: number; returnPos?: number; returnX?: number; returnY?: number;
@@ -550,7 +562,9 @@ export interface SaveShape {
 		 * `maxDurability` ride `Actors.Inventory.toJSON` itself, so only this needs the side channel. */
 		missileSet?: string;
 		/** A tipped dart stack's seed (`TippedDart` only) - same side channel as the set id. */
-		tippedSeed?: string }[];
+		tippedSeed?: string;
+		/** A cooked blandfruit's imbued potion (`Blandfruit.POTIONATTRIB`, tag `v3.3.8`) - same side channel as the seed above. */
+		potionAttrib?: string }[];
 	/** The staff's imbued wand class (`MagesStaff.wandClass()`), defaulting to Magic Missile. */
 	staffImbue?: string;
 	itemSerial?: number;
@@ -567,8 +581,17 @@ export interface SaveShape {
 	ringHtBonus?: number;
 	/** Ring ids whose type (not level/curse) stands revealed - Thief's Intuition or a full identify. */
 	ringTypesKnown?: string[];
+	mindFormDiscoveredTypes?: string[];
 	/** Potion classes revealed run-wide this run (`Potion`'s `ItemStatusHandler` known set, R112). */
 	potionKindsKnown?: string[];
+	/** `masteryPotionBonus` gear, by item instance id (`items/mastery.ts`). */
+	masteryItems?: string[];
+	/** Passive-identification counters by item instance id (`items/passiveId.ts`). */
+	idProgress?: Record<string, { left: number; available: number }>;
+	/** `Hero.metamorphedTalents`, original -> replacement (`items/metamorphosis.ts`). */
+	metamorphedTalents?: Record<string, string>;
+	/** `DivineInspirationTracker` (`items/divineInspiration.ts`). */
+	divineInspiration?: { boosted: number[]; granted: number[] };
 	advancement?: { grantedTiers: number; balance: number; choices: [number, string][] };
 	/** Per-tier talent points (T1/T2/T3/T4) - see 	alentPoints`'s own comment. */
 	talentPoints?: number[];
@@ -608,7 +631,7 @@ export interface SaveShape {
 	/** Which ring/artifact id SpiritForm currently grants (`Trinity.spiritForm`'s stored effect);
 	 * read alongside `trinityForm === 'spirit' && trinityTurns > 0` by `trinitySpiritRing()`. */
 	trinitySpiritEffect?: string | null;
-	/** Which wand/dart id MindForm currently grants (`Trinity.mindForm`'s stored effect). */
+	/** Persistent selected Wand/missile id (`Trinity.mindForm` is stored on the armor without a timer). */
 	trinityMindEffect?: string | null;
 	/** `SkeletonKey.KeyReplacementTracker`'s per-depth key counts; absent until the key's first lock use. */
 	skeletonKeyTracker?: { iron: number[]; golden: number[]; crystal: number[] } | null;
@@ -639,8 +662,8 @@ export interface SaveShape {
 	kineticStored?: number;
 	elementalFurrow?: number;
 	timeBubbleTurns?: number;
-	gravityChaos?: { left: number; wait: number } | null;
-	superNova?: { x: number; y: number; depth: number; turnsLeft: number } | null;
+	gravityChaos?: { left: number; wait: number; positiveOnly?: boolean } | null;
+	superNova?: { x: number; y: number; depth: number; turnsLeft: number; harmsAllies?: boolean } | null;
 	timeBubblePresses?: number[];
 	hourglassFreeze?: boolean;
 	hourglassTurnsToCost?: number;
@@ -666,7 +689,7 @@ export interface SaveShape {
 	blockingShieldLeft?: number;
 	blockingTurnsLeft?: number;
 	sealBarrierState?: { layers: { amount: number; decayPerTick?: number }[] };
-	sealPartialGain?: number;
+	sealState?: { cooldown: number; turnsSinceEnemies: number; initialShield: number };
 	armorSealed?: boolean;
 	weaponCurseInfusionBonus?: boolean;
 	armorCurseInfusionBonus?: boolean;
@@ -698,9 +721,11 @@ export interface SaveShape {
 	healingEvasionTurns?: number;
 	sungrassHealing?: number;
 	sungrassPartial?: number;
+	aquaHealingLeft?: number;
  	healingLeft?: number;
  	healingPercent?: number;
  	healingFlat?: number;
+	healingLimited?: boolean;
 	sungrassPos?: number;
 	deathlessFuryUsed?: boolean;
 	/** `Momentum` bundle fields; Java deliberately does not persist `movedLastTurn`. */

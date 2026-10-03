@@ -214,7 +214,19 @@
             counter: "death_falling",
             target: 1,
             description: "Died from a fall",
-            icon: 21,
+            //Cell 20 of this port's `ui_badges.png`: that sheet is the older layout where `DEATH_FROM_FALLING`
+            //is image 20 (the tag `v3.3.8` enum says 21 for a later sheet); 21 here is the "games played" chest.
+            icon: 20,
+          },
+          {
+            //`Badges.validateDeathFromFriendlyMagic()` (`DEATH_FROM_FRIENDLY_MAGIC`, image 52 on both sheets):
+            //dying to your own Sacrificial bleed (`Bleeding.act()`'s `Sacrificial.class` branch).
+            tag: "row",
+            id: "death_friendly_magic",
+            counter: "death_friendly_magic",
+            target: 1,
+            description: "Die to your own magical item",
+            icon: 52,
           },
           {
             tag: "row",

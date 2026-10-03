@@ -230,7 +230,9 @@ export const BOSS_KINDS = mwlActorFlagSet('boss');
  * Java checks the two properties separately in several places, and the distinction is not cosmetic:
  * `StoneOfAggression` shortens its mark to a quarter for either, `Talent.CombinedLethality` excludes
  * both, and `MonkEnergy`'s gain differs per property. The one Java class this port does not spawn
- * (FungalSentry) is simply absent. */
+ * `FungalSentry` is only instantiated by the dormant FUNGI branch of `MineLargeRoom`; Java
+ * marks that quest type explicitly unimplemented and its spawn chooses only CRYSTAL/GNOLL
+ * (`Blacksmith.java:205,361`, tag `v3.3.8`), so the sentry has no live spawn path. */
 export const MINIBOSS_KINDS = mwlActorFlagSet('miniboss');
 
 /** Java's `Char.Property.UNDEAD`: `DwarfKing`/`Ghoul`/`Guard`/`Monk`/`Necromancer`/`RipperDemon`/

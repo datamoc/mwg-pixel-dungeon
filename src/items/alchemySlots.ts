@@ -1,8 +1,9 @@
 import {
-	ALCHEMY_RECIPES, alchemyEnergyAvailable, completeAlchemyRecipe, energizeCarriedToolkit, toolkitCanEnergize,
-	type AlchemyFlowContext, type AlchemyUnitRef,
+	ALCHEMY_RECIPES, alchemyEnergyAvailable, completeAlchemyRecipe, energizeCarriedToolkit, openTrinketCatalystFlow, toolkitCanEnergize,
+	upgradeTrinketUnit, type AlchemyFlowContext, type AlchemyUnitRef,
 } from './alchemy';
 import { findAlchemyRecipes, recipeSlots, selectionFor, type AlchemyUnit, type FoundRecipe } from './alchemyFind';
+import { trinketUpgradeEnergyCost } from '../simulation/trinkets';
 import { t } from '../i18n';
 import type { AlchemyWindowView } from '../ui/alchemyWindow';
 
@@ -41,7 +42,9 @@ export function openAlchemySlots(scene: AlchemySlotsContext): void {
 		return findAlchemyRecipes(current);
 	};
 
-	const costOf = (match: FoundRecipe): number => match.recipe.energyCost;
+	const costOf = (match: FoundRecipe): number => match.recipe.id === 'upgradeTrinket'
+		? trinketUpgradeEnergyCost(match.slots[0]!.id, match.slots[0]!.level ?? 0)
+		: match.recipe.energyCost;
 
 	const render = (): void => {
 		const matches = found();
@@ -51,7 +54,7 @@ export function openAlchemySlots(scene: AlchemySlotsContext): void {
 			slots: Array.from({ length: MAX_SLOTS }, (_, index) => {
 				const ref = slots[index];
 				const unit = ref ? bagUnit(ref) : undefined;
-				return unit ? { label: scene.itemDisplayName(unit.id, unit.identified ?? false), frame: scene.itemFrame(unit.id) } : {};
+				return unit ? { label: scene.itemDisplayName(unit.id, unit.identified ?? false, unit.instanceId), frame: scene.itemFrame(unit.id) } : {};
 			}),
 			results: [
 				...matches.map((match) => ({
@@ -77,7 +80,9 @@ export function openAlchemySlots(scene: AlchemySlotsContext): void {
 					if (energyRows) { energizeCarriedToolkit(scene); render(); }
 					return;
 				}
-				completeAlchemyRecipe(scene, match.recipe, selectionFor(match));
+				if (match.recipe.id === 'trinketCatalyst') { scene.closeAlchemyWindow(); openTrinketCatalystFlow(scene); return; }
+				if (match.recipe.id === 'upgradeTrinket') upgradeTrinketUnit(scene, { id: match.slots[0]!.id, instanceId: match.slots[0]!.instanceId });
+				else completeAlchemyRecipe(scene, match.recipe, selectionFor(match));
 				slots = [];
 				render();
 			},

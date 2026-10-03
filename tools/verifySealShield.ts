@@ -17,6 +17,15 @@ check('five quiet turns with shield up drop it, refunding cooldown by 150 x (lef
 	return dropped && state.cooldown === 107;
 })());
 check('an enemy in view or a live Combo keeps the count at zero', sealTick({ cooldown: 5, turnsSinceEnemies: 4, initialShield: 5 }, { regenOn: true, shielding: 3, enemiesVisible: true, comboActive: false }).state.turnsSinceEnemies === 0 && sealTick({ cooldown: 5, turnsSinceEnemies: 4, initialShield: 5 }, { regenOn: true, shielding: 3, enemiesVisible: false, comboActive: true }).state.turnsSinceEnemies === 0);
+check('Hold Fast scales the idle count: rank 3 (0) never drops the shield, rank 1 (0.5) takes ten quiet turns', (() => {
+	const run = (decayFactor: number, turns: number) => {
+		let state = { cooldown: 0, turnsSinceEnemies: 0, initialShield: 10 };
+		let dropped = false;
+		for (let i = 0; i < turns && !dropped; i++) { const r = sealTick(state, { regenOn: true, shielding: 5, enemiesVisible: false, comboActive: false, decayFactor }); state = r.state; dropped = r.dropShield; }
+		return dropped;
+	};
+	return !run(0, 100) && !run(0.5, 9) && run(0.5, 10) && run(0.25, 20) && !run(0.25, 19);
+})());
 check('lethal defense cools down by round(150 x rank/3), floored at -150', sealReduceCooldown(100, 1 / 3) === 50 && sealReduceCooldown(100, 1) === -50 && sealReduceCooldown(-140, 1) === -150);
 
 if (failed > 0) { console.log(`verifySealShield: ${failed} FAILED`); process.exit(1); }

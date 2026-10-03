@@ -48,13 +48,14 @@ export interface FloorState {
 	/** `Inferno`/`Blizzard` volume fields: the matching brews seed them. */
 	inferno?: FireState;
 	blizzard?: FireState;
+	stormCloud?: FireState;
 	eternalFire?: FireState;
 	sacrificialFire?: FireState;
 	sacrificialFireCharge?: number;
 	sacrificialFireCell?: number;
 	sacrificialFirePrize?: GroundItem['item'];
 	portedFeatures?: { cells: [number, string][] };
-	groundItems: { kind: GroundItemKind; x: number; y: number; item?: GroundItem['item']; chest?: 'normal' | 'locked' | 'crystal'; forSale?: boolean; missileLevel?: number; missileSet?: string; tippedSeed?: string; autoExplored?: boolean; tomb?: boolean }[];
+	groundItems: { kind: GroundItemKind; x: number; y: number; item?: GroundItem['item']; chest?: 'normal' | 'locked' | 'crystal'; forSale?: boolean; missileLevel?: number; missileSet?: string; tippedSeed?: string; autoExplored?: boolean; tomb?: boolean; hidden?: boolean }[];
 	fallingRocks?: { cells: { x: number; y: number }[]; turns: number }[];
 	cavesBossEnergyCells?: number[];
 	manualPlants?: [number, string][];
@@ -83,9 +84,12 @@ export interface SavedCreature {
 	champion?: 'blessed' | 'blazing' | 'giant' | 'growing' | 'antimagic' | 'projecting' | null;
 	championPower?: number;
 	pumped?: number;
+	teleporting?: boolean;
 	gooHealInc?: number;
 	focusCooldown?: number;
 	combo?: number;
+	/** `CorpseDust.DustWraith.atkCount` (`atk_count`). */
+	dustAtkCount?: number;
 	moving?: number;
 	arenaJumps?: number;
 	tenguPhase?: 'cell' | 'paused' | 'arena';
@@ -129,6 +133,9 @@ export interface SavedCreature {
 	kingReactionsState?: { active: string[]; spent: string[] };
 	weaponLevel?: number;
 	stolen?: string | null;
+	ebonyMimic?: boolean;
+	ebonyPrizes?: string;
+	mimicToothExtra?: boolean;
 	mimicLoot?: string;
 	armbandStolen?: boolean;
 	generation?: number;
@@ -147,8 +154,6 @@ export interface SavedCreature {
 	firstSummon?: boolean;
 	/** `Wraith.level` (`Wraith.java`, tag `v3.3.8`), set by `adjustStats()` at spawn. */
 	wraithLevel?: number;
-	/** `CorpseDust.DustWraith.atkCount` (`CorpseDust.java`, tag `v3.3.8`). */
-	wraithAtkCount?: number;
 	impShopkeeperGreeted?: boolean;
 	nextTurn: number | null;
 	isAlly?: boolean;
@@ -185,6 +190,8 @@ export interface SavedCreature {
 	barkskinLevel?: number;
 	barkskinInterval?: number;
 	barkskinCooldown?: number;
+	/** `ElixirOfAquaticRejuvenation.AquaHealing`'s `left` pool (tag `v3.3.8`). */
+	aquaHealingLeft?: number;
 	chainUsed?: boolean;
 	ventCooldown?: number;
 	webCooldown?: number;

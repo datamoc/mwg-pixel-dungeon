@@ -3,6 +3,7 @@ import { chebyshevDistance } from './combatState';
 import type { SimulationRandom } from './random';
 import { BRUTE_RAGE_DAMAGE, GOO_STATE_STATS } from './mwlMonsterStateStats';
 import { preparationDamageRoll, preparationLevelByNumber } from './preparation';
+import { cloverDamageRoll } from './trinkets';
 
 // Char.java:509-510 - surprise attacks and truly-untargetable defenders short-circuit the
 // whole hit roll around these values, rather than through any percentage
@@ -225,7 +226,7 @@ export function rollDamage(attacker: Readonly<Combatant>, defender: Readonly<Com
 	const rawDr = random.normalRange(0, defender.barkskinLevel ?? 0)
 		+ (defender.armor[0] === 0 && defender.armor[1] === 0 && !defender.barkskinLevel
 			? 0
-			: random.normalRange(defender.armor[0], defender.armor[1]))
+			: Math.max(0, random.normalRange(defender.armor[0], defender.armor[1]) - (defender.armorStrPenalty ?? 0)))
 		//`DriedRose.GhostHero.drRoll()` (`DriedRose.java`, tag `v3.3.8`) adds a second,
 		//independent NormalIntRange roll from the equipped weapon after armor DR.
 		+ (defender.weaponDefense !== undefined ? random.normalRange(0, defender.weaponDefense) : 0);
@@ -237,7 +238,11 @@ export function rollDamage(attacker: Readonly<Combatant>, defender: Readonly<Com
 	 * bonus (up to the whole surplus over the requirement). A function rather than an inline
 	 * expression because `Preparation` rolls it 1-3 times and keeps the best. */
 	const damageRoll = (): number => {
-		let roll = random.normalRange(min, max);
+		//`Hero.heroDamageIntRange` (`Hero.java:699-705`): a carried Thirteen-Leaf Clover replaces the roll with its max or min.
+		//Java draws the alter-chance `Float()` on every hero roll even with none; this seam only draws it when a clover is
+		//carried so every existing combat stream (the T55 parity pins) is unchanged without one.
+		const alter = attacker.isHero === true ? (attacker.cloverChance ?? 0) : 0;
+		let roll = alter > 0 && random.float(1) < alter ? cloverDamageRoll(min, max, random.float(1)) : random.normalRange(min, max);
 		if (attacker.str !== undefined && attacker.strReq !== undefined && attacker.str > attacker.strReq) {
 			roll += random.range(0, attacker.str - attacker.strReq);
 		}

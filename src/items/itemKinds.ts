@@ -8,6 +8,25 @@ export const SPECIALTY_BOMB_IDS = new Set(
 	[...MWL_ITEM_CATEGORIES].filter(([, category]) => category === 'specialtyBomb').map(([id]) => id),
 );
 
+/** Java exotic class -> this port's bag id, for the exotics that exist as items. */
+export const EXOTIC_CLASS_TO_ID: Readonly<Record<string, string>> = {
+	PotionOfShielding: 'potionShielding', PotionOfShroudingFog: 'potionShrouding', PotionOfEarthenArmor: 'potionEarthenArmor',
+	PotionOfCleansing: 'potionCleansing', PotionOfStamina: 'potionStamina', PotionOfMagicalSight: 'potionMagicalSight',
+	PotionOfStormClouds: 'potionStormClouds', PotionOfCorrosiveGas: 'potionCorrosiveGas', PotionOfSnapFreeze: 'potionSnapFreeze', PotionOfMastery: 'potionMastery', PotionOfDragonsBreath: 'potionDragonsBreath', PotionOfDivineInspiration: 'potionDivineInspiration',
+	ScrollOfPrismaticImage: 'scrollPrismatic',
+	ScrollOfEnchantment: 'scrollEnchantment',
+	ScrollOfDivination: 'scrollDivination',
+	ScrollOfAntiMagic: 'scrollAntiMagic',
+	ScrollOfMysticalEnergy: 'scrollMysticalEnergy',
+	ScrollOfSirensSong: 'scrollSirensSong',
+	ScrollOfForesight: 'scrollForesight',
+	ScrollOfChallenge: 'scrollChallenge',
+	ScrollOfPsionicBlast: 'scrollPsionicBlast',
+	ScrollOfDread: 'scrollDread',
+	ScrollOfMetamorphosis: 'scrollMetamorphosis',
+ ScrollOfPassage: 'scrollPassage',
+};
+
 /** A carried item as the infusion predicates below see it: its bag id, plus the `sourceClass` a
  * picked-up heap or a generated payload keeps (see `sourceInventoryItem`). */
 export interface CarriedItem { id: string; sourceClass?: string }
@@ -111,7 +130,13 @@ export function usableForMagicalInfusion(item: CarriedItem): boolean {
  * (`CurseInfusion.java`, tag `v3.3.8`). The bow is NOT upgradable here either, so only
  * the explicit clause below admits it - the `&& isUpgradable()` half refuses it exactly
  * like Java's first half does. Wands take the explicit clause too, the way Java's second
- * clause does, even though they would pass as upgradable anyway. */
+ * clause does, even though they would pass as upgradable anyway. Rings pass the same
+ * formula here even though Java's picker never offers one (`Ring extends KindofMisc`,
+ * `Ring.java` 50, so `onItemSelected`'s `RingOfMight`/`updateHT` branch is dead code in
+ * Java): this port models rings as equipable (`isEquipableItem` above), so the formula
+ * admits them - pinning the formula beats re-pointing the lattice. The `updateHT` leg
+ * stays not ported (R004 sub-clause (c) residual): cursing alters no level or bonus, so
+ * the re-sync Java would run on its unreachable branch changes no number here. */
 export function usableForCurseInfusion(item: CarriedItem): boolean {
 	if (MWL_ITEM_SLOTS.get(item.id) === 'wand') return true;
 	if (item.id === 'spiritBow') return true;
@@ -198,6 +223,9 @@ export function sourceInventoryItem(id: string, sourceClass: string | undefined,
 	const missileFields = MWL_MISSILE_BY_CLASS.has(concrete) ? missileStackFields(newItemInstanceId('missile'), 0) : {};
 	const authoredSpecial = MWL_SPECIAL_ITEM_INVENTORY_BY_CLASS.get(lower);
 	if (authoredSpecial) return { id: authoredSpecial.itemId, quantity: 1, identified: authoredSpecial.identified, ...(authoredSpecial.cursed ? { cursed: true } : {}), sourceClass: authoredSpecial.sourceClass };
+	//The exotics this port has as items (`ExoticPotion`/`ExoticScroll` classes the generator can now hand out under ExoticCrystals).
+	const exoticId = EXOTIC_CLASS_TO_ID[concrete];
+	if (exoticId) return { id: exoticId, quantity: 1, identified: false, sourceClass: concrete };
 	const consumableAlias = MWL_CONSUMABLE_CLASS_TO_ID.get(concrete);
 	if (consumableAlias) return { id: consumableAlias, quantity: 1, identified: false, sourceClass: concrete };
 	if (concrete === 'FrozenCarpaccio' || lower === 'frozencarpaccio') return { id: 'frozenCarpaccio', quantity: 1, identified: true, sourceClass: 'FrozenCarpaccio' };

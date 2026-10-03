@@ -45,6 +45,11 @@ export function upperWallFrame(at: VisualTerrain, x: number, y: number, belowVar
 	if (below === 25 || below === 26) return 240;
 	if (below === 28) return 241;
 	if (below === 13) return 242;
+//`DungeonWallsTilemap.getTileVisual` (tag `v3.3.8`) puts `REGION_DECO_OVERHANG`
+//(232+10/11) on the cell above a deco, with no alt variants. The v3.3.8 cells are
+//spliced into this sheet's free overhang slots 245/248 (see `images.ts`).
+if (below === 33) return 245;
+if (below === 34) return 248;
 	if (below === 15) return belowVariance >= 50 ? 246 : 243;
 	if (below === 30) return belowVariance >= 50 ? 247 : 244;
 	return -1;

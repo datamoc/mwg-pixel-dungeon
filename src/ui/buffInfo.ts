@@ -24,6 +24,7 @@ const BUFF_MESSAGE_KEY: Partial<Record<BuffId, string>> = {
 	magicalSleep: 'actors.buffs.magicalsleep',
 	amok: 'actors.buffs.amok',
 	terror: 'actors.buffs.terror',
+	dread: 'actors.buffs.dread',
 	ooze: 'actors.buffs.ooze',
 	paralysis: 'actors.buffs.paralysis',
 	roots: 'actors.buffs.roots',
@@ -35,12 +36,17 @@ const BUFF_MESSAGE_KEY: Partial<Record<BuffId, string>> = {
 	cloak: 'actors.buffs.shadows',
 	weakness: 'actors.buffs.weakness',
 	aggression: 'items.stones.stoneofaggression$aggression',
+	challengeArena: 'items.scrolls.exotic.scrollofchallenge$challengearena',
 	wayward: 'items.weapon.curses.wayward$waywardbuff',
 	fury: 'actors.buffs.fury',
 	charm: 'actors.buffs.charm',
 	recharging: 'actors.buffs.recharging',
 	artifactRecharge: 'actors.buffs.artifactrecharge',
 	haste: 'actors.buffs.haste',
+	stamina: 'actors.buffs.stamina',
+	foresight: 'actors.buffs.foresight',
+	magicImmune: 'actors.buffs.magicimmune',
+	magicalSight: 'actors.buffs.magicalsight',
 	cripple: 'actors.buffs.cripple',
 	bless: 'actors.buffs.bless',
 	vulnerable: 'actors.buffs.vulnerable',
@@ -78,6 +84,10 @@ const BUFF_MESSAGE_KEY: Partial<Record<BuffId, string>> = {
 	//stays out of `NO_TURNS_PARAM`.
 	cleanseImmunity: 'port.buff.cleanseimmunity',
 	rejuvenatingStepsCooldown: 'actors.hero.talent$rejuvenatingstepscooldown',
+	//`ShardOfOblivion.WandUseTracker` carries its own name/desc (tag `v3.3.8`); the desc takes the turns-remaining `{0}`.
+	wandUseTracker: 'items.trinkets.shardofoblivion$wandusetracker',
+	//`ShardOfOblivion.ThrownUseTracker` carries its own name/desc the same way (same tag and `{0}`).
+	thrownUseTracker: 'items.trinkets.shardofoblivion$thrownusetracker',
 };
 
 /**

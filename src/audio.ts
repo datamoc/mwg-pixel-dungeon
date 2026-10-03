@@ -1,6 +1,5 @@
 import { Audio } from 'mwg';
 import { isMusicMuted, isSfxMuted, setMusicMuted as persistMusicMuted, setSfxMuted as persistSfxMuted, musicVolume, sfxVolume, setMusicVolume as persistMusicVolume, setSfxVolume as persistSfxVolume, volumeCurve, playMusicInBackground } from './settings';
-import { selectDungeonMusic, type DungeonMusicConditions, type MusicRegion } from './simulation/regionMusic';
 
 /**
  * SPD's original OGG/MP3 assets, bundled as data URLs so the exported game still works from
@@ -38,7 +37,19 @@ function createElement(path: string): HTMLAudioElement {
 	return new globalThis.Audio(path);
 }
 
-export type AudioRegion = MusicRegion;
+export type AudioRegion = 'sewers' | 'prison' | 'caves' | 'city' | 'halls';
+
+const REGION_TRACK_QUEUE: Record<AudioRegion, readonly [string, string, string, string, string, string]> = {
+	sewers: ['sewers_1.ogg', 'sewers_2.ogg', 'sewers_2.ogg', 'sewers_1.ogg', 'sewers_3.ogg', 'sewers_3.ogg'],
+	prison: ['prison_1.ogg', 'prison_2.ogg', 'prison_2.ogg', 'prison_1.ogg', 'prison_3.ogg', 'prison_3.ogg'],
+	caves: ['caves_1.ogg', 'caves_2.ogg', 'caves_2.ogg', 'caves_1.ogg', 'caves_3.ogg', 'caves_3.ogg'],
+	city: ['city_1.ogg', 'city_2.ogg', 'city_2.ogg', 'city_1.ogg', 'city_3.ogg', 'city_3.ogg'],
+	halls: ['halls_1.ogg', 'halls_2.ogg', 'halls_2.ogg', 'halls_1.ogg', 'halls_3.ogg', 'halls_3.ogg'],
+};
+const REGION_TRACK_CHANCES = [1, 1, 0.5, 0.25, 1, 0.5] as const;
+
+// The added `_3`, `_tense`, and `*_boss_finale` OGGs are copied byte-for-byte from
+// SPD `v3.3.8`'s core/src/main/assets/music/; that tag is the port's soundtrack source.
 
 const MUSIC_BASE_VOLUME = 0.42;
 
@@ -49,6 +60,7 @@ export class SpdAudio {
 	private readonly music = new Audio.Music({ volume: MUSIC_BASE_VOLUME * volumeCurve(musicVolume()), create: createElement });
 	private readonly cues = new Map<string, Audio.Sound>();
 	private currentTrack: string | null = null;
+	private readonly regionTrackQueues = new Map<AudioRegion, string[]>();
 	private musicOff = isMusicMuted();
 	private sfxOff = isSfxMuted();
 	/** The last music request, so unmuting resumes what should be playing - Java's
@@ -116,17 +128,33 @@ export class SpdAudio {
 		this.playMusicTracks(['theme_1.ogg', 'theme_2.ogg'], 0);
 	}
 
-	/** Floor-entry music and every live re-evaluation of it (bleed edges, quest flips):
-	 * boss depths keep the boss track with a sealed-and-bleeding finale, the regions play
-	 * their tense loop under their Java conditions or the chance-filtered rotation queue
-	 * (`simulation/regionMusic.ts` holds the tables). The queue flips ride `Math.random`,
-	 * never the gameplay RNG stream - music timing must not shift game outcomes (the same
-	 * reason the trample pitch wobble stays out of the seeded stream). The private players'
-	 * own track-key check absorbs redundant re-evaluations without restarting anything. */
-	enterDungeon(region: AudioRegion, state: DungeonMusicConditions): void {
-		const selection = selectDungeonMusic(region, state, () => Math.random());
-		if (selection.kind === 'track') this.playMusic(selection.file, 1);
-		else this.playMusicTracks(selection.files, 1);
+	enterDungeon(region: AudioRegion, boss: boolean, amuletObtained = false, bossUnlocked = false, depth = 0, questTense = false): void {
+		if (boss && !bossUnlocked) this.playMusic(`${region}_boss.ogg`, 1);
+		else if (amuletObtained && region === 'sewers' && depth === 1) this.playMusic('theme_finale.ogg', 1);
+		else if (amuletObtained || questTense) this.playMusic(`${region}_tense.ogg`, 1);
+		else this.playMusicTracks(this.regionTrackQueue(region), 1);
+	}
+
+	/** `CavesBossLevel`/`CityBossLevel`/`HallsBossLevel.playLevelMusic()` switches to
+	 * its finale loop when `BossHealthBar.isBleeding()` becomes true. */
+	bossBleeding(region: AudioRegion, bleeding: boolean): void {
+		if (region !== 'caves' && region !== 'city' && region !== 'halls') return;
+		this.playMusic(bleeding ? `${region}_boss_finale.ogg` : `${region}_boss.ogg`, 1);
+	}
+
+	private regionTrackQueue(region: AudioRegion): string[] {
+		let queue = this.regionTrackQueues.get(region);
+		if (!queue) {
+			// SPD v3.3.8's region arrays and chances (e.g. SewerLevel.SEWER_TRACK_LIST /
+			// SEWER_TRACK_CHANCES) are filtered once by Music.playTracks, then rerolled
+			// each completed playlist. MWG repeats one fixed list, so this port samples
+			// once per region per run and keeps that selected queue stable. Math.random
+			// keeps cosmetic track choices out of the game's simulation RNG; Java uses
+			// its shared Random stream here.
+			queue = REGION_TRACK_QUEUE[region].filter((_, index) => Math.random() < REGION_TRACK_CHANCES[index]!);
+			this.regionTrackQueues.set(region, queue);
+		}
+		return queue;
 	}
 
 	/** `LastLevel.playLevelMusic()`: the endgame vault plays `THEME_FINALE` on loop while the

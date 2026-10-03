@@ -31,6 +31,56 @@
           },
           {
             tag: "row",
+            kind: "scrollEnchantment",
+            energy: 12,
+          },
+          {
+            tag: "row",
+            kind: "scrollDivination",
+            energy: 12,
+          },
+          {
+            tag: "row",
+            kind: "scrollAntiMagic",
+            energy: 12,
+          },
+          {
+            tag: "row",
+            kind: "scrollMysticalEnergy",
+            energy: 12,
+          },
+          {
+            tag: "row",
+            kind: "scrollSirensSong",
+            energy: 12,
+          },
+          {
+            tag: "row",
+            kind: "scrollForesight",
+            energy: 12,
+          },
+          {
+            tag: "row",
+            kind: "scrollChallenge",
+            energy: 12,
+          },
+          {
+            tag: "row",
+            kind: "scrollPsionicBlast",
+            energy: 12,
+          },
+          {
+            tag: "row",
+            kind: "scrollDread",
+            energy: 12,
+          },
+          {
+            tag: "row",
+            kind: "scrollMetamorphosis",
+            energy: 12,
+          },
+          {
+            tag: "row",
             kind: "potion",
             energy: 6,
           },
@@ -44,6 +94,143 @@
             // `ExoticPotion.energyVal()` (v3.3.8): regular potion 6 plus 4.
             tag: "row",
             kind: "potionShielding",
+            energy: 10,
+          },
+          {
+            tag: "row",
+            kind: "potionStormClouds",
+            energy: 10,
+          },
+          {
+            tag: "row",
+            kind: "potionCorrosiveGas",
+            energy: 10,
+          },
+          {
+            tag: "row",
+            kind: "potionSnapFreeze",
+            energy: 10,
+          },
+          //`ExoticPotion.energyVal()` is the regular potion's plus 4; `PotionOfStrength` is worth 10 when known.
+          {
+            tag: "row",
+            kind: "potionDragonsBreath",
+            energy: 10,
+          },
+          {
+            tag: "row",
+            kind: "potionDivineInspiration",
+            energy: 14,
+          },
+          {
+            tag: "row",
+            kind: "potionMastery",
+            energy: 14,
+          },
+          //`Trinket.energyVal()` (`Trinket.java`, tag `v3.3.8`): every trinket scraps for 5.
+          {
+            tag: "row",
+            kind: "trinketRatSkull",
+            energy: 5,
+          },
+          {
+            tag: "row",
+            kind: "trinketParchmentScrap",
+            energy: 5,
+          },
+          {
+            tag: "row",
+            kind: "trinketPetrifiedSeed",
+            energy: 5,
+          },
+          {
+            tag: "row",
+            kind: "trinketExoticCrystals",
+            energy: 5,
+          },
+          {
+            tag: "row",
+            kind: "trinketMossyClump",
+            energy: 5,
+          },
+          {
+            tag: "row",
+            kind: "trinketDimensionalSundial",
+            energy: 5,
+          },
+          {
+            tag: "row",
+            kind: "trinketThirteenLeafClover",
+            energy: 5,
+          },
+          {
+            tag: "row",
+            kind: "trinketTrapMechanism",
+            energy: 5,
+          },
+          {
+            tag: "row",
+            kind: "trinketMimicTooth",
+            energy: 5,
+          },
+          {
+            tag: "row",
+            kind: "trinketWondrousResin",
+            energy: 5,
+          },
+          {
+            tag: "row",
+            kind: "trinketEyeOfNewt",
+            energy: 5,
+          },
+          {
+            tag: "row",
+            kind: "trinketSaltCube",
+            energy: 5,
+          },
+          {
+            tag: "row",
+            kind: "trinketVialOfBlood",
+            energy: 5,
+          },
+          {
+            tag: "row",
+            kind: "trinketShardOfOblivion",
+            energy: 5,
+          },
+          {
+            tag: "row",
+            kind: "trinketChaoticCenser",
+            energy: 5,
+          },
+          {
+            tag: "row",
+            kind: "trinketFerretTuft",
+            energy: 5,
+          },
+          {
+            tag: "row",
+            kind: "trinketCrackedSpyglass",
+            energy: 5,
+          },
+          {
+            tag: "row",
+            kind: "potionEarthenArmor",
+            energy: 10,
+          },
+          {
+            tag: "row",
+            kind: "potionCleansing",
+            energy: 10,
+          },
+          {
+            tag: "row",
+            kind: "potionStamina",
+            energy: 10,
+          },
+          {
+            tag: "row",
+            kind: "potionMagicalSight",
             energy: 10,
           },
           {
@@ -92,8 +279,8 @@
           { tag: "row", kind: "elixirHoneyedHealing", energy: 8 },
           { tag: "row", kind: "elixirToxicEssence", energy: 12 },
           { tag: "row", kind: "featherFall", energy: 12 },
-          //`MagicalInfusion.energyVal()`: 12 * quantity. The unstable classes retain
-          //their Java values even though their item families remain unported (R082).
+          //`MagicalInfusion.energyVal()`: 12 * quantity. The unstable classes below
+          //retain their Java values for use and recipe output accounting.
           { tag: "row", kind: "magicalInfusion", energy: 12 },
           { tag: "row", kind: "unstableBrew", energy: 8 },
           { tag: "row", kind: "unstableSpell", energy: 8 },
@@ -113,6 +300,7 @@
           { tag: "row", item: "wildEnergy", total: 12, outputQuantity: 5 },
           { tag: "row", item: "telekineticGrab", total: 10, outputQuantity: 8 },
           { tag: "row", item: "alchemize", total: 4, outputQuantity: 8 },
+          { tag: "row", item: "unstableSpell", total: 8, outputQuantity: 1 },
         ],
       },
       {
@@ -130,6 +318,7 @@
           { tag: "row", item: "wildEnergy", base: 12, outQuantity: 5 },
           { tag: "row", item: "telekineticGrab", base: 10, outQuantity: 8 },
           { tag: "row", item: "alchemize", base: 4, outQuantity: 8 },
+          { tag: "row", item: "unstableSpell", base: 8, outQuantity: 1 },
         ],
       },
       {
@@ -192,6 +381,18 @@
             result: "potionHealing",
             resultQuantity: 1,
             energyCost: 0,
+            requiresIdentified: false,
+          },
+          {
+            tag: "row",
+            // Blandfruit.CookFruit, tag v3.3.8: one plain fruit plus any one
+            // seed, cost 2. Variable like potionSeed/meatPie, so the pick flow
+            // and craftCookFruit resolve the seed class, not this row.
+            id: "blandfruit",
+            ingredients: "blandfruit:1,seed:1",
+            result: "blandfruit",
+            resultQuantity: 1,
+            energyCost: 2,
             requiresIdentified: false,
           },
           {
@@ -463,6 +664,38 @@
             resultQuantity: 5,
             energyCost: 4,
             requiresIdentified: true,
+          },
+          {
+            //`UnstableSpell.Recipe` (`UnstableSpell.java`): any runestone and ordinary/exotic scroll, no identification gate.
+            tag: "row",
+            id: "unstableSpell",
+            ingredients: "scroll:1,stone:1",
+            result: "unstableSpell",
+            resultQuantity: 1,
+            energyCost: 1,
+            requiresIdentified: false,
+          },
+          {
+            //`TrinketCatalyst.Recipe` (`items/trinkets/TrinketCatalyst.java`, tag `v3.3.8`): one catalyst, 6 energy, brews
+            //into the four-trinket choice window (`WndTrinket`); the runtime flow is `openTrinketCatalystFlow`.
+            tag: "row",
+            id: "trinketCatalyst",
+            ingredients: "trinketCatalyst:1",
+            result: "trinketCatalyst",
+            resultQuantity: 1,
+            energyCost: 6,
+            requiresIdentified: false,
+          },
+          {
+            //`Trinket.UpgradeTrinket` (`Trinket.java`): one trinket below +3 for `upgradeEnergyCost()` (6/8/10 or 10/15/20
+            //by trinket and level); the row names a representative trinket, `startTrinketUpgrade` resolves the carried one.
+            tag: "row",
+            id: "upgradeTrinket",
+            ingredients: "trinketRatSkull:1",
+            result: "trinketRatSkull",
+            resultQuantity: 1,
+            energyCost: 6,
+            requiresIdentified: false,
           },
           {
             //`BeaconOfReturning.Recipe` (`items/spells/BeaconOfReturning.java`, tag `v3.3.8`):

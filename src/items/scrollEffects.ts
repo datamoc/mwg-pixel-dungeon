@@ -1,6 +1,6 @@
 import { Actors, Roguelike } from 'mwg';
 import { CLASS_AMMO, type ClassId } from '../classes';
-import { addBuff, buffBlocked, type BuffId, type Creature, type Step } from '../combat';
+import { BUFF_DURATION, addBuff, buffBlocked, type BuffId, type Creature, type Step } from '../combat';
 import { t } from '../i18n/index';
 import { mwlItemEffectValue } from '../mwlContent';
 import { prismaticGuardMaxHp } from '../simulation/prismatic';
@@ -42,6 +42,24 @@ export interface ScrollEffectsContext {
 	readonly grantPrismaticGuard: (hp: number) => void;
 	/** `Talent.onScrollUsed()`'s Mage/Rogue effects (`Talent.java`, tag `v3.3.8`). */
 	readonly onScrollUsed: (factor?: number, chance?: number) => void;
+	/** `Buff.affect(hero, ArtifactRecharge.class).set(turns)` for `ScrollOfMysticalEnergy`. */
+	readonly armArtifactRecharge?: (turns: number) => void;
+	/** Re-derive the hero's flags after a buff changed them (`MagicImmune`). */
+	readonly syncHeroFromStats?: () => void;
+	/** `Hero.search(false)` with `Foresight` up: the immediate sweep on attach. */
+	readonly searchSecrets?: () => void;
+	/** A `Flare` (`new Flare(5, 32).color(color, true).show(hero.sprite, 2f)`) over the hero. */
+	readonly flare?: (color: number) => void;
+	/** `GameScene.flash(color)`: the screen-wide flash. */
+	readonly screenFlash?: (color: number) => void;
+	/** `Char.damage(amount, <the scroll>)`: a non-Char magical source (`AntiMagic.RESISTS`; Aura applies, armor does not); `resistHalf` is the BOSS `resist()`. */
+	readonly applyScrollDamage?: (target: Creature, amount: number, resistHalf: boolean) => void;
+	/** `Buff.affect(hero, ChallengeArena.class).setup(hero.pos)`. */
+	readonly startChallengeArena?: () => void;
+	/** `ScrollOfDivination`'s identify-up-to-four pass (needs the scene's run-wide known sets). */
+	readonly runDivination?: () => void;
+	/** `ScrollOfPassage`: the interfloor return to the region's first floor. */
+	readonly readPassage?: () => void;
 }
 
 export function applyScrollEffect(id: string, context: ScrollEffectsContext): boolean {
@@ -115,6 +133,87 @@ export function applyScrollEffect(id: string, context: ScrollEffectsContext): bo
 		else context.say(t('items.scrolls.scrollofterror.many'), 'positive');
 		return true;
 	}
+	//Exotic scrolls (`items/scrolls/exotic/*.java`, tag `v3.3.8`), the ones that need no picker:
+	if (id === 'scrollMysticalEnergy') {
+		//`ScrollOfMysticalEnergy.doRead()`: `ArtifactRecharge` for 30 turns (a flare, no log line).
+		context.armArtifactRecharge?.(30);
+		return true;
+	}
+	if (id === 'scrollAntiMagic') {
+		//`ScrollOfAntiMagic.doRead()`: `MagicImmune` for `MagicImmune.DURATION` (20).
+		hero.buffs['magicImmune'] = Math.max(hero.buffs['magicImmune'] ?? 0, BUFF_DURATION['magicImmune']);
+		context.syncHeroFromStats?.();
+		return true;
+	}
+	if (id === 'scrollForesight') {
+		//`ScrollOfForesight.doRead()`: `Foresight` for 400 turns; attaching sweeps `Hero.search(false)` at once, and the buff
+		//makes every later passive search a guaranteed radius-8 circle (`searchForSecrets`).
+		hero.buffs['foresight'] = Math.max(hero.buffs['foresight'] ?? 0, BUFF_DURATION['foresight']);
+		context.searchSecrets?.();
+		return true;
+	}
+	if (id === 'scrollDread') {
+		//`ScrollOfDread.doRead()`: a red flare, then every non-ally mob in the hero's view gets `Dread` - or plain `Terror`
+		//(`Terror.DURATION` 20) when it is immune to Dread (bosses, minibosses, STATIC mobs, Tengu: `buffBlocked`). `Dread`
+		//overrides Terror, doubles the mob's speed, shortens by 5 per hit taken, and removes a mob that is 6+ cells away out of
+		//sight (the monster turn and `fear.ts`).
+		context.flare?.(0xff0000);
+		for (const creature of creatures) {
+			if (creature.isHero || creature.isAlly || !fov.isVisible(creature.x, creature.y)) continue;
+			addBuff(creature, buffBlocked(creature, 'dread') ? 'terror' : 'dread');
+		}
+		return true;
+	}
+	if (id === 'scrollPsionicBlast') {
+		//`ScrollOfPsionicBlast.doRead()`: a white screen flash and the retribution blast line; the targets are every mob in view
+		//(allies and NPCs too - Java does not filter), taken before anything is damaged. Each takes `round(HT/2 + HP/2)` from the
+		//scroll as source (`Char.damage()`: a BOSS halves it, an AntiMagic holder is immune, a champion's factor applies), and a
+		//survivor is blinded for `Blindness.DURATION`. The reader then takes `round(HT * (0.5 * 0.9^targets))` - `AntiMagic`-reducible,
+		//Aura-reducible - and, if alive, Blindness plus Weakness for five times its duration.
+		context.screenFlash?.(0xffffff);
+		context.say(t('items.scrolls.scrollofretribution.blast'));
+		const targets = creatures.filter((c) => !c.isHero && fov.isVisible(c.x, c.y));
+		const prolong = (creature: Creature, buff: BuffId, duration: number): void => {
+			if (buffBlocked(creature, buff)) return;
+			creature.buffs[buff] = Math.max(creature.buffs[buff] ?? 0, duration);
+		};
+		for (const creature of targets) {
+			const raw = creature.magicImmune ? 0 : Math.round(creature.maxHp / 2 + creature.hp / 2);
+			if (context.applyScrollDamage) context.applyScrollDamage(creature, raw, creature.boss === true);
+			else context.applyDamage(creature, raw);
+			if (creature.hp > 0) prolong(creature, 'blindness', BUFF_DURATION['blindness']);
+		}
+		const reader = Math.max(0, Math.round(Math.fround(hero.maxHp * Math.fround(0.5 * Math.fround(Math.pow(0.9, targets.length))))));
+		if (context.applyScrollDamage) context.applyScrollDamage(hero, reader, false);
+		else context.applyDamage(hero, reader);
+		if (hero.hp > 0) {
+			prolong(hero, 'blindness', BUFF_DURATION['blindness']);
+			prolong(hero, 'weakness', BUFF_DURATION['weakness'] * 5);
+		}
+		return true;
+	}
+	if (id === 'scrollPassage') {
+		context.readPassage?.();
+		return true;
+	}
+	if (id === 'scrollDivination') {
+		context.runDivination?.();
+		return true;
+	}
+	if (id === 'scrollChallenge') {
+		//`ScrollOfChallenge.doRead()`: every mob is beckoned to the reader (the Rage branch's wake-and-alert, minus Amok), then the
+		//`ChallengeArena` buff starts: 100 turns of no hunger and 33% less damage while the reader stays inside the arena.
+		for (const creature of creatures) {
+			if (creature.isHero || creature.isNPC || creature.isAlly) continue;
+			if (!ignoresCrystalGuardianBeckon(creature.kind, creature.sleeping === true)) {
+				creature.sleeping = false;
+				creature.seesHero = true;
+			}
+		}
+		hero.buffs['challengeArena'] = BUFF_DURATION['challengeArena'];
+		context.startChallengeArena?.();
+		return true;
+	}
 	if (id === 'scrollRetribution') {
 		const missingHpFraction = (hero.maxHp - hero.hp) / hero.maxHp;
 		const power = Math.min(mwlItemEffectValue('scrollRetribution', 'maxPower'),
@@ -186,6 +285,10 @@ export interface ReadScrollContext extends ScrollEffectsContext {
 	/** `Potion.setKnown()` on identify, and the `Potion.isIdentified() == isKnown()` gate
 	 * over the target pick below - the scene owns the run-wide class set (R112). */
 	readonly markPotionKindsKnown: (ids: string[]) => void;
+	/** `Statistics.itemTypesDiscovered` for an identified wand/missile (`Trinity.java`, v3.3.8). */
+	/** `ScrollOfIdentify.IDItem()` under the Shard of Oblivion: a weapon, armor or ring is only made ready to identify (true when it was handled). */
+	readonly shardMarkReady?: (item: { id: string; instanceId?: string; identified?: boolean }) => boolean;
+	readonly markMindFormItemDiscovered: (item: { id: string; identified?: boolean; quantity?: number; sourceClass?: string; tippedSeed?: string }) => void;
 	readonly potionKindKnown: (id: string) => boolean;
 	readonly heroClass: string;
 	readonly talentRank: (id: string) => number;
@@ -198,7 +301,13 @@ export interface ReadScrollContext extends ScrollEffectsContext {
 	/** `Talent.onScrollUsed()`'s Cleric half (tag `v3.3.8`) - the scene
 	 * implementation no-ops unless the hero is a Cleric with the talent. */
 	readonly armRecallInscription: (sourceClass: string) => void;
-	readonly startTransmutationPick: (instanceId: string | undefined) => boolean;
+	readonly startTransmutationPick: (instanceId: string | undefined, opts?: { freeRecast?: boolean; generatedRead?: boolean }) => boolean;
+	/** `ScrollOfEnchantment`'s gear + offer pickers; the scroll is consumed when an offer is chosen, so no pre-consume here. */
+	readonly startEnchantmentPick?: (instanceId: string | undefined, consume?: boolean) => boolean;
+	/** `ScrollOfMetamorphosis`'s talent pickers; the scroll is consumed when a swap is made. */
+	readonly startMetamorphosis?: (instanceId: string | undefined, consume?: boolean) => boolean;
+	/** `ScrollOfSirensSong`'s cell targeter; the scroll is consumed when a mob is chosen. */
+	readonly startSirensSong?: (instanceId: string | undefined, consume?: boolean) => boolean;
 	get weaponAffix(): string | null;
 	set weaponAffix(affix: string | null);
 	get armorGlyph(): string | null;
@@ -225,7 +334,11 @@ export function recallScrollClass(id: string): string | undefined {
 	if (id === 'scrollPrismatic') return 'ScrollOfPrismaticImage';
 	if (!id.startsWith('scroll')) return undefined;
 	const known = ['scrollIdentify', 'scrollLullaby', 'scrollRage', 'scrollRecharging',
-		'scrollRetribution', 'scrollTeleportation', 'scrollTerror', 'scrollTransmutation', 'scrollUpgrade'];
+		'scrollRetribution', 'scrollTeleportation', 'scrollTerror', 'scrollTransmutation', 'scrollUpgrade',
+		//the exotics with a read effect that needs no picker; Enchantment, Metamorphosis and Siren's Song consume their scroll
+		//when the choice is made, which a free Recall Inscription re-read has no scroll to do, so they are not recallable here
+		'scrollMysticalEnergy', 'scrollAntiMagic', 'scrollForesight', 'scrollDread', 'scrollPsionicBlast', 'scrollChallenge',
+		'scrollDivination', 'scrollPassage'];
 	if (!known.includes(id)) return undefined;
 	return `ScrollOf${id.slice('scroll'.length)}`;
 }
@@ -252,6 +365,14 @@ export function recallPortScrollId(javaClass: string): string | undefined {
 		case 'ScrollOfMagicMapping': return 'scrollMapping';
 		case 'ScrollOfMirrorImage': return 'scrollMirror';
 		case 'ScrollOfPrismaticImage': return 'scrollPrismatic';
+		case 'ScrollOfMysticalEnergy': return 'scrollMysticalEnergy';
+		case 'ScrollOfAntiMagic': return 'scrollAntiMagic';
+		case 'ScrollOfForesight': return 'scrollForesight';
+		case 'ScrollOfDread': return 'scrollDread';
+		case 'ScrollOfPsionicBlast': return 'scrollPsionicBlast';
+		case 'ScrollOfChallenge': return 'scrollChallenge';
+		case 'ScrollOfDivination': return 'scrollDivination';
+		case 'ScrollOfPassage': return 'scrollPassage';
 		case 'ScrollOfIdentify': return 'scrollIdentify';
 		case 'ScrollOfLullaby': return 'scrollLullaby';
 		case 'ScrollOfRage': return 'scrollRage';
@@ -284,7 +405,7 @@ const RECALLABLE_STONES: ReadonlySet<string> = new Set(['StoneOfFlock', 'StoneOf
 	'StoneOfClairvoyance', 'StoneOfShock', 'StoneOfBlast', 'StoneOfEnchantment',
 	'StoneOfDetectMagic', 'StoneOfIntuition']);
 
-export function readScrollFlow(context: ReadScrollContext, opts?: { freeRecast?: boolean; forceItemId?: string }): boolean {
+export function readScrollFlow(context: ReadScrollContext, opts?: { freeRecast?: boolean; generatedRead?: boolean; forceItemId?: string }): boolean {
 	const { bag } = context;
 	const free = opts?.freeRecast === true;
 	const selectedScroll = opts?.forceItemId ?? selectScrollId({
@@ -302,7 +423,7 @@ export function readScrollFlow(context: ReadScrollContext, opts?: { freeRecast?:
 	//free charges, so transmutation returns before arming and arms only on success there.
 	//(Identify/effect/cleanse all consume below, so arming here is exact for them.)
 	const armEmpowered = selectedScroll !== 'scrollTransmutation'
-		&& context.heroClass === 'mage' && context.talentRank('empowering_scrolls') > 0;
+		&& context.talentRank('empowering_scrolls') > 0;
 	//`ScrollOfIdentify` picks Java's `!Item.isIdentified()` target (`ScrollOfIdentify.java`,
 	//tag `v3.3.8`), and for potions `isIdentified()` returns `isKnown()` - so a potion whose
 	//CLASS is already known is not a target even while this instance never had its flag set
@@ -316,8 +437,12 @@ export function readScrollFlow(context: ReadScrollContext, opts?: { freeRecast?:
 	}
 	//Transmutation targeting and reroll live in `items/transmutation.ts` behind
 	//`TransmuteFlowContext` (file-size refactor) - see `startTransmutationPick`.
-	if (id === 'scrollTransmutation') return context.startTransmutationPick(context.requestedItemInstanceId);
-	if (!free) bag.remove(id, 1, context.requestedItemInstanceId);
+	if (id === 'scrollTransmutation') return context.startTransmutationPick(context.requestedItemInstanceId,
+		{ freeRecast: free, generatedRead: opts?.generatedRead === true });
+	if (id === 'scrollSirensSong' && context.startSirensSong) return context.startSirensSong(context.requestedItemInstanceId, !free && !opts?.generatedRead);
+	if (id === 'scrollMetamorphosis' && context.startMetamorphosis) return context.startMetamorphosis(context.requestedItemInstanceId, !free && !opts?.generatedRead);
+	if (id === 'scrollEnchantment' && context.startEnchantmentPick) return context.startEnchantmentPick(context.requestedItemInstanceId, !free && !opts?.generatedRead);
+	if (!free && !opts?.generatedRead) bag.remove(id, 1, context.requestedItemInstanceId);
 	//`Scroll.readAnimation()` reaches `Talent.onScrollUsed()` after the successful read
 	//(`Scroll.java`, tag `v3.3.8`); free Recall Inscription re-reads use talentChance 0.
 	if (!free) context.onScrollUsed();
@@ -329,8 +454,11 @@ export function readScrollFlow(context: ReadScrollContext, opts?: { freeRecast?:
 	if (armEmpowered && !free) context.empoweredZaps = empoweringScrollsCharges(context.talentRank('empowering_scrolls'));
 
 	if (id === 'scrollIdentify') {
-		if (unidentified) {
+		if (unidentified && context.shardMarkReady?.(unidentified)) {
+			context.say(t('items.trinkets.shardofoblivion.identify_ready', { '0': context.itemDisplayName(unidentified.id, false) }), 'positive');
+		} else if (unidentified) {
 			Actors.identify(unidentified);
+			context.markMindFormItemDiscovered(unidentified);
 			if (unidentified.id.startsWith('ring_')) context.markRingTypesKnown([unidentified.id]);
 			if (unidentified.id.startsWith('potion')) context.markPotionKindsKnown([unidentified.id]);
 			//**Correction, 2026-09-09 roadmap pass**: a prior audit pass (checking only
@@ -341,8 +469,8 @@ export function readScrollFlow(context: ReadScrollContext, opts?: { freeRecast?:
 			//`tested_hypothesis`, real English text still in `src/generated/spdMessages.ts`),
 			//simply absent from the two older tags checked. Both amounts live in
 			//`procIdentifyTalents`, which every identify site shares (see its own comment).
-			const heal = context.heroClass === 'warrior' ? context.talentRank('test_subject') : 0;
-			const charge = context.heroClass === 'mage' ? context.talentRank('tested_hypothesis') : 0;
+			const heal = context.talentRank('test_subject');
+			const charge = context.talentRank('tested_hypothesis');
 			if (!free && (heal > 0 || charge > 0)) context.procIdentifyTalents();
 			//The old secret-revealing radius here invoked `arcaneVisionRadius()` - removed
 			//outright: real Arcane Vision (Mage T2, `Wand.wandProc()`) marks the ZAPPED
@@ -457,8 +585,8 @@ export function upgradeGearFlow(context: UpgradeGearContext): boolean {
 		const sharedArmor = sharedUpgradeArmor(context.subclass(), context.talentRank('shared_upgrades'), context.armorLevel);
 		const twinArmor = twinUpgradeArmor(context.subclass(), context.talentRank('twin_upgrades'), context.armorLevel);
 		context.armorLevel += Math.max(sharedArmor, twinArmor);
-		if (context.heroClass === 'mage' && context.talentRank('energizing_upgrade') > 0) context.wandCharges.refund(context.talentRank('energizing_upgrade') === 1 ? 4 : 6);
-		if (context.heroClass === 'rogue' && context.talentRank('mystical_upgrade') > 0) context.hero.buffs['cloak'] = 9999;
+		if (context.talentRank('energizing_upgrade') > 0) context.wandCharges.refund(context.talentRank('energizing_upgrade') === 1 ? 4 : 6);
+		if (context.talentRank('mystical_upgrade') > 0) context.hero.buffs['cloak'] = 9999;
 		context.syncHeroFromStats();
 		context.say(
 			t('port.log.weaponupgraded', { level: context.weaponLevel, min: context.hero.damage[0], max: context.hero.damage[1] }),

@@ -45,6 +45,10 @@ export function verifyParticles(require, check) {
 		assert.equal(pourAurasFor({ kind: 'goo', hp: 10, maxHp: 20, pumped: 2 }).length, 2);
 		//A lotus ally pours leaves over its own cell at the ring's 0.5 beat.
 		assert.equal(one({ kind: 'ward', allyKind: 'lotus' }).rate, 2);
+		//A charging golem pours Elmo at Java's 0.05 beat while 'teleporting'
+		//holds (T178 owns the flag now); silent otherwise.
+		assert.equal(one({ kind: 'golem', teleporting: true }).rate, 20);
+		assert.equal(one({ kind: 'golem', teleporting: true }).tint, 0x22ee66);
 		//Sites with no representable trigger stay silent: the
 		//necromancer/spectral summonings pour at remote cells off unported
 		//state, and the phantom piranha has no kind at all.

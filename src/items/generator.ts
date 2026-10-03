@@ -387,6 +387,15 @@ let dropped: number[] = [];
 let currentDepth = 1;
 export function setGeneratorDepth(depth: number): void { currentDepth = depth; }
 
+/**
+ * The carried trinkets the generator reads, as their own multipliers (`ParchmentScrap.enchantChanceMultiplier()` /
+ * `curseChanceMultiplier()`, `ExoticCrystals.consumableExoticChance()`; identity values with none). The generator is a
+ * module-level service like `setGeneratorDepth`, so the scene pushes the current values in (`refreshTrinketState`).
+ */
+export interface GeneratorTrinkets { enchantMultiplier: number; curseMultiplier: number; exoticChance: number }
+let generatorTrinkets: GeneratorTrinkets = { enchantMultiplier: 1, curseMultiplier: 1, exoticChance: 0 };
+export function setGeneratorTrinkets(next: GeneratorTrinkets): void { generatorTrinkets = next; }
+
 /** `Dungeon.depth / 5`, plus the `+ 1` several rooms add to get a better-than-usual prize.
  *  Exposed so room paint code doesn't need to thread `Dungeon.depth` itself. */
 export function floorSetForPrize(offset = 0): number {
@@ -475,6 +484,35 @@ function burnSpellbookConstruction(): void {
 	}
 }
 
+/**
+ * `Generator.random(Category)` / `randomUsingDefaults(Category)` (`Generator.java:728-765`, tag `v3.3.8`): a rolled
+ * regular potion or scroll class becomes its exotic counterpart with `ExoticCrystals.consumableExoticChance()`. Java
+ * draws that `Float()` on every such roll even at chance 0; here only while crystals are carried, so the existing
+ * streams are untouched without them. Only the exotics this port has as items are produced - the rest keep the
+ * regular class (the draw is still made), a stated reduction until their items land.
+ */
+const EXOTIC_OF: Readonly<Record<string, string>> = {
+	PotionOfHealing: 'PotionOfShielding', PotionOfInvisibility: 'PotionOfShroudingFog', PotionOfParalyticGas: 'PotionOfEarthenArmor',
+	PotionOfPurity: 'PotionOfCleansing', PotionOfHaste: 'PotionOfStamina', PotionOfMindVision: 'PotionOfMagicalSight',
+	PotionOfLevitation: 'PotionOfStormClouds', PotionOfToxicGas: 'PotionOfCorrosiveGas', PotionOfFrost: 'PotionOfSnapFreeze', PotionOfStrength: 'PotionOfMastery', PotionOfLiquidFlame: 'PotionOfDragonsBreath', PotionOfExperience: 'PotionOfDivineInspiration',
+	ScrollOfMirrorImage: 'ScrollOfPrismaticImage',
+	ScrollOfUpgrade: 'ScrollOfEnchantment',
+	ScrollOfIdentify: 'ScrollOfDivination',
+	ScrollOfRemoveCurse: 'ScrollOfAntiMagic',
+	ScrollOfRecharging: 'ScrollOfMysticalEnergy',
+	ScrollOfLullaby: 'ScrollOfSirensSong',
+	ScrollOfMagicMapping: 'ScrollOfForesight',
+	ScrollOfRage: 'ScrollOfChallenge',
+	ScrollOfRetribution: 'ScrollOfPsionicBlast',
+	ScrollOfTerror: 'ScrollOfDread',
+	ScrollOfTransmutation: 'ScrollOfMetamorphosis',
+ ScrollOfTeleportation: 'ScrollOfPassage',
+};
+function exoticSwap(cat: Cat, cls: string): string {
+	if (generatorTrinkets.exoticChance <= 0 || (cat !== Cat.POTION && cat !== Cat.SCROLL)) return cls;
+	return SpdRandom.float() < generatorTrinkets.exoticChance ? (EXOTIC_OF[cls] ?? cls) : cls;
+}
+
 /** `Weapon.random()` / `Armor.random()` - identical except the enchant threshold (0.9 vs 0.85)
  *  and which pool the enchantment comes from (same sizes either way). */
 function weaponOrArmorRandom(cat: Cat, cls: string, enchantThreshold: number): GenItem {
@@ -492,11 +530,13 @@ function weaponOrArmorRandom(cat: Cat, cls: string, enchantThreshold: number): G
 	SpdRandom.pushGenerator(SpdRandom.long());
 	try {
 		const effectRoll = SpdRandom.float();
-		if (effectRoll < 0.3) {
+		//`Weapon.java:439-442` / `Armor.java:674-677`: `effectRoll < 0.3 * ParchmentScrap.curseChanceMultiplier()` curses and
+		//`effectRoll >= 1 - base * ParchmentScrap.enchantChanceMultiplier()` enchants (`base` is `1 - enchantThreshold`).
+		if (effectRoll < 0.3 * generatorTrinkets.curseMultiplier) {
 			// `enchant(Enchantment.randomCurse())` -> `Random.element(curses)`.
 			SpdRandom.int(CURSE_POOL_SIZE);
 			cursed = true;
-		} else if (effectRoll >= enchantThreshold) {
+		} else if (effectRoll >= 1 - (1 - enchantThreshold) * generatorTrinkets.enchantMultiplier) {
 			// `enchant()` -> `Enchantment.random()` -> `chances(typeChances)` then
 			// `Random.element(common|uncommon|rare)`.
 			const type = SpdRandom.chances(ENCH_TYPE_CHANCES);
@@ -635,9 +675,8 @@ export function ghostQuestReward(): { weapon: GenItem; armor: GenItem } {
 	SpdRandom.int(ENCH_POOL_SIZES[weaponEnchantType < 0 ? 0 : weaponEnchantType]);
 	const armorGlyphType = SpdRandom.chances(ENCH_TYPE_CHANCES);
 	SpdRandom.int(ENCH_POOL_SIZES[armorGlyphType < 0 ? 0 : armorGlyphType]);
-	//real threshold is `0.2 * ParchmentScrap.enchantChanceMultiplier()`; this port has no
-	//ParchmentScrap trinket, so the multiplier is always its default of 1.
-	const hasGoodEnchant = SpdRandom.float() <= 0.2;
+	//`Ghost.java:359`: the threshold is `0.2 * ParchmentScrap.enchantChanceMultiplier()`.
+	const hasGoodEnchant = SpdRandom.float() <= 0.2 * generatorTrinkets.enchantMultiplier;
 	return {
 		weapon: { cat: rolledWeapon.cat, cls: rolledWeapon.cls, cursed: false, level: itemLevel, quantity: 1, hasGoodEnchant },
 		armor: { cat: Cat.ARMOR, cls: armorCls, cursed: false, level: itemLevel, quantity: 1, hasGoodEnchant },
@@ -803,7 +842,7 @@ export function randomCategory(cat: Cat): GenItem {
 				dropped[cat]++;
 			}
 
-			return itemRandom(cat, def.classes[i < 0 ? 0 : i] ?? def.name);
+			return itemRandom(cat, exoticSwap(cat, def.classes[i < 0 ? 0 : i] ?? def.name));
 		}
 	}
 }
@@ -834,7 +873,7 @@ export function randomUsingDefaults(cat: Cat): GenItem {
 		//The port has no ExoticCrystals or exotic-potion model, so retain the draw and regular result.
 		SpdRandom.float();
 	}
-	return itemRandom(cat, def.classes[i < 0 ? 0 : i] ?? def.name);
+	return itemRandom(cat, exoticSwap(cat, def.classes[i < 0 ? 0 : i] ?? def.name));
 }
 
 /** `Generator.randomUsingDefaults()` (no-arg): category picked from `defaultCatProbs`. */
@@ -997,9 +1036,8 @@ export function blacksmithSmithRewards(): GenItem[] {
 	SpdRandom.int(ENCH_POOL_SIZES[weaponEnchantType < 0 ? 0 : weaponEnchantType]);
 	const armorGlyphType = SpdRandom.chances(ENCH_TYPE_CHANCES);
 	SpdRandom.int(ENCH_POOL_SIZES[armorGlyphType < 0 ? 0 : armorGlyphType]);
-	//Real threshold is `0.3 * ParchmentScrap.enchantChanceMultiplier()`; this port has no
-	//ParchmentScrap trinket, so the multiplier is always its default of 1.
-	const keepEnchant = SpdRandom.float() <= 0.3;
+	//`Blacksmith.java:415`: the threshold is `0.3 * ParchmentScrap.enchantChanceMultiplier()`.
+	const keepEnchant = SpdRandom.float() <= 0.3 * generatorTrinkets.enchantMultiplier;
 	return [
 		{ ...first, level: itemLevel, cursed: false, hasGoodEnchant: keepEnchant },
 		{ ...second, level: itemLevel, cursed: false, hasGoodEnchant: keepEnchant },

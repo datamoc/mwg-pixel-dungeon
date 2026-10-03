@@ -33,14 +33,15 @@
  * `WardParticle` 0x88CCFF; `ShaftParticle` 1.2s at -6px/s).
  *
  * The continuous `pour` half lives in `simulation/pourAuras.ts` (2026-09-21):
- * the seven creature-following families are live with Java's own intervals -
+ * the eight creature-following families are live with Java's own intervals -
  * FetidRat stench, RotHeart cloud, the four elemental auras (+ NewbornFire),
  * all six fist auras, DM300 supercharge sparks (gated on `dmSupercharged`),
- * Eye charge (gated on `beamCharged`), Goo spray (gated on `HP*2 <= HT`) -
+ * Eye charge (gated on `beamCharged`), Goo spray (gated on `HP*2 <= HT`),
+ * Golem teleport pour (gated on `teleporting`, T178) -
  * synced per-frame by `ui/effectBursts.ts`'s `syncPourAuras`. Still open: the
- * four cell-placed or state-gated sites (Golem teleport pour with no teleport
- * state here, Goo pump-up cells + Elmo trigger burst, Lotus range leaves, the
- * Necromancer/Spectral summonings at `summoningPos` with no summoning state)
+ * three cell-placed or state-gated sites (Goo pump-up cells + Elmo trigger
+ * burst, Lotus range leaves, the Necromancer/Spectral summonings at
+ * `summoningPos` with no summoning state)
  * and PhantomPiranha sparkles (no such kind spawns - the pool-room draw is
  * consumed but always yields plain piranha).
  */

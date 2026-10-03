@@ -6,7 +6,7 @@ import { placeCharacterArt } from '../../../ui/characterPlacement';
 /** Builds the Rogue `ShadowClone.ShadowSprite` animation (`ShadowClone.java`, tag `v3.3.8`).
  * Java uses these idle/run/die/attack frame sequences and fps, alpha 0.8, hides the flattened
  * shadow, and pours CityLevel smoke. The port matches the animation and alpha; generic shadows
- * remain visible and the level-specific smoke emitter is not modeled.
+ * remain visible. The scene's `syncPourAuras` supplies the smoke emitter.
  */
 export function createShadowCloneSprite(): AnimatedSprite {
 	const sheet = heroSheet(runState.sprites.rogue);

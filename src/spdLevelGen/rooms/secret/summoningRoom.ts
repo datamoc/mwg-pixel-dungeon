@@ -6,6 +6,7 @@
 import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillRoomInset, roomPoints } from '../../paintLevel';
 import { generatedGroundKind, generatorRandom } from '../../../items/generator';
+import { trapRevealChance } from '../../trinketLevelGen';
 
 export function paintSummoningRoom(level: PaintLevel, room: Room): void {
 	fillRoom(level, room, Terrain.WALL);
@@ -17,9 +18,19 @@ export function paintSummoningRoom(level: PaintLevel, room: Room): void {
 	const generated = generatorRandom();
 	level.drop(generatedGroundKind(generated), level.pointToCell(c))!.sourceClass = generated.cls;
 
+	//`TrapMechanism.revealHiddenTrapChance()`: every `1/chance`-th trap of the room is revealed.
+	const revealedChance = trapRevealChance();
+	let revealInc = 0;
 	for (const p of roomPoints(room)) {
 		const cell = level.pointToCell(p);
-		if (level.map[cell] === Terrain.SECRET_TRAP) level.setTrap('summoningTrap', true, true, cell);
+		if (level.map[cell] === Terrain.SECRET_TRAP) {
+			revealInc += revealedChance;
+			if (revealInc >= 1) {
+				level.setTrap('summoningTrap', false, true, cell);
+				level.map[cell] = Terrain.TRAP;
+				revealInc--;
+			} else level.setTrap('summoningTrap', true, true, cell);
+		}
 	}
 
 	room.entranceDoor().set(DoorType.HIDDEN);

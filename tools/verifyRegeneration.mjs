@@ -65,7 +65,8 @@ const loop = read('../src/scenes/dungeon/turnLoopAiming.ts');
 const heroTurn = read('../src/simulation/heroTurn.ts');
 assert.match(heroTurn, /advanceHunger\(turnCost\);\n\teffects\.tickRegeneration\?\.\(\);/, 'Regeneration acts right after the hero (HERO_PRIO - 1)');
 assert.match(loop, /if \(this\.floorLocked\(\)\) return;\n\t\t\/\/Java's Hunger uses/, 'Hunger.act() idles on a locked floor');
-for (const gate of ['this.armorSealed && this.regenOn()', "this.regenOn() ? 0.1", 'regenOn: this.regenOn(),', 'this.hero.magicImmune === true, this.regenOn());', '!this.regenOn() ? 0 :']) {
+//The Warrior seal's cooldown gate is `sealTick`'s `regenOn: this.regenOn()` (the old inline `armorSealed && regenOn()` regrowth is gone).
+for (const gate of ["this.regenOn() ? 0.1", 'regenOn: this.regenOn(),', 'this.hero.magicImmune === true, this.regenOn());', '!this.regenOn() ? 0 :']) {
 	assert.ok((loop + read('../src/scenes/dungeon/actorTurnsHazards.ts')).includes(gate), `regenOn gate wired: ${gate}`);
 }
 for (const [file, hook] of [
@@ -75,12 +76,15 @@ for (const [file, hook] of [
 	['../src/scenes/dungeon/actorTurnsHazards.ts', 'this.applyCharacterDamage(monster, dotDealt, { pierceArmor: true, cause:'],
 	['../src/items/bombEffects.ts', 'context.onBossDamageTaken?.(target, damage, previousHp - target.hp);'],
 	['../src/scenes/dungeon/bosses/bossLogic.ts', 'onWaterHeal: (healInc) => this.lockedFloorGooHeal(healInc),'],
-	['../src/scenes/dungeon/bosses/bossLogic.ts', "const dmgTaken = Math.max(0, preHp - yog.hp);\n\t\tthis.creditLockedFloor('yog', dmgTaken, dmgTaken);"],
+	['../src/scenes/dungeon/bosses/bossLogic.ts', "const dmgTaken = resolution.hpLost;\n\t\tthis.creditLockedFloor('yog', dmgTaken, dmgTaken);"],
 	['../src/scenes/dungeon/bosses/bossLogic.ts', "this.applyCharacterDamage(monster, tick, { pierceArmor: true, cause: 'foe', skipAura: true, deferKill: true });"],
 	['../src/scenes/dungeon/monsters/monsterAi.ts', "this.creditLockedFloor('tengu', preHp - tengu.hp, preHp - tengu.hp);\n\t\tif (tenguPhase1Edge(tengu.tenguPhase ?? 'cell', tengu.hp, tengu.maxHp)) {"],
 	['../src/scenes/dungeon/deathSaveRefresh.ts', 'this.lockedFloorBossDamage(king, chip, 0);'],
 	['../src/scenes/dungeon/turnLoopAiming.ts', 'for (; this.regeneration.lockCarry >= 1; this.regeneration.lockCarry--)'],
 ]) assert.ok(read(file).includes(hook), `lock hook wired in ${file}: ${hook.slice(0, 40)}`);
+assert.match(read('../src/scenes/dungeon/bosses/bossLogic.ts'),
+	/showHeal: \(target, amount\) => \{ if \(this\.fov\.isVisible\(target\.x, target\.y\)\) this\.showHeal\(target, amount\); \}/,
+	'Goo water-heal status is shown only in the hero FOV, like Goo.showStatusWithIcon');
 //Since T63 every environmental seam - blob, trap blast and the four mob trap
 //branches - routes through the shared `applyCharacterDamage` dispatch (which feeds
 //the lock at panelsSingleUse.ts, pinned above), so the traps file hand-rolls no

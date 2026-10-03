@@ -15,9 +15,9 @@
  * - Java's zoom gate is screen-derived (`PixelScene`'s own `minZoom`/`maxZoom` around a
  *   density-derived `defaultZoom`); this port's camera has one fixed base zoom, so the
  *   offset is gated to a fixed `[-2, +3]` instead.
- * - `visualGrid`, `cameraFollow` and `vibration` persist with Java's keys/defaults/gates
- *   but have no behavior yet (no grid seam, construction-only camera deadzone, no
- *   long-press seam) - the verifier pins the round-trip, not the effect.
+ * - `visualGrid` and `vibration` persist with Java's keys/defaults/gates but have no
+ *   behavior yet (no grid seam, no long-press haptics seam); the verifier pins the
+ *   round-trip, not the effect.
  */
 
 export interface SettingsStore {
@@ -59,6 +59,9 @@ export const FLIP_TAGS_KEY = 'flip_tags';
 export const SYSTEM_FONT_KEY = 'system_font';
 /** `SPDSettings.KEY_NEWS` - check the news feed, default on (no feed seam: persistence only). */
 export const NEWS_KEY = 'news';
+
+/** `SPDSettings.KEY_SUPPORT_NAGGED` (tag `v3.3.8`). */
+export const SUPPORT_NAGGED_KEY = 'support_nagged';
 /** `SPDSettings.KEY_UPDATES` - check for updates, default on (no updater: persistence only). */
 export const UPDATES_KEY = 'updates';
 /** `SPDSettings.KEY_BETAS` - include beta updates, default off (see below). */
@@ -265,10 +268,22 @@ export function setVisualGrid(value: number): void {
 	settingsStore().setItem(GRID_KEY, String(gateInt(String(value), 0, -1, 2)));
 }
 
-/** `SPDSettings.cameraFollow()` - default 4, gated 1..4. The mwg camera takes its
- * deadzone at construction only, so this is persistence only for now. */
+/** `SPDSettings.cameraFollow()` - default 4, gated 1..4. */
 export function cameraFollow(): number {
 	return gateInt(settingsStore().getItem(CAMERA_FOLLOW_KEY), 4, 1, 4);
+}
+
+/** `GameScene.create()` (`GameScene.java`, tag `v3.3.8`) translates the setting to these
+ * follow deadzones. MWG accepts a deadzone only at Camera construction; the dungeon scene
+ * applies this fraction through its live follow target so changing the slider takes effect
+ * immediately without reaching into MWG's private camera state. */
+export function cameraFollowDeadzone(): number {
+	switch (cameraFollow()) {
+		case 1: return 0.9;
+		case 2: return 0.5;
+		case 3: return 0.2;
+		default: return 0;
+	}
 }
 
 export function setCameraFollow(value: number): void {
@@ -282,28 +297,6 @@ export function screenShake(): number {
 
 export function setScreenShake(value: number): void {
 	settingsStore().setItem(SCREEN_SHAKE_KEY, String(gateInt(String(value), 2, 0, 4)));
-}
-
-/** `SPDSettings.customSeed()` (`SPDSettings.java`, tag `v3.3.8`) - the custom-seed text,
- * default empty (no custom seed). Capped at 20 chars like Java's `getString(..., 20)`. */
-export const CUSTOM_SEED_KEY = 'custom_seed';
-export function customSeed(): string {
-	return settingsStore().getItem(CUSTOM_SEED_KEY) ?? '';
-}
-
-export function setCustomSeed(value: string): void {
-	settingsStore().setItem(CUSTOM_SEED_KEY, value.slice(0, 20));
-}
-
-/** `SPDSettings.lastDaily()` - epoch millis of the last started daily, default 0. */
-export const LAST_DAILY_KEY = 'last_daily';
-export function lastDaily(): number {
-	const raw = Number(settingsStore().getItem(LAST_DAILY_KEY) ?? 0);
-	return Number.isFinite(raw) ? Math.max(0, Math.floor(raw)) : 0;
-}
-
-export function setLastDaily(value: number): void {
-	settingsStore().setItem(LAST_DAILY_KEY, String(Math.max(0, Math.floor(value))));
 }
 
 /** `SPDSettings.playMusicInBackground()` - default on. While off, hiding the page also
@@ -395,6 +388,16 @@ export function newsEnabled(): boolean {
 
 export function setNewsEnabled(enabled: boolean): void {
 	setPersistedFlag(NEWS_KEY, enabled);
+}
+
+/** `SPDSettings.supportNagged()` (`KEY_SUPPORT_NAGGED`, tag `v3.3.8`) - default off.
+ * Set when the first `WornKey` pickup shows the support prompt. */
+export function supportNagged(): boolean {
+	return persistedFlag(SUPPORT_NAGGED_KEY, false);
+}
+
+export function setSupportNagged(nagged: boolean): void {
+	setPersistedFlag(SUPPORT_NAGGED_KEY, nagged);
 }
 
 /** `SPDSettings.updates()` - default on. No updater exists, persistence only. */

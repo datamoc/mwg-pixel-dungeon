@@ -3,11 +3,11 @@ import { addBuff, reigniteBuff, setBleeding, type Creature } from '../combat';
 import { WATER } from '../dungeonConstants';
 import { capitalize, t } from '../i18n/index';
 import { BASE_KIND_ALIASES, type AnyMonsterId, type MonsterId } from '../monsters';
+import { Cat, randomUsingDefaults } from '../items/generator';
 import { STARVING } from '../simulation/hunger';
 import { gooAttackOozeProc } from '../simulation/gooBoss';
 import { shadowCloneArmorProc } from '../simulation/rogueAbilities';
 import type { Step } from '../simulation/combatState';
-import { lethalDefenseShield } from '../talentEffects';
 
 /**
  * What the monster-side on-hit hooks need from the scene. `mobOnHit` was a 287-line scene method; it moves
@@ -18,6 +18,7 @@ export interface MobOnHitContext {
 	armorGlyph: string | null;
 	readonly armorGlyphActive: boolean;
 	readonly armorLevel: number;
+	readonly heroArmorPresent: boolean;
 	/** `ShadowAlly.defenseProc`'s roll, precomputed once by `attack()` (one roll per landed
 	 * attack, as Java's single `defenseProc` call costs). Callers without it draw their own. */
 	readonly cloneDefenseGate?: boolean;
@@ -34,7 +35,6 @@ export interface MobOnHitContext {
 	readonly wandCharges: Actors.Charges;
 	creatureAt(x: number, y: number): Creature | null | undefined;
 	degradedLevel(trueLevel: number): number;
-	genericProcMultiplier(): number;
 	armorProcMultiplier(defender: Creature): number;
 	trinityBodyGlyphIs(glyph: string): boolean;
 	grantHeroShield(amount: number, cap?: number): number;
@@ -48,31 +48,25 @@ export interface MobOnHitContext {
 	talentRank(id: string): number;
 	thiefSteal(thief: Creature): void;
 	triggerPortedPlantAt(x: number, y: number): void;
-	/** ChaosElemental melee delegation (`Elemental.java`, tag `v3.3.8`): the pure hook cannot
-	 * reach the scene's cursed-wand dispatcher, so the scene wrapper supplies this bridge.
-	 * Optional so headless callers keep their slim contexts (a missing bridge skips the proc). */
-	castChaosMelee?: (defender: Creature, attacker: Creature) => void;
+	triggerMobPlantAt(creature: Creature): boolean;
 }
 
 /** monster-side on-hit hooks (all pre-existing, now grouped) */
 export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Creature, damage: number): void {
 	const armorGlyph = (id: string): boolean => ctx.armorGlyphActive && ctx.armorGlyph === id;
-	//`ShadowAlly.defenseProc()` (`ShadowClone.java` 249-257, tag v3.3.8): the clone defends with
-	//the *hero's* armor glyph when `Random.Int(4) < pointsInTalent(CLONED_ARMOR)` and the hero is
-	//armored. Java's `&&` draws the roll before testing the armor, so an unarmored hero still
-	//consumes it; the port reads "armored" as "wearing an identified glyph", which is
-	//observationally identical here because `Armor.proc` with no glyph does nothing. `attack()`
-	//passes its own single roll in; any other caller (a special-attack hook) draws one here.
+	//`ShadowAlly.defenseProc()` (`ShadowClone.java` 249-257, tag v3.3.8): the clone runs the
+	//hero's `Armor.proc` when `Random.Int(4) < pointsInTalent(CLONED_ARMOR)` and any armor is
+	//equipped. Java draws the roll before testing armor, so an unarmored hero still consumes it.
+	//Check armor presence, not glyph presence: Java's `Armor.proc` can also dispatch a separate
+	//Trinity BodyForm glyph when the worn armor itself has none. `attack()` passes its single roll
+	//in; another caller draws it here.
 	const cloneDefenderGate = ctx.cloneDefenseGate ?? (defender.allyKind === 'shadowClone'
-		&& shadowCloneArmorProc(Random.int(4), ctx.talentRank('cloned_armor'), ctx.armorGlyph != null));
-	//Which glyph sites may run for the clone. `metabolism`/`overgrowth` heal `ctx.hero`,
-	//`entanglement` writes the hero-scoped `earthrootArmor` pool at the hero's own cell, and
-	//`potential`/`antientropy` charge the hero's wands and hunger (Java's clone carries neither,
-	//so those two are nil for it in Java) - those five stay keyed on `defender.isHero`; every
-	//site below that treats `defender`/`attacker` generically takes the clone too.
+		&& shadowCloneArmorProc(Random.int(4), ctx.talentRank('cloned_armor'), ctx.heroArmorPresent));
+	//Java calls the hero's worn armor proc for a CLONED_ARMOR-gated ShadowAlly.
+	//Metabolism and Potential explicitly require a Hero; AntiEntropy, Overgrowth and
+	//Entanglement use the generic Char defender and act at the clone's own cell.
 	const roseArmorGate = defender.allyKind === 'ghost' && defender.roseArmor !== undefined;
 	const glyphDefender = defender.isHero || cloneDefenderGate || roseArmorGate;
-	if (defender.isHero) ctx.grantHeroShield(lethalDefenseShield(ctx.subclass(), ctx.talentRank('lethal_defense')), ctx.hero.maxHp);
 	//`RottingFist.attackProc` is the only fist subclass with a melee-contact effect:
 	//half of all landed melee hits ooze the victim (`Ooze.DURATION` is the table's own
 	//20). The burning/soiled/rusted/bright/dark contact riders this hook used to carry
@@ -83,15 +77,13 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	}
 	//Elemental meleeProc() (Elemental.java, tag `v3.3.8`): preserve each concrete subtype's
 	//contact effect. Shock delegates its recursive 40%-damage arc to the scene so the
-	//normal hero-absorption and kill seams still own HP mutation. Chaos rolls the cursed-wand
-	//table with itself as user and no FX at all (Java's `meleeProc` calls the rolled effect
-	//directly, shortcutting `cursedZap`'s visuals); the old harmful-status stand-in is gone.
+	//normal hero-absorption and kill seams still own HP mutation.
 	if (attacker.kind === 'elemental') {
 		switch (attacker.elementalType ?? 'fire') {
 			case 'fire': if (Random.chance(0.5) && ctx.level.get(defender.x, defender.y) !== WATER) reigniteBuff(defender, 'burning'); break;
 			case 'frost': if (Random.chance(1 / 3) || ctx.level.get(defender.x, defender.y) === WATER) addBuff(defender, 'frost'); break;
 			case 'shock': break;
-			case 'chaos': ctx.castChaosMelee?.(defender, attacker); break;
+			case 'chaos': addBuff(defender, Random.element(['burning', 'chill', 'cripple', 'daze'] as const) ?? 'daze'); break;
 		}
 	}
 	//Affection.proc() (items/armor/glyphs/Affection.java, tag 4.0.0-beta):
@@ -100,9 +92,9 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	//The existing charm target map supplies Java's object payload; direct map
 	//assignment preserves the level-scaled duration that addBuff alone cannot set.
 	if (glyphDefender && (armorGlyph('affection') || ctx.trinityBodyGlyphIs('affection')) && attacker.hp > 0
-		&& Random.chance(((Math.max(0, ctx.degradedLevel(ctx.armorLevel)) + 3) / (Math.max(0, ctx.degradedLevel(ctx.armorLevel)) + 20)) * ctx.genericProcMultiplier())) {
+		&& Random.chance(((Math.max(0, ctx.degradedLevel(ctx.armorLevel)) + 3) / (Math.max(0, ctx.degradedLevel(ctx.armorLevel)) + 20)) * ctx.armorProcMultiplier(defender))) {
 		const level = Math.max(0, ctx.degradedLevel(ctx.armorLevel));
-		const chance = ((level + 3) / (level + 20)) * ctx.genericProcMultiplier();
+		const chance = ((level + 3) / (level + 20)) * ctx.armorProcMultiplier(defender);
 		addBuff(attacker, 'charm');
 		attacker.buffs.charm = Math.max(attacker.buffs.charm ?? 0, Math.round(10 * Math.max(1, chance)));
 		ctx.charmTargets.set(attacker.id, defender.id);
@@ -113,7 +105,7 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	//`affectHunger` subtracts its argument, so the hero gets hungrier by 10x the
 	//healing, capped at STARVING and never while starving. What stood here
 	//subtracted (satiated), making the curse heal and feed - a pure benefit.
-	if (defender.isHero && armorGlyph('metabolism') && ctx.hunger < STARVING && ctx.hero.hp < ctx.hero.maxHp && Random.chance((1 / 6) * ctx.genericProcMultiplier())) {
+	if (defender.isHero && armorGlyph('metabolism') && ctx.hunger < STARVING && ctx.hero.hp < ctx.hero.maxHp && Random.chance((1 / 6) * ctx.armorProcMultiplier(defender))) {
 		const healing = Math.min(Math.floor(STARVING / 100), ctx.hero.maxHp - ctx.hero.hp);
 		if (healing > 0) {
 			ctx.hunger = Math.min(STARVING, ctx.hunger + healing * 10);
@@ -122,22 +114,21 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 		}
 	}
 	//`AntiEntropy.proc()` (`items/armor/curses/AntiEntropy.java`, tag `v3.3.8`):
-	//a 1-in-8 x arcana proc freezes the eight neighboring cells and reignites
-	//the wearer for 4 - but NOT while standing in water. Daze is the port's
-	//timed freeze equivalent (stated). What stood here burned for the full
-	//table-8 duration with no water gate at all.
-	if (defender.isHero && armorGlyph('antientropy') && Random.chance((1 / 8) * ctx.genericProcMultiplier())) {
-		if (ctx.level.get(ctx.hero.x, ctx.hero.y) !== WATER) reigniteBuff(ctx.hero, 'burning', 4);
+	//a 1-in-8 x glyph-multiplier proc freezes the eight neighboring cells and reignites
+	//the wearer for 4 - but NOT while standing in water. This port cannot freeze terrain
+	//cells, so it applies Daze to creatures found in those cells as its stated freeze stand-in.
+	if (glyphDefender && armorGlyph('antientropy') && Random.chance((1 / 8) * ctx.armorProcMultiplier(defender))) {
+		if (ctx.level.get(defender.x, defender.y) !== WATER) reigniteBuff(defender, 'burning', 4);
 		for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
-			const nearby = ctx.creatureAt(ctx.hero.x + dx, ctx.hero.y + dy);
-			if (nearby && nearby !== ctx.hero) addBuff(nearby, 'daze');
+			const nearby = ctx.creatureAt(defender.x + dx, defender.y + dy);
+			if (nearby && nearby !== defender) addBuff(nearby, 'daze');
 		}
 	}
 	//`Corrosion.proc()` (`items/armor/curses/Corrosion.java`, tag `v3.3.8`): a
 	//1-in-10 x arcana proc oozes NEIGHBOURS9 - the wearer's own cell included -
 	//at `Ooze.DURATION/2` (10). What stood here skipped the wearer and applied
 	//the table's whole-20 duration.
-	if (glyphDefender && armorGlyph('corrosion') && Random.chance((1 / 10) * ctx.genericProcMultiplier())) {
+	if (glyphDefender && armorGlyph('corrosion') && Random.chance((1 / 10) * ctx.armorProcMultiplier(defender))) {
 		addBuff(defender, 'ooze', 10);
 		for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
 			const nearby = ctx.creatureAt(defender.x + dx, defender.y + dy);
@@ -157,7 +148,7 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	//un-duplicated here), and mirror-image duplication, which has no separate actor type -
 	//which is why Java's hero half is skipped.
 	if (glyphDefender && armorGlyph('multiplicity') && !attacker.isHero && !attacker.isNPC
-		&& !attacker.boss && !attacker.miniboss && Random.chance((1 / 20) * ctx.genericProcMultiplier())) {
+		&& !attacker.boss && !attacker.miniboss && Random.chance((1 / 20) * ctx.armorProcMultiplier(defender))) {
 		const adjacent = Roguelike.neighbourOffsets(8)
 			.map(([dx, dy]) => ({ x: defender.x + dx, y: defender.y + dy }))
 			.filter((at) => ctx.level.passable(at.x, at.y) && !ctx.isChasmCell(at.x, at.y) && !ctx.creatureAt(at.x, at.y));
@@ -168,23 +159,26 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 			ctx.spawnMonster(attackerKind, destination);
 		}
 	}
-	//Overgrowth.proc(): a 1-in-20 x arcana proc couches and immediately activates a
-	//random supported seed at the defender's cell. The generator's full seed
-	//weight table is not available, so selection is uniform across supported seeds.
-	if (defender.isHero && armorGlyph('overgrowth') && Random.chance((1 / 20) * ctx.genericProcMultiplier())) {
-		const seed = Random.element(['blindweed', 'earthroot', 'fadeleaf', 'firebloom', 'icecap', 'mageroyal',
-			'rotberry', 'sorrowmoss', 'starflower', 'stormvine', 'sungrass', 'swiftthistle'] as const);
+	//Overgrowth.proc() (`items/armor/curses/Overgrowth.java`, tag `v3.3.8`): a 1-in-20 x
+	//arcana proc couches and activates `Generator.randomUsingDefaults(SEED)` at the
+	//defender's cell. Reuse the port's weighted default-generator draw, including its
+	//Java seed probabilities and single level-stream draw.
+	if (glyphDefender && armorGlyph('overgrowth') && Random.chance((1 / 20) * ctx.armorProcMultiplier(defender))) {
+		const seed = randomUsingDefaults(Cat.SEED).cls.replace(/Seed$/, '').toLowerCase();
 		if (seed) {
-			const cell = ctx.level.index(ctx.hero.x, ctx.hero.y);
+			const cell = ctx.level.index(defender.x, defender.y);
 			ctx.manualPlants.set(cell, seed);
 			ctx.placePortedFeature(cell, `plant:${seed}`);
-			ctx.triggerPortedPlantAt(ctx.hero.x, ctx.hero.y);
+			//`Overgrowth.proc()` activates the weighted SEED result on the actual Char
+			//passed to `Armor.proc()`, including a clone defender.
+			if (defender.isHero) ctx.triggerPortedPlantAt(defender.x, defender.y);
+			else ctx.triggerMobPlantAt(defender);
 		}
 	}
 	//Stench.proc() (Armor.java, tag v3.3.8): 1/8 x arcana chance when hit seeds a
 	//250-volume ToxicGas blob at the wearer's own feet. Java's Stench.java imports
 	//ToxicGas; only FetidRat's defenseProc seeds the distinct StenchGas blob.
-	if (glyphDefender && armorGlyph('stench') && Random.chance((1 / 8) * ctx.genericProcMultiplier())) {
+	if (glyphDefender && armorGlyph('stench') && Random.chance((1 / 8) * ctx.armorProcMultiplier(defender))) {
 		ctx.toxicGas.seed(defender.x, defender.y, 250);
 		ctx.say(t('port.log.stenchcurse'), 'negative');
 	}
@@ -225,11 +219,12 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	}
 	//RotLasher.attackProc() (RotLasher.java, tag v3.3.8): every landed hit cripples
 	//for 2 turns (`Buff.affect(enemy, Cripple.class, 2f)` - unconditional, like the
-	//caustic proc above, not damage-gated like Albino's). (`RotLasher.attack()`'s own
-	//`questScores[1] -= 100` attempt write lives at the `attack()` head in
-	//combatResolution, where misses count too.)
+	//caustic proc above, not damage-gated like Albino's).
 	if (attacker.kind === 'rotLasher') {
 		addBuff(defender, 'cripple', 2);
+		//The `questScores[1] -= 100` half of `RotLasher.attack()` lives at attack
+		//initiation in the lasher act block (Java fires on the attempt, misses included),
+		//so this landed-only hook keeps just the cripple.
 	}
 	//RotHeart.defenseProc() (RotHeart.java, tag v3.3.8): a struck heart seeds ToxicGas
 	//at its own cell with volume `5 + 3 * openNearby`, where openness counts non-solid
@@ -349,24 +344,28 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 			ctx.say(t('port.log.thorns'), 'positive');
 		}
 	}
-	//`Entanglement.proc()`/`Earthroot.Armor` (tag v3.3.8): the 1/4 chance is Arcana-scaled, and
-	//the **defender** - the hero wearing the armor - gains the same block pool the Earthroot
-	//plant grants, at `round((5 + 2 * armorLevel) * max(1, chance))`. This port used to give the
-	//*attacker* a `cripple` movement lock instead, which was wrong twice over: Java's glyph
-	//protects its wearer rather than disabling the enemy, and it protects by blocking damage.
-	if (defender.isHero && (armorGlyph('entanglement') || ctx.trinityBodyGlyphIs('entanglement')) && !attacker.isHero) {
+	//`Entanglement.proc()`/`Earthroot.Armor` (tag v3.3.8): the 1/4 chance uses the defender's
+	//glyph multiplier, and the **defender Char** gains the block pool the Earthroot plant grants
+	//at `round((5 + 2 * armorLevel) * max(1, chance))`. A CLONED_ARMOR-gated ShadowAlly stores
+	//that pool on its own creature fields; the hero uses the scene pool. This port used to give
+	//the *attacker* a `cripple` lock instead of protecting the glyph wearer.
+	if (glyphDefender && (armorGlyph('entanglement') || ctx.trinityBodyGlyphIs('entanglement')) && !attacker.isHero) {
 		const level = Math.max(0, ctx.degradedLevel(ctx.armorLevel));
-		const procChance = 0.25 * ctx.genericProcMultiplier();
+		const procChance = 0.25 * ctx.armorProcMultiplier(defender);
 		if (Random.chance(procChance)) {
 			const pool = Math.round((5 + 2 * level) * Math.max(1, procChance));
-			ctx.earthrootArmor = {
-				level: Math.max(ctx.earthrootArmor?.level ?? 0, pool),
-				pos: ctx.level.index(ctx.hero.x, ctx.hero.y),
-			};
-			//`Entanglement.proc()` (tag `v3.3.8`): the burst shakes (`1, 0.4f`) when
-			//it lands on the hero - this branch only runs for the hero defender.
-			ctx.shakeScreen(1, 0.4);
-			ctx.say(t('port.log.entanglement'), 'positive');
+			if (defender.isHero) {
+				ctx.earthrootArmor = {
+					level: Math.max(ctx.earthrootArmor?.level ?? 0, pool),
+					pos: ctx.level.index(defender.x, defender.y),
+				};
+				//the burst shakes only when the defender is the hero (`Entanglement.proc()`, tag `v3.3.8`).
+				ctx.shakeScreen(1, 0.4);
+				ctx.say(t('port.log.entanglement'), 'positive');
+			} else {
+				defender.earthrootArmorLevel = Math.max(defender.earthrootArmorLevel ?? 0, pool);
+				defender.earthrootArmorPos = ctx.level.index(defender.x, defender.y);
+			}
 		}
 	}
 	//`Potential.proc()` (tag v3.3.8): proc chance is `(level+1)/(level+6) * Arcana`
@@ -375,7 +374,7 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	//progress and retains it through save/load, so it is the correct generic seam here.
 	if (defender.isHero && (armorGlyph('potential') || ctx.trinityBodyGlyphIs('potential'))) {
 		const level = Math.max(0, ctx.degradedLevel(ctx.armorLevel));
-		const procChance = ((level + 1) / (level + 6)) * ctx.genericProcMultiplier();
+		const procChance = ((level + 1) / (level + 6)) * ctx.armorProcMultiplier(defender);
 		if (Random.float() < procChance) {
 			ctx.wandCharges.advance(Math.max(1, procChance));
 			ctx.say(t('port.log.potential'), 'positive');

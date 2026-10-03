@@ -1,6 +1,7 @@
 import { Game, Input, registerColorTransform } from 'mwg';
 import { registerBuiltinPipes } from 'mwg/two-d/pixi-interop';
 import { loadSpdSprites } from './images';
+import { initializeKeyBindings } from './ui/keyBindings';
 import { initI18n } from './i18n';
 import { applySpdTheme } from './ui/spdTheme';
 import { SpdAudio } from './audio';
@@ -97,6 +98,9 @@ async function main(): Promise<void> {
 	});
 	updateStartupProgress(0.42, 'Préparation des commandes…');
 
+	//Key bindings may have been loaded by Settings while modules were importing; restore
+	//MWG's baseline before this game's bindings are registered, then apply saved overrides below.
+	Input.resetBindings();
 	Input.bind('search', ['KeyF']);
 	Input.bind('examine', ['KeyL']);
 	Input.bind('special', ['KeyT']);
@@ -114,6 +118,9 @@ async function main(): Promise<void> {
 	//numpad twins included, which Java leaves to the platform but browsers report separately.
 	Input.bind('zoomIn', ['Equal', 'NumpadAdd']);
 	Input.bind('zoomOut', ['Minus', 'NumpadSubtract']);
+	//SPDAction loads saved integer key-code mappings at startup (tag `v3.3.8`); this port
+	//applies MWG's saved physical KeyboardEvent.code bindings after registering its full action set.
+	initializeKeyBindings();
 	//No `menu` binding on purpose: SPD opens `WndGame` from the back key (`SPDAction.BACK` -
 	//Escape/Backspace, which is MWG's own `cancel` action), and only when nothing else consumed
 	//it - see `onAction`. Binding that same key to MWG's `menu` action instead would both clobber

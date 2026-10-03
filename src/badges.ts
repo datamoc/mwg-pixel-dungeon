@@ -22,6 +22,8 @@ export function badgeDescriptionKey(id: string): string {
 	//`CHAMPION_1..3` are real SPD badges with real, already-translated text (`misc.properties`'
 	//`badges$badge.champion_N.desc`), so they borrow SPD's key instead of a port-authored one.
 	if (id.startsWith('champion_')) return `badges$badge.${id}.desc`;
+	//`DEATH_FROM_FRIENDLY_MAGIC` likewise has real SPD text under its Java enum name.
+	if (id === 'death_friendly_magic') return 'badges$badge.death_from_friendly_magic.desc';
 	return `port.badges.${id}.description`;
 }
 

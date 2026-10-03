@@ -53,3 +53,13 @@ export function dustSpawnerStep(power: number, dustWraiths: number): DustSpawner
 export function dustSpawnerCap(power: number, dustWraiths: number): number {
 	return Math.min(power, 2 * (1 + dustWraiths));
 }
+
+/**
+ * `CorpseDust.DustWraith.attack()` (tag `v3.3.8`): the per-wraith `atkCount`
+ * (persisted `atk_count`) scores `questScores[1] -= 100` on the 2nd and 3rd
+ * attacks on the hero (first free, max -200 per wraith), ahead of the roll.
+ * Takes the post-increment count.
+ */
+export function dustWraithScoresOnAttackNumber(atkCount: number): boolean {
+	return atkCount === 2 || atkCount === 3;
+}

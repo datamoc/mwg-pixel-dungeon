@@ -162,8 +162,10 @@ Random.pushGenerator(Dungeon.seedCurDepth());
 					level.blobs = new java.util.HashMap<>();
 					level.plants = new com.watabou.utils.SparseArray<>();
 					level.traps = new com.watabou.utils.SparseArray<>();
-					level.customTiles = new java.util.HashSet<>();
-					level.customWalls = new java.util.HashSet<>();
+					// v3.3.8 uses ArrayList here; the older checkout used HashSet. Restore the
+					// correct concrete collection type before each build attempt.
+					resetCustomMaps(level, "customTiles");
+					resetCustomMaps(level, "customWalls");
 					ok = level.build();
 				} while (!ok);
 
@@ -214,10 +216,9 @@ Random.pushGenerator(Dungeon.seedCurDepth());
 
 	/** `Wandmaker.Quest.type` (1 corpse dust / 2 embers / 3 rotberry) is a private static int;
 	 *  read it reflectively. `Blacksmith.Quest` is deliberately absent: this walk stops at the
-	 *  Prison (its quest rolls in CavesLevel.initRooms(), depth 12-14) and the levelgen oracle
-	 *  checkout predates v3.3.8's CRYSTAL/GNOLL/FUNGI trio - it has a boolean `alternative`
-	 *  instead of a `type` field - so Blacksmith parity needs a harness that compiles against
-	 *  v3.3.8, which LevelGenHarness does not (Terrain.SIGN, HashSet inference). */
+	 *  Prison, while the Blacksmith quest rolls in CavesLevel.initRooms() at depth 12-14. Its
+	 *  v3.3.8 `type` needs a Caves-level probe; the cross-version harness itself now compiles
+	 *  against the target tag (ArrayList/HashSet fields and optional Terrain.SIGN handled above). */
 	private static int questType(String npc) {
 		try {
 			Class<?> quest = Class.forName("com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs." + npc + "$Quest");
@@ -226,6 +227,23 @@ Random.pushGenerator(Dungeon.seedCurDepth());
 			return f.getInt(null);
 		} catch (Throwable t) {
 			throw new RuntimeException("cannot read " + npc + ".Quest.type", t);
+		}
+	}
+
+	private static void resetCustomMaps(Level level, String fieldName) {
+		try {
+			java.lang.reflect.Field field = Level.class.getDeclaredField(fieldName);
+			field.setAccessible(true);
+			Class<?> type = field.getType();
+			if (java.util.List.class.isAssignableFrom(type)) {
+				field.set(level, new java.util.ArrayList<>());
+			} else if (java.util.Set.class.isAssignableFrom(type)) {
+				field.set(level, new java.util.HashSet<>());
+			} else {
+				throw new IllegalStateException("unsupported Level." + fieldName + " type " + type.getName());
+			}
+		} catch (ReflectiveOperationException e) {
+			throw new RuntimeException(e);
 		}
 	}
 
@@ -257,7 +275,15 @@ Random.pushGenerator(Dungeon.seedCurDepth());
 		map[Terrain.TRAP] = '^';
 		map[Terrain.INACTIVE_TRAP] = '^';
 		map[Terrain.EMPTY_DECO] = ',';
-		map[Terrain.SIGN] = 's';
+		// SIGN was removed by the target v3.3.8 tag. Keep the old checkout's optional
+		// ASCII marker without a compile-time reference that breaks against that target.
+		try {
+			map[Terrain.class.getField("SIGN").getInt(null)] = 's';
+		} catch (NoSuchFieldException ignored) {
+			// No sign terrain in v3.3.8.
+		} catch (IllegalAccessException e) {
+			throw new RuntimeException(e);
+		}
 		map[Terrain.WELL] = 'W';
 		map[Terrain.STATUE] = '@';
 		map[Terrain.STATUE_SP] = '@';

@@ -31,18 +31,19 @@ import { disarmBubblePresses } from '../../simulation/teleport';
 import { findEnemyAlly as findEnemyAllyFlow } from '../../simulation/targeting';
 import { nearestFreeCell as nearestFreeCellFlow } from '../../simulation/wandering';
 import { wardZapBursts } from '../../simulation/deathBursts';
-import { recordRun } from '../../rankings';
+import { addQuestScore, recordRun } from '../../rankings';
 import { isClassArmorId } from '../../items/catalog';
 import { getCurse } from '../../items/itemCurses';
 import { Cat, randomUsingDefaults } from '../../items/generator';
 import { MWL_WAND_WARD_RULES } from '../../mwlContent';
 import { FLOOR, SOLID, TILE, WALL, WATER } from '../../dungeonConstants';
 import { STARVING } from '../../simulation/hunger';
-import { NEGATIVE_BUFFS, addBuff, doomDamage, reigniteBuff, rollHit, setAscensionActive, setBleeding, tickBuffs, type BuffId, type Creature, type Step } from '../../combat';
+import { NEGATIVE_BUFFS, addBuff, isTerrified, doomDamage, reigniteBuff, rollHit, setAscensionActive, setBleeding, tickBuffs, type BuffId, type Creature, type Step } from '../../combat';
 import { BOSSES, IMMOVABLE_KINDS } from '../../monsters';
 import { ignoresCrystalGuardianBeckon } from '../../simulation/crystalSpire';
 import { beckonSwarmIntelligence } from './swarmIntelligence';
 import { earthGuardianArmorRange } from '../../items/wands';
+import { vialDelayedHeal } from './trinkets';
 
 /** `Mob.intelligentAlly` (tag `v3.3.8`) is set by `DirectableAlly` subclasses - the Dried
  * Rose's `GhostHero`, `HawkAlly`, `PowerOfMany.LightAlly`, `ShadowClone.ShadowAlly` - and by
@@ -88,15 +89,12 @@ export const actorTurnsHazardsMethods = {
 			? Math.floor(rawCorrosion * ringElementsMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()))
 			: target.kind === 'yogFist' && target.yogFistType === 'rotting' ? 0
 			: acidic ? Math.round(rawCorrosion / 2) : rawCorrosion;
-		if (target.isHero) {
-			const blocked = this.absorbHeroDamage(damage);
-			target.hp -= blocked;
-			this.showDamage(target, damage);
-		} else {
-			damage = doomDamage(damage, target);
-			target.hp -= damage;
-			this.showDamage(target, damage);
-		}
+		//`Corrosion.act()` calls `Char.damage()` (tag `v3.3.8`). Its source-class
+		//resistance is resolved above; route the resulting armor-piercing tick through
+		//the shared boundary for Doom, shields, target curves and death hooks.
+		this.applyCharacterDamage(target, damage, {
+			pierceArmor: true, cause: 'poison', skipAura: true, deferKill: true,
+		});
 		const cap = Math.floor(this.depth / 2) + 2;
 		target.corrosionDamage = (target.corrosionDamage ?? 1) < cap
 			? (target.corrosionDamage ?? 1) + 1
@@ -181,6 +179,7 @@ export const actorTurnsHazardsMethods = {
 			},
 			closedDoorAt: (target) => this.doors.isDoor(target.x, target.y) && !this.doors.isOpen(target.x, target.y)
 				&& !this.secrets.isSecret(target.x, target.y),
+			lockedExitAt: (target) => (this.portedPaint?.map[this.level.index(target.x, target.y)] ?? -1) === Terrain.LOCKED_EXIT,
 			isRooted: () => !!this.hero.buffs['roots'],
 			passable: (target) => this.canStepOnto(target.x, target.y)
 				&& this.eternalFire.volumeAt(target.x, target.y) < 1,
@@ -239,6 +238,7 @@ export const actorTurnsHazardsMethods = {
 		else if (plan.kind === 'attack' && this.tryPickaxeSpire(occupant!)) return;
 		else if (plan.kind === 'attack') this.attack(this.hero, occupant!);
 		else if (plan.kind === 'door') this.bumpDoor(target.x, target.y);
+		else if (plan.kind === 'lockedExit') this.bumpLockedExit(target.x, target.y);
 		//`Hero.actTransition()` 1385 (tag `v3.3.8`): a rooted stair attempt shakes
 		//(`1, 1f`) like the rooted move does (`getCloser` 1771, covered by `moveTo`).
 		//The movement planner refuses before this dispatch, so this branch is the
@@ -350,10 +350,9 @@ export const actorTurnsHazardsMethods = {
 	 *   ported (`tickDemonSpawner` caps above-20 to 20 while the challenge runs, 2026-09-25). The
 	 *   beckon (>=2 stacks: distant enemies pulled onto the hero's trail) and haste (>=4:
 	 *   idle enemies move at 2x through the scheduler cost) effects are ported too
-	 *   (`beckonAscensionEnemies`/`pendingMonsterTurnCost`, 2026-09-25); only the hero-speed-cap
-	 *   (>=6: halved, capped at 1x) is still not ported - Java slows the hero's own actor clock,
-	 *   whose port equivalent is doubling mob turns per hero action, a turn-loop change rather
-	 *   than a seam edit. The per-mob `ASCENSION_MOD` combat multiplier (the largest single
+	 *   (`beckonAscensionEnemies`/`pendingMonsterTurnCost`, 2026-09-25); the hero-speed cap
+	 *   (>=6: halved, capped at 1x) is applied by `spendHeroTurn()` in `turnLoopAiming.ts`.
+	 *   The per-mob `ASCENSION_MOD` combat multiplier (the largest single
 	 *   combat-facing effect) is unaffected and stays live for the whole climb regardless.
 	 *   `PORT_COVERAGE.md`: "Post-victory ascent".
 	 */
@@ -484,8 +483,11 @@ export const actorTurnsHazardsMethods = {
 			}
 			this.say(t('port.log.wellreveals'), 'positive');
 		} else {
- 			const healed = this.hero.maxHp - this.hero.hp;
- 			this.hero.hp = this.hero.maxHp;
+ 			//`WaterOfHealth.affectHero()`: with a Vial of Blood carried the full heal becomes a capped heal-over-time
+ 			//(`Healing.setHeal(HT, 0, maxHealPerTurn)` + `applyVialEffect()`) instead of `hero.HP = hero.HT`.
+ 			const delayed = vialDelayedHeal(this, this.hero.maxHp);
+ 			const healed = delayed ? 0 : this.hero.maxHp - this.hero.hp;
+ 			if (!delayed) this.hero.hp = this.hero.maxHp;
  			//`WaterOfHealth.affectHero()` runs `PotionOfHealing.cure(hero)` first - the shared
  			//helper, which is also what fixed the two old deviations here (clearing Burning,
  			//which Java never cures, and clearing Roots, which `cure()` never detaches).
@@ -507,7 +509,7 @@ export const actorTurnsHazardsMethods = {
 			//particle-emitter layer at all (see `PORT_COVERAGE.md`), so the burst becomes one red
 			//`+` floater beside the usual green amount - a stated substitution, not a missing
 			//effect, following the same "text stands in for an icon" precedent as the busy pip.
-			this.showHeal(this.hero, healed);
+			if (healed > 0) this.showHeal(this.hero, healed);
 			this.showStatus(this.hero, '+', SPD_STATUS_COLOR.negative);
 			this.say(t('port.log.wellheals'), 'positive');
 		}
@@ -649,7 +651,7 @@ setHeroBarkskin(this: DungeonScene, level: number, interval: number): void {
 			grantBuff: (target, id, duration) => addBuff(target, id, duration),
 			prolongBuff: (target, id, duration) => reigniteBuff(target, id, duration),
 			cureHero: () => this.cureHeroBuffs(),
-			spawnFood: (x, y) => this.spawnGroundItem('food', x, y),
+			spawnBlandfruit: (x, y) => this.spawnGroundItem('food', x, y, { id: 'blandfruit', quantity: 1, identified: true, sourceClass: 'Blandfruit' }),
 			dropLoot: (x, y, min, max, kind) => this.dropPlantNeighbourLoot(x, y, min, max, kind),
 			seedFreeze: (x, y, volume) => this.plantFreeze.seed(x, y, volume),
 			seedGas: (x, y, volume) => this.plantGas.seed(x, y, volume),
@@ -758,6 +760,7 @@ setHeroBarkskin(this: DungeonScene, level: number, interval: number): void {
 			seedFreeze: (x, y, volume) => this.plantFreeze.seed(x, y, volume),
 			seedGas: (x, y, volume) => this.plantGas.seed(x, y, volume),
 			seedFire: (x, y, volume) => this.fire.seed(x, y, volume),
+			spawnBlandfruit: (x, y) => this.spawnGroundItem('food', x, y, { id: 'blandfruit', quantity: 1, identified: true, sourceClass: 'Blandfruit' }),
 			passable: (x, y) => this.level.passable(x, y),
 			isVisibleCell: (cell) => this.fov.isVisible(cell % this.level.width, Math.floor(cell / this.level.width)),
 			heroClass: () => this.heroClass,
@@ -896,7 +899,8 @@ setHeroBarkskin(this: DungeonScene, level: number, interval: number): void {
 	 * Tenacity/Barrier/Iron-Will/Deathless-Fury pipeline every other hero-damage source uses).
 	 * Java also applies a separate `Bleeding` DoT here; the port now keeps its intensity in the
 	 * shared buff map and ticks it with Java's NormalFloat/rounding rule. A lethal landing
-	 * books the falling death badge; blood splash presentation remains unmodeled.
+	 * books the falling death badge. Java v3.3.8 has no blood-splash effect in `heroLand()`;
+	 * its FeatherFall-only burst is a jet of Specks, while ordinary landings shake the screen.
 	 */
 	/** `ElixirOfFeatherFall.FeatherBuff.processFall()` consumes the one-use protection before
 	 * `Chasm.heroLand()` applies any landing effects. The port keeps the Java 50-turn lifetime
@@ -924,12 +928,13 @@ setHeroBarkskin(this: DungeonScene, level: number, interval: number): void {
  		//`Buff.prolong(hero, Cripple.class, Cripple.DURATION)`: keep-max whole 10.
  		reigniteBuff(this.hero, 'cripple');
 		setBleeding(this.hero, Math.round(this.hero.maxHp / (6 + 6 * (this.hero.hp / this.hero.maxHp))), 'chasm');
-		const damage = this.absorbHeroDamage(Math.max(Math.floor(this.hero.hp / 2), Random.normalRange(Math.floor(this.hero.hp / 2), Math.floor(this.hero.maxHp / 4))));
-		this.hero.hp -= damage;
-		this.showDamage(this.hero, damage);
-		//death badges: a chasm death books as falling (`Badges.DEATH_FROM_FALLING`),
-		//not the generic 'foe' bucket. Gas/enemy-magic variants stay collapsed - no
-		//systems here produce them distinctly.
+		const damage = Math.max(Math.floor(this.hero.hp / 2), Random.normalRange(Math.floor(this.hero.hp / 2), Math.floor(this.hero.maxHp / 4)));
+		//`Chasm.heroLand()` calls `hero.damage(..., new Chasm())` (tag `v3.3.8`): route
+		//the unabsorbed roll through the shared boundary and keep the source-specific falling
+		//death cause instead of collapsing it into the generic foe bucket.
+		this.applyCharacterDamage(this.hero, damage, {
+			pierceArmor: true, cause: 'falling', deferKill: true,
+		});
 		if (this.hero.hp <= 0) this.kill(this.hero, 'falling');
 	},
 
@@ -1066,7 +1071,10 @@ setHeroBarkskin(this: DungeonScene, level: number, interval: number): void {
 				this.applyCharacterDamage(monster, dot, { pierceArmor: true, cause: 'foe', skipAura: true });
 				if (monster.hp <= 0) return;
 			}
-			if (Roguelike.chebyshevDistance(monster, this.hero) === 1) this.attack(monster, this.hero);
+			if (Roguelike.chebyshevDistance(monster, this.hero) === 1) {
+				this.dustWraithAttackAttempt(monster, this.hero);
+				this.attack(monster, this.hero);
+			}
 			else {
 				const blocked = new Set(this.creatures.filter((c) => c !== monster).map((c) => this.level.index(c.x, c.y)));
 				const decision = Roguelike.decideMonsterAI(this.level, this.pathfinder, monster, monster.hp / monster.maxHp, this.hero, {
@@ -1210,6 +1218,11 @@ setHeroBarkskin(this: DungeonScene, level: number, interval: number): void {
 		//still-current value - only the *decision* moves earlier; the tick itself (and every
 		//per-turn effect below it, unchanged) still runs exactly as before, DoTs included, since
 		//Java's Buff.act() is independent of a paralysed Char's own act().
+		//`Dread.act()`: out of sight and 6+ cells from the hero, the dreaded mob is simply gone.
+		if (monster.buffs['dread'] !== undefined && !this.fov.isVisible(monster.x, monster.y) && Roguelike.chebyshevDistance(monster, this.hero) >= 6) {
+			this.destroyDreadedMonster(monster);
+			return;
+		}
 		const monsterWasParalysed = monster.buffs['paralysis'] !== undefined
 			|| monster.buffs['frost'] !== undefined || monster.buffs['feintConfusion'] !== undefined;
 		const monsterWasFrozenSpectator = monster.buffs['spectatorFreeze'] !== undefined;
@@ -1250,7 +1263,7 @@ setHeroBarkskin(this: DungeonScene, level: number, interval: number): void {
 		if (monsterWasBurning && (this.isFireFlammableTerrain(monster.x, monster.y) || this.web.volumeAt(monster.x, monster.y) > 0) && this.fire.volumeAt(monster.x, monster.y) === 0) this.fire.seed(monster.x, monster.y, 4);
 		if (dotDealt > 0) {
 			this.applyCharacterDamage(monster, dotDealt, { pierceArmor: true, cause: 'foe', skipAura: true });
-			if (monster.hp <= 0) return;
+			if (monster.hp <= 0) return void (monster.bleedSource === 'harvestBleed' && this.onAbilityKill('harvestBleed')); //`Bleeding.act()`'s Sickle `onAbilityKill`
 		}
 		//`Sungrass.Health.act()` / `Earthroot.Armor.act()` for a mob pool: the sungrass pool
 		//pays out its gradual heal on the owner's own turn (like every other DoT tick above),
@@ -1353,7 +1366,15 @@ setHeroBarkskin(this: DungeonScene, level: number, interval: number): void {
 		//in for the status text). Terrified lashers hold still like the sentry (see below).
 		if (monster.kind === 'rotLasher') {
 			const adjacentHero = Roguelike.chebyshevDistance(monster, this.hero) === 1;
-			if (!monster.buffs['terror'] && adjacentHero) this.attack(monster, this.hero);
+			if (!isTerrified(monster) && adjacentHero) {
+			//`RotLasher.attack()` (tag `v3.3.8`): `questScores[1] -= 100` when it attacks
+			//the hero. Java fires on the attempt, ahead of the roll - so it sits here at
+			//initiation (hit or miss), not in the landed-only `mobOnHit` hook, which keeps
+			//just the cripple. (The shared-attack call-site hook was offered to the
+			//`combatResolution` owner first; this equivalent initiation point avoids it.)
+			addQuestScore(this, 1, -100);
+			this.attack(monster, this.hero);
+		}
 			else if (monster.hp < monster.maxHp && !adjacentHero) {
 				const healed = Math.min(monster.maxHp - monster.hp, 5);
 				monster.hp += healed;
@@ -1363,7 +1384,7 @@ setHeroBarkskin(this: DungeonScene, level: number, interval: number): void {
 		}
 
 		const distance = Roguelike.chebyshevDistance(monster, this.hero);
-		if (this.heroClass === 'huntress' && this.talentRank('heightened_senses') > 0 && distance <= (this.talentRank('heightened_senses') === 1 ? 2 : 3)) monster.seesHero = true;
+		if (this.talentRank('heightened_senses') > 0 && distance <= (this.talentRank('heightened_senses') === 1 ? 2 : 3)) monster.seesHero = true;
 		// Invisibility makes monsters lose their target until the hero attacks or the
 		// effect expires. Adjacent monsters retain current awareness, which is the
 		// useful Char.canInteract behaviour without a separate target-memory system.
@@ -1398,7 +1419,7 @@ setHeroBarkskin(this: DungeonScene, level: number, interval: number): void {
 				//the mob's sight (see `seesHero` above - invisibility still hides); a woken mob
 				//spends its turn waking (`TIME_TO_WAKE_UP`) rather than acting.
 				if (!monster.seesHero) return;
-				const silent = this.heroClass === 'rogue' ? this.talentRank('silent_steps') : 0;
+				const silent = this.talentRank('silent_steps');
 				const flying = this.hero.buffs['levitation'] !== undefined;
 				if ((silent > 0 && distance >= 4 - silent) || (flying && distance >= 2)) return;
 				//Obfuscation.stealthBoost(): sleeping detection is 1/(distance+stealth),
@@ -1433,7 +1454,7 @@ setHeroBarkskin(this: DungeonScene, level: number, interval: number): void {
 		//`decideMonsterAI`/`fleeBelow` mechanism `Thief.FLEEING` already uses, skipping every
 		//attack branch below entirely for the turn. The immobile sentry is excluded (it
 		//cannot flee) and simply holds fire while terrified - see its own branch.
-		if (monster.buffs['terror'] && monster.kind !== 'sentry' && monster.kind !== 'tengu') {
+		if (isTerrified(monster) && monster.kind !== 'sentry' && monster.kind !== 'tengu') {
 			const blocked = new Set(
 				this.creatures.filter((c) => c !== monster && c !== this.hero).map((c) => this.level.index(c.x, c.y))
 			);
@@ -1467,7 +1488,7 @@ setHeroBarkskin(this: DungeonScene, level: number, interval: number): void {
 			//Terror stops the sentry firing on the reader (its only conceivable target)
 			//without moving it - an immobile turret cannot flee, so the generic flee
 			//override above is skipped for this kind instead.
-			if (monster.buffs['terror']) return;
+			if (isTerrified(monster)) return;
 			takeSentryTurnFlow(monster, this.hero, {
 				depth: this.depth,
 				seesHero: monster.seesHero === true,
@@ -1479,10 +1500,12 @@ setHeroBarkskin(this: DungeonScene, level: number, interval: number): void {
 				sayGaze: () => this.say(t('port.log.sentrygaze'), 'negative'),
 				rollHit: (attacker, defender) => rollHit(attacker, defender, true),
 				strikeHero: (min, max) => {
-					const dmg = this.absorbHeroDamage(Random.normalRange(min, max));
-					this.hero.hp -= dmg;
-					this.showDamage(this.hero, dmg);
-					if (this.hero.hp <= 0) this.kill(this.hero);
+					//`SentryRoom.Sentry.onZapComplete()` passes `Eye.DeathGaze` to
+					//`Hero.damage()` (tag `v3.3.8`): preserve its armor-bypassing magical hit
+					//through the common boundary, including AntiMagic and shared death handling.
+					this.applyCharacterDamage(this.hero, Random.normalRange(min, max), {
+						pierceArmor: true, cause: 'foe', magical: true,
+					});
 				},
 			});
 			return;
@@ -1494,6 +1517,7 @@ setHeroBarkskin(this: DungeonScene, level: number, interval: number): void {
 		const extraReach = monster.champion === 'giant' ? 2 : monster.champion === 'projecting' ? 4 : 0;
 		if (extraReach > 0 && distance > 1 && distance <= extraReach
 			&& monster.seesHero && Roguelike.canTarget(this.level, monster, this.hero, { range: extraReach })) {
+			this.dustWraithAttackAttempt(monster, this.hero);
 			this.attack(monster, this.hero);
 			return;
 		}
@@ -1544,7 +1568,10 @@ setHeroBarkskin(this: DungeonScene, level: number, interval: number): void {
 			//generic `attack` below swallowed the turn and the phase-2 ability check only
 			//ever ran at range - Java checks `canUseAbility()` before attacking either way.
 			else if (monster.kind === 'tengu') this.takeTenguTurn(monster);
-			else this.attack(monster, this.hero);
+			else {
+				this.dustWraithAttackAttempt(monster, this.hero);
+				this.attack(monster, this.hero);
+			}
 			return;
 		}
 
@@ -1632,11 +1659,11 @@ setHeroBarkskin(this: DungeonScene, level: number, interval: number): void {
 		if (allyDot > 0) {
 			this.applyCharacterDamage(ally, allyDot, { pierceArmor: true, cause: 'foe', skipAura: true });
 			if (ally.hp <= 0) return;
+		}
 		//`Viscosity.DeferedDamage.act()` for an ally wearer (tag `v3.3.8`): the
 		//clone-gated Viscosity share banks into the ally's own pool, which pays
 		//out on its turns through the same per-creature tick the monsters use.
 		if (this.tickMonsterDeferredDamage(ally)) return;
-		}
 		if (ally.buffs['paralysis'] || ally.buffs['frost']) return;
 		//`SmokeBomb.NinjaLog` never acts: it is an IMMOVABLE decoy whose whole job is to be attacked
 		//(its `defenseSkill()` is what redirects whatever was hunting the hero). Returning here also
@@ -1680,11 +1707,10 @@ setHeroBarkskin(this: DungeonScene, level: number, interval: number): void {
 		if (ally.allyKind === 'ghost') {
 			const rose = this.roseItem();
 			if (!rose || rose.identified === false || this.hero.magicImmune === true) {
-				// Java routes NoRoseDamage through Char.damage(), so Doom's standard
-				// 1.67 multiplier applies despite the source bypassing armor.
-				const dealt = doomDamage(1, ally);
-				ally.hp -= dealt;
-				this.showDamage(ally, dealt);
+				//`DriedRose.NoRoseDamage` still calls `Char.damage()` (tag `v3.3.8`): use
+				//the shared damage boundary so Doom and the common damage hooks stay aligned.
+				//`deferKill` preserves GhostHero.act()'s rose-reference cleanup immediately below.
+				this.applyCharacterDamage(ally, 1, { pierceArmor: true, cause: 'foe', deferKill: true });
 				if (ally.hp <= 0) {
 					this.kill(ally);
 					this.roseGhost = null;
@@ -2146,9 +2172,12 @@ setHeroBarkskin(this: DungeonScene, level: number, interval: number): void {
 			if (!target.magicImmune) {
 				const wandLevel = ward.wardWandLevel ?? 0;
 				const damage = Random.normalRange(2 + wandLevel, 8 + 4 * wandLevel);
-				const dealt = target.isHero ? this.absorbHeroDamage(damage, true) : doomDamage(damage, target);
-				target.hp -= dealt;
-				this.showDamage(target, dealt);
+				//`Ward.zap()` calls `target.damage(damage, this)` (tag `v3.3.8`): retain
+				//the already-rolled, armor-bypassing magical hit in the common damage boundary.
+				//Defer death until after the ward's target-wake effect below, as this caller does.
+				this.applyCharacterDamage(target, damage, {
+					pierceArmor: true, cause: 'foe', magical: true, deferKill: true,
+				});
 				target.sleeping = false;
 				if (target.hp <= 0) this.kill(target);
 			}
@@ -2174,7 +2203,12 @@ setHeroBarkskin(this: DungeonScene, level: number, interval: number): void {
 		if (tier <= 3) {
 			if ((ward.wardTotalZaps ?? 0) >= (MWL_WAND_WARD_RULES[tier]?.zapLimit ?? 0)) this.kill(ward);
 		} else {
-			ward.hp -= MWL_WAND_WARD_RULES[tier]?.selfDamage ?? 0;
+			//`WandOfWarding.Ward.zap()` damages itself with `damage(5/6/7, this)`
+			//(tag `v3.3.8`): Ward inherits Char.damage despite being an NPC. The shared
+			//dispatch preserves that exception and defers death until this turn ends.
+			this.applyCharacterDamage(ward, MWL_WAND_WARD_RULES[tier]?.selfDamage ?? 0, {
+				pierceArmor: true, cause: 'foe', deferKill: true,
+			});
 			if (ward.hp <= 0) this.kill(ward);
 		}
 	},

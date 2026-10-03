@@ -15,7 +15,9 @@
  *   node tools/parity/run-parity.mjs --stage blacksmith  Blacksmith spawn gate + type + reward rolls per (seed, depth), Java v3.3.8 vs TS
  *   node tools/parity/run-parity.mjs --stage tengu       Tengu.damage() bracket clamp, deferred jump + phase-1 edge, Java v3.3.8 vs TS
  *   node tools/parity/run-parity.mjs --stage king        DwarfKing.damage() phase-2 clamp + phase-3 low-HP edge, Java v3.3.8 vs TS
- *   node tools/parity/run-parity.mjs --stage goo         Goo pump, slam damage, water heal and attackProc, Java v3.3.8 vs TS
+ *   node tools/parity/run-parity.mjs --stage goo         Goo pump, amplified slam, water heal and attackProc, Java v3.3.8 vs TS
+ *   node tools/parity/run-parity.mjs --stage dm300      DM300 damage/charge/finale + pylon energy, Java v3.3.8 vs TS
+ *   node tools/parity/run-parity.mjs --stage yog        YogDzewa.damage() phase edges + processFistDeath(), Java v3.3.8 vs TS
  *   options: --spd <SPD checkout>   (default $SPD_CHECKOUT or ~/dev/shattered-pixel-dungeon; a git repo with the tags/commits)
  *            --work <dir>           scratch dir for the Java trees (default <os tmp>/mwg-parity; reused between runs)
  *            --combat-ref v3.3.8    Java ref for the combat oracle
@@ -82,7 +84,7 @@ function exportTree(dir, ref) {
 }
 
 /** Copies our harness classes in, inserts the trace hook into Random.java and makes sure the Gradle tasks exist. */
-function installHarness(dir, { combat, levelgen, loot, mobdata, ghost, imp, blacksmith, wandmaker, tengu, king, goo }) {
+function installHarness(dir, { combat, levelgen, loot, mobdata, ghost, imp, blacksmith, wandmaker, tengu, king, goo, dm300, yog }) {
 	const put = (name, rel) => { mkdirSync(dirname(join(dir, rel)), { recursive: true }); copyFileSync(join(JAVA_SRC, name), join(dir, rel)); };
 	if (combat) { put('CombatHarness.java', `${CORE}/actors/mobs/CombatHarness.java`); put('CombatHarnessLauncher.java', `${DESKTOP}/CombatHarnessLauncher.java`); }
 	if (levelgen) { put('LevelGenHarness.java', `${CORE}/levels/LevelGenHarness.java`); put('LevelGenHarnessLauncher.java', `${DESKTOP}/LevelGenHarnessLauncher.java`); }
@@ -95,6 +97,8 @@ function installHarness(dir, { combat, levelgen, loot, mobdata, ghost, imp, blac
 	if (tengu) { put('TenguDamageHarness.java', `${CORE}/actors/mobs/TenguDamageHarness.java`); put('TenguDamageHarnessLauncher.java', `${DESKTOP}/TenguDamageHarnessLauncher.java`); }
 	if (king) { put('DwarfKingPhaseHarness.java', `${CORE}/actors/mobs/DwarfKingPhaseHarness.java`); put('DwarfKingPhaseHarnessLauncher.java', `${DESKTOP}/DwarfKingPhaseHarnessLauncher.java`); }
 	if (goo) { put('GooPhaseHarness.java', `${CORE}/actors/mobs/GooPhaseHarness.java`); put('GooPhaseHarnessLauncher.java', `${DESKTOP}/GooPhaseHarnessLauncher.java`); }
+	if (dm300) { put('DM300DamageHarness.java', `${CORE}/actors/mobs/DM300DamageHarness.java`); put('DM300DamageHarnessLauncher.java', `${DESKTOP}/DM300DamageHarnessLauncher.java`); }
+	if (yog) { put('YogDamageHarness.java', `${CORE}/actors/mobs/YogDamageHarness.java`); put('YogDamageHarnessLauncher.java', `${DESKTOP}/YogDamageHarnessLauncher.java`); }
 
 	const randomFile = join(dir, 'SPD-classes/src/main/java/com/watabou/utils/Random.java');
 	let random = readFileSync(randomFile, 'utf8');
@@ -123,6 +127,8 @@ function installHarness(dir, { combat, levelgen, loot, mobdata, ghost, imp, blac
 	if (tengu && !gradle.includes("'runTenguDamage'")) gradle += task('runTenguDamage', 'TenguDamageHarnessLauncher');
 	if (king && !gradle.includes("'runDwarfKingPhase'")) gradle += task('runDwarfKingPhase', 'DwarfKingPhaseHarnessLauncher');
 	if (goo && !gradle.includes("'runGooPhase'")) gradle += task('runGooPhase', 'GooPhaseHarnessLauncher');
+	if (dm300 && !gradle.includes("'runDM300Damage'")) gradle += task('runDM300Damage', 'DM300DamageHarnessLauncher');
+	if (yog && !gradle.includes("'runYogDamage'")) gradle += task('runYogDamage', 'YogDamageHarnessLauncher');
 	writeFileSync(gradleFile, gradle);
 }
 
@@ -366,6 +372,38 @@ function gooStage() {
 	gate('Goo actual Java pump/heal/slam/Ooze branches match the production seams', r.status === 0, `report: ${javaOut}`);
 }
 
+/** B3, DM-300: actual v3.3.8 damage thresholds and pylon-energy activation vs production rules. */
+function dm300Stage() {
+	console.log(`\n== dm300: Java ${combatRef} damage thresholds and pylon-energy activation vs production TypeScript ==`);
+	const dir = join(work, `spd-${combatRef}`);
+	exportTree(dir, combatRef);
+	installHarness(dir, { dm300: true });
+	const outDir = join(work, 'dm300'); mkdirSync(outDir, { recursive: true });
+	const javaOut = join(outDir, 'dm300_damage_java_out.txt');
+	rmSync(javaOut, { force: true });
+	const g = gradle(dir, 'runDM300Damage', { DM300_DAMAGE_OUT: javaOut });
+	if (!existsSync(javaOut) || readFileSync(javaOut, 'utf8').trim().length === 0) { gate('DM300 Java dump produced', false, g.out.slice(-2500)); return; }
+	const r = run(process.execPath, [join(ROOT, 'tools', 'verifyDM300Damage.mjs'), javaOut]);
+	console.log(r.out.trim());
+	gate('DM300 actual Java thresholds, charge cycles, finale latch and pylon energy match production rules', r.status === 0, `report: ${javaOut}`);
+}
+
+/** B3, Yog: actual v3.3.8 damage floor and post-clamp cooldown delta. */
+function yogStage() {
+	console.log(`\n== yog: Java ${combatRef} YogDzewa.damage() phase edges + processFistDeath() vs production TypeScript ==`);
+	const dir = join(work, `spd-${combatRef}`);
+	exportTree(dir, combatRef);
+	installHarness(dir, { yog: true });
+	const outDir = join(work, 'yog'); mkdirSync(outDir, { recursive: true });
+	const javaOut = join(outDir, 'yog_damage_java_out.txt');
+	rmSync(javaOut, { force: true });
+	const g = gradle(dir, 'runYogDamage', { YOG_DAMAGE_OUT: javaOut });
+	if (!existsSync(javaOut) || readFileSync(javaOut, 'utf8').trim().length === 0) { gate('Yog Java dump produced', false, g.out.slice(-2500)); return; }
+	const r = run(process.execPath, [join(ROOT, 'tools', 'verifyYogPhase.mjs'), javaOut]);
+	console.log(r.out.trim());
+	gate('Yog actual Java phase damage and final-fist state match production rules', r.status === 0, `report: ${javaOut}`);
+}
+
 function levelgenStage() {
 
 	console.log(`\n== levelgen: floor-generation RNG draws, oracle ${prebuiltLevelgenTree ? prebuiltLevelgenTree : levelgenRef} vs this port (depths 3-9, 4 seeds) ==`);
@@ -407,6 +445,8 @@ try {
 	if (stage === 'all' || stage === 'tengu') tenguStage();
 	if (stage === 'all' || stage === 'king') kingStage();
 	if (stage === 'all' || stage === 'goo') gooStage();
+	if (stage === 'all' || stage === 'dm300') dm300Stage();
+	if (stage === 'all' || stage === 'yog') yogStage();
 	if (stage === 'all' || stage === 'levelgen') levelgenStage();
 } catch (e) {
 	gate('runner', false, e.message);

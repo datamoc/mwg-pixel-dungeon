@@ -37,6 +37,11 @@ export type WealthDropPlan =
 	| { kind: 'honeypot' }
 	| { kind: 'stoneOfEnchantment' }
 	| { kind: 'potionExperience' }
+	/** `ExoticPotion.regToExo` of a defaults-rolled potion (`genMidValueConsumable()` case 1). */
+	| { kind: 'exoticPotion' }
+	| { kind: 'exoticScroll' }
+	| { kind: 'potionDivineInspiration' }
+	| { kind: 'scrollMetamorphosis' }
 	| { kind: 'scrollTransmutation' }
 	| { kind: 'doubleBomb' }
 	/** Java's `i.quantity(i.quantity()*2)` - the caller doubles whatever the inner plan makes. */
@@ -97,18 +102,17 @@ function planLowValue(rng: WealthRng): WealthDropPlan {
 
 /**
  * `genMidValueConsumable()`: `Random.Int(6)`, in Java's own order. Two of its six cases are the
- * *exotic* half of a potion or scroll (a `Reflection.newInstance` of the exotic counterpart, or the
- * item itself if it was already exotic), and a third is `UnstableBrew`/`UnstableSpell`; **this port
- * has no exotic or unstable items at all**, so those cases return the regular potion, scroll or
- * spend the same draw as their regular counterpart would - a stated reduction, not a silent swap.
- * The caller still makes every draw Java makes (`Int(6)`, then `Int(2)` for the unstable pair), so
+ * *exotic* half of a potion or scroll (the exotic counterpart of a defaults-rolled regular one),
+ * and a third is `UnstableBrew`/`UnstableSpell`; **this port has no unstable items yet (R082)**, so
+ * that case still returns a regular potion or scroll - a stated reduction, not a silent swap.
+ * The caller makes every draw Java makes (`Int(6)`, then `Int(2)` for the unstable pair), so
  * the stream stays Java's shape.
  */
 function planMidValue(rng: WealthRng): WealthDropPlan {
 	switch (rng.int(6)) {
 		case 0: return { kind: 'doubled', inner: planLowValue(rng) };
-		case 1: return { kind: 'potion' };
-		case 2: return { kind: 'scroll' };
+		case 1: return { kind: 'exoticPotion' };
+		case 2: return { kind: 'exoticScroll' };
 		//`Random.Int(2) == 0 ? new UnstableBrew() : new UnstableSpell()` - both are random-effect
 		//consumables this port has no items for, so the draw is made and a regular potion or scroll
 		//stands in for them (documented in PORT_COVERAGE.md).
@@ -121,12 +125,11 @@ function planMidValue(rng: WealthRng): WealthDropPlan {
 /**
  * `genHighValueConsumable()`: `Random.Int(4)`. Cases 2 and 3 are the exotic pairs
  * (`PotionOfDivineInspiration`/`PotionOfExperience` and `ScrollOfMetamorphosis`/
- * `ScrollOfTransmutation`), gated on `ExoticCrystals.consumableExoticChance()`; **with no
- * ExoticCrystals equipped that chance is exactly 0** (`trinketLevel` is -1), so the regular half is
- * always what Java returns too - the `Float()` draw is still made here so the stream matches.
- * Neither exotic exists in this port either way.
+ * `ScrollOfTransmutation`), gated on `ExoticCrystals.consumableExoticChance()` (exactly 0 with no
+ * ExoticCrystals equipped, so the regular half is what Java returns; the `Float()` draw is made
+ * either way so the stream matches).
  */
-function planHighValue(rng: WealthRng): WealthDropPlan {
+function planHighValue(rng: WealthRng, exoticChance: number): WealthDropPlan {
 	switch (rng.int(4)) {
 		case 0: {
 			//`if (i instanceof Bomb) return new Bomb.DoubleBomb(); else return i.quantity(i.quantity()*2);`
@@ -136,19 +139,16 @@ function planHighValue(rng: WealthRng): WealthDropPlan {
 		case 1: return { kind: 'stoneOfEnchantment' };
 		case 2:
 			//`Random.Float() < consumableExoticChance() ? new PotionOfDivineInspiration() : new PotionOfExperience()`
-			//- the draw is made, then the regular potion is what both branches reach here.
-			rng.float();
-			return { kind: 'potionExperience' };
+			return rng.float() < exoticChance ? { kind: 'potionDivineInspiration' } : { kind: 'potionExperience' };
 		default:
-			rng.float();
-			return { kind: 'scrollTransmutation' };
+			return rng.float() < exoticChance ? { kind: 'scrollMetamorphosis' } : { kind: 'scrollTransmutation' };
 	}
 }
 
 /** `genConsumableDrop(level)`: one `Random.Float()` and then the tier's own generator. */
-function planConsumable(level: number, rng: WealthRng): { plan: WealthDropPlan; tier: 1 | 2 | 3 } {
+function planConsumable(level: number, rng: WealthRng, exoticChance: number): { plan: WealthDropPlan; tier: 1 | 2 | 3 } {
 	const tier = wealthConsumableTier(level, rng.float());
-	return { plan: tier === 1 ? planLowValue(rng) : tier === 2 ? planMidValue(rng) : planHighValue(rng), tier };
+	return { plan: tier === 1 ? planLowValue(rng) : tier === 2 ? planMidValue(rng) : planHighValue(rng, exoticChance), tier };
 }
 
 /**
@@ -178,6 +178,8 @@ export function planWealthDrops(
 	bonus: number,
 	equipBonus: number,
 	rng: WealthRng,
+	/** `ExoticCrystals.consumableExoticChance()` (0 with none carried). */
+	exoticChance = 0,
 ): { plans: WealthDropPlan[]; tiers: (WealthDropTier | null)[]; trackers: WealthTrackers } {
 	const plans: WealthDropPlan[] = [];
 	const tiers: (WealthDropTier | null)[] = [];
@@ -192,7 +194,7 @@ export function planWealthDrops(
 			tiers.push(null);
 			dropsToEquip += rng.normalIntRange(mwlItemEffectValue('wealth', 'dropsToEquipMin'), mwlItemEffectValue('wealth', 'dropsToEquipMax'));
 		} else {
-			const consumable = planConsumable(bonus - 1, rng);
+			const consumable = planConsumable(bonus - 1, rng, exoticChance);
 			plans.push(consumable.plan);
 			tiers.push(consumable.tier);
 			dropsToEquip -= 1;

@@ -2,7 +2,8 @@ import { MWL_CONSUMABLE_CLASS_TO_ID, MWL_MISSILE_BY_CLASS, MWL_RING_CLASS_TO_ID,
 import { missileStackFields } from './missiles';
 import { setupSpellbookScrolls } from './artifactActions';
 import { ENCHANT_TABLE, GLYPH_TABLE } from './itemAffixes';
-import { rollGeneratedAffix } from './itemKinds';
+import { EXOTIC_CLASS_TO_ID, rollGeneratedAffix } from './itemKinds';
+import { trinketForClass } from '../simulation/trinkets';
 import { stonePortId } from './transmutation';
 import { Cat, type GenItem } from './generator';
 import { ARMOR_TIER_BY_CLASS } from './catalog';
@@ -44,11 +45,14 @@ export function generatedInventoryItem(generated: GenItem, context: GeneratedIte
 	else if (generated.cat === Cat.RING) id = MWL_RING_CLASS_TO_ID.get(cls) ?? (() => { throw new Error(`MWL ring alias is missing generated class: ${cls}`); })();
 	else if (generated.cat === Cat.WAND) id = 'wand';
 	else if (generated.cat === Cat.POTION || generated.cat === Cat.SCROLL) {
-		const mappedId = MWL_CONSUMABLE_CLASS_TO_ID.get(cls);
+		//`Generator.random()`'s ExoticCrystals swap hands out the exotic class (`exoticSwap`, `generator.ts`).
+		const mappedId = MWL_CONSUMABLE_CLASS_TO_ID.get(cls) ?? EXOTIC_CLASS_TO_ID[cls];
 		if (!mappedId) throw new Error(`MWL consumable alias is missing generated class: ${cls}`);
 		id = mappedId;
 	}
 	else if (generated.cat === Cat.FOOD) id = 'food';
+	//`Generator.Category.TRINKET`: a level-0 trinket (`Trinket` is `levelKnown`, so it reads identified).
+	else if (generated.cat === Cat.TRINKET) id = trinketForClass(cls)?.id ?? (() => { throw new Error(`No trinket for generated class ${cls}`); })();
 	let affix: string | undefined;
 	if (generated.cat <= Cat.WEP_T5) affix = rollGeneratedAffix(ENCHANT_TABLE, generated.cursed, generated.hasGoodEnchant);
 	else if (generated.cat === Cat.ARMOR) affix = rollGeneratedAffix(GLYPH_TABLE, generated.cursed, generated.hasGoodEnchant);
@@ -66,14 +70,14 @@ export function generatedInventoryItem(generated: GenItem, context: GeneratedIte
 		? missileStackFields(context.newItemInstanceId('missile'), generated.level ?? 0)
 		: {};
 	return {
-		id, quantity: generated.quantity, level: generated.level,
+		id, quantity: generated.quantity, level: generated.cat === Cat.TRINKET ? 0 : generated.level,
 		...(tier === undefined ? {} : { tier }),
 		...(id === 'cloak' ? { charges: Math.min((generated.level ?? 0) + mwlItemEffectValue('cloak', 'initialChargeBase'), mwlItemEffectValue('cloak', 'initialChargeCap')) } : {}),
 		//`UnstableSpellbook()`/`setupScrolls()` (tag `v3.3.8`): the per-instance shuffled scroll
 		//queue is built once, here, at construction - see `setupSpellbookScrolls`'s own doc
 		//comment in `artifactActions.ts` for the exact algorithm.
 		...(id === 'spellbook' ? { scrolls: setupSpellbookScrolls() } : {}),
-		cursed: generated.cursed, affix, identified: false, sourceClass: generated.cls,
+		cursed: generated.cursed, affix, identified: generated.cat === Cat.TRINKET, sourceClass: generated.cls,
 		instanceId: seedInstanceId ?? (mwlItemNeedsInstance(id) ? context.newItemInstanceId(id) : undefined),
 		//last, so a missile stack's own identity wins over the generic per-instance id above
 		...missileFields,

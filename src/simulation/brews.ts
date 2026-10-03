@@ -184,3 +184,75 @@ export function shatterBrewFlow(ctx: BrewFlowContext, brewId: string, at: { x: n
 	}
 	ctx.spendTurn();
 }
+/**
+ * `UnstableBrew.apply()`/`shatter()` (`items/potions/brews/UnstableBrew.java`, tag
+ * `v3.3.8`): the rolled potion table, in port effect ids. Healing weighs 3,
+ * Experience 1, the other nine regulars 2 each; exotic rolls never happen because
+ * `Potion.SeedToPotion`-style exotic classes do not exist here (R052).
+ */
+export const UNSTABLE_BREW_DRINK_TABLE: ReadonlyArray<readonly [id: string, weight: number]> = [
+	['potionHealing', 3],
+	['potionMindVision', 2],
+	['potionFrost', 2],
+	['potionFlame', 2],
+	['potionToxicGas', 2],
+	['potionHaste', 2],
+	['potionInvis', 2],
+	['potionLevitation', 2],
+	['potionParalyticGas', 2],
+	['potionPurity', 2],
+	['potionExperience', 1],
+];
+
+/** `Potion.mustThrowPots`' regulars (`Potion.java:109-112`, tag `v3.3.8`): a drunk
+ * brew rerolls these away, a thrown brew keeps these (plus the two `canThrow`
+ * regulars below). Exotic/brew entries never roll here, so they are not listed.
+ */
+export const UNSTABLE_BREW_DRINK_REROLL: ReadonlySet<string> = new Set([
+	'potionFrost', 'potionFlame', 'potionToxicGas', 'potionParalyticGas',
+]);
+
+/** `Potion.canThrowPots`' regulars (`Potion.java:125-126`, tag `v3.3.8`): Purity
+ * and Levitation, which a thrown brew keeps alongside the must-throw four.
+ */
+export const UNSTABLE_BREW_SHATTER_KEEP: ReadonlySet<string> = new Set([
+	'potionFrost', 'potionFlame', 'potionToxicGas', 'potionParalyticGas',
+	'potionPurity', 'potionLevitation',
+]);
+
+/** Java's `Random.chances` over the table: `rand()` supplies the unit float. */
+export function rollWeightedPotionId(
+	table: ReadonlyArray<readonly [id: string, weight: number]>,
+	rand: () => number,
+): string {
+	let total = 0;
+	for (const [, weight] of table) total += weight;
+	let r = rand() * total;
+	for (const [id, weight] of table) {
+		r -= weight;
+		if (r < 0) return id;
+	}
+	return table[table.length - 1]![0];
+}
+
+/** `UnstableBrew.apply()`: the drink roll. Under Pharmacophobia Java zeroes
+ * Healing's own table weight (and restores it after), so healing can never come
+ * up; the must-throw four reroll until a drinkable potion lands.
+ */
+export function rollUnstableBrewDrink(rand: () => number, pharmacophobia: boolean): string {
+	const table = pharmacophobia
+		? UNSTABLE_BREW_DRINK_TABLE.map(([id, weight]) => [id, id === 'potionHealing' ? 0 : weight] as const)
+		: UNSTABLE_BREW_DRINK_TABLE;
+	let id = rollWeightedPotionId(table, rand);
+	while (UNSTABLE_BREW_DRINK_REROLL.has(id)) id = rollWeightedPotionId(table, rand);
+	return id;
+}
+
+/** `UnstableBrew.shatter()`: the throw roll keeps only the six harmful-or-fine
+ * potions, rerolling anything else until one lands.
+ */
+export function rollUnstableBrewShatter(rand: () => number): string {
+	let id = rollWeightedPotionId(UNSTABLE_BREW_DRINK_TABLE, rand);
+	while (!UNSTABLE_BREW_SHATTER_KEEP.has(id)) id = rollWeightedPotionId(UNSTABLE_BREW_DRINK_TABLE, rand);
+	return id;
+}

@@ -44,13 +44,19 @@ import { ignoresCrystalGuardianBeckon } from '../../simulation/crystalSpire';
 import { mwlItemEffectValue } from '../../mwlContent';
 import { applySandalsNaturalismCharge, sandalsNaturalismLevel } from '../../items/sandals';
 import { regrowthMethods } from './regrowth';
+import { setupChallengeArena } from './challengeArena';
+import { runDivination } from './divination';
+import { readPassage } from './passage';
+import { useShardOfOblivion } from './passiveId';
+import { trinketLevelOf } from './trinkets';
+import { petrifiedGrassLootMultiplier, petrifiedStoneInsteadOfSeedChance } from '../../simulation/trinkets';
 import { DOOR, DOOR_CLOSED, EMBERS, FLOOR, GRASS, HIGH_GRASS, TILE, TRAP, WALL, WATER, modeledTrapTable, sewerTrapTable, type TrapKind } from '../../dungeonConstants';
 import { regionForDepth, type Region } from '../../genericDungeon';
-import { addBuff, applyElementalBacklash, buffBlocked, electricDamageHalved, explosiveTrapBounds, grimTrapDamage, icyBuffImmune, reigniteBuff, resistedBuffDuration, rollDamage, setBleeding, type Creature, type GroundItem, type Step } from '../../combat';
+import { addBuff, applyElementalBacklash, buffBlocked, explosiveTrapBounds, grimTrapDamage, icyBuffImmune, reigniteBuff, resistedBuffDuration, rollDamage, setBleeding, type Creature, type GroundItem, type Step } from '../../combat';
 import { applyChillFreeze } from '../../simulation/buffs';
 import { BLOB_IMMUNE_KINDS, BOSSES, FLYING_KINDS, IMMATERIAL_KINDS, IMMOVABLE_KINDS, INORGANIC_KINDS, MONSTERS, UNDEAD_KINDS, mobRosterForDepth, type AnyMonsterId, type MonsterId } from '../../monsters';
 import { ETERNAL_FIRE_BURN, wardTexture, type BonesShape } from './shared';
-import { spawnTrapSpecks } from '../../ui/effectBursts';
+import { spawnFlare, spawnTrapSpecks } from '../../ui/effectBursts';
 import { nonSolidDistanceMap } from '../../simulation/trapAreas';
 import { tenguDartPoisonAmount } from '../../simulation/tenguDart';
 import { addBossScore, addQuestScore } from '../../rankings';
@@ -89,6 +95,7 @@ function isUnmarkedTrap(kind: TrapKind): boolean { return UNMARKED_TRAPS.has(kin
 export const environmentFireTrapsMethods = {
 	...regrowthMethods,
 	...missileThrowConfirmationMethods,
+	useShardOfOblivion(this: DungeonScene): void { useShardOfOblivion(this); },
 	scrollEffectsContext(this: DungeonScene): ScrollEffectsContext {
 		return {
 			hero: this.hero,
@@ -117,6 +124,21 @@ export const environmentFireTrapsMethods = {
 				addBuff(this.hero, 'prismaticGuard', 9999);
 			},
 			onScrollUsed: (factor, chance) => this.onScrollUsed(factor, chance),
+			armArtifactRecharge: (turns) => { this.artifactRechargeTurns = Math.max(this.artifactRechargeTurns, turns); },
+			syncHeroFromStats: () => this.syncHeroFromStats(),
+			searchSecrets: () => this.searchForSecrets(false),
+			startChallengeArena: () => setupChallengeArena(this),
+			flare: (color) => spawnFlare(this.effectLayer, this.effectBursts, this.hero.x, this.hero.y, color),
+			screenFlash: (color) => { this.screenFlash = { color, timeLeft: 0.3, duration: 0.3 }; },
+			applyScrollDamage: (target, amount, resistHalf) => {
+				this.applyCharacterDamage(target, amount, {
+					pierceArmor: true, cause: 'friendlyMagic', magical: true, sourceClassResistHalf: resistHalf,
+					onHeroDeath: () => this.say(t('items.scrolls.exotic.scrollofpsionicblast.ondeath'), 'negative'),
+					onNonWeaponBossDamage: (creature) => this.disqualifyBossChallenge(creature),
+				});
+			},
+			runDivination: () => runDivination(this),
+			readPassage: () => readPassage(this),
 		};
 	},
 
@@ -324,8 +346,11 @@ export const environmentFireTrapsMethods = {
 			set natureBerriesDropped(dropped: number) { scene.natureBerriesDropped = dropped; },
 			rollChance: (p) => Random.chance(p),
 			drawSeedClass: () => randomUsingDefaults(Cat.SEED).cls,
+			petrifiedSeed: { lootMultiplier: petrifiedGrassLootMultiplier(trinketLevelOf(scene, 'trinketPetrifiedSeed')), stoneChance: petrifiedStoneInsteadOfSeedChance(trinketLevelOf(scene, 'trinketPetrifiedSeed')) },
+			drawStoneClass: () => randomUsingDefaults(Cat.STONE).cls,
 			spawnDrop: (kind, x, y, seedClass) => {
-				if (kind === 'seed') scene.spawnGroundItem('seed', x, y, sourceInventoryItem('seed', seedClass ?? '', (id) => scene.newItemInstanceId(id)));
+				if (kind === 'stone') scene.spawnGroundItem('stone', x, y, sourceInventoryItem(seedClass ?? '', undefined, (id) => scene.newItemInstanceId(id)));
+				else if (kind === 'seed') scene.spawnGroundItem('seed', x, y, sourceInventoryItem('seed', seedClass ?? '', (id) => scene.newItemInstanceId(id)));
 				else scene.spawnGroundItem(kind === 'berry' ? 'food' : kind, x, y, kind === 'berry' ? { id: 'berry', quantity: 1, identified: true, sourceClass: 'Berry' } : undefined);
 			},
 			say: (key, level) => scene.say(t(key), level),
@@ -472,10 +497,11 @@ export const environmentFireTrapsMethods = {
 			creatureAt: (x, y) => this.creatureAt(x, y),
 			fadeMirrorOnDamage: (victim, damage) => this.fadeMirrorOnDamage(victim, damage),
 			applyDamage: (victim, damage) => this.applyCharacterDamage(victim, damage, {
-				pierceArmor: true, cause: 'fire', skipAura: true, skipDoom: true,
+				//`WandOfFireblast` is a non-Char `Char.damage()` source: keep Java's Aura clause,
+				//then apply Doom and FIERY source resistance in the shared damage boundary.
+				pierceArmor: true, cause: 'fire', sourceElement: 'fire',
 				onNonWeaponBossDamage: (target) => this.disqualifyBossChallenge(target),
 			}),
-			showDamage: (victim, damage) => this.showDamage(victim, damage),
 			setColorAdd: (victim, red, green, blue) => this.sprite(victim).setColorAdd(red, green, blue),
 			kill: (victim) => this.kill(victim),
 			rollDamage: (min, max) => Random.normalRange(min, max),
@@ -1187,9 +1213,6 @@ export const environmentFireTrapsMethods = {
 			},
 			creatureAt: (x, y) => this.creatureAt(x, y),
 			addBuff: (target, id, duration) => addBuff(target, id, duration),
-			//R015 (`StenchGas.evolve()`, tag `v3.3.8`): the unparalysed-hero-breathes-gas-
-			//while-its-rat-lives `questScores[0] -= 100` write lives in the simulation;
-			//this hook carries it into the run totals like every other quest-score site.
 			addQuestScore: (index, delta) => { addQuestScore(this, index, delta); },
 			//`Inferno`/`Blizzard.evolve()` provisions (tag `v3.3.8`): reignited Burning,
 			//double chill steps, mutual annihilation (plus `Freezing`/`plantFreeze`), and
@@ -1203,6 +1226,13 @@ export const environmentFireTrapsMethods = {
 				&& !icyBuffImmune(target.kind, target.elementalType, 'chill')) target.buffs = applyChillFreeze(target.buffs, 3, resistedBuffDuration(target, 'chill', 1)).buffs; },
 			freezeHeapCell: (x, y) => this.freezeHeapAt(x, y),
 			clearCell: (blob, x, y) => (this[blob] as Blob).clear(x, y),
+			//`StormCloud.evolve()`: `Level.setCellToWater(true, cell)` and the FIERY occupant's `1 + scalingDepth/5`.
+			makeWaterCell: (x, y) => this.stormCloudWater(x, y),
+			stormCloudBurn: (target) => {
+				const fiery = ((target.kind === 'elemental' || target.kind === 'newbornElemental') && target.elementalType === 'fire')
+					|| (target.kind === 'yogFist' && target.yogFistType === 'burning');
+				if (fiery) this.applyCharacterDamage(target, 1 + Math.floor(this.depth / 5), { pierceArmor: true, cause: 'trap' });
+			},
 			clearFireCell: (x, y) => this.fire.clear(x, y),
 			fireAmountAt: (x, y) => this.fire.volumeAt(x, y),
 			seedFireCell: (x, y, volume) => this.fire.seed(x, y, volume),
@@ -1250,18 +1280,6 @@ export const environmentFireTrapsMethods = {
 				|| (target.kind === 'yogFist' && this.guardFist(target)),
 			isBlobImmune: (target) => target.buffs.blobImmunity !== undefined || target.buffs.spectatorFreeze !== undefined || (target.kind !== undefined && BLOB_IMMUNE_KINDS.has(target.kind as AnyMonsterId)),
 			applyDamage: (target, damage, cause = 'poison') => {
-				//`AuraOfProtection` first, then `Char.Property.ELECTRIC`'s half with
-				//`Math.round` (`Char.java`: the aura sits at the top of `damage()` for
-				//non-`Char` sources, `resist(srcClass)` halves later) - Java halves the
-				//already-aura-reduced value, so both stay here at the caller instead of
-				//inside the shared dispatch below, which would halve before it reduces.
-				//Heroes never hold `ELECTRIC` and take their aura inside `absorbHeroDamage`.
-				if (!target.isHero) {
-					damage = this.auraProtectedDamage(target, damage);
-					if (cause === 'electricity' && electricDamageHalved(target.kind, target.elementalType, target.yogFistType)) {
-						damage = Math.round(damage / 2);
-					}
-				}
 				//The shared `Char.damage()` dispatch carries what this closure used to
 				//hand-roll: the invulnerability gates (SpectatorFreeze, Yog shields,
 				//dormant Pylon, mine immunities), defender `damage()` curves, Viscosity
@@ -1269,10 +1287,11 @@ export const environmentFireTrapsMethods = {
 				//source-independent in Java, so blob damage gets them too (the old copy
 				//skipped every one of them). Gas and electricity roll no `DR` - Java blob
 				//sources call `Char.damage()` directly, never `drRoll()` - hence
-				//`pierceArmor`; the caller-side aura above is the `skipAura`.
+				//`pierceArmor`. `Electricity` is passed as its source element so Aura,
+				//Doom and ELECTRIC resistance run in the common Java order.
 				const heroDied = this.applyCharacterDamage(target, damage, {
 					pierceArmor: true,
-					skipAura: !target.isHero,
+					sourceElement: cause === 'electricity' ? 'electric' : undefined,
 					//Electric kills have no death-badge bucket here (the port's four death
 					//causes predate the blob), so they land in the default 'foe' bucket -
 					//but the player-facing line is Java's own `ondeath`, said here like the
@@ -1319,8 +1338,8 @@ export const environmentFireTrapsMethods = {
 	},
 
 	/** `Fire.evolve()` -> `Dungeon.level.destroy(cell)`: convert the flammable terrain this
-	 * port can represent to Java's passable, non-flammable `EMBERS` result. Region decorations
-	 * still need their own seam; the raw `FURROWED_GRASS` id is now handled as grass. */
+	 * port can represent to Java's passable, non-flammable `EMBERS` result;
+	 * the raw `FURROWED_GRASS` id is handled as grass. */
 	burnFireTerrain(this: DungeonScene, x: number, y: number): void {
 		if (!this.level.inside(x, y)) return;
 		const cell = this.level.index(x, y);
@@ -1330,12 +1349,38 @@ export const environmentFireTrapsMethods = {
 		// REGION_DECO_ALT into EMPTY_SP; unlike ordinary terrain they do not become EMBERS.
 		const sewerBarrel = this.depth <= 5 && raw === Terrain.REGION_DECO;
 		const sewerBarrelAlt = this.depth <= 5 && raw === Terrain.REGION_DECO_ALT;
+		//`SewerLevel.destroy()` (tag `v3.3.8`): both barrel kinds burst ten green-teal
+		//shards (`Splash.at(pos, 0xFF507B5D, 10)`), FOV-gated like every other speck seam.
+		if ((sewerBarrel || sewerBarrelAlt) && this.fov.isVisible(x, y)) spawnTrapSpecks(this.effectLayer, this.effectBursts, x, y, 'splash');
 		const replacement = sewerBarrel ? Terrain.WATER : sewerBarrelAlt ? Terrain.EMPTY_SP : Terrain.EMBERS;
 		if (this.portedPaint) this.portedPaint.map[cell] = replacement;
 		this.level.set(x, y, sewerBarrel ? WATER : replacement === Terrain.EMPTY_SP ? FLOOR : EMBERS);
 		//the burned cell's new face has to be stitched in, exactly as a grass change is
 		this.restitchTilesAround(x, y);
 		this.burnFireContents(x, y);
+	},
+
+	/**
+	 * `Level.setCellToWater(true, cell)` (`levels/Level.java:1088-1121`, tag `v3.3.8`), for `StormCloud.evolve()`: plain floor, grass (any kind), embers,
+	 * `EMPTY_SP`/`EMPTY_DECO` and - with `includeTraps` - any trap become `WATER` (a trap is removed). Walls, doors, chasms, existing water and
+	 * every other terrain are left alone. Java also skips cells under a custom tilemap, which this port has no counterpart for.
+	 */
+	stormCloudWater(this: DungeonScene, x: number, y: number): boolean {
+		if (!this.level.inside(x, y)) return false;
+		const cell = this.level.index(x, y);
+		const raw = this.portedPaint?.map[cell];
+		const plain: number[] = [Terrain.EMPTY, Terrain.GRASS, Terrain.EMBERS, Terrain.EMPTY_SP, Terrain.HIGH_GRASS, Terrain.FURROWED_GRASS, Terrain.EMPTY_DECO];
+		const trap: number[] = [Terrain.SECRET_TRAP, Terrain.TRAP, Terrain.INACTIVE_TRAP];
+		const kind = this.level.get(x, y);
+		const isPlain = raw !== undefined ? plain.includes(raw) : kind === FLOOR || kind === GRASS || kind === HIGH_GRASS || kind === EMBERS;
+		const isTrap = raw !== undefined ? trap.includes(raw) : this.trapKinds.has(cell);
+		if (!isPlain && !isTrap) return false;
+		if (this.portedPaint) this.portedPaint.map[cell] = Terrain.WATER;
+		this.level.set(x, y, WATER);
+		if (isTrap) this.trapKinds.delete(cell);
+		this.furrowedGrass.delete(cell);
+		this.restitchTilesAround(x, y);
+		return true;
 	},
 
 	/** `Heap.explode()`'s terrain half calls `Level.destroy()` without the fire heap-burn
@@ -1348,6 +1393,9 @@ export const environmentFireTrapsMethods = {
 		const raw = this.portedPaint?.map[cell];
 		const sewerBarrel = this.depth <= 5 && raw === Terrain.REGION_DECO;
 		const sewerBarrelAlt = this.depth <= 5 && raw === Terrain.REGION_DECO_ALT;
+		//`SewerLevel.destroy()` (tag `v3.3.8`): both barrel kinds burst ten green-teal
+		//shards (`Splash.at(pos, 0xFF507B5D, 10)`), FOV-gated like every other speck seam.
+		if ((sewerBarrel || sewerBarrelAlt) && this.fov.isVisible(x, y)) spawnTrapSpecks(this.effectLayer, this.effectBursts, x, y, 'splash');
 		const replacement = sewerBarrel ? Terrain.WATER : sewerBarrelAlt ? Terrain.EMPTY_SP : Terrain.EMBERS;
 		if (this.portedPaint) this.portedPaint.map[cell] = replacement;
 		this.level.set(x, y, sewerBarrel ? WATER : replacement === Terrain.EMPTY_SP ? FLOOR : EMBERS);
@@ -1394,7 +1442,7 @@ export const environmentFireTrapsMethods = {
 		const talisman = this.talismanItem();
 		//The artifact's Foresight buff still scans while cursed; its curse only suppresses
 		//the ordinary passive-search branch (`Hero.search(false)`, tag `v3.3.8`).
-		const foresight = !intentional && !!talisman && !this.hero.magicImmune;
+		const foresight = !intentional && ((!!talisman && !this.hero.magicImmune) || this.hero.buffs['foresight'] !== undefined);
 		const wideSearch = this.talentRank('wide_search');
 		const radius = foresight ? 8 : (this.heroClass === 'rogue' ? 2 : 1) + (wideSearch > 0 ? 1 : 0);
 		const outcome = runSearch(this.hero, radius, { isSecret: (cell) => {
@@ -1465,6 +1513,11 @@ export const environmentFireTrapsMethods = {
 			atStairs: Boolean(this.hasStairs && this.stairs && this.stairs.x === x && this.stairs.y === y),
 			coarse: this.level.get(x, y),
 			isCrystalDoor: this.crystalDoorCells.has(this.level.index(x, y)),
+			//A planted seed grows on the hero's own cell without triggering (`plantSeed`),
+			//so the free Look action is the only way to read it back - `plantKindAt`
+			//is the same resolution the trigger paths consume.
+			plantKind: this.plantKindAt(this.level.index(x, y)),
+			isWarden: this.subclass() === 'warden',
 		});
 		if (outcome.kind === 'alchemy') {
 			openAlchemyRecipes(this.alchemyFlowContext());

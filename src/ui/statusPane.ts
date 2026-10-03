@@ -58,6 +58,7 @@ const BUFF_ICON: Record<string, number> = {
 	magicalSleep: 30,
 	amok: 9,
 	terror: 10,
+	dread: 10, //`Dread.icon()` is TERROR (tinted red in Java)
 	//OOZE = 8
 	ooze: 8,
 	//PARALYSIS = 4; ROOTS = 11; INVISIBLE = 12; LEVITATION = 1
@@ -93,6 +94,13 @@ const BUFF_ICON: Record<string, number> = {
 	//`ArtifactRecharge.icon()` reuses RECHARGING and hardlights it green (`ArtifactRecharge.java`).
 	artifactRecharge: 34,
 	haste: 41,
+	//`Stamina.icon()` is HASTE (tinted green in Java); `MagicalSight.icon()` is MIND_VISION.
+	stamina: 41,
+	//`BuffIndicator.FORESIGHT` = 32; `MagicImmune.icon()` is COMBO (`MagicImmune.java:73`).
+	foresight: 32,
+	magicImmune: 17,
+	challengeArena: 20, //`ChallengeArena.icon()` is ARMOR (tinted red in Java)
+	magicalSight: 0,
 	//VULNERABLE = 46
 	vulnerable: 46,
 	//CORRUPT = 36 (`Doom.java`'s icon, tag `v3.3.8`)
@@ -143,6 +151,10 @@ const BUFF_ICON: Record<string, number> = {
 	cleanseImmunity: 25,
 	//Talent.RejuvenatingStepsCooldown reuses BuffIndicator.TIME (7), tag `v3.3.8`.
 	rejuvenatingStepsCooldown: 7,
+	//WAND = 72 (`BuffIndicator.java`, tag `v3.3.8`) - `ShardOfOblivion.WandUseTracker`'s own icon, hardlit blue by `tintIcon` below.
+	wandUseTracker: 72,
+	//THROWN_WEP = 85 (same file and tag) - `ShardOfOblivion.ThrownUseTracker`'s own icon, hardlit blue the same way.
+	thrownUseTracker: 85,
 };
 
 /** buffs.png is 128x64 of 7x7 cells, so TextureFilm walks 18 to a row */
@@ -515,6 +527,10 @@ export class StatusPane extends Container {
 			if (buff === 'cleanseImmunity') icon.tint = 0xff00ff;
 			//Talent.RejuvenatingStepsCooldown.tintIcon() hardlights dark green.
 			if (buff === 'rejuvenatingStepsCooldown') icon.tint = 0x005926;
+			//`ShardOfOblivion.WandUseTracker.tintIcon()` hardlights (0, 0.6, 1).
+			if (buff === 'wandUseTracker') icon.tint = 0x0099ff;
+			//`ShardOfOblivion.ThrownUseTracker.tintIcon()` hardlights the same (0, 0.6, 1).
+			if (buff === 'thrownUseTracker') icon.tint = 0x0099ff;
 			//`Berserk.tintIcon()`, `iconTextDisplay()` and `iconFadePercent()` in
 			//actors/buffs/Berserk.java (tag v3.3.8) depend on rage mode, power and shield.
 			if (buff === 'berserk' && berserk) {

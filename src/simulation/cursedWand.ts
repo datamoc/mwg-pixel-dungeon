@@ -1,13 +1,15 @@
 /**
- * `CursedWand.cursedZap()` (`items/wands/CursedWand.java`, tags `v3.3.8`/`v4.0.0`):
+ * `CursedWand.cursedZap()` (`items/wands/CursedWand.java`, tag `v3.3.8`):
  * rolls Java's weighted 60/30/9/1 tier and uniformly chooses from that tier's catalog.
  * Common, Uncommon, Rare and VeryRare keep their distinct weights and catalogs. The VeryRare
  * planner records Java's eight-effect order; the scene handles all eight. Its three newest
  * outcomes use the existing Mimic sprite for Golden Mimic, replace the exact firing Wand with a
  * generated cursed reward for RandomTransmogrify, and apply a temporary cosmetic class-sheet
  * disguise for HeroShapeShift. Those presentation/model limits are recorded at the dispatch and
- * in `coverage/rows-items-equipment-and-artifacts.md`. `WondrousResin`'s positiveOnly mode is
- * unreachable from Wild Magic and remains outside this path.
+ * in `coverage/rows-items-equipment-and-artifacts.md`. The scene rolls the carried
+ * `WondrousResin` positiveOnly chance before the tier and threads it through supported
+ * validity/effect branches; the remaining picker, delayed-effect and presentation gaps stay
+ * documented in the coverage row.
  */
 export type CursedCommonEffectId =
 	| 'burnAndFreeze'
@@ -62,7 +64,7 @@ export const CURSED_PLANT_KINDS: readonly string[] = [
 export type CursedRareEffectId = 'sheepPolymorph' | 'curseEquipment' | 'interFloorTeleport' | 'summonMonsters' | 'fireBall' | 'coneOfColors' | 'massInvuln' | 'petrify';
 export const CURSED_RARE_EFFECT_IDS: readonly CursedRareEffectId[] = ['sheepPolymorph', 'curseEquipment', 'interFloorTeleport', 'summonMonsters', 'fireBall', 'coneOfColors', 'massInvuln', 'petrify'];
 
-/** Java's distinct `VERY_RARE_EFFECTS` catalog (`CursedWand.java`, tag `v4.0.0`; `v3.3.8` had only four).
+/** Java's distinct `VERY_RARE_EFFECTS` catalog (`CursedWand.java`, tag `v3.3.8`).
  * The runtime dispatches this one-percent tier to `castCursedWandVeryRareEffect`; keeping the
  * authoritative order here prevents catalog and scene dispatch from silently diverging. */
 export type CursedVeryRareEffectId = 'forestFire' | 'spawnGoldenMimic' | 'abortRetryFail' | 'randomTransmogrify' | 'heroShapeShift' | 'superNova' | 'sinkHole' | 'gravityChaos';
@@ -143,8 +145,8 @@ export function pickConeOfColorsStatus(pick: (bound: number) => number): ConeOfC
 }
 
 /** `EFFECT_CAT_CHANCES` (`CursedWand.java`, tag `v3.3.8`): Java rolls
- * `Random.chances({60,30,9,1})`. Keep all four buckets distinct even though this port has no
- * VeryRare handlers yet; mapping that 1% onto Rare would silently change effect odds. */
+ * `Random.chances({60,30,9,1})`. Keep all four buckets distinct; VeryRare dispatches its
+ * separate eight-effect catalog and must not be merged into Rare. */
 export function pickCursedTier(pick: (bound: number) => number): 'common' | 'uncommon' | 'rare' | 'veryRare' {
 	const roll = pick(100);
 	return roll < 60 ? 'common' : roll < 90 ? 'uncommon' : roll < 99 ? 'rare' : 'veryRare';

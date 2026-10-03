@@ -2,6 +2,7 @@
 import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillRoomInset, setCell, neighbours8 } from '../../paintLevel';
 import { SpdRandom } from '../../../spdRng';
+import { trapRevealChance } from '../../trinketLevelGen';
 
 export function paintMinefieldRoom(level: PaintLevel, room: Room): void {
 	fillRoom(level, room, Terrain.WALL);
@@ -16,6 +17,9 @@ export function paintMinefieldRoom(level: PaintLevel, room: Room): void {
 	}
 
 	const n8 = neighbours8(level);
+	//`TrapMechanism.revealHiddenTrapChance()`: every `1/chance`-th mine is a revealed `TRAP` instead of a secret one.
+	const revealedChance = trapRevealChance();
+	let revealInc = 0;
 	for (let i = 0; i < mines; i++) {
 		let pos: number;
 		do {
@@ -30,7 +34,14 @@ export function paintMinefieldRoom(level: PaintLevel, room: Room): void {
 			}
 		}
 
-		setCell(level, pos, Terrain.SECRET_TRAP);
-		level.setTrap('explosive', true, true, pos);
+		revealInc += revealedChance;
+		if (revealInc >= 1) {
+			setCell(level, pos, Terrain.TRAP);
+			level.setTrap('explosive', false, true, pos);
+			revealInc--;
+		} else {
+			setCell(level, pos, Terrain.SECRET_TRAP);
+			level.setTrap('explosive', true, true, pos);
+		}
 	}
 }

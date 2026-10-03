@@ -93,7 +93,7 @@ export function showChoiceWindow(
 	const rowHeights = options.map((option) =>
 		Math.max(22, new Label({ text: option.label, size: 6, wrapWidth: width - 40, color: theme().color.text }).height + 10));
 	const total = rowHeights.reduce((sum, height) => sum + height + 4, 0);
-	const window = new Window({ width, height: label.height + total + 24, title, anchor: 'center', blocker: true });
+	const window = new Window({ width, height: label.height + total + 34, title, anchor: 'center', blocker: true });
 	window.content.addChild(label);
 	let y = label.height + 6;
 	options.forEach((option, index) => {

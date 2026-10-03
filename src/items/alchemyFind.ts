@@ -1,3 +1,5 @@
+import { isTrinketId, canUpgradeTrinket } from '../simulation/trinkets';
+import { isPlainFruit } from './blandfruit';
 import {
 	ALCHEMY_RECIPES, MEAT_PIE_MEAT_IDS, MEAT_PIE_PASTY_IDS, SCROLL_TO_STONE, potionExoticResult, scrollExoticResult, seedPotionId,
 	type AlchemyIngredientSelection, type AlchemyRecipe,
@@ -24,10 +26,13 @@ export interface AlchemyUnit {
 	readonly instanceId?: string;
 	readonly identified?: boolean;
 	readonly level?: number;
+	readonly potionAttrib?: string;
 	readonly sourceClass?: string;
 }
 
 type SlotPredicate = (unit: AlchemyUnit) => boolean;
+
+const isStone = (unit: AlchemyUnit): boolean => unit.id === 'stone' || unit.id.startsWith('stoneOf');
 
 /** The slot predicates of one recipe: one per consumed unit. */
 export function recipeSlots(recipe: AlchemyRecipe): readonly SlotPredicate[] {
@@ -38,6 +43,9 @@ export function recipeSlots(recipe: AlchemyRecipe): readonly SlotPredicate[] {
 		case 'potionToExotic': return [(unit) => potionExoticResult(unit.id) !== undefined];
 		case 'meatPie': return [(unit) => MEAT_PIE_PASTY_IDS.has(unit.id), (unit) => unit.id === 'food', (unit) => MEAT_PIE_MEAT_IDS.has(unit.id)];
 		case 'alchemize': return [(unit) => unit.id.startsWith('seed'), (unit) => unit.id.startsWith('stoneOf')];
+		case 'blandfruit': return [(unit) => isPlainFruit({ id: unit.id, potionAttrib: unit.potionAttrib }), (unit) => seedPotionId(unit) !== undefined];
+		case 'unstableSpell': return [(unit) => unit.id.startsWith('scroll'), isStone];
+		case 'upgradeTrinket': return [(unit) => isTrinketId(unit.id) && canUpgradeTrinket(unit.level ?? 0)];
 		default: break;
 	}
 	const slots: SlotPredicate[] = [];
@@ -94,6 +102,8 @@ export function selectionFor(found: FoundRecipe): AlchemyIngredientSelection {
 		case 'scrollToStone': case 'scrollToExotic': case 'potionToExotic': return { kind: 'scroll', unit: ref(first!) };
 		case 'meatPie': return { kind: 'meatPie', ingredients: { pasty: ref(first!), ration: ref(second!), meat: ref(third!) } };
 		case 'alchemize': return { kind: 'alchemize', seed: ref(first!), stone: ref(second!) };
+		case 'blandfruit': return { kind: 'cookFruit', fruit: ref(first!), seed: ref(second!) };
+		case 'unstableSpell': return { kind: 'unstableSpell', scroll: ref(first!), stone: ref(second!) };
 		default: return { kind: 'exact' };
 	}
 }

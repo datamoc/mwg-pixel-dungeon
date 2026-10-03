@@ -11,7 +11,7 @@ import { throwTenguBomb } from '../../../items/bombs';
 import { runAttackResolution } from '../../../adapters/attackSimulation';
 import { simulationRandom } from '../../../adapters/mwgRandom';
 import { simulationRoguelike } from '../../../adapters/mwgRoguelike';
-import { wraithCombatStats } from '../../../simulation/wraith';
+import { dustWraithScoresOnAttackNumber, wraithCombatStats } from '../../../simulation/wraith';
 import { stepTenguAbility, tenguAbilityCost } from '../../../simulation/tenguAbility';
 import { tenguBracketChanged, tenguBracketClamp, tenguHpBracket, tenguPhase1Edge } from '../../../simulation/tenguBeam';
 import { colorblind, highContrast } from '../../../settings';
@@ -31,7 +31,7 @@ import { CIRCLE8_OFFSETS, fleeStep as fleeStepFlow, isPatrolTargetValid as isPat
 import { canRipperLeap, chooseRipperBounceEnd, predictRipperLeapTarget, ripperLeapCooldown } from '../../../simulation/ripperLeap';
 import { chooseSuccubusBlinkCell, shouldSuccubusBlink, succubusBlinkCooldown } from '../../../simulation/succubusBlink';
 import { DOOR, DOOR_CLOSED, FLOOR, GAME_KIND_CODES, SOLID, TILE, WALL, WATER } from '../../../dungeonConstants';
-import { NEGATIVE_BUFFS, addBuff, applyElementalBacklash, buffBlocked, doomDamage, icyBuffImmune, reigniteBuff, resistedBuffDuration, rollDamage, rollHit, setBleeding, type BuffId, type Creature, type GroundItem, type Step } from '../../../combat';
+import { NEGATIVE_BUFFS, addBuff, isTerrified, applyElementalBacklash, buffBlocked, doomDamage, icyBuffImmune, reigniteBuff, resistedBuffDuration, rollDamage, rollHit, setBleeding, type BuffId, type Creature, type GroundItem, type Step } from '../../../combat';
 import { applyChillFreeze } from '../../../simulation/buffs';
 import { IMMOVABLE_KINDS, liveStats } from '../../../monsters';
 import { TENGU_CIRCLE8 } from '../shared';
@@ -433,16 +433,28 @@ export const monsterAiMethods = {
 			)[0];
 		if (next) this.stepMonster(monster, next);
 		else if (monster.kind === 'golem' && this.depth !== 20
-			&& monster.patrolTarget && (monster.golemSelfTeleCooldown ?? 0) <= 0) {
-			//Golem.Wandering.continueWandering(): Java spends 2*TICK charging before teleporting
-			//to an unreachable target and resets its self-teleport cooldown to 30 (Golem.java).
-			//The port commits the relocation in one logical action because it has no delayed
-			//teleport-particle actor; the scheduler cost remains the real 2*TICK.
-			this.pendingMonsterTurnCost = 2;
-			this.moveTo(monster, monster.patrolTarget);
-			monster.golemSelfTeleCooldown = 30;
-			monster.patrolTarget = undefined;
-		} else monster.patrolTarget = undefined;
+			&& monster.patrolTarget) {
+			//`Golem.Wandering.continueWandering()` + `Golem.act()` (`Golem.java`, tag `v3.3.8`): an unreachable patrol
+			//target starts a 2-turn `teleporting` charge (`teleParticles` Elmo pour, synced from the flag); the
+			//following turn relocates via `ScrollOfTeleportation.appear` with the cooldown reset to 30 - or
+			//repicks a `randomDestination` when the target filled in, exactly like Java.
+			if (monster.teleporting === true) {
+				monster.teleporting = false;
+				const landing = monster.patrolTarget;
+				if (isPatrolTargetValidFlow(landing, false, this.wanderingContext())) {
+					const golemFrom = { x: monster.x, y: monster.y };
+					this.moveTo(monster, landing);
+					this.playTeleportAppear(golemFrom, landing, monster);
+					monster.golemSelfTeleCooldown = 30;
+					monster.patrolTarget = undefined;
+				} else {
+					monster.patrolTarget = this.randomPatrolDestination(monster);
+				}
+			} else if ((monster.golemSelfTeleCooldown ?? 0) <= 0) {
+				monster.teleporting = true;
+				this.pendingMonsterTurnCost = 2;
+			} else monster.patrolTarget = undefined;
+		}
 		return true;
 	},
 
@@ -765,7 +777,7 @@ export const monsterAiMethods = {
 		if (!target) return false;
 		if (monster.buffs['paralysis'] !== undefined || monster.buffs['frost'] !== undefined
 			|| monster.buffs['feintConfusion'] !== undefined || monster.sleeping === true
-			|| monster.buffs['terror'] !== undefined || monster.fleeing) return false;
+			|| isTerrified(monster) || monster.fleeing) return false;
 		monster.leapCooldown = ripperLeapCooldown(simulationRandom);
 		if (monster.buffs['roots'] !== undefined) {
 			monster.leapTarget = null;
@@ -977,6 +989,17 @@ export const monsterAiMethods = {
 	 * every caller here passes an explicit class, and all four generic callers (haunted heaps,
 	 * `DistortionTrap`, the Cleric spell, soul-marked deaths) belong to unported systems.
 	 */
+	/**
+	 * `CorpseDust.DustWraith.attack()` (tag `v3.3.8`): count this wraith's attack on the
+	 * hero and score `questScores[1] -= 100` on the 2nd and 3rd (max -200 per wraith).
+	 * Called at attack initiation - ahead of the roll, hit or miss, exactly where Java's
+	 * override runs. The scene calls it from every hero-attack launch site.
+	 */
+	dustWraithAttackAttempt(this: DungeonScene, monster: Creature, defender: Creature): void {
+		if (monster.kind !== 'dustWraith' || !defender.isHero) return;
+		monster.dustAtkCount = (monster.dustAtkCount ?? 0) + 1;
+		if (dustWraithScoresOnAttackNumber(monster.dustAtkCount)) addQuestScore(this, 1, -100);
+	},
 	spawnWraithAt(this: DungeonScene, kind: 'wraith' | 'dustWraith', x: number, y: number): Creature | null {
 		let at: { x: number; y: number } | null = null;
 		if (this.level.passable(x, y) && !this.creatureAt(x, y)) at = { x, y };
@@ -1123,34 +1146,28 @@ export const monsterAiMethods = {
 	 * `Elemental.zap()` is just `hit(this, enemy, true)` -> `rangedProc(enemy)`, and every
 	 * `rangedProc` is a pure status application - `FireElemental` reignites Burning (unless the
 	 * target stands in water), `FrostElemental` calls `Freezing.freeze`, `ShockElemental` applies
-	 * `Blindness.DURATION/2f`, and `ChaosElemental` rolls the cursed-wand table with itself as
-	 * user (`castCursedChaosEffect`, ported 2026-10-03 - the old harmful-status stand-in is
-	 * gone). This port used to roll `NormalIntRange(20, 25)` on top of the status, damage
-	 * real Java never deals - an Elemental's threat at range is the status, not a hit. The
-	 * shared port has no Blindness subsystem, so Shock uses Daze as an explicit stand-in;
-	 * Fire/Frost use the existing fire/chill/frost primitives. No explicit hit
+	 * `Blindness.DURATION/2f`, and `ChaosElemental` delegates to a cursed-wand effect. This port
+	 * used to roll `NormalIntRange(20, 25)` on top of the status, damage real Java never deals -
+	 * an Elemental's threat at range is the status, not a hit. The shared port has no Blindness
+	 * or cursed-wand subsystem, so Shock uses Daze and Chaos uses one existing harmful status as
+	 * explicit stand-ins; Fire/Frost use the existing fire/chill/frost primitives. No explicit hit
 	 * message is logged, matching Java (only the sprite zap and the buff's own announcement).
 	 *
 	 * `ShockElemental.meleeProc`'s electric arc is modelled in `combatResolution` (not
 	 * here): `planShockElementalArc` reproduces Java's `Shocking.arc` radius/order and
-	 * each hit lands armor-piercing via `ch.damage(round(dmg*0.4))`.
-	 *
-	 * A chaos cast plays this method's own bolt visual in place of Java's rainbow
-	 * MagicMissile (stated presentation reduction - the port has no tinted-missile seam),
-	 * and skips the accuracy roll below like Java's override does. */
+	 * each hit lands armor-piercing via `ch.damage(round(dmg*0.4))`. Not modelled here:
+	 * the Chaos cursed-wand table. */
 	elementalRangedTurn(this: DungeonScene, monster: Creature): boolean {
 		const target = this.rangedTarget(monster, 5);
 		if (!target) return false;
-		const type = monster.elementalType ?? 'fire';
 		//`Elemental.zap()` plays the sprite zap (an `attack` clone, tag `v3.3.8`).
 		this.playMonsterZap(monster);
-		//`ChaosElemental.zap()` skips the accuracy check and always hits
-		//(`Elemental.java`, tag `v3.3.8`); every other subtype rolls it here.
-		if (type !== 'chaos' && !rollHit(monster, target, true)) {
+		if (!rollHit(monster, target, true)) {
 			this.say(t('port.log.boltmisses', { who: capitalize(monster.name) }), 'negative');
 			return true;
 		}
 		this.spawnProjectile(monster, target);
+		const type = monster.elementalType ?? 'fire';
 		//`FireElemental.rangedProc()` (`Elemental.java`, tag `v3.3.8`) reignites
 		//Burning with an explicit 4, not the table-default 8.
 		if (type === 'fire' && this.level.get(target.x, target.y) !== WATER) reigniteBuff(target, 'burning', 4);
@@ -1159,10 +1176,7 @@ export const monsterAiMethods = {
 			//(tag `v3.3.8`) - a fire-typed target takes the backlash, never the chill.
 			if (applyElementalBacklash(target, 'chill') === 0 && !icyBuffImmune(target.kind, target.elementalType, 'chill')) target.buffs = applyChillFreeze(target.buffs, 3, resistedBuffDuration(target, 'chill', 1)).buffs;
 		} else if (type === 'shock') addBuff(target, 'daze');
-		//`ChaosElemental.rangedProc()` (`Elemental.java`, tag `v3.3.8`): `cursedZap` with
-		//a null origin and itself as user - the bolt FX above stands in for Java's rainbow
-		//missile, and the effect roll itself lives in `castCursedChaosEffect`.
-		else if (type === 'chaos') this.castCursedChaosEffect(target, { x: target.x, y: target.y }, monster, false);
+		else addBuff(target, Random.element(['burning', 'chill', 'cripple', 'daze'] as const) ?? 'daze');
 		return true;
 	},
 
@@ -1314,13 +1328,13 @@ export const monsterAiMethods = {
 	/**
 	 * `Mob.Fleeing.nowhereToRun()` (`Mob.java`, tag `v3.3.8`): enemies turn and fight
 	 * when they have nowhere to run and are not Terror/Dread-afflicted - HUNTING with the
-	 * `Mob.rage` status line while the enemy is seen, WANDERING otherwise. Dread has no
-	 * system here, so Terror alone holds the mob fleeing (stated, not silent). Clearing
+	 * `Mob.rage` status line while the enemy is seen, WANDERING otherwise (`Terror` or `Dread`
+	 * holds the mob fleeing, `isTerrified`). Clearing
 	 * the fleeing flag hands the next turn back to the ordinary hunt/wander dispatch,
 	 * which is this port's standing equivalent of Java's state flip.
 	 */
 	recoverFleeing(this: DungeonScene, monster: Creature): void {
-		if (monster.buffs['terror'] !== undefined) return;
+		if (isTerrified(monster)) return;
 		monster.fleeing = false;
 		if (monster.seesHero) this.say(t('actors.mobs.mob.rage'), 'warning');
 		else monster.patrolTarget = undefined;
@@ -1378,9 +1392,10 @@ export const monsterAiMethods = {
 		if (monster.kind !== 'mimic' && monster.kind !== 'crystalMimic') return;
 		//`MimicSprite.Crystal` is `texOffset()` 32 (tag `v3.3.8`): the crystal
 		//mimic hides and reveals 32 frames over, with the `crystalmimic` clips.
-		const ofs = monster.kind === 'crystalMimic' ? 32 : 0;
+		const ofs = monster.kind === 'crystalMimic' ? 32 : monster.ebonyMimic ? 48 : 0;
 		const hidden = !monster.mimicRevealed;
-		if (monster.kind === 'mimic') monster.name = hidden ? t('items.heap.chest') : t('actors.mobs.mimic.name');
+		//`MimicSprite.Ebony` is `texOffset()` 48; the hidden Ebony Mimic is the "suspicious outline" (`EbonyMimic.name()`)
+		if (monster.kind === 'mimic') monster.name = hidden ? t(monster.ebonyMimic ? 'actors.mobs.ebonymimic.hidden_name' : 'items.heap.chest') : t('actors.mobs.mimic.name');
 		const sheet = SpriteSheet.fromTexture(runState.sprites.mimic, 16, 16);
 		this.sprite(monster).texture = sheet.get(hidden ? ofs : 3 + ofs);
 	},
@@ -1394,7 +1409,7 @@ export const monsterAiMethods = {
 		monster.seesHero = true;
 		monster.lastSeen = { x: this.hero.x, y: this.hero.y };
 		this.syncMimicVisual(monster);
-		if (this.fov.isVisible(monster.x, monster.y)) this.say(t('actors.mobs.mimic.reveal'), 'warning');
+		if (this.fov.isVisible(monster.x, monster.y)) this.say(t(monster.ebonyMimic ? 'actors.mobs.ebonymimic.reveal' : 'actors.mobs.mimic.reveal'), 'warning');
 	},
 
 	/** `CrystalMimic.stopHiding()` (`actors/mobs/CrystalMimic.java`, tag `v3.3.8`): neutral
@@ -1449,6 +1464,24 @@ export const monsterAiMethods = {
 		const held = `${picked.id}|${sourceClass ?? ''}|${qty}`;
 		monster.stolen = held;
 		monster.mimicLoot += `;held:${held}`;
+	},
+
+	/**
+	 * `Dread.act()` (`actors/buffs/Dread.java`, tag `v3.3.8`): a dreaded mob that is out of the hero's sight and 6+ cells away is
+	 * removed outright - `EXP /= 2`, then `destroy()` (no death, so no loot, no XP award, no kill credit) - which is how the scroll
+	 * makes enemies "flee the dungeon entirely".
+	 */
+	destroyDreadedMonster(this: DungeonScene, monster: Creature): void {
+		const index = this.creatures.indexOf(monster);
+		if (index < 0) return;
+		this.scheduler.remove(monster);
+		this.creatures.splice(index, 1);
+		this.monsterMotion.get(this.sprite(monster))?.clear();
+		this.monsterMotion.delete(this.sprite(monster));
+		this.healthBars.get(monster)?.destroy();
+		this.healthBars.delete(monster);
+		this.sprite(monster).destroy();
+		this.spriteFor.delete(monster.id);
 	},
 
 	escapeCrystalMimic(this: DungeonScene, monster: Creature): void {

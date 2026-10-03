@@ -2,7 +2,7 @@ import type { Creature, GroundItem, Step } from '../combat';
 import type { AnyMonsterId } from '../monsters';
 import type { LogLevel } from '../ui/gameLog';
 
-export type EnvironmentalBlob = 'plantGas' | 'plantFreeze' | 'toxicGas' | 'paralyticGas' | 'stenchGas' | 'corrosiveGas' | 'confusionGas' | 'web' | 'electricity' | 'smokeScreen' | 'inferno' | 'blizzard';
+export type EnvironmentalBlob = 'plantGas' | 'plantFreeze' | 'toxicGas' | 'paralyticGas' | 'stenchGas' | 'corrosiveGas' | 'confusionGas' | 'web' | 'electricity' | 'smokeScreen' | 'inferno' | 'blizzard' | 'stormCloud';
 
 /** `ToxicImbue.act()`'s per-turn gas emission (`ToxicImbue.java`, tag `v3.3.8`). */
 export function emitToxicImbueGas(seedGas: (x: number, y: number, volume: number) => void, passable: (x: number, y: number) => boolean, center: { x: number; y: number }, neighbour8: readonly (readonly [number, number])[]): void {
@@ -58,6 +58,10 @@ export interface EnvironmentalBlobsContext {
 	clearFireCell?: (x: number, y: number) => void;
 	fireAmountAt?: (x: number, y: number) => number;
 	seedFireCell?: (x: number, y: number, volume: number) => void;
+	/** `Level.setCellToWater(true, cell)` for `StormCloud.evolve()` (`StormCloud.java:44`): the scene decides what turns to water. */
+	makeWaterCell?: (x: number, y: number) => void;
+	/** `Char.Property.FIERY` occupants of a storm cloud take `1 + scalingDepth/5` (`StormCloud.java:55`). */
+	stormCloudBurn?: (target: Creature) => void;
 	/** Flamable-terrain destruction under inferno (`Level.destroy`). */
 	isFlammableCell?: (x: number, y: number) => boolean;
 	destroyFlammableCell?: (x: number, y: number) => void;
@@ -81,6 +85,17 @@ export function applyEnvironmentalBlobs(context: EnvironmentalBlobsContext): voi
 	context.advance('smokeScreen', isSolid);
 	context.advance('inferno', isSolid);
 	context.advance('blizzard', isSolid);
+	context.advance('stormCloud', isSolid);
+	//`StormCloud.evolve()` (`actors/blobs/StormCloud.java`, tag `v3.3.8`): every live cell turns to water, puts its `Fire` out and
+	//hurts a FIERY occupant as if it stood in toxic gas.
+	for (const cell of context.cellsAbove('stormCloud', 0.0001)) {
+		context.makeWaterCell?.(cell.x, cell.y);
+		context.clearFireCell?.(cell.x, cell.y);
+		const target = context.creatureAt(cell.x, cell.y);
+		// `StormCloud.evolve()` checks `ch.isImmune(StormCloud.class)` before its FIERY test
+		// (`actors/blobs/StormCloud.java`, tag `v3.3.8`); BlobImmunity still allows the cell's water/fire effects.
+		if (target && !context.isBlobImmune?.(target)) context.stormCloudBurn?.(target);
+	}
 	//`Inferno.evolve()` (tag `v3.3.8`): every live cell clears `Fire` and `Freezing`
 	//there; meeting `Blizzard` annihilates both instead of burning; otherwise chars
 	//reignite (`Fire.burn`) and flamable terrain is destroyed. Flamable 4-neighbours

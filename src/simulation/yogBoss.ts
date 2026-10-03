@@ -178,6 +178,17 @@ export function yogPhaseAdvance(phase: number, hp: number, maxHp: number): boole
 	return phase >= 1 && phase < 4 && hp <= yogPhaseThreshold(phase, maxHp);
 }
 
+/** Resolve `YogDzewa.damage()`'s post-super.damage HP floor (`actors/mobs/YogDzewa.java`,
+ * tag `v3.3.8`). Cooldown acceleration uses this post-clamp HP delta, not raw incoming damage. */
+export function yogDamageResolution(phase: number, preHp: number, hpAfterDamage: number, maxHp: number): { hp: number; hpLost: number; advances: boolean } {
+	// Dormant Yog is invulnerable in `isInvulnerable()`, so the superclass leaves HP at preHp.
+	if (phase === 0) return { hp: preHp, hpLost: 0, advances: false };
+	const hp = phase < 4 ? Math.max(hpAfterDamage, yogPhaseThreshold(phase, maxHp))
+		: phase === 4 ? Math.max(hpAfterDamage, yogPhase4Floor(maxHp)) : hpAfterDamage;
+	const hpLost = Math.max(0, preHp - hp);
+	return { hp, hpLost, advances: yogPhaseAdvance(phase, hp, maxHp) };
+}
+
 /** Bright/Dark fist half-HP edge: crossing HT/2 from above, clamped back to HT/2. */
 export function fistHalfHpCrossed(preHp: number, hp: number, maxHp: number): boolean {
 	return preHp > maxHp / 2 && hp <= maxHp / 2;

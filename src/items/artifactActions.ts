@@ -15,12 +15,10 @@ export interface ArtifactActionContext {
 	spendActivationTurn?(): void;
 	flushTimeBubblePresses(): void;
 	say(line: string, level?: 'info' | 'positive' | 'negative' | 'warning'): void;
-	/** Shared hero damage boundary (Tenacity/AntiMagic/Viscosity/RockArmor/Barrier), matching
-	 * every other hero-inflicted-on-self source (bomb blast, trap damage). */
-	absorbHeroDamage(amount: number): number;
-	showHeroDamage(amount: number): void;
-	/** Kills the hero with the given death cause (see `DungeonScene.kill`'s cause union). */
-	killHero(cause: 'foe' | 'trap' | 'fire' | 'poison' | 'hunger'): void;
+	/** Rolls the port's combined hero DR range for self-damage effects that call Hero.drRoll(). */
+	rollHeroArmorDR(): number;
+	/** Sends already-rolled self-damage through `Char.damage()`'s shared dispatch. */
+	applyHeroDamage(amount: number, onHeroDeath: () => void): boolean;
 	/** Optional scene hooks. These are the seams the *scene* supplies rather than the artifact's
 	 *  own module: everything this interface used to declare optional for an unimplemented artifact
 	 *  (`spawnAlly`, `revealNearbyTraps`) was removed with the stand-in that needed it, which is
@@ -34,6 +32,8 @@ export interface ArtifactActionContext {
 	 * Catalyst already uses, letting `UnstableSpellbook`'s read action reuse it for whichever
 	 * scroll class its own draw picks (see `useSpellbook`/`randomSpellbookScroll` below). */
 	castScrollEffect?(id: string): boolean;
+	/** `UnstableSpellbook`'s `WndOptions` between the drawn scroll and its exotic counterpart. */
+	chooseSpellbookScroll?(regularId: string, exoticId: string, onPick: (exotic: boolean) => void): void;
 }
 
 /** `TimekeepersHourglass.timeFreeze`: freeze automatic actors while hero actions are free. */
@@ -89,13 +89,12 @@ export function useCloak(scene: ArtifactActionContext, instanceId?: string): voi
 /** `ChaliceOfBlood.execute(AC_PRICK)`/`prick()` (tag `v3.3.8`): real Java rolls
  * `NormalIntRange(ceil(3 + 2.5*level^2), floor(7 + 3.5*level^2))` self-damage, subtracts the
  * hero's own `drRoll()` (armor), then calls `hero.damage(damage, this)` - killing the hero on a
- * lethal roll, otherwise permanently upgrading the chalice (capped at `levelCap = 10`). This port
- * reuses the shared `absorbHeroDamage` boundary (Tenacity/AntiMagic/Viscosity/RockArmor/Barrier)
- * the same way every other hero-inflicted-on-self source does (bomb blast, trap damage), but does
- * **not** additionally subtract the hero's own armor roll first: no existing hook exposes a bare
- * armor-only roll to a bespoke item action (only `applyBlastDamage`'s *monster* branch resolves
- * armor, and that call site's own hero branch already skips it too - see its comment), so this is
- * a stated simplification, not a silent omission. Real Java also shows a `WndOptions`
+ * lethal roll, otherwise permanently upgrading the chalice (capped at `levelCap = 10`). The port
+ * subtracts its combined hero DR range, then sends the result through the shared `Char.damage()`
+ * dispatch for the hero's defense and death hooks. **Simplified:** Java rolls Barkskin, worn armor,
+ * weapon defense, and HoldFast as separate terms (and applies strength penalties); this port's
+ * `hero.armor` range folds the modeled terms together into one roll and omits the strength penalties.
+ * Real Java also shows a `WndOptions`
  * confirmation naming the exact death chance before pricking; this port has no equivalent
  * computed-odds confirmation window (matching every other "use item on self" action here that
  * skips Java's own modal) and pricks immediately. The passive `chaliceRegen` half is not here:
@@ -112,15 +111,9 @@ export function useChalice(scene: ArtifactActionContext, instanceId?: string): v
 	}
 	const minDmg = Math.ceil(mwlItemEffectValue('chalice', 'minDmgBase') + mwlItemEffectValue('chalice', 'minDmgPerLevelSq') * level * level);
 	const maxDmg = Math.floor(mwlItemEffectValue('chalice', 'maxDmgBase') + mwlItemEffectValue('chalice', 'maxDmgPerLevelSq') * level * level);
-	const damage = Math.max(1, scene.absorbHeroDamage(Random.normalRange(minDmg, maxDmg)));
-	scene.showHeroDamage(damage);
+	const damage = Math.max(1, Random.normalRange(minDmg, maxDmg) - scene.rollHeroArmorDR());
 	scene.say(t('items.artifacts.chaliceofblood.onprick'), 'warning');
-	scene.hero.hp -= damage;
-	if (scene.hero.hp <= 0) {
-		scene.say(t('items.artifacts.chaliceofblood.ondeath'), 'negative');
-		scene.killHero('trap');
-		return;
-	}
+	if (scene.applyHeroDamage(damage, () => scene.say(t('items.artifacts.chaliceofblood.ondeath'), 'negative'))) return;
 	chalice.level = level + 1;
 }
 
@@ -413,6 +406,8 @@ export function applyChainsGainExp(scene: Pick<ArtifactActionContext, 'bag' | 's
 	chains.partialCharge = partialCharge;
 }
 
+import { scrollExoticResult } from './alchemy';
+
 export type SpellbookItem = { level?: number; charge?: number; partialCharge?: number; cursed?: boolean; scrolls?: string[] };
 
 /** `Generator.Category.SCROLL`'s real class list and `defaultProbsTotal` weights (`decks.mwl`'s
@@ -474,12 +469,10 @@ export function spellbookChargeCap(level: number): number {
 /** `UnstableSpellbook.execute(AC_READ)`/`doReadEffect()` (tag `v3.3.8`): a blinded hero is refused
  * with the book's `blinded` line before charge is spent; otherwise the action spends one charge
  * and applies a freshly drawn regular scroll's real effect through the same `applyScrollEffect`
- * seam the Arcane Catalyst already uses (`scene.castScrollEffect`). The real "empowered" branch
- * (a `WndOptions` choice to read the drawn scroll's *exotic* counterpart once
- * its regular class has already graduated out of the queue) is **Not ported**: this port's item
- * catalogue has no `ExoticScroll` classes at all (the same gap `randomAlchemicalPotion`/
- * `randomArcaneScroll` already document for the two catalysts), so every read always applies the
- * regular scroll's effect regardless of queue state. Two of the ten drawable classes
+ * seam the Arcane Catalyst already uses (`scene.castScrollEffect`). The "empowered" branch (R045, 2026-10-02): once the drawn
+ * scroll's class has graduated out of the queue and a charge is left, a choice offers the regular or the
+ * exotic scroll (the exotic costs a second charge). Dismissing that window still spends the charge and reads
+ * nothing, where Java's `ExploitHandler` forces the regular read. Two of the ten drawable classes
  * (`scrollIdentify`/`scrollCleanse`) are not yet implemented by `applyScrollEffect` itself (an
  * existing gap shared with the Arcane Catalyst's own use of the same seam, not introduced here);
  * drawing one still spends the charge, matching Java's unconditional `charge--`, but currently
@@ -496,6 +489,16 @@ export function useSpellbook(scene: ArtifactActionContext, instanceId?: string):
 	if (charge <= 0) { scene.say(t('items.artifacts.unstablespellbook.no_charge'), 'negative'); return; }
 	book.charge = charge - 1;
 	const scrollId = randomSpellbookScroll();
+	//`charge > 0 && !scrolls.contains(scroll.getClass())`: with a charge left and the drawn scroll already fed to the book, Java offers its
+	//exotic counterpart for a second charge (`read_empowered`).
+	const exoticId = scrollExoticResult(scrollId);
+	if (book.charge > 0 && exoticId && !(book.scrolls ?? []).includes(scrollId) && scene.chooseSpellbookScroll) {
+		scene.chooseSpellbookScroll(scrollId, exoticId, (exotic) => {
+			if (exotic) book.charge = (book.charge ?? 1) - 1;
+			scene.castScrollEffect?.(exotic ? exoticId : scrollId);
+		});
+		return;
+	}
 	scene.castScrollEffect?.(scrollId);
 }
 

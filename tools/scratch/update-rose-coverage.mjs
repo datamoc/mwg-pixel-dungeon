@@ -1,0 +1,13 @@
+import { readFileSync, writeFileSync } from 'node:fs';
+
+const path = 'coverage/rows-hero-and-armor-abilities.md';
+let text = readFileSync(path, 'utf8');
+const petalResidual = /\*\*Simplified\*\*: the petal's cell is chosen[\s\S]*?\(open residual moved to `ROADMAP\.md` R042\)/;
+const petalEvidence = "**Ported (2026-09-29):** petal placement now follows `RegularLevel.randomDropCell()` (`RegularLevel.java`, tag `v3.3.8`): shuffle the room list per attempt, skip `roomEntrance`, sample a `StandardRoom` interior with margin 1, and apply Java's passable/solid/exit/heap/room/mob predicate plus Burning/Blazing/Chilling/Frost/Explosive/Disintegration/Pitfall exclusions. `AquariumRoom.canPlaceItem()` excludes WATER, `CavesFissureRoom` excludes EMPTY_SP, and `PlantsRoom` excludes occupied plant cells. **Simplified (fallback generator only):** Java queries actual `StandardRoom` subclasses; `generateSpdDungeon` exposes unlabeled rectangles, so the first is treated as the entrance and the rest as standard-room stand-ins without subclass filters. The `no_room` petal is consumed like Java's and still spends the turn.";
+if (!petalResidual.test(text)) throw new Error('Could not find the R042 petal residual');
+text = text.replace(petalResidual, petalEvidence);
+const oldVerify = "Browser save/load verifies the active GhostHero, equipment-derived stats, DIRECT defend cell/moving flag, and `firstSummon`; the enemy target reference is not persisted by Java either. Petal cells still omit Java's room/trap exclusions, and outfit/combat still needs live verification; both remain open under `ROADMAP.md` R042.";
+const newVerify = "The enemy target reference is not persisted by Java either. **Live-verified in built Chrome (2026-09-29):** the real `AC_OUTFIT` flow equipped a Tier 1 Sword and Tier 1 armor; GhostHero's 1-10 weapon damage reduced a real rat from 8 to 4, and a controlled 10-damage mob swing fell to 9 through the ghost's 0-2 armor DR. Save, mutation, and load restored the active GhostHero pointer, HP and gear-derived stats, Rose-owned weapon/armor, DIRECT defend cell/moving flag, and `firstSummon`. The petal picker returned 20 valid cells in labeled StandardRooms; constrained live checks rejected Aquarium water, CavesFissure EMPTY_SP, an occupied PlantsRoom cell, and a DisintegrationTrap cell while allowing water in an ordinary StandardRoom. No Chrome console errors. `tools/verifyItemWorkflows.mjs` also pins room filtering, ordered exclusions, and the 100-attempt limit.";
+if (!text.includes(oldVerify)) throw new Error('Could not find the R042 live-verification residual');
+text = text.replace(oldVerify, newVerify);
+writeFileSync(path, text);

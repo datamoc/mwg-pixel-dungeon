@@ -16,6 +16,8 @@ export interface RingEquipmentContext {
 	markRingTypesKnown(ids: string[]): void;
 	/** Test Subject / Tested Hypothesis on any newly-identified item (see the row). */
 	procIdentifyTalents(): void;
+	/** `ShardOfOblivion.passiveIDDisabled()`: the item is only made ready to identify (true when handled). */
+	shardMarkReady?(item: { id: string; instanceId?: string }): boolean;
 	itemDisplayName(id: string, identified: boolean, instanceId?: string): string;
 	syncHeroFromStats(): void;
 	say(line: string, level?: 'info' | 'positive' | 'negative' | 'warning'): void;
@@ -34,10 +36,12 @@ export function equipRing(scene: RingEquipmentContext, id: string, instanceId?: 
 	//Rank 1 Thief's Intuition reveals the ring's type in Java (`Ring.setKnown()`,
 	//level/curse stay hidden): `markRingTypesKnown` records exactly that, so rank 2
 	//below is the full identification it has always been.
-	if (scene.heroClass === 'rogue' && scene.talentRank('thiefs_intuition') >= 2) {
+	//`Talent.onItemEquipped()`: any rank of Thief's Intuition marks the ring type known; rank 2 identifies it - or, under the
+	//Shard of Oblivion, only makes it ready (`setIDReady()`).
+	if (scene.talentRank('thiefs_intuition') >= 1) scene.markRingTypesKnown([id]);
+	if (scene.talentRank('thiefs_intuition') >= 2 && !scene.shardMarkReady?.(item)) {
 		const newlyIdentified = !item.identified;
 		Actors.identify(item);
-		scene.markRingTypesKnown([id]);
 		if (newlyIdentified) scene.procIdentifyTalents();
 	}
 	if (scene.equippedRing?.cursed && scene.hero.magicImmune !== true && scene.equippedRing.id !== id) {
@@ -84,7 +88,7 @@ export interface GearEquipmentContext {
 	 * doc comment; equipping alone never implies it. */
 	armorIdentified: boolean;
 	/** `Armor.doEquip()`'s seal-transfer offer; the scene owns the window and the rule. */
-	offerSealTransfer(outgoingWasSealed: boolean, incomingCursed: boolean): void;
+	offerSealTransfer(outgoingWasSealed: boolean, incomingCursed: boolean, sealGlyph: string | null): void;
 	weaponId: string; weaponInstanceId?: string; weaponLevel: number; weaponTier: number; weaponAffix: string | null; weaponHardened: boolean; weaponCursed: boolean; weaponCursedKnown: boolean;
 	weaponIdentified: boolean;
 	/** Java's slots hold the item object itself (`hero.belongings.weapon = this`), so the worn
@@ -105,6 +109,7 @@ export interface GearEquipmentContext {
 	talentRank(id: string): number;
 	/** Test Subject / Tested Hypothesis on any newly-identified item (see the row). */
 	procIdentifyTalents(): void;
+	shardMarkReady?(item: { id: string; instanceId?: string }): boolean;
 	syncHeroFromStats(): void;
 	say(line: string, level?: 'info' | 'positive' | 'negative' | 'warning'): void;
 	/** Both equip sides pay for themselves in Java: the outgoing piece unequips
@@ -119,6 +124,9 @@ export interface GearEquipmentContext {
 export function equipArmor(scene: GearEquipmentContext, id: string, instanceId?: string): void {
 	const item = scene.bag.find(id, instanceId);
 	if (!item || scene.armorInstanceId === item.instanceId) return;
+	// `Armor.checkSeal().getGlyph()` retains the curse glyph that was on the outgoing
+	// armor when its seal was attached; keep that value across replacing `armorGlyph` below.
+	const outgoingSealGlyph = scene.armorSealed ? scene.armorGlyph : null;
 	//`EquipableItem.doUnequip()` (`EquipableItem.java`, inherited by `Armor`, tag `v3.3.8`)
 	//refuses removal only while the
 	//armor item's own `cursed` flag is set. A curse glyph can remain equipped and still
@@ -127,9 +135,8 @@ export function equipArmor(scene: GearEquipmentContext, id: string, instanceId?:
 		scene.say(t('port.log.armorcursed'), 'negative');
 		return;
 	}
-	if ((scene.heroClass === 'duelist' && scene.talentRank('adventurers_intuition') >= 2)
-		|| (scene.heroClass === 'warrior' && scene.talentRank('veterans_intuition') >= 2)
-		|| (scene.heroClass === 'huntress' && scene.talentRank('survivalists_intuition') >= 2)) {
+	//`Talent.onItemEquipped()`: Veteran's Intuition rank 2 identifies worn armor (the Shard of Oblivion only makes it ready).
+	if (scene.talentRank('veterans_intuition') >= 2 && !scene.shardMarkReady?.(item)) {
 		const newlyIdentified = !item.identified;
 		Actors.identify(item);
 		if (newlyIdentified) scene.procIdentifyTalents();
@@ -187,7 +194,7 @@ export function equipArmor(scene: GearEquipmentContext, id: string, instanceId?:
 	//window opens - 2 turns together, `EquipableItem.timeToEquip` = 1f.
 	scene.spendTurn(2);
 	//After the equip, as in Java: the offer is about the armor now being worn.
-	scene.offerSealTransfer(outgoingWasSealed, item.cursed ?? false);
+	scene.offerSealTransfer(outgoingWasSealed, item.cursed ?? false, outgoingSealGlyph);
 }
 
 export interface ClassArmorState { armorInstanceId?: string; armorLevel: number; armorTier: number; armorGlyph: string | null; armorHardened: boolean; armorIdentified: boolean; armorCursed: boolean; armorCursedKnown: boolean; armorCurseInfusionBonus: boolean; armorSealed: boolean }
@@ -244,9 +251,8 @@ export function equipWeapon(scene: GearEquipmentContext, id: string, instanceId?
 		scene.say(t('port.log.weaponcursed'), 'negative');
 		return;
 	}
-	if ((scene.heroClass === 'duelist' && scene.talentRank('adventurers_intuition') >= 2)
-		|| (scene.heroClass === 'warrior' && scene.talentRank('veterans_intuition') >= 2)
-		|| (scene.heroClass === 'huntress' && scene.talentRank('survivalists_intuition') >= 2)) {
+	//`Talent.onItemEquipped()`: Adventurer's Intuition rank 2 identifies a wielded weapon (the Shard of Oblivion only makes it ready).
+	if (scene.talentRank('adventurers_intuition') >= 2 && !scene.shardMarkReady?.(item)) {
 		const newlyIdentified = !item.identified;
 		Actors.identify(item);
 		if (newlyIdentified) scene.procIdentifyTalents();
@@ -292,7 +298,7 @@ export function equipWeapon(scene: GearEquipmentContext, id: string, instanceId?
 	//= 1f. SwiftEquip overrides that with `timeToEquip` 0 while `isSwiftEquipping`, and the port
 	//prints Java's `swift_equip` line on the same condition (talent rank owned); the real 20-turn
 	//charge budget (1 free swap, 2 at rank 2) is not modeled, so the talent reads as always ready.
-	const swiftEquipping = scene.heroClass === 'duelist' && scene.talentRank('swift_equip') > 0;
+	const swiftEquipping = scene.talentRank('swift_equip') > 0;
 	if (swiftEquipping) scene.say(t('items.kindofweapon.swift_equip'), 'positive');
 	else scene.say(t('port.log.weaponequipped', { level: scene.effectiveWeaponLevel() }), 'positive');
 	scene.spendTurn(swiftEquipping ? 0 : 2);

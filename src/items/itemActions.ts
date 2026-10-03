@@ -1,11 +1,15 @@
 import { SPECIALTY_BOMB_IDS } from './itemKinds';
 import { isClassArmorId } from './catalog';
 import { isBagId, type BagId } from './bags';
+import { CAN_CHOOSE_THROW_FRUIT_POTION_IDS, DEFAULT_THROW_FRUIT_POTION_IDS } from './blandfruit';
 
 /** Scene services exposed to the item-action router. Item classification and routing belong to
  * the item domain; the scene remains responsible for turn state and effect implementations. */
 export interface ItemActionContext {
 	readonly awaitingInput: boolean;
+	findHeld(id: string, instanceId?: string): { potionAttrib?: string } | undefined;
+	throwBagItem(id: string, instanceId?: string): void;
+	chooseFruitAction(id: string, instanceId?: string): void;
 	setRequestedItem(id: string | null, instanceId?: string): void;
 	onAction(action: string): boolean;
 	equipRing(id: string, instanceId?: string): void;
@@ -15,6 +19,8 @@ export interface ItemActionContext {
 	equipWand(instanceId?: string): void;
 	chooseWandUse(instanceId?: string): void;
 	mineWithPickaxe(): void;
+	/** `ShardOfOblivion.AC_IDENTIFY` (the trinket's default action). */
+	useShardOfOblivion(): void;
 	plantSeed(): void;
 	useHourglass(instanceId?: string): void;
 	useCloak(instanceId?: string): void;
@@ -38,6 +44,7 @@ export interface ItemActionContext {
 	useBomb(id: string, instanceId?: string): void;
 	useHoneypot(instanceId?: string): void;
 	useBrew(id: string, instanceId?: string): void;
+	useUnstableBrew(instanceId?: string): void;
 	useStylus(instanceId?: string): void;
 	useBrokenSeal(instanceId?: string): void;
 	useAlchemize(instanceId?: string): void;
@@ -45,6 +52,7 @@ export interface ItemActionContext {
 	useTengusMask(instanceId?: string): void;
 	useFeatherFall(instanceId?: string): void;
 	useWildEnergy(instanceId?: string): void;
+	useUnstableSpell(instanceId?: string): void;
 	useTelekineticGrab(instanceId?: string): void;
 	usePhaseShift(instanceId?: string): void;
 	useSummonElemental(instanceId?: string): void;
@@ -154,14 +162,24 @@ export function useItemById(scene: ItemActionContext, id: string, instanceId?: s
 		// `Food.execute(AC_EAT)` covers every Food subclass in Java, including the alchemy
 		// outputs StewedMeat and MeatPie; this port resolves their shared hunger transaction
 		// through `eatFood()` rather than maintaining one action branch per food class.
-		if (id === 'food' || id === 'smallRation' || id === 'berry' || id === 'supplyRation' || id === 'phantomMeat' || id === 'meat' || id === 'chargrilledMeat' || id === 'frozenCarpaccio' || id === 'stewedMeat' || id === 'meatPie' || id === 'pasty') scene.onAction('eat');
-		else if (id === 'waterskin' || id.startsWith('potion')) scene.onAction('quaff');
+		if (id === 'blandfruit') {
+			// `Blandfruit.defaultAction()` delegates to its anonymous potion. Java's anonymous
+			// potion reports known, so must-throw attribs default to AC_THROW; their chosen
+			// unit must reach the same throw seam as a manual item-window action.
+			const potion = scene.findHeld(id, instanceId)?.potionAttrib;
+			if (potion && DEFAULT_THROW_FRUIT_POTION_IDS.has(potion)) scene.throwBagItem(id, instanceId);
+			else if (potion && CAN_CHOOSE_THROW_FRUIT_POTION_IDS.has(potion)) scene.chooseFruitAction(id, instanceId);
+			else scene.onAction('eat');
+		}
+		else if (id === 'food' || id === 'smallRation' || id === 'berry' || id === 'supplyRation' || id === 'phantomMeat' || id === 'meat' || id === 'chargrilledMeat' || id === 'frozenCarpaccio' || id === 'stewedMeat' || id === 'meatPie' || id === 'pasty' || id === 'chunks') scene.onAction('eat');
+		else if (id === 'waterskin' || id.startsWith('potion') || id === 'elixirAquaticRejuvenation') scene.onAction('quaff');
 		else if (id.startsWith('scroll')) scene.onAction(id === 'scrollUpgrade' ? 'upgrade' : 'read');
 		else if (id.startsWith('ring_')) scene.equipRing(id, instanceId);
 		else if (isClassArmorId(id)) scene.transferClassArmor(id, instanceId);
 		else if (id === 'clothArmor' || id === 'armor' || id === 'armorReward') scene.equipArmor(id, instanceId);
 		else if (id === 'weaponReward') scene.equipWeapon(id, instanceId);
 		else if (id === 'wand') scene.chooseWandUse(instanceId);
+		else if (id === 'trinketShardOfOblivion') scene.useShardOfOblivion();
 		else if (id === 'pickaxe') scene.mineWithPickaxe();
 		else if (id === 'seed') scene.plantSeed();
 		else if (id === 'hourglass') scene.useHourglass(instanceId);
@@ -186,6 +204,7 @@ export function useItemById(scene: ItemActionContext, id: string, instanceId?: s
 		else if (id === 'bomb' || SPECIALTY_BOMB_IDS.has(id)) scene.useBomb(id, instanceId);
 		else if (id === 'honeypot') scene.useHoneypot(instanceId);
 		else if (id === 'shockingBrew' || id === 'causticBrew' || id === 'infernalBrew' || id === 'blizzardBrew') scene.useBrew(id, instanceId);
+		else if (id === 'unstableBrew') scene.useUnstableBrew(instanceId);
 		else if (id === 'stylus') scene.useStylus(instanceId);
 		else if (id === 'brokenSeal') scene.useBrokenSeal(instanceId);
 		else if (id === 'alchemize') scene.useAlchemize(instanceId);
@@ -193,6 +212,7 @@ export function useItemById(scene: ItemActionContext, id: string, instanceId?: s
 		else if (id === 'tengusMask') scene.useTengusMask(instanceId);
 		else if (id === 'featherFall') scene.useFeatherFall(instanceId);
 		else if (id === 'wildEnergy') scene.useWildEnergy(instanceId);
+		else if (id === 'unstableSpell') scene.useUnstableSpell(instanceId);
 		else if (id === 'telekineticGrab') scene.useTelekineticGrab(instanceId);
 		else if (id === 'phaseShift') scene.usePhaseShift(instanceId);
 		else if (id === 'summonElemental') scene.useSummonElemental(instanceId);

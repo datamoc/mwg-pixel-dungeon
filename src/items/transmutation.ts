@@ -5,8 +5,9 @@ import { t } from '../i18n';
 import { empoweringScrollsCharges } from '../talentEffects';
 import { RING_DEFS, ringDef, ringMightBonus, type EquippedRing } from './ringModifiers';
 import { MWL_CONSUMABLE_CLASS_ALIASES, MWL_MISSILE_DEFINITIONS, MWL_WAND_DEFINITIONS } from '../mwlContent';
-import { potionRegularCounterpart } from './alchemy';
+import { potionRegularCounterpart, scrollRegularCounterpart } from './alchemy';
 import { MISSILE_MAX_DURABILITY, TIPPED_DART_BY_SEED, missileStackId, recordMissileUpgrade } from './missiles';
+import { TRINKETS, isTrinketId } from '../simulation/trinkets';
 
 /**
  * `ScrollOfTransmutation.changeItem()`'s per-category decks, adapted to this port's ids
@@ -121,6 +122,8 @@ export function isTransmutableForScroll(item: { id: string; sourceClass?: string
 	if (id === 'seed') return true;
 	if (id === 'stone' || id.startsWith('stoneOf')) return true;
 	if (id === 'cloak') return true;
+	//`ScrollOfTransmutation.usableOnItem()`: "all rings, wands, trinkets, seeds, and runestones".
+	if (isTrinketId(id)) return true;
 	//`changeTippedDart`/`changeWeapon`'s missile half: every carried `missile_*` stack,
 	//tipped or not (real Java takes all missiles except the plain `Dart`, which has no
 	//port id at all). Carried wands with a class transmute through `changeWand`; the
@@ -148,7 +151,8 @@ export function isTransmutableForScroll(item: { id: string; sourceClass?: string
  * its item and only re-imbues, which a tier-only model cannot do); `changeArtifact`'s
  * different-artifact reroll collapses to Java's own no-artifacts-left fallback (a random
  * ring at +0/+1/+2 by visible upgrades - here a flat +0, since the `cloak` stand-in
- * carries no upgrade level); trinket rerolls don't exist (no trinket items here).
+ * carries no upgrade level); a trinket (`changeTrinket`) rerolls into a different one of the seventeen with its level
+ * kept - a uniform draw here rather than `Generator.random(TRINKET)`'s deck.
  * Returns `undefined` only defensively (a one-entry deck), in which case the caller
  * keeps the scroll, mirroring the `result == null` path.
  */
@@ -160,6 +164,11 @@ export function transmuteItem(target: TransmutableItem, newItemInstanceId: (kind
 		if (pool.length === 0) return undefined;
 		const picked = Random.element(pool)!;
 		return { id: 'weaponReward', quantity: 1, instanceId: newItemInstanceId('weapon'), identified: target.identified, level: target.level, affix: target.affix, cursed: target.cursed, sourceClass: picked };
+	}
+	if (isTrinketId(target.id)) {
+		const pool = TRINKETS.filter((trinket) => trinket.id !== target.id);
+		const picked = Random.element(pool)!;
+		return { id: picked.id, quantity: 1, instanceId: newItemInstanceId('trinket'), identified: true, level: target.level ?? 0, sourceClass: picked.cls };
 	}
 	if (target.id.startsWith('ring_')) {
 		const current = target.id.replace(/^ring_/, '');
@@ -184,7 +193,8 @@ export function transmuteItem(target: TransmutableItem, newItemInstanceId: (kind
 		//carried like every other branch. Regular inputs keep the port's
 		//random-regular simplification (stated above), which a fuller exotic
 		//roster will narrow pair by pair.
-		if (target.id === 'scrollPrismatic') return { id: 'scrollMirror', quantity: 1, stackable: true, identified: target.identified };
+		const regularScroll = scrollRegularCounterpart(target.id);
+		if (regularScroll) return { id: regularScroll, quantity: 1, stackable: true, identified: target.identified };
 		const pool = SCROLL_TRANSMUTE_POOL.filter((id) => id !== target.id);
 		if (pool.length === 0) return undefined;
 		return { id: Random.element(pool)!, quantity: 1, stackable: true, identified: target.identified };
@@ -342,7 +352,7 @@ export function transmuteCandidates(scene: TransmuteFlowContext): TransmuteCandi
  * scroll's selection while detaching the real target. `freeRecast` skips only the
  * read-scroll consume and the talent arms (empowered zaps, recall re-arm).
  */
-export function completeTransmutation(scene: TransmuteFlowContext, pick: { id: string; instanceId?: string }, scrollInstanceId?: string, opts?: { freeRecast?: boolean }): void {
+export function completeTransmutation(scene: TransmuteFlowContext, pick: { id: string; instanceId?: string }, scrollInstanceId?: string, opts?: { freeRecast?: boolean; generatedRead?: boolean }): void {
 	const live = (scene.bag.items as TransmuteCandidate[]).find(
 		(i) =>
 			i.quantity > 0 &&
@@ -365,7 +375,7 @@ export function completeTransmutation(scene: TransmuteFlowContext, pick: { id: s
 		return;
 	}
 	const free = opts?.freeRecast === true;
-	if (!free) scene.bag.remove('scrollTransmutation', 1, scrollInstanceId);
+	if (!free && !opts?.generatedRead) scene.bag.remove('scrollTransmutation', 1, scrollInstanceId);
 	//`Scroll.readAnimation()`'s talent hook follows a successful transmutation selection;
 	//recalled reads pass talentChance 0 (`Scroll.java`/`ScrollOfTransmutation.java`, tag `v3.3.8`).
 	if (!free) scene.onScrollUsed();
@@ -374,7 +384,7 @@ export function completeTransmutation(scene: TransmuteFlowContext, pick: { id: s
 	//skipped, with the recall re-arm below, on a free re-read (`talentChance = 0`).
 	//A paid read arms with the transmutation class (`Scroll.readAnimation()` reads
 	//with talentChance 1).
-	if (!free && scene.heroClass === 'mage' && scene.talentRank('empowering_scrolls') > 0) {
+	if (!free && scene.talentRank('empowering_scrolls') > 0) {
 		scene.empoweredZaps = empoweringScrollsCharges(scene.talentRank('empowering_scrolls'));
 	}
 	if (!free) scene.armRecallInscription('ScrollOfTransmutation');
@@ -423,7 +433,7 @@ export function completeTransmutation(scene: TransmuteFlowContext, pick: { id: s
  * list consumes nothing (Java's `result == null` path collects `curItem` back),
  * logging the real `nothing` key. Returns true when the picker takes over.
  */
-export function startTransmutationPick(scene: TransmuteFlowContext, scrollInstanceId?: string, opts?: { freeRecast?: boolean }): boolean {
+export function startTransmutationPick(scene: TransmuteFlowContext, scrollInstanceId?: string, opts?: { freeRecast?: boolean; generatedRead?: boolean }): boolean {
 	const candidates = transmuteCandidates(scene);
 	if (candidates.length === 0) {
 		scene.say(t('items.scrolls.scrolloftransmutation.nothing'), 'negative');

@@ -1,3 +1,4 @@
+import { heroWeaponStrReq } from '../strengthGear';
 import type { DungeonScene } from '../../dungeonScene';
 import { Game, Random, Roguelike } from 'mwg';
 import { activeChallengeCount } from '../../../challenges';
@@ -17,6 +18,7 @@ import { ARMOR_CHARGE_START, armorAbilitiesFor } from '../../../armorAbilities';
 import { endureBankedDamage, endureDamageTaken, endureEndingBonus } from '../../../simulation/warriorAbilities';
 import { ratsistanceFactor, useRatmogrifyFlow, type RatmogrifyContext } from '../../../simulation/ratmogrify';
 import { markRingTypesKnown, ringTypesKnownFor, thiefsIntuitionKnownIds } from '../../../simulation/ringKnow';
+import { markMindFormItemDiscovered } from '../../../items/mindFormDiscovery';
 import { potionKindsKnownFor } from '../../../items/potionKnow';
 import { BADGE_DEFS, BADGE_ICON } from '../../../badges';
 import { Cat, randomUsingDefaults, type GenItem } from '../../../items/generator';
@@ -27,15 +29,17 @@ import { gainSpareWandCharge } from '../../../simulation/spareWands';
 import { equipWand as equipInventoryWand, type EquipWandContext } from '../../../items/equipWand';
 import { imbueStaffLevel, setStaffImbue, staffCurseChargePool, staffImbueFor, wandTypeFromSource } from '../../../items/wands';
 import { WAND_KEYS } from '../../../i18n/spdKeys';
+import { lethalHasteDuration } from '../../../talentEffects';
 import { showChoiceWindow, showConfirmWindow } from '../../../ui/portWindows';
+import { passiveIdDisabled, shardMarkReady } from '../passiveId';
 import { useChalice as useArtifactChalice, useCloak as useArtifactCloak, useHourglass as useArtifactHourglass, useKingsCrown as useArtifactKingsCrown, type ArtifactActionContext } from '../../../items/artifactActions';
 import { applyScrollEffect, readScrollFlow } from '../../../items/scrollEffects';
 import { openAlchemyRecipes } from '../../../items/alchemy';
 import { useReturningBeaconFlow } from '../../../items/beacon';
-import { useCurseInfusionFlow, useFeatherFallFlow, useMagicalInfusionFlow, usePhaseShiftFlow, useReclaimTrapFlow, useRecycleFlow, useTelekineticGrabFlow, useWildEnergyFlow, type CastBase, type CurseInfusionContext, type FeatherFallContext, type InfusionBase, type PhaseShiftContext, type ReclaimTrapContext, type RecycleContext, type TargetedSpellAim, type TelekineticGrabContext, type WildEnergyContext } from '../../../items/spells';
+import { rollUnstableSpellScroll, useCurseInfusionFlow, useFeatherFallFlow, useMagicalInfusionFlow, usePhaseShiftFlow, useReclaimTrapFlow, useRecycleFlow, useTelekineticGrabFlow, useWildEnergyFlow, type CastBase, type CurseInfusionContext, type FeatherFallContext, type InfusionBase, type PhaseShiftContext, type ReclaimTrapContext, type RecycleContext, type TargetedSpellAim, type TelekineticGrabContext, type WildEnergyContext } from '../../../items/spells';
 import { equipArmor as equipInventoryArmor, equipRing as equipInventoryRing, equipWeapon as equipInventoryWeapon, type GearEquipmentContext, type RingEquipmentContext } from '../../../items/equipment';
 import { itemDisplayName as resolveItemDisplayName, type ItemDisplayContext } from '../../../items/displayName';
-import { canSurpriseAttack, weaponSTRReq } from '../../../items/strReq';
+import { canSurpriseAttack } from '../../../items/strReq';
 import { FLOOR, TILE, TRAP, WALL, type TrapKind } from '../../../dungeonConstants';
 import { addBuff, reigniteBuff, type Creature, type GroundItem } from '../../../combat';
 import { BOSS_KINDS, MINIBOSS_KINDS, type AnyMonsterId, type MonsterId } from '../../../monsters';
@@ -150,7 +154,7 @@ export const weaponSpellsGearMethods = {
 		//for every ability including the self-cast ones below. That catalogue key
 		//postdates this port's strings, so the fully-translated generic
 		//`ability_cant_use` speaks for it ("can't use that ability right now").
-		if (weaponSTRReq(this.weaponTier, this.weaponLevel) > (this.hero.str ?? 0)) {
+		if (heroWeaponStrReq(this) > (this.hero.str ?? 0)) {
 			this.say(t('items.weapon.melee.meleeweapon.ability_cant_use'), 'negative');
 			return;
 		}
@@ -394,9 +398,15 @@ export const weaponSpellsGearMethods = {
 		}
 	},
 
-	/** Cleave's kill refund (`ability_desc`: a killing cleave re-casts free within 5 turns). */
+	/** Cleave's kill refund (`ability_desc`: a killing cleave re-casts free within 5 turns), plus
+	 * `MeleeWeapon.onAbilityKill()` (`MeleeWeapon.java:231-236`, tag `v3.3.8`): an enemy killed by a
+	 * weapon ability (or a Harvest bleed, `Bleeding.java:121`) grants Lethal Haste's `GreaterHaste`
+	 * `2 + 2*points` - no cooldown, unlike the `Mob.die()` half (`lethalHasteOnKill`). The port's
+	 * single `haste` buff stands in for `GreaterHaste`, kept at the longer of the two. */
 	onAbilityKill(this: DungeonScene, kind: string): void {
 		if (kind === 'cleave') this.cleaveFreeTurns = 5;
+		const rank = this.talentRank('lethal_haste');
+		if (rank > 0) this.hero.buffs['haste'] = Math.max(this.hero.buffs['haste'] ?? 0, lethalHasteDuration(rank));
 	},
 
 	/** Applies `beforeAbilityUsed`'s partial-first spend. The gate in `useWeaponAbility`
@@ -780,6 +790,27 @@ export const weaponSpellsGearMethods = {
 	},
 
 	/**
+	 * `UnstableSpell.onCast()` (`items/spells/UnstableSpell.java`, tag `v3.3.8`):
+	 * consume the cube, roll the weighted combat/noncombat scroll pool, and execute
+	 * that scroll's ordinary effect and onScrollUsed hooks. The Java generated Scroll
+	 * has no backpack entry; `generatedRead` preserves that while allowing its real
+	 * effect to use the existing dispatcher.
+	 */
+	useUnstableSpell(this: DungeonScene, instanceId?: string): void {
+		if (!this.bag.find('unstableSpell', instanceId)) return;
+		const visibleEnemies = this.creatures.filter((creature) => !creature.isHero && !creature.isAlly
+			&& !creature.isNPC && creature.hp > 0 && this.fov.isVisible(creature.x, creature.y)).length;
+		const scrollId = rollUnstableSpellScroll(visibleEnemies);
+		this.bag.remove('unstableSpell', 1, instanceId);
+		this.refresh();
+		//`UnstableSpell.onCast()` hands a generated scroll to `doRead()`; if its
+		//ScrollOfTransmutation picker is abandoned Java recollects that Scroll from
+		//`curItem`. This port's item picker has no cancel callback, so that one
+		//abandoned generated scroll is lost (documented in the item coverage row).
+		readScrollFlow(this.readScrollContext(), { generatedRead: true, forceItemId: scrollId });
+	},
+
+	/**
 	 * The WildEnergy self-cast lives in `items/spells.ts` behind `WildEnergyContext` -
 	 * the file-size refactor's twenty-first extraction (with FeatherFall above),
 	 * behavior-identical.
@@ -1051,9 +1082,11 @@ export const weaponSpellsGearMethods = {
 	 * one persistent level. Java removes that bonus when the curse is cleansed; this port's
 	 * cleanse path removes the curse affix but does not yet reverse the level marker. Both
 	 * omissions are recorded in PORT_COVERAGE.md rather than hidden in the action. A cursed
- * staff also runs Java's `MagesStaff.updateWand(true)` charge half through
- * `infuseStaffCharges` (the level sync is a shared-`weaponLevel` no-op); the
- * Ring-of-Might `updateHT` half stays not ported (R004 sub-clause (c)). */
+	 * staff also runs Java's `MagesStaff.updateWand(true)` charge half through
+	 * `infuseStaffCharges` (the level sync is a shared-`weaponLevel` no-op). There is no
+	 * Ring-of-Might `updateHT` half to port (R004 sub-clause (c), closed): Java's own branch
+	 * is unreachable - `Ring extends KindofMisc`, so no ring passes `usableOnItem` and the
+	 * picker never offers one (see `usableForCurseInfusion`, which refuses rings too). */
 	useCurseInfusion(this: DungeonScene, instanceId?: string): void {
 		useCurseInfusionFlow(this.curseInfusionContext(), instanceId);
 	},
@@ -1149,16 +1182,21 @@ export const weaponSpellsGearMethods = {
 			get cloakStealthTurnsToCost() { return scene.cloakStealthTurnsToCost; }, set cloakStealthTurnsToCost(value) { scene.cloakStealthTurnsToCost = value; },
 			spendActivationTurn: () => { scene.armEnhancedRingsFromArtifact(); scene.actionSpentTurn = true; scene.spendHeroTurn(1); },
 			flushTimeBubblePresses: this.flushTimeBubblePresses.bind(this), say: this.say.bind(this),
-			absorbHeroDamage: (amount) => this.absorbHeroDamage(amount),
-			showHeroDamage: (amount) => this.showDamage(this.hero, amount),
-			killHero: (cause) => this.kill(this.hero, cause),
+			rollHeroArmorDR: () => Random.normalRange(this.hero.armor[0], this.hero.armor[1]),
+			applyHeroDamage: (amount, onHeroDeath) => this.applyCharacterDamage(this.hero, amount, {
+				pierceArmor: true, cause: 'trap', onHeroDeath,
+			}),
 			//`UnstableSpellbook.doReadEffect()`'s real effect application, shared with the
 			//Arcane Catalyst's own direct `applyScrollEffect` call - see `useSpellbook`.
 			//Identify and Remove Curse live in `readScrollFlow` (they need the bag), not in `applyScrollEffect`, so those
 			//two draws take the same free re-read `RecallInscription` uses (`freeRecast`: nothing consumed, no talent procs,
 			//`Scroll.doRead()` with `talentChance = 0`); before this they spent the charge and did nothing (R045).
 			castScrollEffect: (id) => applyScrollEffect(id, this.scrollEffectsContext())
-				|| ((id === 'scrollIdentify' || id === 'scrollCleanse') && readScrollFlow(this.readScrollContext(), { freeRecast: true, forceItemId: id })),
+				|| ((id === 'scrollIdentify' || id === 'scrollCleanse') && readScrollFlow(this.readScrollContext(), { freeRecast: true, forceItemId: id }))
+				//the exotic pickers (Enchantment, Metamorphosis, Siren's Song) read as a generated scroll: the choice is made, nothing is spent
+				|| ((id === 'scrollEnchantment' || id === 'scrollMetamorphosis' || id === 'scrollSirensSong') && readScrollFlow(this.readScrollContext(), { generatedRead: true, forceItemId: id })),
+			chooseSpellbookScroll: (regularId, exoticId, onPick) => showChoiceWindow(this.gameWindows, t('items.artifacts.unstablespellbook.prompt'), t('items.artifacts.unstablespellbook.read_empowered'),
+				[{ label: this.itemDisplayName(regularId, true), onPick: () => onPick(false) }, { label: this.itemDisplayName(exoticId, true), onPick: () => onPick(true) }]),
 			//`AlchemistsToolkit.execute(AC_BREW)` (R076): `AlchemyScene.assignToolkit(this)` then the
 			//alchemy scene - a toolkit session, so the banked charge counts and pays (`viaToolkit`).
 			openAlchemyPot: () => {
@@ -1213,6 +1251,7 @@ export const weaponSpellsGearMethods = {
 			talentRank: this.talentRank.bind(this), itemDisplayName: this.itemDisplayName.bind(this),
 			markRingTypesKnown: (ids) => markRingTypesKnown(this, ids),
 			procIdentifyTalents: this.procIdentifyTalents.bind(this),
+			shardMarkReady: (item) => shardMarkReady(this, item),
 			syncHeroFromStats: this.syncHeroFromStats.bind(this), say: this.say.bind(this),
 			spendTurn: (cost: number) => {
 				if (cost <= 0) return;
@@ -1274,6 +1313,7 @@ export const weaponSpellsGearMethods = {
 			setArmorGlyph: this.setArmorGlyph.bind(this),
 			talentRank: this.talentRank.bind(this), syncHeroFromStats: this.syncHeroFromStats.bind(this), say: this.say.bind(this),
 			procIdentifyTalents: this.procIdentifyTalents.bind(this),
+			shardMarkReady: (item) => shardMarkReady(this, item),
 			//A cost of 0 (SwiftEquip's instant swap) spends nothing and does not mark the action
 			//as having consumed the turn, so the hero simply stays ready - Java reaches the same
 			//place through `spendAndNext( 0 )`.
@@ -1370,6 +1410,7 @@ export const weaponSpellsGearMethods = {
 			set wandCharges(value) { thisScene.wandCharges = value; },
 			talentRank: this.talentRank.bind(this), say: this.say.bind(this),
 			procIdentifyTalents: this.procIdentifyTalents.bind(this),
+			markDiscovered: (item) => markMindFormItemDiscovered(thisScene, item),
 		};
 	},
 
@@ -1505,8 +1546,8 @@ export const weaponSpellsGearMethods = {
 		//*units* toward one charge while this port's `wandCharges` uses `regenRate: 1`. The
 		//correct amount is what N real turns of the *current* passive regen rate would have
 		//produced: that same per-turn fraction, scaled by N.
-		const heal = this.heroClass === 'warrior' ? this.talentRank('test_subject') : 0;
-		const charge = this.heroClass === 'mage' ? this.talentRank('tested_hypothesis') : 0;
+		const heal = this.talentRank('test_subject');
+		const charge = this.talentRank('tested_hypothesis');
 		if (heal > 0) { this.hero.hp = Math.min(this.hero.maxHp, this.hero.hp + heal + 1); this.showHeal(this.hero, heal + 1); }
 		if (charge > 0) {
 			const missing = this.wandCharges.max - this.wandCharges.current;
@@ -1525,7 +1566,7 @@ export const weaponSpellsGearMethods = {
 		//`Talent.onTalentUpgraded()`'s Thief's Intuition half: rank 1 marks the worn
 		//ring's type known, rank 2 identifies it and marks every carried ring's type
 		//(the rule itself lives in `simulation/ringKnow.ts`, pinned by suite).
-		if (talentId === 'thiefs_intuition' && this.heroClass === 'rogue' && (newRank === 1 || newRank === 2)) {
+		if (talentId === 'thiefs_intuition' && (newRank === 1 || newRank === 2)) {
 			const worn = this.equippedRing ? [this.equippedRing.id] : [];
 			const carried = newRank === 2
 				? this.bag.items.filter((item) => item.id.startsWith('ring_')).map((item) => item.id)
@@ -1533,15 +1574,17 @@ export const weaponSpellsGearMethods = {
 			markRingTypesKnown(this, thiefsIntuitionKnownIds(worn, carried, newRank));
 		}
 		if (newRank !== 2) return;
+		//`Talent.onTalentUpgraded()`: the rank-2 identifications are skipped while a Shard of Oblivion is carried
+		if (passiveIdDisabled(this)) return;
 		let newlyIdentified = false;
-		if (talentId === 'veterans_intuition' && this.heroClass === 'warrior' && !this.armorIdentified) {
+		if (talentId === 'veterans_intuition' && !this.armorIdentified) {
 			this.armorIdentified = true;
 			newlyIdentified = true;
-		} else if (talentId === 'thiefs_intuition' && this.heroClass === 'rogue'
+		} else if (talentId === 'thiefs_intuition'
 			&& this.equippedRing && !this.equippedRing.identified) {
 			this.equippedRing.identified = true;
 			newlyIdentified = true;
-		} else if (talentId === 'adventurers_intuition' && this.heroClass === 'duelist' && !this.weaponIdentified) {
+		} else if (talentId === 'adventurers_intuition' && !this.weaponIdentified) {
 			this.weaponIdentified = true;
 			newlyIdentified = true;
 		}

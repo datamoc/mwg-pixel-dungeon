@@ -7,6 +7,7 @@ import { Terrain } from '../../../spdLevelGen/paintLevel';
 import { groundKindForItem } from '../../../items/itemKinds';
 import { showChoiceWindow } from '../../../ui/portWindows';
 import { AREA_SHATTER_POTION_IDS, shatterPotionAt } from '../../../items/potionEffects';
+import { CAN_CHOOSE_THROW_FRUIT_POTION_IDS, FRUIT_NAME_KEYS, VOLATILE_FRUIT_POTION_IDS, findFruitStack, fruitDescBody, removeFruitUnits } from '../../../items/blandfruit';
 import { canDropBagItem, canThrowBagItem, potionThrowsByDefault, shatterHasEffect, snuffBombFuseOnFreeze, throwLanding, throwNeedsConfirm, MUST_THROW_POTIONS } from '../../../items/dropThrow';
 
 /**
@@ -14,6 +15,19 @@ import { canDropBagItem, canThrowBagItem, potionThrowsByDefault, shatterHasEffec
  * bag, the heap an item lands on (`Level.drop`, see `spawnGroundItem`), the aim and the turn clock.
  */
 export const dropThrowMethods = {
+	/** `Blandfruit.defaultAction()` -> `Potion.AC_CHOOSE` -> `WndUseItem` (tag `v3.3.8`):
+	 * the port's compact action picker offers the same implemented Eat, Throw and Drop verbs. */
+	chooseFruitAction(this: DungeonScene, id: string, instanceId?: string): void {
+		const item = id === 'blandfruit' ? findFruitStack(this.bag, instanceId) : undefined;
+		const potion = (item as (typeof item & { potionAttrib?: string }) | undefined)?.potionAttrib;
+		if (!item || !potion || !CAN_CHOOSE_THROW_FRUIT_POTION_IDS.has(potion)) return;
+		showChoiceWindow(this.gameWindows, t(FRUIT_NAME_KEYS[potion]!), fruitDescBody(potion), [
+			{ label: t('items.food.food.ac_eat'), onPick: () => { this.requestedItemId = id; this.requestedItemInstanceId = instanceId; this.onAction('eat'); } },
+			{ label: t('items.item.ac_throw'), onPick: () => this.throwBagItem(id, instanceId) },
+			{ label: t('items.item.ac_drop'), onPick: () => this.dropBagItem(id, instanceId) },
+		]);
+	},
+
 	/** What the item window offers for a bag entry: Drop, Throw, and Drink for a known malevolent flask. */
 	itemVerbs(this: DungeonScene, id: string, known: boolean): { drop: boolean; throw: boolean; drink: boolean } {
 		return { drop: canDropBagItem(id), throw: canThrowBagItem(id), drink: potionThrowsByDefault(id, known) };
@@ -24,10 +38,12 @@ export const dropThrowMethods = {
 	 * lies there) and the action costs one turn (`TIME_TO_DROP`).
 	 */
 	dropBagItem(this: DungeonScene, id: string, instanceId?: string): void {
-		const item = this.bag.find(id, instanceId);
+		const item = id === 'blandfruit' ? findFruitStack(this.bag, instanceId) : this.bag.find(id, instanceId);
 		if (!item || !canDropBagItem(id)) return;
 		const payload = { ...item } as NonNullable<GroundItem['item']>;
-		this.bag.remove(id, item.quantity, item.instanceId);
+		if (id === 'blandfruit') {
+			if (!removeFruitUnits(this.bag, item, item.quantity)) return;
+		} else this.bag.remove(id, item.quantity, item.instanceId);
 		this.spawnGroundItem(groundKindForItem(payload, 'food'), this.hero.x, this.hero.y, payload);
 		this.refreshInventoryPanel();
 		this.actionSpentTurn = true;
@@ -40,7 +56,7 @@ export const dropThrowMethods = {
 	 * (`Potion.doThrow`).
 	 */
 	throwBagItem(this: DungeonScene, id: string, instanceId?: string): void {
-		const item = this.bag.find(id, instanceId);
+		const item = id === 'blandfruit' ? findFruitStack(this.bag, instanceId) : this.bag.find(id, instanceId);
 		if (!item || !canThrowBagItem(id)) return;
 		const aim = (): void => {
 			this.beginAiming({
@@ -60,7 +76,7 @@ export const dropThrowMethods = {
 	},
 
 	finishThrow(this: DungeonScene, id: string, instanceId: string | undefined, target: { x: number; y: number }): void {
-		const item = this.bag.find(id, instanceId);
+		const item = id === 'blandfruit' ? findFruitStack(this.bag, instanceId) : this.bag.find(id, instanceId);
 		if (!item) return;
 		//`Item.throwPos`: the projectile line stops on the first creature or before the first blocking cell.
 		const path = Roguelike.traceLine({ x: this.hero.x, y: this.hero.y }, target);
@@ -69,8 +85,11 @@ export const dropThrowMethods = {
 			(x, y) => this.creatureAt(x, y) !== null);
 		//`Item.detach(backpack)`: exactly one unit leaves the stack.
 		const payload = { ...item, quantity: 1 } as NonNullable<GroundItem['item']>;
-		this.bag.remove(id, 1, item.instanceId);
+		if (id === 'blandfruit') {
+			if (!removeFruitUnits(this.bag, item, 1)) return;
+		} else this.bag.remove(id, 1, item.instanceId);
 		if (id.startsWith('potion')) this.shatterThrownPotion(id, landing);
+		else if (id === 'blandfruit') this.shatterThrownFruit(payload, landing);
 		else this.spawnGroundItem(groundKindForItem(payload, 'food'), landing.x, landing.y, payload);
 		this.refreshInventoryPanel();
 		this.actionSpentTurn = true;
@@ -99,6 +118,27 @@ export const dropThrowMethods = {
 			return;
 		}
 		if (this.fov.isVisible(at.x, at.y)) this.say(t('items.potions.potion.shatter'));
+	},
+
+	/**
+	 * `Blandfruit.onThrow()` (tag `v3.3.8`): a well or a pit takes the fruit as an
+	 * ordinary drop; a volatile brew (fire, frost, toxic, paralytic, levitation,
+	 * purity) breaks into its potion's own shatter and leaves a `Chunks` heap
+	 * behind; every other fruit - plain or cooked - drops plainly like one.
+	 * Unlike a flask, the fruit never hard-presses the cell or clears fire first:
+	 * Java calls `potionAttrib.shatter(cell)` directly, not `Potion.onThrow`.
+	 */
+	shatterThrownFruit(this: DungeonScene, payload: NonNullable<GroundItem['item']>, at: { x: number; y: number }): void {
+		const raw = this.portedPaint?.map[this.level.index(at.x, at.y)];
+		const brewed = (payload as typeof payload & { potionAttrib?: string }).potionAttrib;
+		if (this.isChasmCell(at.x, at.y) || raw === Terrain.WELL || brewed === undefined || !VOLATILE_FRUIT_POTION_IDS.has(brewed)) {
+			this.spawnGroundItem('food', at.x, at.y, payload);
+			return;
+		}
+		// `Blandfruit.imbuePotion()` anonymizes the embedded potion (v3.3.8), so
+		// visible shattering must not reveal its regular potion class.
+		shatterPotionAt(this.potionEffectsContext(), brewed, at.x, at.y, { anonymous: true });
+		this.spawnGroundItem('food', at.x, at.y, { id: 'chunks', quantity: 1, identified: true });
 	},
 
 	/**

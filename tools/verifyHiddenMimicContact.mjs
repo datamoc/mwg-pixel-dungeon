@@ -39,6 +39,8 @@ assert.equal(planHiddenMimicContact({ ...base, kind: 'crystalMimic', attackMode:
 assert.equal(planHiddenMimicContact({ ...base, mimicRevealed: true }).reveal, 'none', 'revealed Mimic has no bump branch');
 assert.equal(planHiddenMimicContact({ ...base, mimicRevealed: undefined }).reveal, 'none', 'unset chest-Mimic state is not treated as hidden');
 
+assert.equal(planHiddenMimicContact({ ...base, ebony: true }).counterDamage, 2 * planHiddenMimicContact(base).counterDamage, 'a hidden Ebony Mimic hits for double (EbonyMimic.damageRoll)');
+
 const sceneSource = readFileSync(fileURLToPath(new URL('../src/scenes/dungeon/combatResolution.ts', import.meta.url)), 'utf8');
 const onHitReveal = sceneSource.indexOf("mimicContact.revealWhen === 'onHit'");
 const missBranch = sceneSource.indexOf('if (!attackRoll.hit)');

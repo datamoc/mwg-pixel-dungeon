@@ -35,16 +35,17 @@ export function sealActivate(state: SealState, maxShield: number): SealState {
 /**
  * `act()` for one turn. Cooldown ticks down while regeneration is on. With shield up: no visible enemy and no Combo
  * for five turns drops the whole shield and refunds up to half the remaining cooldown in proportion to what was left
- * (`int` cast); any enemy in view resets the count.
+ * (`int` cast); any enemy in view resets the count. The idle count grows by `decayFactor` (Java's
+ * `HoldFast.buffDecayFactor`, default 1) instead of a flat 1.
  */
-export function sealTick(state: SealState, args: { regenOn: boolean; shielding: number; enemiesVisible: boolean; comboActive: boolean }): { state: SealState; dropShield: boolean } {
+export function sealTick(state: SealState, args: { regenOn: boolean; shielding: number; enemiesVisible: boolean; comboActive: boolean; decayFactor?: number }): { state: SealState; dropShield: boolean } {
 	let { cooldown, turnsSinceEnemies } = state;
 	const { initialShield } = state;
 	if (cooldown > 0 && args.regenOn) cooldown--;
 	let dropShield = false;
 	if (args.shielding > 0) {
 		if (!args.enemiesVisible && !args.comboActive) {
-			turnsSinceEnemies += 1;
+			turnsSinceEnemies += args.decayFactor ?? 1; //`HoldFast.buffDecayFactor(target)`: 0.5/0.25/0 holding the wait cell
 			if (turnsSinceEnemies >= 5) {
 				if (cooldown > 0) {
 					const percentLeft = args.shielding / initialShield;

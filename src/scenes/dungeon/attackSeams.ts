@@ -3,6 +3,7 @@
  * scene as `this`; `dungeonScene.ts` merges them back onto the class prototype.
  * Source-level pins in `tools/verifyCombat.mjs` read the whole scene directory,
  * so they cover these seams wherever the methods live. */
+import { recoverFromFear } from '../../simulation/fear';
 import type { DungeonScene } from '../dungeonScene';
 import { faceCharacter, placeCharacterArt } from '../../ui/characterPlacement';
 import { AnimatedSprite, Random, Roguelike, SpriteSheet } from 'mwg';
@@ -645,7 +646,7 @@ export const attackSeamMethods = {
 				//Endless Rage's old free-turn line is gone outright: real `ENDLESS_RAGE` only raises
 				//the Berserk rage cap (`1+0.1667x` max power), which needs the rage gain/decay clock
 				//this port doesn't model (see the Berserk row) - a free turn had no Java basis.
-				if (attacker.isHero && this.heroClass === 'warrior' && this.talentRank('lethal_momentum') > 0 && Random.chance(this.talentRank('lethal_momentum') >= 2 ? 1 : 2 / 3)) this.freeTurnNext = true;
+				if (attacker.isHero && this.talentRank('lethal_momentum') > 0 && Random.chance(this.talentRank('lethal_momentum') >= 2 ? 1 : 2 / 3)) this.freeTurnNext = true;
 				if (attacker.isHero) this.lethalHasteOnKill();
 				this.kill(defender);
 				return true;
@@ -826,6 +827,7 @@ export const attackSeamMethods = {
 				delete defender.buffs['magicalSleep'];
 				delete defender.buffs['paralysis'];
 			}
+			recoverFromFear(defender.buffs); //`Char.damage()`: `Terror.recover()` / `Dread.recover()`
 			this.sprite(defender).setColorAdd(1, 1, 1);
 			//the one log line whose severity depends on which way the blow went: SPD colours
 			//damage the hero takes red and leaves the hero's own hits plain

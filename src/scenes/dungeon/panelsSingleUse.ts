@@ -1,3 +1,9 @@
+import { idProgressFor } from './passiveId';
+import { masteredItemsFor } from '../../items/mastery';
+import { metamorphedFor } from '../../items/metamorphosis';
+import { heroTalentDefinitions } from './metamorphScroll';
+import { divineStateFor } from '../../items/divineInspiration';
+import { recoverFromFear } from '../../simulation/fear';
 import type { DungeonScene } from '../dungeonScene';
 import type { SaveShape } from './shared';
 import { fallenItemStore } from './fallenItems';
@@ -14,13 +20,14 @@ import { uiMode } from '../../settings';
 import { Container, Graphics, Rectangle, Sprite, Texture } from 'mwg/two-d/pixi-interop';
 import { Actors, Bar, Blob, Button, Game, Label, Random, Roguelike, Rpg, Window, WindowStack, theme } from 'mwg';
 import { MISSILE_MAX_DURABILITY } from '../../items/missiles';
-import { cureHeroBuffs } from '../../items/potionEffects';
+import { cureHeroBuffs, shatterPotionAt } from '../../items/potionEffects';
 import { aimBombFlow, useBomb as useItemBomb, type BombAimContext } from '../../items/bombs';
 import { detonateBomb, type BombEffectsContext, type CharacterDamageOptions } from '../../items/bombEffects';
 import { sourceElementResisted } from '../../simulation/buffs';
 import { isBagId } from '../../items/bags';
 import { isResurrectKeepCandidate, partitionResurrectKeeps } from '../../items/resurrect';
 import { useStoneOfAggression as useItemStoneOfAggression, useStoneOfAugmentation as useItemStoneOfAugmentation, useStoneOfBlast as useItemStoneOfBlast, useStoneOfBlink as useItemStoneOfBlink, useStoneOfClairvoyance as useItemStoneOfClairvoyance, useStoneOfDeepSleep as useItemStoneOfDeepSleep, useStoneOfEnchantment as useItemStoneOfEnchantment, useStoneOfFear as useItemStoneOfFear, useStoneOfFlock as useItemStoneOfFlock, useStoneOfShock as useItemStoneOfShock } from '../../items/stones';
+import { appearanceKindOf } from '../../items/alchemy';
 import { openAlchemySlots, type AlchemySlotsContext } from '../../items/alchemySlots';
 import { createAlchemyWindowHost } from '../../ui/alchemyWindow';
 import { applyDefenderDamageCurves } from '../../simulation/defenderDamageCurves';
@@ -48,11 +55,12 @@ import { ARMOR_CHARGE_START, armorAbilitiesFor, armorAbilityDef, armorAbilityKey
 import { prismaticGuardMaxHp } from '../../simulation/prismatic';
 import { ignoresCrystalGuardianBeckon } from '../../simulation/crystalSpire';
 import { markRingTypesKnown } from '../../simulation/ringKnow';
+import { restoreMindFormDiscoveries } from '../../items/mindFormDiscovery';
 import { markPotionKindsKnown } from '../../items/potionKnow';
 import { isWandType, setStaffImbue } from '../../items/wands';
 import { CLASSES } from '../../classes';
 import { showChallengesWindow, showChoiceWindow } from '../../ui/portWindows';
-import { useBrewFlow, type BrewFlowContext } from '../../simulation/brews';
+import { rollUnstableBrewDrink, rollUnstableBrewShatter, useBrewFlow, type BrewFlowContext } from '../../simulation/brews';
 import { useHoneypotFlow, type HoneypotFlowContext } from '../../items/honeypot';
 import { useAnkhFlow, type AnkhContext } from '../../items/selfUse';
 import { Banner } from '../../ui/banner';
@@ -71,6 +79,7 @@ import { WATER } from '../../dungeonConstants';
 import { BUFF_DURATION, absorbShield, addBuff, doomDamage, npcHasNoOpDamageAndBuff, setAnnounceBuff, setAttachBacklash, setBuffDurationModifier, type BuffId, type Creature, type GroundItem, type Step } from '../../combat';
 import { BOSSES } from '../../monsters';
 import { APPEARANCE_TABLES, AUGMENT_OPTIONS, BLACKSMITH_QUEST, IMP_QUEST, SAD_GHOST_QUEST, SPD_LEVEL_CURVE, SUBCLASS_OPTIONS, SUBCLASS_TRACK, WANDMAKER_QUEST } from './shared';
+import { armorSpeedCostFactor, weaponDelayFactor } from './strengthGear';
 import { addBossScore, scoreStateFor } from '../../rankings';
 
 /**
@@ -133,6 +142,12 @@ export const panelsSingleUseMethods = {
 		this.trinityBodyGlyph = s.trinityBodyGlyph ?? null;
 		this.trinitySpiritEffect = s.trinitySpiritEffect ?? null;
 		this.trinityMindEffect = s.trinityMindEffect ?? null;
+		this.boomerangReturns = (s.boomerangReturns ?? (s.boomerangReturn ? [s.boomerangReturn] : [])).map((pending) => ({
+			...pending,
+			branch: pending.branch ?? false,
+			spawnedForEffect: pending.spawnedForEffect ?? false,
+			inFlight: false,
+		}));
 		this.skeletonKeyTracker = s.skeletonKeyTracker ?? null;
 		this.livingEarthArmor = s.livingEarthArmor ?? 0;
 		this.livingEarthWandLevel = s.livingEarthWandLevel ?? 0;
@@ -159,7 +174,7 @@ export const panelsSingleUseMethods = {
 		this.sealBarrier = s.sealBarrierState
 			? Actors.Barrier.fromJSON(s.sealBarrierState)
 			: new Actors.Barrier();
-		this.sealPartialGain = s.sealPartialGain ?? 0;
+		this.sealState = { cooldown: 0, turnsSinceEnemies: 0, initialShield: 0, ...(s.sealState ?? {}) };
 		//Pre-seal saves have no record either way; treat a Warrior's pre-existing run as unsealed
 		//rather than guessing whether the equipped armor is still the original starting piece.
 		this.armorSealed = s.armorSealed ?? false;
@@ -185,10 +200,12 @@ export const panelsSingleUseMethods = {
 		this.healingEvasionTurns = s.healingEvasionTurns ?? 0;
 		this.sungrassHealing = s.sungrassHealing ?? 0;
 		this.sungrassPartial = s.sungrassPartial ?? 0;
+		this.aquaHealingLeft = s.aquaHealingLeft ?? 0;
 		this.healingLeft = s.healingLeft ?? 0;
 		//Pre-`healingPercent` saves with an active heal were always on the potion's 25%.
 		this.healingPercent = s.healingPercent ?? (this.healingLeft > 0 ? 0.25 : 0);
 		this.healingFlat = s.healingFlat ?? 0;
+		this.healingLimited = s.healingLimited ?? false;
 		this.sungrassPos = s.sungrassPos ?? -1;
 		this.deathlessFuryUsed = s.deathlessFuryUsed ?? false;
 		this.momentumState = {
@@ -294,21 +311,26 @@ export const panelsSingleUseMethods = {
 		this.shopkeeperWarned = s.shopkeeperWarned ?? false;
 		this.blacksmithSpawned = s.blacksmithSpawned ?? this.blacksmithSpawned;
 		this.impSpawned = s.impSpawned ?? this.impSpawned;
-		//R015: older saves predate the score tables and start them fresh.
-		const scores = scoreStateFor(this);
-		scores.questScores = [0, 1, 2, 3, 4].map((i) => s.questScores?.[i] ?? 0);
-		scores.bossScores = [0, 1, 2, 3, 4].map((i) => s.bossScores?.[i] ?? 0);
-		scores.goldCollected = s.goldCollected ?? 0;
-		scores.floorsExplored = { ...(s.floorsExplored ?? {}) };
+		//Java persists `Imp.Quest.alternative`; this is the port's equivalent 5/4-token variant.
+		this.impNeed = s.impNeed ?? this.impNeed;
+		//Java bundles `Imp.Quest.reward`; older port saves generated it at turn-in and have no field.
+		this.impReward = s.impReward ?? null;
 		this.limitedDrops = Object.fromEntries(s.limitedDrops ?? []);
 		//Pre-bag saves carry no flags; velvet is the `initHero()` invariant, and any shop
 		//already visited will not rebuild its shelf (see the load path above), so it cannot
 		//re-offer what it already sold.
 		this.droppedBags = (s.droppedBags ?? ['velvetPouch']).filter(isBagId);
 		this.wealthTriesToDrop = s.wealthTriesToDrop ?? -1;
+		//R015: older saves predate the score tables and start them fresh.
+		const scores = scoreStateFor(this);
+		scores.questScores = [0, 1, 2, 3, 4].map((i) => s.questScores?.[i] ?? 0);
+		scores.bossScores = [0, 1, 2, 3, 4].map((i) => s.bossScores?.[i] ?? 0);
+		scores.goldCollected = s.goldCollected ?? 0;
+		scores.floorsExplored = { ...(s.floorsExplored ?? {}) };
 		this.wealthDropsToEquip = s.wealthDropsToEquip ?? -1;
 		this.suckerPunchTargets = new Set(s.suckerPunchTargets ?? []);
 		this.upgradeScrollDrops = s.upgradeScrollDrops ?? 0;
+		this.trinketCatalystDropped = s.trinketCatalystDropped ?? false;
 		this.cookingHpCount = s.cookingHpCount ?? 0;
 		this.blacksmithAlternative = s.blacksmithAlternative ?? this.blacksmithAlternative;
 		this.blacksmithQuestType = s.blacksmithQuestType ?? this.blacksmithQuestType;
@@ -355,7 +377,12 @@ export const panelsSingleUseMethods = {
 		this.armorHardened = s.armorHardened ?? false;
 		this.equippedRing = s.equippedRing ?? null;
 		markRingTypesKnown(this, s.ringTypesKnown ?? []);
+		restoreMindFormDiscoveries(this, s.mindFormDiscoveredTypes ?? []);
 		markPotionKindsKnown(this, s.potionKindsKnown ?? []);
+		for (const instanceId of s.masteryItems ?? []) masteredItemsFor(this).add(instanceId);
+		{ const map = idProgressFor(this); map.clear(); for (const [id, p] of Object.entries(s.idProgress ?? {})) map.set(id, { ...p }); }
+		{ const map = metamorphedFor(this); for (const key of Object.keys(map)) delete map[key]; Object.assign(map, s.metamorphedTalents ?? {}); }
+		{ const state = divineStateFor(this); state.boosted = [...(s.divineInspiration?.boosted ?? [])]; state.granted = [...(s.divineInspiration?.granted ?? [])]; }
 		this.ringHtBonus = s.ringHtBonus ?? 0;
 		this.advancement = s.advancement ? Actors.Advancement.fromJSON(SUBCLASS_TRACK, s.advancement) : new Actors.Advancement(SUBCLASS_TRACK);
 		//No subclass window is re-opened on load either: the choice belongs to the Tengu's mask, not to a level.
@@ -389,6 +416,7 @@ export const panelsSingleUseMethods = {
 			for (const item of this.bag.items) {
 				const source = s.bagSources?.find((saved) => saved.id === item.id && saved.instanceId === item.instanceId);
 				if (source?.sourceClass) (item as typeof item & { sourceClass?: string }).sourceClass = source.sourceClass;
+				if (source?.potionAttrib !== undefined) (item as typeof item & { potionAttrib?: string }).potionAttrib = source.potionAttrib;
 				if (source?.wealthDropTier !== undefined) (item as typeof item & { wealthDropTier?: 1 | 2 | 3 | 4 }).wealthDropTier = source.wealthDropTier;
 				const gearState = item as typeof item & { tier?: number; affix?: string; cursed?: boolean; level?: number; hardened?: boolean; curseInfusionBonus?: boolean; ghostWeapon?: SaveShape['bag'][number]['ghostWeapon']; ghostArmor?: SaveShape['bag'][number]['ghostArmor'] };
 				if (source?.level !== undefined) gearState.level = source.level;
@@ -543,12 +571,12 @@ export const panelsSingleUseMethods = {
 		setBuffDurationModifier((creature, effect, duration) => creature.isHero
 			? duration * ringElementsBuffDurationMultiplier(effect, this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing())
 			: duration);
-		//see attachBacklash's comment: the live scene is what turns attach-time backlash
-		//damage into a number and a death - `Elemental.add()`'s hate-listed opposite-
-		//element attaches (tag `v3.3.8`) deal `NormalIntRange(HT/2, HT*3/5)` instead.
+		//`Elemental.add()` calls `Char.damage(NormalIntRange(HT/2, HT*3/5), buff)` for
+		//opposite-element attaches (tag `v3.3.8`). Route the already-rolled amount through
+		//the shared damage boundary so Doom, invulnerability, shields, damage hooks and
+		//death are handled there instead of subtracting HP at the buff attach seam.
 		setAttachBacklash((creature, damage) => {
-			if (damage > 0) this.showDamage(creature, damage);
-			if (creature.hp <= 0) this.kill(creature);
+			this.applyCharacterDamage(creature, damage, { pierceArmor: true, cause: 'foe' });
 		});
 
 		//the keybind cheat-sheet used to be concatenated onto the end of the status line,
@@ -841,13 +869,8 @@ export const panelsSingleUseMethods = {
 		//(Cleric's CLEANSE/LIGHT_READING) beside the subclass three, keyed by
 		//talent so the class pair appears once. Other classes have no class
 		//tier-3 row, so their tab is unchanged.
-		const classTier3 = CLASS_TALENTS[this.heroClass]?.[2] ?? [];
-		const classTier3Ids = new Set(classTier3.map((def) => def.id));
-		const defs: TalentDefinition[] = this.talentTier === 3
-			? [...classTier3, ...subclassTalentDefinitions(this.subclass() ?? '', this.heroClass).filter((def) => !classTier3Ids.has(def.id))]
-			: this.talentTier === 4
-				? armorTalentDefinitions(this.armorAbility ?? '', this.heroClass)
-				: (CLASS_TALENTS[this.heroClass]?.[this.talentTier - 1] ?? []);
+		//the tab lists the hero's talents with any `ScrollOfMetamorphosis` swaps applied (`metamorphScroll.ts`)
+		const defs: TalentDefinition[] = heroTalentDefinitions(this, this.talentTier);
 		const panelHeight = 92;
 		this.talentPanel.addChild(new Graphics().roundRect(0, 0, width, panelHeight, 6)
 			.fill({ color: 0x101116, alpha: 0.96 }).stroke({ width: 2, color: 0x8b7651 }));
@@ -988,6 +1011,9 @@ export const panelsSingleUseMethods = {
 		// within PathFinder distance 3, speed is multiplied by
 		// `(1.2 + 0.04 * buffedLvl) * procChanceMultiplier()`. Turn cost is the
 		// inverse of speed, so apply that multiplier as a divisor here.
+		//`Armor.speedFactor()`'s `speed /= 1.2^encumbrance` for an armor above the hero's strength (the same blanket-cost
+		//stand-in as Swiftness, Flow and Bulk below - Java applies `Char.speed()` to movement only).
+		mod *= armorSpeedCostFactor(this);
 		if (this.armorGlyphActive() && this.armorGlyph === 'swiftness') {
 			const hasNearbyEnemy = this.hasSwiftnessEnemyNearby();
 			if (!hasNearbyEnemy) {
@@ -1012,6 +1038,8 @@ export const panelsSingleUseMethods = {
 		if (this.armorGlyph === 'bulk' && this.doors.isDoor(this.hero.x, this.hero.y)) mod /= (1 / 3) * this.genericProcMultiplier();
 		//Char.speed()'s real `if (buff(Haste.class)) speed *= 3f` (PotionOfHaste).
 		if (this.hero.buffs['haste']) mod /= 3;
+		//`Char.speed()`'s `if (buff(Stamina.class) != null) speed *= 1.5f` (Char.java:778, PotionOfStamina).
+		if (this.hero.buffs['stamina']) mod /= 1.5;
 		//`Hero.speed()`'s Nature's-Power line: `speed *= 2 + 0.25*GROWING_POWER` while the tracker is
 		//up, expressed as the turn-cost divisor this method uses for every other speed effect.
 		mod /= this.naturesPowerSpeedFactor();
@@ -1072,7 +1100,8 @@ export const panelsSingleUseMethods = {
 		//`Scimitar` sword dance: +60% attack speed while up (`ability_desc`).
 		const danceFactor = this.swordDanceTurns > 0 ? 1 / 1.6 : 1;
 		//`Hero.attackDelay()`: `weapon.delayFactor` - the class's `DLY` (gloves/sai/gauntlet 0.5, scimitar 0.8, spear/glaive 1.5).
-		const weaponDelay = weaponCombat(this.weaponMeleeKey(), this.weaponTier, 0).delay;
+		//`Weapon.baseDelay()`: `delay *= 1.2^encumbrance` while the hero is under the weapon's STRReq.
+		const weaponDelay = weaponCombat(this.weaponMeleeKey(), this.weaponTier, 0).delay * weaponDelayFactor(this);
 		return (this.getActionTurnCostMod() / ringFurorMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing())) * augmentDelayFactor * danceFactor * weaponDelay;
 	},
 
@@ -1159,7 +1188,7 @@ export const panelsSingleUseMethods = {
 	bagItemFrame(this: DungeonScene, id: string): number | undefined {
 		const category = id.startsWith('potion') ? 'potion' as const : id.startsWith('scroll') ? 'scroll' as const : null;
 		let appearance: number | undefined;
-		if (category) { try { appearance = appearanceItemFrame(category, this.appearances.appearanceOf(category, id)); } catch { appearance = undefined; } }
+		if (category) { try { appearance = appearanceItemFrame(category, this.appearances.appearanceOf(category, appearanceKindOf(id))); } catch { appearance = undefined; } }
 		return itemFrameFor(id, appearance);
 	},
 
@@ -1190,7 +1219,7 @@ export const panelsSingleUseMethods = {
 			displayName: (id, identified, instanceId) => this.itemDisplayName(id, identified, instanceId),
 			displayDescription: (id, instanceId) => {
 				const item = this.bag.items.find((candidate) => candidate.id === id && (candidate.instanceId ?? undefined) === (instanceId ?? undefined)) as (typeof this.bag.items[number] & { sourceClass?: string }) | undefined;
-				return itemDescription(id, item?.sourceClass, this.subclass() === 'warden');
+				return itemDescription(id, item?.sourceClass, { warden: this.subclass() === 'warden', potionAttrib: (item as typeof item & { potionAttrib?: string })?.potionAttrib, level: item?.level, heroMaxHp: this.hero.maxHp });
 			},
 			iconFrame: (id) => this.bagItemFrame(id),
 			onPick: (index) => this.chooseItemPicker(index),
@@ -1241,7 +1270,7 @@ export const panelsSingleUseMethods = {
 			onArtifactUsed: () => scene.armEnhancedRingsFromArtifact(),
 			say: this.say.bind(this),
 			openItemPicker: (title, entries, onPick) => this.openItemPicker(title, entries, onPick),
-			itemDisplayName: (id, identified) => this.itemDisplayName(id, identified),
+			itemDisplayName: (id, identified, instanceId) => this.itemDisplayName(id, identified, instanceId),
 			refreshInventoryPanel: this.refreshInventoryPanel.bind(this),
 			openAlchemySlots: () => openAlchemySlots(context),
 			showAlchemyWindow: slotWindow.show,
@@ -1535,6 +1564,57 @@ export const panelsSingleUseMethods = {
 		useBrewFlow(this.brewFlowContext(), brewId, instanceId);
 	},
 
+	/** `UnstableBrew`'s `AC_CHOOSE` default (`UnstableBrew.java`, tag `v3.3.8`): Java
+	 * opens the use window with Drink/Throw; the choice window is this port's
+	 * chooser stand-in (the mage-staff imbue precedent). The brew is always known
+	 * (`isKnown()` true), so no identification gate precedes the choice. */
+	useUnstableBrew(this: DungeonScene, instanceId?: string): void {
+		const brew = this.bag.find('unstableBrew', instanceId);
+		if (!brew) return;
+		const name = this.itemDisplayName('unstableBrew', brew.identified ?? false, brew.instanceId);
+		showChoiceWindow(this.gameWindows, name,
+			t('items.potions.brews.unstablebrew.desc'),
+			[
+				{ label: t('items.potions.potion.ac_drink'), onPick: () => this.drinkUnstableBrew(instanceId) },
+				{ label: t('items.item.ac_throw'), onPick: () => this.throwUnstableBrew(instanceId) },
+			]);
+	},
+
+	/** `UnstableBrew.apply()`: drink the rolled potion's own effect. The roll (and
+	 * its Pharmacophobia zeroing of Healing) lives in `simulation/brews.ts`; the
+	 * dispatch passes anonymous because Java `anonymize()`s the rolled flask, and
+	 * `Potion.setKnown()` is a no-op for anonymous potions - the rolled class
+	 * stays unknown. Like a quaffed potion, drinking spends no extra turn beyond
+	 * the use itself. */
+	drinkUnstableBrew(this: DungeonScene, instanceId?: string): void {
+		if (!this.bag.find('unstableBrew', instanceId)) return;
+		this.bag.remove('unstableBrew', 1, instanceId);
+		const rolled = rollUnstableBrewDrink(() => Random.float(), isChallengeEnabled('no_healing'));
+		this.applyPotionEffect(rolled, { anonymous: true });
+	},
+
+	/** `UnstableBrew.shatter()`: throw the rolled potion's shatter at the aimed
+	 * cell. Aim is the bomb gate at thrown-weapon range (Java flies the full
+	 * PROJECTILE line, the standing simplification every aimed throw makes); the
+	 * throw spends the turn like every other brew shatter. */
+	throwUnstableBrew(this: DungeonScene, instanceId?: string): void {
+		if (!this.bag.find('unstableBrew', instanceId)) return;
+		this.beginAiming({
+			range: 6,
+			validate: (cell) => this.level.passable(cell.x, cell.y) && !this.isChasmCell(cell.x, cell.y),
+			onConfirm: (cell) => {
+				if (!this.bag.find('unstableBrew', instanceId)) return;
+				this.bag.remove('unstableBrew', 1, instanceId);
+				const rolled = rollUnstableBrewShatter(() => Random.float());
+				//Anonymous like the drink: Java `anonymize()`s before `shatter()` too,
+				//so the FOV mark is suppressed exactly like `setKnown()` does.
+				shatterPotionAt(this.potionEffectsContext(), rolled, cell.x, cell.y, { anonymous: true });
+				this.actionSpentTurn = true;
+				this.spendHeroTurn(1);
+			},
+		});
+	},
+
 	/**
 	 * The brew throw/aim/shatter flow lives in `simulation/brews.ts` behind
 	 * `BrewFlowContext` - the file-size refactor's fifteenth extraction, behavior-identical.
@@ -1595,9 +1675,9 @@ export const panelsSingleUseMethods = {
 	applyCharacterDamage(this: DungeonScene, c: Creature, rawDamage: number, options: CharacterDamageOptions): boolean {
 		let damage = rawDamage;
 		if (c.isHero) {
-			//`Char.damage()` detaches `MagicalSleep` on any damage (tag `v3.3.8`); the attack tail carries the same line.
+				//`Char.damage()` detaches `MagicalSleep` on any damage (tag `v3.3.8`); the attack tail carries the same line.
 			if (this.hero.buffs['magicalSleep'] !== undefined) delete this.hero.buffs['magicalSleep'];
-			damage = this.absorbHeroDamage(damage, options.magical === true, false, options.heroAbsorb);
+		damage = this.absorbHeroDamage(damage, options.magical === true, false, options.heroAbsorb);
 			this.hero.hp -= damage;
 			this.showDamage(this.hero, damage);
 			if (this.hero.hp <= 0 && !options.deferKill) {
@@ -1643,6 +1723,7 @@ export const panelsSingleUseMethods = {
 		//apply Doom after Aura and before the target-specific curve and shields.
 		//`Char.damage()` detaches `MagicalSleep` on any damage, after PowerOfMany and before Doom (tag `v3.3.8`); the attack tail carries the same line.
 		if (c.buffs['magicalSleep'] !== undefined) delete c.buffs['magicalSleep'];
+		recoverFromFear(c.buffs); //`Char.damage()`: `Terror.recover()` / `Dread.recover()`
 		if (!options.skipDoom) damage = doomDamage(damage, c);
 		//`ShadowAlly.defenseProc()`'s AntiMagic/Viscosity shares (`ShadowClone.java`
 		//249-257, tag `v3.3.8`): a CLONED_ARMOR-gated clone defends with the *hero's*

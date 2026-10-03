@@ -58,6 +58,8 @@ export interface Combatant extends Step {
 	champion?: 'blessed' | 'blazing' | 'giant' | 'growing' | 'antimagic' | 'projecting' | null;
 	str?: number;
 	strReq?: number;
+	/** `Hero.drRoll()`'s `2 * (Armor.STRReq() - STR())`, subtracted from the armor roll (floored at 0). */
+	armorStrPenalty?: number;
 	/** DriedRose.GhostHero weapon defenseFactor; rolled independently after armor DR. */
 	weaponDefense?: number;
 	/** `Brute.BruteRage` active (post-revival), boosting `damageRoll()` to 15-40. */
@@ -65,6 +67,9 @@ export interface Combatant extends Step {
 	/** `ChampionEnemy.Growing`'s own growth multiplier, starting at 1.19 and rising 0.01/turn
 	 * (`Growing.act()`) - undefined for every other champion type/non-champion. */
 	championPower?: number;
+	/** `ThirteenLeafClover.alterHeroDamageChance()` (`items/trinkets/ThirteenLeafClover.java`, tag `v3.3.8`) for the hero only: the
+	 * chance a hero damage roll is replaced by its max (60%) or min (40%). Synced from the carried trinket. */
+	cloverChance?: number;
 	/** Barkskin (`actors/buffs/Barkskin.java`, tag `v3.3.8`): independent armor roll. */
 	barkskinLevel?: number;
 	barkskinInterval?: number;

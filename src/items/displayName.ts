@@ -4,13 +4,16 @@ import { wandTypeFromSource, type WandType } from './wands';
 import { ARMOR_NAME_BY_CLASS, STARTING_WEAPON_CLASS, WEAPON_NAME_BY_CLASS, isClassArmorId, weaponCombat } from './catalog';
 import { tippedDartNameKey, missileDamageRange } from './missiles';
 import { getCurse } from './itemCurses';
-import { potionRegularCounterpart } from './alchemy';
+import { appearanceKindOf, potionRegularCounterpart } from './alchemy';
+import { isTrinketId } from '../simulation/trinkets';
+import { trinketInfoText } from './trinketInfo';
 import { potionKindKnown } from './potionKnow';
 import { armorSTRReq, missileSTRReq, weaponSTRReq } from './strReq';
 import { TOME_SPELL_COST, type SubclassSpellId, type TalentSpellId, type TomeSpellId } from '../simulation/clericSpells';
 import { tomeSpellKey } from './holyTome';
-import { MWL_CONSUMABLE_DESCRIPTION_KEYS, MWL_EQUIPMENT_DESCRIPTION_KEYS, MWL_MISSILE_BY_CLASS, MWL_MISSILE_DESCRIPTION_KEYS, MWL_MISSILE_NAME_KEYS } from '../mwlContent';
 import { normalizePlantKindName, seedInfoBody } from './plantText';
+import { FRUIT_NAME_KEYS, fruitDescBody } from './blandfruit';
+import { MWL_CONSUMABLE_DESCRIPTION_KEYS, MWL_EQUIPMENT_DESCRIPTION_KEYS, MWL_MISSILE_BY_CLASS, MWL_MISSILE_DESCRIPTION_KEYS, MWL_MISSILE_NAME_KEYS } from '../mwlContent';
 
 /**
  * `Item.desc()` for a bag id: the flavour text Java's item-info window prints as its body.
@@ -28,20 +31,27 @@ import { normalizePlantKindName, seedInfoBody } from './plantText';
  *
  * `undefined` when nothing has one for the id (a picker's synthetic action id, say). Callers then
  * show no body rather than the key.
- *
- * Seeds resolve through `plantText` (`plants/Plant.java`, tag `v3.3.8`): Java has no generic
- * seed description - `Seed.desc()` is always its plant class's `desc` (plus `warden_desc`
- * for a Warden), and `Seed.info()` wraps that in `plants.plant$seed.info`. `isWarden`
- * carries the viewer's subclass; callers without one keep the previous generic outcome.
  */
-export function itemDescription(id: string, sourceClass?: string, isWarden = false): string | undefined {
-	//Seeds first: a known plant kind never falls through to the generic tables below.
-	const seedKind = id === 'seed' || sourceClass !== undefined ? normalizePlantKindName(sourceClass ?? id) : undefined;
-	if (seedKind !== undefined) return seedInfoBody(seedKind, isWarden);
+export function itemDescription(id: string, sourceClass?: string, opts: { warden?: boolean; potionAttrib?: string; level?: number; heroMaxHp?: number } = {}): string | undefined {
 	//The HolyTome is not one of the 13 real artifacts (no `artifacts.mwl` row, so no
 	//authored description key): its body is SPD's own tag-`v3.3.8`
 	//`items.artifacts.holytome.desc` under a `port.*` key (see `portStrings.ts`).
 	if (id === 'holyTome' && !sourceClass) return has('port.desc.holytome') ? t('port.desc.holytome') : undefined;
+	//`Plant.Seed.info()` (tag `v3.3.8`): the body is the plant's own `desc` wrapped in
+	//`plants.plant$seed.info`, with the `warden_desc` paragraph for a Warden - every
+	//seed the port mints carries its plant class in `sourceClass`, which is what names
+	//the plant kind. Bag seeds previously rendered no body at all (R113).
+	if (id === 'seed') {
+		const kind = normalizePlantKindName(sourceClass);
+		const info = kind === undefined ? undefined : seedInfoBody(kind, opts.warden === true);
+		if (info !== undefined) return info;
+	}
+	//`Blandfruit.desc()` (tag `v3.3.8`): a cooked fruit reads `desc_cooked` plus
+	//`desc_throw` for a volatile brew, else `desc_eat` - the plain fruit keeps its
+	//catalogue body below.
+	if (id === 'blandfruit' && opts.potionAttrib !== undefined) {
+		return fruitDescBody(opts.potionAttrib);
+	}
 	const resolve = (candidate: string | undefined): string | undefined => {
 		if (!candidate) return undefined;
 		const authored = MWL_CONSUMABLE_DESCRIPTION_KEYS[candidate]
@@ -60,6 +70,8 @@ export function itemDescription(id: string, sourceClass?: string, isWarden = fal
 
 ${t('port.skeletonkey.desc_worn')}`;
 	}
+	//`Trinket.info()`: the flavour text plus the level-dependent `statsDesc()` paragraph.
+	if (isTrinketId(id)) return trinketInfoText(id, opts.level ?? 0, opts.heroMaxHp ?? 20, described);
 	return described;
 }
 
@@ -249,6 +261,12 @@ export function itemDisplayName(scene: ItemDisplayContext, id: string, identifie
 			//equipped id (`clothArmor`, a class armor, ...) names itself through `ITEM_KEYS`.
 			?? (id === 'armorReward' && isEquipped(scene.armorId, scene.armorInstanceId) ? scene.armorSourceClass : undefined)
 			?? (id === 'weaponReward' && isEquipped(scene.weaponId, scene.weaponInstanceId) ? scene.weaponSourceClass : undefined);
+		//`Blandfruit.name()` (tag `v3.3.8`): a cooked fruit reads as its brew
+		//(`sunfruit`, `firefruit`, ...) while a plain one keeps the catalogue name.
+		if (id === 'blandfruit') {
+			const brewed = FRUIT_NAME_KEYS[(item as (typeof item | undefined) & { potionAttrib?: string })?.potionAttrib ?? ''];
+			if (brewed) return t(brewed);
+		}
 		//A carried wand names its *own* class: `scene.wandType` is the hero's wielded wand, so every
 		//other wand in the bag used to be labelled as the equipped one. `sourceClass` is the Java
 		//class the port minted the entry from (`WandOfFireblast`), which the same `WAND_KEYS` lookup
@@ -302,6 +320,8 @@ export function itemDisplayName(scene: ItemDisplayContext, id: string, identifie
 		//answers the curse gate (the worn piece is out of the bag); a carried
 		//duplicate falls back to its own affix. The HOLY glow is unported.
 		let base = t(classKey ?? ITEM_KEYS[id] ?? id);
+		//`Item.title()`'s `%s %+d`: a trinket (always `levelKnown`) shows its level once above +0.
+		if (isTrinketId(id) && (item?.level ?? 0) > 0) base += ` +${item!.level}`;
 		if (weapon && isEquipped(scene.weaponId, scene.weaponInstanceId) && scene.holyWeaponUp === true
 			&& getCurse(scene.weaponAffix ?? item?.affix ?? '') === undefined) {
 			base = t('actors.hero.spells.holyweapon.ench_name', { '0': base });
@@ -312,6 +332,6 @@ export function itemDisplayName(scene: ItemDisplayContext, id: string, identifie
 		return `${base}${affix}${hardenedNote}`;
 	}
 	if (id.startsWith('potion')) return t(scene.appearances.appearanceOf('potion', potionRegularCounterpart(id) ?? id));
-	if (id.startsWith('scroll')) return t(scene.appearances.appearanceOf('scroll', id));
+	if (id.startsWith('scroll')) return t(scene.appearances.appearanceOf('scroll', appearanceKindOf(id)));
 	return t(ITEM_KEYS[id] ?? id);
 }

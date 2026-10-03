@@ -69,6 +69,12 @@ export interface GroundPickupContext {
 	pickupCrystalKey(): boolean;
 	/** `Hero.onOperateComplete`'s cursed-skeleton-key distraction: true when the unlock attempt is swallowed. */
 	cursedKeyDistracts?(): boolean;
+	/** `WornKey.doPickUp()`'s support nag: true once the prompt has shown (persisted
+	 *  across runs, `SPDSettings.supportNagged()`). Absent in node harnesses, where
+	 *  the prompt never shows. */
+	supportNagged?(): boolean;
+	/** Marks the nag shown and shows `WndSupportPrompt` (title/intro/close). */
+	showSupportPrompt?(): void;
 	/** `KeyReplacementTracker.process*LockOpened` for a real key's chest. */
 	realKeyLockOpened?(kind: 'golden' | 'crystal'): void;
 	addSimpleGroundKind(kind: GroundKind): void;
@@ -221,7 +227,7 @@ function incomingPickupStack(context: GroundPickupContext, item: GroundItem, gro
 		if (payload.id === 'sandBag' || payload.id === 'gold' || payload.id === 'energyCrystal') return null;
 		if (payload.id === 'noisemaker' && payload.noisemakerArmed) return null;
 		if (payload.id === 'doubleBomb') return { id: 'bomb', quantity: 2, stackable: true };
-		if (payload.id === 'ironKey' || payload.id === 'goldenKey' || payload.id === 'crystalKey') {
+		if (payload.id === 'ironKey' || payload.id === 'goldenKey' || payload.id === 'crystalKey' || payload.id === 'wornKey') {
 			return { id: payload.id, quantity: payload.quantity, instanceId: payload.instanceId };
 		}
 		return { id: payload.id, quantity: payload.quantity, stackable: true, instanceId: payload.instanceId };
@@ -272,9 +278,9 @@ function pickupPayload(context: GroundPickupContext, item: ItemPayload): void {
 	//`Key.depth`/`isSimilar()` (tag `v3.3.8`): every key is stamped with the depth it was found
 	//on, and only ever unlocks that same depth's doors/chests - a key carried down or up a floor
 	//goes stale (Java's `KeyDisplay` even shows a black icon for one). Stamped here, the single
-	//pickup choke point every ground `ironKey`/`goldenKey` (and, via the shop-purchase site
+	//pickup choke point every ground `ironKey`/`goldenKey`/`wornKey` (and, via the shop-purchase site
 	//below, `crystalKey`) passes through.
-	if (['ironKey', 'goldenKey', 'crystalKey'].includes(payload.id)) {
+	if (['ironKey', 'goldenKey', 'crystalKey', 'wornKey'].includes(payload.id)) {
 		context.identify(payload);
 		payload.depth = context.depth;
 		//Per-key identity for depth-matched removal (`Notes.remove(Key)` takes a
@@ -284,4 +290,10 @@ function pickupPayload(context: GroundPickupContext, item: ItemPayload): void {
 	}
 	context.addItem(payload);
 	context.say(context.messages.pickup(context.itemName(payload.id, payload.identified ?? false, payload.instanceId)), 'positive');
+	//`WornKey.doPickUp()` (tag `v3.3.8`): the first pickup shows `WndSupportPrompt`
+	//and records the nag (`SPDSettings.supportNagged()`); the prompt half lives
+	//scene-side, so node harnesses (no callbacks) just take the key.
+	if (payload.id === 'wornKey' && context.supportNagged && context.showSupportPrompt && !context.supportNagged()) {
+		context.showSupportPrompt();
+	}
 }

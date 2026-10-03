@@ -10,6 +10,7 @@ import { Room } from './room';
 import { LoopBuilder } from './loopBuilder';
 import { FigureEightBuilder } from './figureEightBuilder';
 import { SpdRandom } from '../spdRng';
+import { levelGenTrinkets } from './trinketLevelGen';
 import { readTableMap, tableKey } from 'mwg/mwl';
 import { MWL_TABLE_ROWS } from '../mwlContent';
 import { STANDARD_ROOM_CLASS_ORDER } from './rooms/standard/registry';
@@ -271,7 +272,16 @@ export interface GraphResult {
  */
 export function rollLevelFeeling(depth: number): number | null {
 	if (depth <= 1) return null;
-	return SpdRandom.int(14);
+	const roll = SpdRandom.int(14);
+	//`Level.create()` (`Level.java:281-292`), the `default:` case (rolls 7-13, no feeling): a carried Mossy Clump or Trap
+	//Mechanism may override it, `MossyClump` first. Java draws both `Float()`s even with none carried; here only while one
+	//is, so a run without them keeps its stream.
+	const trinkets = levelGenTrinkets();
+	if (roll >= 7 && trinkets && (trinkets.mossyChance > 0 || trinkets.trapChance > 0)) {
+		if (SpdRandom.float() < trinkets.mossyChance) return trinkets.nextMossyFeeling();
+		if (SpdRandom.float() < trinkets.trapChance) return trinkets.nextTrapFeeling();
+	}
+	return roll;
 }
 
 /**

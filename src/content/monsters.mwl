@@ -1133,8 +1133,10 @@
   {
     tag: "monster",
     id: "dustWraith",
-    // `CorpseDust.DustWraith extends Wraith` with only an attack counter (for the quest-
-    // score penalty, which has no system here) overridden - stats are the base wraith's.
+    // `CorpseDust.DustWraith extends Wraith` with only an attack counter overridden -
+    // stats are the base wraith's. The counter (`dustAtkCount`, saved/loaded) scores
+    // `questScores[1] -= 100` on the 2nd and 3rd attacks on the hero (first free,
+    // max -200 per wraith), ahead of the roll, exactly like Java.
     // Real Java ships no name/desc strings for it at all (it renders `!!!NO TEXT FOUND!!!`);
     // this row reuses the base wraith name rather than reproducing that.
     name: "actors.mobs.wraith.name",

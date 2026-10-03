@@ -6,6 +6,7 @@ import type { Step } from '../combat';
 export interface DungeonTileFrameContext {
 	width: number;
 	height: number;
+	depth: number;
 	tileVariance: ArrayLike<number>;
 	terrainAt: (x: number, y: number) => number;
 	visualTerrainAt: (x: number, y: number) => number;
@@ -46,10 +47,21 @@ export function terrainFrameAt(context: DungeonTileFrameContext, x: number, y: n
 		if (direct[rawTerrain] !== undefined) return alternate(direct[rawTerrain]);
 		const raised: Record<number, number> = { 13: 148, 23: 144, 25: 145, 26: 146, 28: 147 };
 		if (raised[rawTerrain] !== undefined) return raised[rawTerrain];
+		//`DungeonTerrainTilemap.getTileVisual` (tag `v3.3.8`) draws the deco bodies
+		//raised with no alt variants. The v3.3.8 cells (`RAISED_REGION_DECO` 130/131)
+		//are spliced into this sheet's free raised slots 157/158 (see `images.ts`).
+		if (rawTerrain === Terrain.REGION_DECO) return 157;
+		if (rawTerrain === Terrain.REGION_DECO_ALT) return 158;
 		if (rawTerrain === Terrain.CHASM) {
 			const above = y > 0 ? context.rawTerrainAt(x, y - 1) ?? -1 : -1;
 			if (above === Terrain.WATER) return 52;
 			if ([Terrain.EMPTY_SP, Terrain.STATUE_SP].includes(above as 14 | 26)) return 50;
+			//`stitchChasmTile`: the alt deco's chasm face is region-dependent -
+			//sewers/caves/city read as floor-sp, prison as bare chasm, halls as floor.
+			if (above === Terrain.REGION_DECO_ALT) {
+				if (context.depth <= 5 || (context.depth > 10 && context.depth <= 20)) return 50;
+				return context.depth <= 10 ? 48 : 49;
+			}
 			if ([Terrain.WALL, Terrain.WALL_DECO, Terrain.DOOR, Terrain.LOCKED_DOOR, Terrain.SECRET_DOOR].includes(above as 4 | 12 | 5 | 10 | 16)) return 51;
 			return above !== -1 && above !== Terrain.CHASM ? 49 : 48;
 		}
@@ -64,8 +76,11 @@ export function waterFrames(context: DungeonTileFrameContext): number[] {
 	//EMPTY_DECO 20, SIGN 23, WELL 24, STATUE 25, ALCHEMY 28, DOOR 5, OPEN_DOOR 6,
 	//LOCKED_DOOR 10, CRYSTAL_DOOR 31. A water cell next to trampled grass missed
 	//its shoreline bit before 30 joined this set.
-	//v3.3.8 adds MINE_CRYSTAL 35 and MINE_BOULDER 36 (`MiningLevel`'s quest terrains).
-	const dry = new Set<number>([1, 2, 3, 7, 8, 9, 13, 15, 17, 18, 19, 20, 23, 24, 25, 28, 30, 5, 6, 10, 31, 35, 36]);
+	//v3.3.8 adds MINE_CRYSTAL 35 and MINE_BOULDER 36 (`MiningLevel`'s quest terrains),
+//REGION_DECO 33 (always stitcheable), and REGION_DECO_ALT 34 only past depth 20
+//(`waterStitcheable()`: the alt art reads as halls-only).
+	const dry = new Set<number>([1, 2, 3, 7, 8, 9, 13, 15, 17, 18, 19, 20, 23, 24, 25, 28, 30, 33, 5, 6, 10, 31, 35, 36]);
+	const altStitches = context.depth > 20;
 	const frames: number[] = [];
 	for (let y = 0; y < context.height; y++) for (let x = 0; x < context.width; x++) {
 		if (context.terrainAt(x, y) !== WATER) { frames.push(-1); continue; }
@@ -74,7 +89,7 @@ export function waterFrames(context: DungeonTileFrameContext): number[] {
 			if (!context.inside(x + dx, y + dy)) return;
 			const raw = context.rawTerrainAt(x + dx, y + dy);
 			const kind = context.terrainAt(x + dx, y + dy);
-			if (raw === undefined ? kind !== WATER && kind !== WALL : dry.has(raw)) mask |= 1 << i;
+			if (raw === undefined ? kind !== WATER && kind !== WALL : dry.has(raw) || (raw === 34 && altStitches)) mask |= 1 << i;
 		});
 		frames.push(mask ? 32 + mask : -1);
 	}

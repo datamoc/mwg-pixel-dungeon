@@ -67,7 +67,7 @@ export interface CharacterDamageOptions {
 	readonly pierceArmor: boolean;
 	/** Mirrors `kill()`'s cause union (`deathSaveRefresh.ts`) so non-attack sources -
 	 * blobs and traps next - can name their death badge exactly like `attack()` can. */
-	readonly cause: 'foe' | 'fire' | 'trap' | 'poison' | 'hunger' | 'falling';
+	readonly cause: 'foe' | 'fire' | 'trap' | 'poison' | 'hunger' | 'falling' | 'friendlyMagic';
 	/** A source policy that already applied `Doom` before this shared dispatch. */
 	readonly skipDoom?: boolean;
 	/** Direct `Char.damage()` paths bypass `Char.attack()`'s Aura reduction (`Char.java:465-469`). */

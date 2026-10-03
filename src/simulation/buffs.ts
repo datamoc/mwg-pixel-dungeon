@@ -15,8 +15,14 @@ import { MONSTER_IMMUNITY_DATA } from './mwlMonsterImmunities';
  * `sighted` test makes a blinded char's field of view empty, so its whole effect is that a blinded
  * creature cannot see - or hunt - the hero (see `dungeonScene`'s monster-perception line), and a
  * blinded hero would see nothing. Duration 10 is `Blindness.DURATION`.
+ *
+ * `wandUseTracker` is the `ShardOfOblivion.WandUseTracker` presence flag (tag `v3.3.8`): it has no
+ * MWL duration entry because nothing spends charges from it - the scene writes the full 50-turn
+ * `DURATION` directly on every unidentified wand use and the generic clock ticks it down.
+ * `thrownUseTracker` is the matching `ShardOfOblivion.ThrownUseTracker` flag (same tag): the scene
+ * writes the same 50-turn `DURATION` on every unidentified landed throw.
  */
-export type BuffId = 'bless' | 'hex' | 'daze' | 'vertigo' | 'combo' | 'monkEnergy' | 'chill' | 'frost' | 'drowsy' | 'magicalSleep' | 'fury' | 'berserk' | 'momentum' | 'weakness' | 'vulnerable' | 'doom' | 'burning' | 'poison' | 'bleeding' | 'cripple' | 'paralysis' | 'roots' | 'levitation' | 'featherFall' | 'invisibility' | 'timeStasis' | 'cloak' | 'focus' | 'recharging' | 'scrollEmpower' | 'artifactRecharge' | 'wellFed' | 'frostImbue' | 'fireImbue' | 'toxicImbue' | 'blobImmunity' | 'adrenalineSurge' | 'mindvision' | 'terror' | 'amok' | 'aggression' | 'awareness' | 'haste' | 'degrade' | 'ooze' | 'charm' | 'lethalHasteCooldown' | 'wayward' | 'blindness' | 'feintConfusion' | 'counterAbility' | 'light' | 'invulnerability' | 'hazardAssist' | 'spectatorFreeze' | 'duelParticipant' | 'eliminationMatch' | 'luckyTracker' | 'soulmark' | 'prismaticGuard' | 'illuminated' | 'wasIlluminated' | 'holyWeapon' | 'holyWard' | 'powerOfMany' | 'satiatedSpells' | 'shieldOfLight' | 'divineSense' | 'recallUsed' | 'sunrayUsed' | 'sunrayRecent' | 'cleanseImmunity' | 'lanceCooldown' | 'heroDisguise' | 'auraProtection' | 'smiteTracker' | 'guidingPriestCooldown' | 'searingLightCooldown' | 'lightWallActive' | 'lockedFloor' | 'rejuvenatingStepsCooldown' | 'rejuvenatingStepsFurrow' | 'burningActed' | 'oozeActed' | 'beamingRayBoost';
+export type BuffId = 'bless' | 'hex' | 'daze' | 'vertigo' | 'combo' | 'monkEnergy' | 'chill' | 'frost' | 'drowsy' | 'magicalSleep' | 'fury' | 'berserk' | 'momentum' | 'weakness' | 'vulnerable' | 'doom' | 'burning' | 'poison' | 'bleeding' | 'cripple' | 'paralysis' | 'roots' | 'levitation' | 'featherFall' | 'invisibility' | 'timeStasis' | 'cloak' | 'focus' | 'recharging' | 'scrollEmpower' | 'artifactRecharge' | 'wellFed' | 'frostImbue' | 'fireImbue' | 'toxicImbue' | 'blobImmunity' | 'adrenalineSurge' | 'mindvision' | 'terror' | 'amok' | 'aggression' | 'awareness' | 'haste' | 'stamina' | 'magicalSight' | 'foresight' | 'magicImmune' | 'challengeArena' | 'dread' | 'degrade' | 'ooze' | 'charm' | 'lethalHasteCooldown' | 'wayward' | 'blindness' | 'feintConfusion' | 'counterAbility' | 'light' | 'invulnerability' | 'hazardAssist' | 'spectatorFreeze' | 'duelParticipant' | 'eliminationMatch' | 'luckyTracker' | 'soulmark' | 'prismaticGuard' | 'illuminated' | 'wasIlluminated' | 'holyWeapon' | 'holyWard' | 'powerOfMany' | 'satiatedSpells' | 'shieldOfLight' | 'divineSense' | 'recallUsed' | 'sunrayUsed' | 'sunrayRecent' | 'cleanseImmunity' | 'lanceCooldown' | 'heroDisguise' | 'auraProtection' | 'smiteTracker' | 'guidingPriestCooldown' | 'searingLightCooldown' | 'lightWallActive' | 'lockedFloor' | 'rejuvenatingStepsCooldown' | 'rejuvenatingStepsFurrow' | 'burningActed' | 'oozeActed' | 'beamingRayBoost' | 'wandUseTracker' | 'thrownUseTracker';
 /** The duration catalogue is authored in MWL and emitted as an isolated simulation module. */
 export const BUFF_DURATION: Record<BuffId, number> = (() => {
 	const values = { ...BUFF_DURATION_DATA } as Record<string, number>;
@@ -162,10 +168,8 @@ export function fieryElementalSourceDamage(
  * `resist()` halves `WandOfLightning`, `Shocking` (enchant procs and the shock
  * arc), `Electricity`, `ShockingDart` and `ShockElemental`-sourced damage with
  * `Math.round`. Holders are the shock elemental, DM100, the Pylon and BrightFist.
- * Pure predicate so the wand, blob and arc seams pin the same gate; the stormvine
- * (ShockingDart) proc carries the `Electricity` class through `sourceElement`
- * (`tippedDartEffects.ts`), so dart damage halves here too. `Potential` is an armor
- * glyph that charges wands on defense - it has no damage-dealing seam of its own. */
+ * Pure predicate so the wand, blob and arc seams pin the same gate; `Potential`
+ * has no mob-damage seam here, and shocking darts do not exist as an item. */
 export function electricDamageHalved(kind: string | undefined, elementalType: string | undefined, yogFistType: string | undefined): boolean {
 	if (kind === 'elemental') return (elementalType ?? 'fire') === 'shock';
 	if (kind === 'dm100' || kind === 'pylon') return true;

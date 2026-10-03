@@ -1,0 +1,22 @@
+// Pins the responsive interface gate and quickslot count against SPDSettings/Toolbar (tag v3.3.8).
+import assert from 'node:assert/strict';
+import { readFileSync, mkdirSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { createRequire } from 'node:module';
+import { join } from 'node:path';
+const out = join('tools', 'scratch', 'interface-mode');
+mkdirSync(out, { recursive: true });
+execFileSync('npx', ['esbuild', 'src/ui/interfaceMode.ts', '--format=cjs', `--outfile=${join(out, 'interfaceMode.cjs')}`, '--log-level=error'], { shell: true });
+const { effectiveInterfaceSize, quickslotsToShow } = createRequire(import.meta.url)(join(process.cwd(), out, 'interfaceMode.cjs'));
+assert.equal(effectiveInterfaceSize(1, 1568, 779), 1);
+assert.equal(effectiveInterfaceSize(1, 2560, 1360), 1);
+assert.equal(effectiveInterfaceSize(1, 720, 400), 1);
+assert.equal(effectiveInterfaceSize(1, 719, 400), 0);
+assert.equal(effectiveInterfaceSize(1, 1568, 399), 0);
+assert.equal(effectiveInterfaceSize(1, 390, 844), 0);
+assert.equal(effectiveInterfaceSize(0, 2560, 1440), 0);
+assert.equal(quickslotsToShow(152), 4);
+assert.equal(quickslotsToShow(153), 5);
+assert.equal(quickslotsToShow(170), 5);
+assert.equal(quickslotsToShow(171), 6);
+console.log('PASS interface mode: responsive full-UI gate and quickslot count match Java.');

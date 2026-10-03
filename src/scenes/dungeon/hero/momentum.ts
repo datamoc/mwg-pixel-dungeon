@@ -1,3 +1,4 @@
+import { heroArmorStrReq } from '../strengthGear';
 import type { DungeonScene } from '../../dungeonScene';
 import { Game } from 'mwg';
 import { runState } from '../../../runState';
@@ -13,7 +14,6 @@ import {
 } from '../../../simulation/momentum';
 import { projectileMomentumAccuracy } from '../../../simulation/subclassPassives';
 import { projectileMomentumDamageMultiplier } from '../../../talentEffects';
-import { armorSTRReq } from '../../../items/strReq';
 
 /**
  * The Freerunner's `Momentum` buff (`actors/buffs/Momentum.java`, tag `v3.3.8`): every completed step banks a
@@ -106,7 +106,7 @@ export const momentumMethods = {
 	 */
 	momentumEvasionBonus(this: DungeonScene): number {
 		return momentumEvasion(this.momentumState, this.progression.level,
-			Math.max(0, (this.hero.str ?? this.heroStr) - armorSTRReq(this.armorTier, this.armorLevel)),
+			Math.max(0, (this.hero.str ?? this.heroStr) - heroArmorStrReq(this)),
 			this.talentRank('evasive_armor'));
 	},
 

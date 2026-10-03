@@ -1,5 +1,6 @@
 import { Container, Graphics, Rectangle, Sprite, Texture } from 'mwg/two-d/pixi-interop';
 import { Button, Game, Input, NinePatch, theme, Window, WindowStack } from 'mwg';
+import { ListView } from 'mwg/two-d/ui';
 import { detectLanguage } from '../i18n/languages';
 import { LANGUAGES, language, setLanguage, t, titleCase, type Language } from '../i18n/index';
 import { LANGUAGE_KEY, runState } from '../runState';
@@ -7,6 +8,7 @@ import { applySpdDirection, SPD_TITLE_COLOR } from './spdTheme';
 import { menuScale, SpdRedButton } from './spdButton';
 import { SpdLabel as Label } from './spdLabel';
 import { titleIcon, type TitleIconName } from './titleIcons';
+import { clearControllerBindingSlot, clearKeyBindingSlot, controllerBindingSlotsSnapshot, keyBindingActions, keyBindingLabel, keyBindingSlotsSnapshot, keysForControllerSlotAction, keysForSlotAction, persistKeyBindings, restoreControllerBindingSlots, restoreDefaultKeyBindings, restoreKeyBindingSlots, setControllerBindingSlot, setKeyBindingSlot } from './keyBindings';
 import {
 	betasEnabled, brightness, cameraFollow, colorblind, controllerSensitivity, flipTags, highContrast, isFullscreen,
 	isMusicMuted, isSfxMuted, movementSensitivity, musicVolume, newsEnabled, playMusicInBackground,
@@ -35,8 +37,8 @@ import {
  *
  * Item parity: every row Java's desktop build shows is here. Rows that only make
  * sense on another platform are omitted like Java omits them (landscape checkbox
- * is Android-only, `ignore_silent` iOS-only, the Input tab's key/controller
- * binding editors need a binding system this port has none of, and the toolbar
+ * is Android-only, `ignore_silent` iOS-only, the Input tab's controller editor
+ * needs controller-action bindings this port has not wired, and the toolbar
  * sub-window needs toolbar modes this port's fixed toolbar has none of). Everything
  * else persists under Java's own keys/defaults/gates (`src/settings.ts`); rows with
  * no behavior seam yet (grid, follow, ui prefs, connectivity, sensitivities) are
@@ -506,7 +508,7 @@ function inputTab(): SettingsTab {
 	return {
 		id: 'input',
 		icon: 'keyboard',
-		build: (width) => {
+		build: (width, ctx) => {
 			const node = new Container();
 			let y = 0;
 			const title = tabTitle(t('windows.wndsettings$inputtab.title'), width);
@@ -516,8 +518,7 @@ function inputTab(): SettingsTab {
 			sep1.position.set(0, y);
 			node.addChild(sep1);
 			y += 1 + GAP;
-			//The key/controller binding editors need a rebindable-action system this
-			//port has none of, so the tab carries Java's two sensitivity sliders only.
+			//Keyboard and controller actions use MWG's shared persisted binding map.
 			const sens = new SpdOptionSlider(width, t('windows.wndsettings$inputtab.controller_sensitivity'),
 				'1', '10', 1, 10, controllerSensitivity(), (v) => setControllerSensitivity(v));
 			sens.position.set(0, y);
@@ -529,9 +530,187 @@ function inputTab(): SettingsTab {
 			hold.position.set(0, y);
 			node.addChild(hold);
 			y += SLIDER_HEIGHT + GAP;
+			const bindings = new SpdRedButton({
+				width, height: BTN_HEIGHT,
+				text: t('windows.wndsettings$inputtab.key_bindings'),
+				label: { size: 8 },
+				onClick: () => showKeyBindingsWindow(ctx.windows),
+			});
+			bindings.position.set(0, y);
+			node.addChild(bindings);
+			y += BTN_HEIGHT + GAP;
+			const controllerBindings = new SpdRedButton({
+				width, height: BTN_HEIGHT, text: t('windows.wndsettings$inputtab.controller_bindings'), label: { size: 8 },
+				onClick: () => showKeyBindingsWindow(ctx.windows, true),
+			});
+			controllerBindings.position.set(0, y);
+			node.addChild(controllerBindings);
+			y += BTN_HEIGHT + GAP;
 			return { node, height: y - GAP };
 		},
 	};
+}
+
+/** Keyboard half of Java's `WndKeyBindings` (`SPDAction.java`, tag `v3.3.8`). */
+function showKeyBindingsWindow(windows: WindowStack, controller = false): void {
+	const width = Math.min(212, Game.current.width - 20);
+	const height = Math.min(220, Game.current.height - 20);
+	const window = new Window({ width, height, title: t(controller ? 'windows.wndsettings$inputtab.controller_bindings' : 'windows.wndsettings$inputtab.key_bindings'), anchor: 'center', blocker: true });
+	const startingKeyboardSlots = keyBindingSlotsSnapshot();
+	const startingControllerSlots = controllerBindingSlotsSnapshot();
+	let committed = false;
+	let capturing: { action: string; slot: number } | null = null;
+	let captureListener: ((event: KeyboardEvent) => boolean) | null = null;
+	let captureFrame = 0;
+	const getSlots = controller ? keysForControllerSlotAction : keysForSlotAction;
+	const setSlot = controller ? setControllerBindingSlot : setKeyBindingSlot;
+	const clearSlot = controller ? clearControllerBindingSlot : clearKeyBindingSlot;
+	const controls: Button[] = [];
+	const syncCaptureControls = (): void => {
+		list.eventMode = capturing ? 'none' : 'auto';
+		for (const control of controls) control.setDisabled(capturing !== null);
+	};
+	const bodyHeight = Math.max(40, window.contentHeight - 54);
+	const selectedSlot = (): { action: string; slot: number } | null => {
+		const value = list.selected?.value;
+		return value && typeof value === 'object' && 'action' in value && 'slot' in value
+			? value as { action: string; slot: number }
+			: null;
+	};
+	const showKey = (key: string | null): string => {
+		if (key === null) return t('windows.wndkeybindings.none');
+		if (key.startsWith('Key') && key.length === 4) return key.slice(3);
+		if (key.startsWith('Digit')) return key.slice(5);
+		if (key.startsWith('Arrow')) return key.slice(5);
+		if (key.startsWith('Gamepad')) return key.replace(/^Gamepad(\d+)Button(\d+)$/, 'Pad $1 Button $2').replace(/^Gamepad(\d+)Axis(\d+)([+-])$/, 'Pad $1 Axis $2 $3');
+		return key.replace(/^Numpad/, 'Num ');
+	};
+	const rows = (): { text: string; value: { action: string; slot: number } }[] => keyBindingActions().flatMap((action) =>
+		[0, 1, 2].map((slot) => ({
+			text: `${keyBindingLabel(action)} (${slot + 1}): ${capturing?.action === action && capturing.slot === slot ? '...' : showKey(getSlots(action)[slot] ?? null)}`,
+			value: { action, slot },
+		})),
+	);
+	const list = new ListView({ width: window.contentWidth, height: bodyHeight, rowHeight: 14, items: [] });
+	const refresh = (): void => {
+		const selected = list.selectedIndex;
+		list.setItems(rows());
+		list.select(selected);
+	};
+	const status = new Label({ text: '', size: 6, color: theme().color.text, wrapWidth: window.contentWidth });
+	status.position.set(1, bodyHeight + 1);
+	const finishCapture = (key: string): boolean => {
+		if (!capturing) return false;
+		const selected = capturing;
+		capturing = null;
+		syncCaptureControls();
+		if (captureListener) Input.onKey.remove(captureListener);
+		captureListener = null;
+		if (captureFrame) cancelAnimationFrame(captureFrame);
+		captureFrame = 0;
+		if (key !== 'Escape') {
+			const owners = Input.actionsForKey(key).filter((owner) => owner !== selected.action);
+			const wouldUnbindLast = owners.some((owner) => [...keysForSlotAction(owner), ...keysForControllerSlotAction(owner)].filter(Boolean).length <= 1);
+			const duplicate = getSlots(selected.action).some((bound, index) => bound === key && index !== selected.slot);
+			if (wouldUnbindLast) status.setText(t('windows.wndkeybindings$wndchangebinding.cant_unbind'));
+			else if (duplicate) status.setText(t('windows.wndkeybindings$wndchangebinding.error'));
+			else {
+				setSlot(selected.action, selected.slot, key);
+				status.setText('');
+			}
+		}
+		refresh();
+		return true;
+	};
+	const finishKeyboardCapture = (event: KeyboardEvent): boolean => {
+		if (controller && event.code !== 'Escape') return false;
+		event.preventDefault();
+		return finishCapture(event.code);
+	};
+	list.onSelect = (item) => {
+		const value = item.value as { action: string; slot: number };
+		capturing = value;
+		syncCaptureControls();
+		status.setText('');
+		refresh();
+		//Let the current confirm key finish dispatching before listening for the captured key.
+		queueMicrotask(() => {
+			if (capturing !== value) return;
+			captureListener = finishKeyboardCapture;
+			Input.onKey.add(captureListener);
+			if (controller) {
+				let captureArmed = false;
+				const poll = (): void => {
+					if (!capturing) return;
+					const pads = navigator.getGamepads?.() ?? [];
+					if (!captureArmed) {
+						captureArmed = !pads.some((pad) => pad && (Array.from(pad.buttons).some((button) => button.pressed)
+							|| Array.from(pad.axes).some((axis) => Math.abs(axis) >= 0.5)));
+						captureFrame = requestAnimationFrame(poll);
+						return;
+					}
+					for (const pad of pads) {
+						if (!pad) continue;
+						for (let i = 0; i < pad.buttons.length; i++) if (pad.buttons[i]?.pressed) { finishCapture(Input.gamepadButtonCode(pad.index, i)); return; }
+						for (let i = 0; i < pad.axes.length; i++) if (Math.abs(pad.axes[i] ?? 0) >= 0.5) { finishCapture(Input.gamepadAxisCode(pad.index, i, pad.axes[i]! > 0 ? 1 : -1)); return; }
+					}
+					captureFrame = requestAnimationFrame(poll);
+				};
+				captureFrame = requestAnimationFrame(poll);
+			}
+		});
+	};
+	refresh();
+	window.content.addChild(list, status);
+	window.delegate = {
+		handleAction: (action) => {
+			if (capturing) return true;
+			if (action === 'cancel') { window.close(); return true; }
+			return list.handleAction(action);
+		},
+	};
+	const half = (window.contentWidth - 1) / 2;
+	const rowOne = bodyHeight + 10;
+	const rowTwo = bodyHeight + 27;
+	const reset = new SpdRedButton({
+		width: half, height: BTN_HEIGHT, text: t('windows.wndkeybindings.default'), label: { size: 7 },
+		onClick: () => { restoreDefaultKeyBindings(); status.setText(''); refresh(); },
+	});
+	reset.position.set(0, rowOne);
+	controls.push(reset);
+	window.content.addChild(reset);
+	const unbind = new SpdRedButton({
+		width: half, height: BTN_HEIGHT, text: t('windows.wndkeybindings$wndchangebinding.unbind'), label: { size: 7 },
+		onClick: () => {
+			const selected = selectedSlot();
+			if (!selected) return;
+			if (clearSlot(selected.action, selected.slot)) { status.setText(''); refresh(); }
+			else status.setText(t('windows.wndkeybindings$wndchangebinding.cant_unbind'));
+		},
+	});
+	unbind.position.set(half + 1, rowOne);
+	controls.push(unbind);
+	window.content.addChild(unbind);
+	const cancel = new SpdRedButton({ width: half, height: BTN_HEIGHT, text: t('windows.wndkeybindings.cancel'), label: { size: 7 }, onClick: () => window.close() });
+	cancel.position.set(0, rowTwo);
+	controls.push(cancel);
+	window.content.addChild(cancel);
+	const confirm = new SpdRedButton({
+		width: half, height: BTN_HEIGHT, text: t('windows.wndkeybindings.confirm'), label: { size: 7 },
+		onClick: () => { persistKeyBindings(); committed = true; window.close(); },
+	});
+	confirm.position.set(half + 1, rowTwo);
+	controls.push(confirm);
+	window.content.addChild(confirm);
+	window.onClose.add(() => {
+		if (captureListener) Input.onKey.remove(captureListener);
+		if (captureFrame) cancelAnimationFrame(captureFrame);
+		if (!committed) {
+			restoreKeyBindingSlots(startingKeyboardSlots);
+			restoreControllerBindingSlots(startingControllerSlots);
+		}
+	});
+	windows.push(window);
 }
 
 function dataTab(): SettingsTab {
@@ -906,9 +1085,9 @@ export function showSettingsWindow(windows: WindowStack, onLanguageChanged: () =
 	window.content.addChild(widgetFocusRing);
 	let focusedWidget = 0;
 	let focusedGridIndex = 0;
-	const focusablesIn = (tabIndex: number): (SpdCheckBox | SpdOptionSlider)[] =>
-		built[tabIndex]!.node.children.filter((c): c is SpdCheckBox | SpdOptionSlider =>
-			c instanceof SpdCheckBox || c instanceof SpdOptionSlider);
+	const focusablesIn = (tabIndex: number): (SpdCheckBox | SpdOptionSlider | Button)[] =>
+		built[tabIndex]!.node.children.filter((c): c is SpdCheckBox | SpdOptionSlider | Button =>
+			c instanceof SpdCheckBox || c instanceof SpdOptionSlider || c instanceof Button);
 	const drawWidgetFocus = (): void => {
 		widgetFocusRing.clear();
 		const grid = built[lastTab]!.focusGrid;
@@ -971,6 +1150,7 @@ export function showSettingsWindow(windows: WindowStack, onLanguageChanged: () =
 		if (action === 'up') { focusedWidget = (focusedWidget - 1 + widgets.length) % widgets.length; drawWidgetFocus(); return true; }
 		if (action === 'down') { focusedWidget = (focusedWidget + 1) % widgets.length; drawWidgetFocus(); return true; }
 		if (action === 'confirm' && focused instanceof SpdCheckBox) { focused.setChecked(!focused.isChecked(), true); return true; }
+		if (action === 'confirm' && focused instanceof Button) { focused.onClick.dispatch(); return true; }
 		return false;
 	};
 	drawWidgetFocus();

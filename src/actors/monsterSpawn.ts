@@ -37,12 +37,11 @@ export interface MonsterSpawnProfile {
 	mobsToChampion: number;
 }
 
-function randomElementalType(): NonNullable<Creature['elementalType']> {
+function randomElementalType(exoticMultiplier = 1): NonNullable<Creature['elementalType']> {
 	//Elemental.random() (Elemental.java, tag v3.3.8): `Random.Float() < 1/50 * RatSkull.exoticChanceMultiplier()`,
 	//then one float for Fire (<.4), Frost (<.8), or Shock. The old `Random.int(0, 50) === 0` rolled over 51
-	//inclusive values (1/51, not 1/50) with the wrong draw shape; the trinket multiplier is its default 1
-	//here (no trinket system - the ParchmentScrap precedent in `src/items/generator.ts`).
-	if (Random.float() < 1 / 50) return 'chaos';
+	//inclusive values (1/51, not 1/50) with the wrong draw shape; the multiplier is the carried Rat Skull's.
+	if (Random.float() < 1 / 50 * exoticMultiplier) return 'chaos';
 	const roll = Random.float();
 	return roll < 0.4 ? 'fire' : roll < 0.8 ? 'frost' : 'shock';
 }
@@ -100,6 +99,8 @@ export function monsterSpawnProfile(
 	isAlly: boolean,
 	championEligible: boolean,
 	mobsToChampion: number,
+	/** `RatSkull.exoticChanceMultiplier()`, for the Elemental's 1/50 Chaos roll. */
+	exoticMultiplier = 1,
 ): MonsterSpawnProfile {
 	const baseDef = MONSTERS[kind];
 	const statOverride = DEPTH_SCALED_STATS[kind]?.(depth);
@@ -136,7 +137,7 @@ export function monsterSpawnProfile(
 		isBoss,
 		miniboss: MINIBOSS_KINDS.has(kind),
 		flying: FLYING_KINDS.has(kind),
-		elementalType: kind === 'newbornElemental' ? 'fire' : kind === 'elemental' && !restoring ? randomElementalType() : undefined,
+		elementalType: kind === 'newbornElemental' ? 'fire' : kind === 'elemental' && !restoring ? randomElementalType(exoticMultiplier) : undefined,
 		shamanType: kind === 'shaman' && !restoring
 			? (() => { const roll = Random.float(); return roll < 0.4 ? 'red' : roll < 0.7 ? 'blue' : 'purple'; })()
 			: undefined,

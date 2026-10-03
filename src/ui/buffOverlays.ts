@@ -72,6 +72,7 @@ const ICON_TEXT_KIND: Partial<Record<BuffId | 'hungry' | 'starving', 'flavour' |
 	//iconFadePercent(), so its icon remains unfaded like the plain Buff default.
 	amok: 'flavour',
 	terror: 'flavour',
+	dread: 'left',
 	//`WellFed.iconTextDisplay()` returns `(int)(left / SaltCube.hungerGainMultiplier()) + 1`;
 	//this port has no SaltCube modifier, so the scene's raw left clock is the displayed value.
 	wellFed: 'flavour',
@@ -81,6 +82,12 @@ const ICON_TEXT_KIND: Partial<Record<BuffId | 'hungry' | 'starving', 'flavour' |
 	//`ArtifactRecharge.iconTextDisplay()` is `(int)left + 1` (`ArtifactRecharge.java`).
 	artifactRecharge: 'flavour',
 	haste: 'flavour',
+	//`Stamina` and `MagicalSight` are `FlavourBuff`s (tag `v3.3.8`).
+	stamina: 'flavour',
+	foresight: 'flavour',
+	magicImmune: 'flavour',
+	challengeArena: 'left',
+	magicalSight: 'flavour',
 	invulnerability: 'flavour',
 	//`HolyWepBuff`/`HolyArmBuff` are `FlavourBuff`s with `DURATION = 50`, so both
 	//show `(int)visualcooldown()`. `Illuminated` is a plain `Buff` with no

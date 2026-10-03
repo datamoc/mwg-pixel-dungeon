@@ -31,9 +31,10 @@ import { beginSandalsRootFlow } from '../../../items/sandals';
 import { useTalismanFlow } from '../../../items/talisman';
 import { RING_DEFS, ringSharpshootingBonus } from '../../../items/ringModifiers';
 import { MWL_ARMOR_GLYPHS, MWL_MISSILE_BY_CLASS, MWL_WEAPON_ENCHANTS, mwlItemEffectValue } from '../../../mwlContent';
-import { bolasCrippleTurns, missileAdjacentAccFactor, missileDamageRange, missileFlightArt, tomahawkBleedRange } from '../../../items/missiles';
+import { TIPPED_DART_BY_SEED, bolasCrippleTurns, missileAdjacentAccFactor, missileDamageRange, missileFlightArt, tippedDartNameKey, tomahawkBleedRange } from '../../../items/missiles';
 import { parseMindEffect, reaimStoredMindForm, startMindFormFlow, type MindFormContext } from '../../../items/mindForm';
 import type { MindFormEffect } from '../../../simulation/mindFormCast';
+import { mindFormDiscoveryKey, mindFormDiscoveriesFor, markMindFormItemsDiscovered } from '../../../items/mindFormDiscovery';
 import { coneCells } from '../../../mechanics/cone';
 import { traceRayToTarget } from '../../../mechanics/rays';
 import { EMBERS, FLOOR, GRASS, HIGH_GRASS, TILE, WATER } from '../../../dungeonConstants';
@@ -270,26 +271,23 @@ export const armorAbilityUseMethods = {
 	 * per fire (`trinityChargeUsePerEffect`). A wand spends no hero turn and does not
 	 * dispel invisibility (Java's wand branch does neither); a throw spends one
 	 * `TURN_COSTS.ranged` turn and breaks invisibility through the normal attack path.
-	 * The pick is offered from every modeled wand and thrown kind (the same
-	 * no-discovery-gate simplification BodyForm's picker makes), except `TippedDart`
-	 * (there is no seed to tip the conjured dart with) and `warding` (the synthetic
+	 * The pick is offered from every modeled wand and thrown kind discovered this run, except `warding` (the synthetic
 	 * path cannot place wards - the same standing degradation WildMagic wards have).
 	 * Conjured missiles resolve hit/damage through the shared throw path with
-	 * Bolas/Tomahawk procs, but carry no durability, drops, stickiness, boomerang
-	 * return, FishingSpear floor, or wielded-gear riders (charged shot, follow-ups,
-	 * seer, nature, class procs) - there is no wielded stack behind them. The 20-turn
-	 * window mirrors `SpiritFormBuff.DURATION` (Java's MindForm is stateless and
-	 * re-fires indefinitely; this port's shared Trinity clock needs a window, and
-	 * expiry clears the slot like every other form). No tome-charge spell step: the
+	 * Bolas/Tomahawk procs, but carry no durability, drops, stickiness, FishingSpear
+	 * floor, or wielded-gear riders (charged shot, follow-ups,
+	 * seer, nature, class procs) - there is no wielded stack behind them. Java stores
+	 * this selected item indefinitely on Trinity; it survives timed BodyForm/SpiritForm
+	 * windows here as a separate serialized slot. No tome-charge spell step: the
 	 * ability window is the entry (BodyForm does the same). `wand.wandUsed()` is ID
-	 * accounting on an already-identified item, and the WondrousResin extra roll
-	 * needs trinkets - neither has a seam here. Java accepts a bare collision cell for wands;
+	 * accounting on an already-identified item; this synthetic cast does not run that hook.
+	 * Java accepts a bare collision cell for wands;
 	 * this port forwards that cell to Fireblast/Regrowth terrain effects, corrosion gas and
 	 * Frost fire clearing. Other wand-specific terrain effects and thrown-item landing remain
 	 * simplified and are documented in PORT_COVERAGE.md.
 	 */
 	chooseTrinityMindEffect(this: DungeonScene, cost: number): void {
-		const catalog = {
+		const allCatalog = {
 			wands: WAND_TYPES.filter((type) => type !== 'warding').map((type) => ({
 				value: { kind: 'wand', wandType: type, isMultiCharge: type === 'fireblast' || type === 'regrowth' } as MindFormEffect,
 				label: type,
@@ -297,17 +295,31 @@ export const armorAbilityUseMethods = {
 			thrown: [...MWL_MISSILE_BY_CLASS.keys()].filter((missileClass) => missileClass !== 'TippedDart').map((missileClass) => ({
 				value: { kind: 'thrown', missileClass } as MindFormEffect,
 				label: missileClass,
-			})),
+			})).concat(Object.keys(TIPPED_DART_BY_SEED).map((tippedSeed) => ({
+				value: { kind: 'thrown', missileClass: 'TippedDart', tippedSeed } as MindFormEffect,
+				label: t(tippedDartNameKey(tippedSeed)),
+			}))),
+		};
+		const discovered = mindFormDiscoveriesFor(this);
+		markMindFormItemsDiscovered(this, this.bag.items);
+		const stored = parseMindEffect(this.trinityMindEffect);
+		//Older port saves already hold an explicitly selected MindForm item. Treat that
+		//selection as discovered while migrating its missing catalog entry.
+		if (stored && [...allCatalog.wands, ...allCatalog.thrown].some((option) => mindFormDiscoveryKey(option.value) === mindFormDiscoveryKey(stored))) {
+			discovered.add(mindFormDiscoveryKey(stored));
+		}
+		const catalog = {
+			wands: allCatalog.wands.filter((option) => discovered.has(mindFormDiscoveryKey(option.value))),
+			thrown: allCatalog.thrown.filter((option) => discovered.has(mindFormDiscoveryKey(option.value))),
 		};
 		const ctx = this.mindFormFlowContext(cost);
-		//`WndUseTrinity`'s Mind button fires the stored pick; re-picking overwrites it
-		//(Java re-casts the MindForm spell for that). The stored pick is only offered
-		//while its form window is still live - past expiry the slot is already cleared.
-		const stored = parseMindEffect(this.trinityMindEffect);
-		const storedKnown = stored !== null && this.trinityForm === 'mind' && this.trinityTurns > 0
+		//`Trinity.WndUseTrinity` fires its stored MindForm item on every button press;
+		//unlike BodyForm and SpiritForm buffs, this stored item has no expiry in Java.
+		const storedKnown = stored !== null
 			&& (stored.kind === 'wand'
 				? catalog.wands.some((option) => option.value.kind === 'wand' && option.value.wandType === stored.wandType)
-				: catalog.thrown.some((option) => option.value.kind === 'thrown' && option.value.missileClass === stored.missileClass));
+				: catalog.thrown.some((option) => option.value.kind === 'thrown' && option.value.missileClass === stored.missileClass
+					&& option.value.tippedSeed === stored.tippedSeed));
 		if (storedKnown) {
 			const label = stored.kind === 'wand' ? stored.wandType : stored.missileClass;
 			showChoiceWindow(this.gameWindows, 'Trinity Mind Form', 'Fire the stored effect or choose another.', [
@@ -350,9 +362,6 @@ export const armorAbilityUseMethods = {
 						//presentation and no charge, turn, invis-dispel or log line -
 						//this port has no seam for that presentation, so the window
 						//writes below are the whole observable confirm.
-						this.trinitySpiritEffect = null;
-						this.trinityForm = 'mind';
-						this.trinityTurns = 20;
 						onPick(option.value);
 					},
 				}))),
@@ -366,23 +375,38 @@ export const armorAbilityUseMethods = {
 				if (targetId && (!target || target.hp <= 0)) return false;
 				const type = wandType as WandType;
 				const fullCharges = Math.min(wandInitialCharges(type) + level, 10);
-				return this.fireWandShot(type, level, target ?? targetCell, wandChargesPerCast(type, fullCharges));
+				const fired = this.fireWandShot(type, level, target ?? targetCell, wandChargesPerCast(type, fullCharges));
+				if (fired) {
+					//`MindForm` runs `onZap` then rolls `extraCurseEffectChance()` before its
+					//bonus `cursedZap` (`MindForm.java`, tag `v3.3.8`). This conjured Wand has
+					//no inventory instance in the port; positive RandomTransmogrify therefore
+					//uses the generated-choice path without consuming a carried wand.
+					const procTarget = this.creatureAt(targetCell.x, targetCell.y) ?? (target && target.hp > 0 ? target : undefined);
+					this.tryResinExtraCursedZap(procTarget, targetCell, { instanceId: `mind-form-${type}`, level });
+				}
+				return fired;
 			},
-			fireMindThrown: (missileClass, level, targetCell, targetId) => {
+			fireMindThrown: (missileClass, level, targetCell, targetId, tippedSeed) => {
 				const target = targetId ? this.creatures.find((creature) => creature.id === targetId) : null;
 				if (targetId && (!target || target.hp <= 0)) return false;
 				if (!target) {
 					//Java's `MissileWeapon.cast(hero, cell)` creates a `spawnedForEffect`
 					//missile: a bare-cell miss spends the cast but never drops an item.
-					this.spawnBoltTo(this.hero, targetCell, 0xffffff, undefined, missileFlightArt(missileClass));
+					this.spawnBoltTo(this.hero, targetCell, 0xffffff, undefined, missileFlightArt(missileClass, tippedSeed));
+					if (missileClass === 'HeavyBoomerang') this.scheduleBoomerangReturn(targetCell.x, targetCell.y, false,
+						{ spawnedForEffect: true, level });
 					return true;
 				}
 				const [lo, hi] = missileDamageRange(missileClass, level);
 				const adjacent = Roguelike.chebyshevDistance(this.hero, target) === 1;
 				const acc = missileAdjacentAccFactor(adjacent, true, this.talentRank('point_blank'));
-				const hit = this.attack({ ...this.hero, kind: undefined, attackMode: 'throw', damage: [lo, hi] }, target, acc);
+				const hit = this.attack({ ...this.hero, kind: undefined, attackMode: 'throw', damage: [lo, hi] }, target, acc, 1, missileClass);
 				if (hit) {
-					if (missileClass === 'Bolas') addBuff(target, 'cripple', bolasCrippleTurns());
+					//`TippedDart.proc()` runs the chosen concrete dart's seed effect on a hit
+					//(`TippedDart.java`, tag `v3.3.8`); the catalog's twelve class variants are
+					//represented by their seed key in this port.
+					if (missileClass === 'TippedDart') this.applyTippedDartEffect(target, tippedSeed);
+					else if (missileClass === 'Bolas') addBuff(target, 'cripple', bolasCrippleTurns());
 					else if (missileClass === 'Tomahawk') {
 						const procLevel = level + ringSharpshootingBonus(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
 						const [mn, mx] = tomahawkBleedRange(procLevel);
@@ -390,7 +414,9 @@ export const armorAbilityUseMethods = {
 						if (bleed > (target.buffs['bleeding'] ?? 0) && !buffBlocked(target, 'bleeding')) target.buffs['bleeding'] = bleed;
 					}
 				}
-				this.spawnProjectile(this.hero, target, missileFlightArt(missileClass));
+				this.spawnProjectile(this.hero, target, missileFlightArt(missileClass, tippedSeed));
+				if (missileClass === 'HeavyBoomerang') this.scheduleBoomerangReturn(target.x, target.y, false,
+					{ spawnedForEffect: true, level });
 				return true;
 			},
 			spendTurn: () => this.spendHeroAction(1),
@@ -464,7 +490,6 @@ export const armorAbilityUseMethods = {
 		}
 		this.armorCharge = Math.max(0, this.armorCharge - cost);
 		this.trinitySpiritEffect = ringId;
-		this.trinityMindEffect = null;
 		this.trinityForm = 'spirit';
 		this.trinityTurns = 20;
 		delete this.hero.buffs['invisibility'];
@@ -568,7 +593,6 @@ export const armorAbilityUseMethods = {
 	 */
 	trinitySpiritChalice(this: DungeonScene): void {
 		this.trinitySpiritEffect = 'chalice';
-		this.trinityMindEffect = null;
 		this.trinityForm = 'spirit';
 		this.trinityTurns = 20;
 	},
@@ -1105,7 +1129,15 @@ export const armorAbilityUseMethods = {
 			//collision cell (several Common effects, e.g. RandomGas/SelfOoze, don't need a
 			//target at all) - only the ordinary zap branch requires a live `aim`.
 			if (spare.entry.cursed) this.castCursedWandEffect(aim, cell, spare.entry);
-			else if (aim) this.fireWandShot(spare.type, wildMagicBoostedLevel(spare.entry.level ?? 0, wildPower, Random.int(2) === 0), aim, 1);
+			else if (aim) {
+				const zapLevel = wildMagicBoostedLevel(spare.entry.level ?? 0, wildPower, Random.int(2) === 0);
+				if (this.fireWandShot(spare.type, zapLevel, aim, 1)) {
+					//Java's WildMagic callback checks Resin only after the ordinary spare
+					//wand has completed `onZap`; the forced cursed cast is a second effect.
+					const procTarget = this.creatureAt(cell.x, cell.y) ?? (aim.hp > 0 ? aim : undefined);
+					this.tryResinExtraCursedZap(procTarget, cell, spare.entry);
+				}
+			}
 			spendWildMagicShot(state, shotCost);
 			spare.entry.wandCur = state.cur;
 			spare.entry.wandPartial = state.partial;

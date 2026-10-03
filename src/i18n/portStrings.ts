@@ -112,7 +112,9 @@ export const PORT_STRINGS_EN: Record<string, string> = {
 	'port.spell.judgement.name': 'judgement',
 	'port.spell.judgement.short_desc': 'Deals area damage to all visible enemies.',
 	'port.spell.flash.name': 'flash',
+	'port.spell.beamingray.name': 'beaming ray',
 	'port.spell.flash.short_desc': 'Teleport to an empty nearby cell.',
+	'port.spell.beamingray.short_desc': 'Teleport an empowered ally to a nearby cell.',
 	// Cleric tier-1 talents + talent spells - SPD's own v3.3.8 text and SPD's own
 	// translations of it (the live checkout this extractor reads predates the Cleric,
 	// so these ride `port.*` keys like the tome block above does).
@@ -13009,7 +13011,7 @@ export const PORT_STRINGS_ZH: Record<string, string> = {
  *
  * Assembled here rather than in `index.ts`; `tools/i18nCheck.ts` compares every catalogue's keys and placeholders.
  */
-const PORT_CLERIC_ARMOR_FALLBACK = { 'port.buff.powerofmany.name': PORT_STRINGS_EN['port.buff.powerofmany.name'], 'port.buff.powerofmany.desc': PORT_STRINGS_EN['port.buff.powerofmany.desc'], 'port.spell.hallowedground.name': PORT_STRINGS_EN['port.spell.hallowedground.name'], 'port.spell.hallowedground.short_desc': PORT_STRINGS_EN['port.spell.hallowedground.short_desc'], 'port.spell.walloflight.name': PORT_STRINGS_EN['port.spell.walloflight.name'], 'port.spell.walloflight.short_desc': PORT_STRINGS_EN['port.spell.walloflight.short_desc'], 'port.spell.divineintervention.name': PORT_STRINGS_EN['port.spell.divineintervention.name'], 'port.spell.divineintervention.short_desc': PORT_STRINGS_EN['port.spell.divineintervention.short_desc'], 'port.spell.judgement.name': PORT_STRINGS_EN['port.spell.judgement.name'], 'port.spell.judgement.short_desc': PORT_STRINGS_EN['port.spell.judgement.short_desc'], 'port.spell.flash.name': PORT_STRINGS_EN['port.spell.flash.name'], 'port.spell.flash.short_desc': PORT_STRINGS_EN['port.spell.flash.short_desc'] };
+const PORT_CLERIC_ARMOR_FALLBACK = { 'port.buff.powerofmany.name': PORT_STRINGS_EN['port.buff.powerofmany.name'], 'port.buff.powerofmany.desc': PORT_STRINGS_EN['port.buff.powerofmany.desc'], 'port.spell.hallowedground.name': PORT_STRINGS_EN['port.spell.hallowedground.name'], 'port.spell.hallowedground.short_desc': PORT_STRINGS_EN['port.spell.hallowedground.short_desc'], 'port.spell.walloflight.name': PORT_STRINGS_EN['port.spell.walloflight.name'], 'port.spell.walloflight.short_desc': PORT_STRINGS_EN['port.spell.walloflight.short_desc'], 'port.spell.divineintervention.name': PORT_STRINGS_EN['port.spell.divineintervention.name'], 'port.spell.divineintervention.short_desc': PORT_STRINGS_EN['port.spell.divineintervention.short_desc'], 'port.spell.judgement.name': PORT_STRINGS_EN['port.spell.judgement.name'], 'port.spell.judgement.short_desc': PORT_STRINGS_EN['port.spell.judgement.short_desc'], 'port.spell.flash.name': PORT_STRINGS_EN['port.spell.flash.name'], 'port.spell.flash.short_desc': PORT_STRINGS_EN['port.spell.flash.short_desc'], 'port.spell.beamingray.name': PORT_STRINGS_EN['port.spell.beamingray.name'], 'port.spell.beamingray.short_desc': PORT_STRINGS_EN['port.spell.beamingray.short_desc'] };
 // These SPD locales lack full port prose catalogs, but badge-only translations override EN for R074.
 // All other port-written text continues to fall back to English in these four catalogs.
 export const PORT_STRINGS_BE: Record<string, string> = {

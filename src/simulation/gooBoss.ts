@@ -86,11 +86,15 @@ export function takeGooTurn(goo: Creature, context: GooBossContext): void {
 		const healIncrement = goo.gooHealInc ?? 1;
 		const healed = Math.min(goo.maxHp, goo.hp + healIncrement) - goo.hp;
 		goo.hp += healed;
+		// Java Goo.act() shows the rolled healInc (Goo.java:120, tag v3.3.8) even when
+		// HP's later clamp makes the actual gain smaller. This port shows the actual HP
+		// delta so floating text never reports more recovery than the Goo received.
 		if (healed > 0) context.showHeal(goo, healed);
 		context.foulBossChallenge();
 		context.onWaterHeal?.(healIncrement);
-		if (goo.hp >= goo.maxHp) goo.gooHealInc = 1;
-		else if (context.strongerBosses) goo.gooHealInc = Math.min(3, healIncrement + 1);
+		// Java Goo.act() increments healInc here (Goo.java:122-123, tag v3.3.8), even if
+		// that heal reached full HP; the next full-health or dry act resets it below.
+		if (context.strongerBosses) goo.gooHealInc = Math.min(3, healIncrement + 1);
 	} else goo.gooHealInc = 1;
 
 	const pumped = goo.pumped ?? 0;

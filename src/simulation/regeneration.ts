@@ -96,13 +96,15 @@ export interface RegenerationDelayInput {
 	magicImmune: boolean;
 	/** `RingOfEnergy.artifactChargeMultiplier(target)`. */
 	artifactChargeMultiplier: number;
+	/** `SaltCube.healthRegenMultiplier()` (1 with none, and while a `LockedFloor` holds): `delay /= this`. */
+	saltCubeDivisor?: number;
 }
 
 /**
  * `Regeneration.act()`'s delay: a cursed chalice slows regen by half, an uncursed one takes
  * `1.33 + 0.667*level` off the 10-turn delay ("15% boost at +0, scaling to a 500% boost at +10")
  * and then divides by the energy multiplier. `MagicImmune` switches the chalice off entirely.
- * `SaltCube.healthRegenMultiplier()` is omitted: this port has no trinket system (it is 1 then).
+ * `SaltCube.healthRegenMultiplier()` divides the final delay (`saltCubeDivisor`, 1 without the trinket or on a locked floor).
  */
 export function regenerationDelay(input: RegenerationDelayInput): number {
 	let delay = REGENERATION_DELAY;
@@ -113,7 +115,7 @@ export function regenerationDelay(input: RegenerationDelayInput): number {
 			delay /= input.artifactChargeMultiplier;
 		}
 	}
-	return delay;
+	return delay / (input.saltCubeDivisor ?? 1);
 }
 
 export interface RegenerationTickResult {

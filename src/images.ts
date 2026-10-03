@@ -69,6 +69,13 @@ import dm200Url from './assets/dm200.png';
 import dm300Url from './assets/dm300.png';
 import wandmakerUrl from './assets/wandmaker.png';
 import shopkeeperUrl from './assets/shopkeeper.png';
+// The five region tilesets are byte-for-byte tag `v2.1.4` art (which is why the frame
+// math follows the v2.1.4 sheet) with one repacked addition each, after the `gnoll.png`/
+// `crab.png` repacking precedent below: the four v3.3.8 region-deco cells
+// (`RAISED_REGION_DECO` 130/131, `REGION_DECO_OVERHANG` 242/243, all 16px, verified
+// non-blank per region) copied pixel-identical into the v2.1.4 free slots 157/158
+// (past the raised-other block 144..156) and 245/248 (row-16 overhangs, both slots
+// transparent in v2.1.4). Nothing else in the sheets changed (1024 px per file).
 import sewersUrl from './assets/tiles_sewers.png';
 import prisonUrl from './assets/tiles_prison.png';
 import cavesUrl from './assets/tiles_caves.png';

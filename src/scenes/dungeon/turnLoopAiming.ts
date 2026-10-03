@@ -18,6 +18,7 @@ import { talismanArtifactProcPlan } from '../../items/talisman';
 import { tomeChargeCap, tomeTickRate } from '../../simulation/clericSpells';
 import { advanceToolkitWarmup } from '../../simulation/toolkitWarmup';
 import { advanceWellFed, HUNGRY, STARVING } from '../../simulation/hunger';
+import { passiveIdOnThrownUse, passiveIdOnWandUse } from './passiveId';
 import { addLockedFloorTime, lockedFloorBossTime, regenOn, regenerationDelay, removeLockedFloorTime, tickLockedFloor, tickRegeneration } from '../../simulation/regeneration';
 import { isChallengeEnabled } from '../../challenges'; import { prolongPrismaticWandLight } from '../../simulation/prismaticWandLight';
 import { ARMOR_CHARGE_MAX, ARMOR_CHARGE_PER_TURN } from '../../armorAbilities';
@@ -26,6 +27,7 @@ import { drawAimPreview } from '../../ui/aimOverlay';
 import { drawTravelPreview } from '../../ui/travelOverlay';
 import { emitToxicImbueGas } from '../../simulation/environmentalBlobs';
 import { absorbEarthrootArmor, tickSungrassHealth } from '../../simulation/plantPools';
+import { tickAquaHealing } from '../../simulation/aquaHealing';
 import { rechargeSpareWand } from '../../simulation/spareWands';
 import { spendTimeBubbleTurn } from '../../simulation/timeBubble';
 import { getCurse } from '../../items/itemCurses';
@@ -38,12 +40,14 @@ import { beaconPassiveRecharge, chainsPassiveRecharge, hourglassPassiveRecharge 
 import { beaconChargeCap } from '../../items/beacon';
 import type { ChainsItem } from '../../items/chains';
 import { TILE, WATER } from '../../dungeonConstants';
-import { BUFF_DURATION, addBuff, buffBlocked, electricDamageHalved, icyDamageHalved, rollHit, tickBuffs, type Creature, type Step } from '../../combat';
-import { addQuestScore } from '../../rankings';
-import { crabDodgesMelee } from '../../simulation/combat';
+import { BUFF_DURATION, addBuff, buffBlocked, rollHit, tickBuffs, type Creature, type Step } from '../../combat';
 import { NEGATIVE_BUFFS, corruptionImmune, tickMonsterTurnEnd, type BuffId } from '../../simulation/buffs';
+import { sealTick } from '../../simulation/sealShield';
+import { noteHeroTarget, refreshTrinketState, saltHungerDelayDivisor, saltRegenDelayDivisor, vialMaxHealPerTurnOf, wellFedTicksThisTurn } from './trinkets';
 import { corruptingPower, corruptionResistance, resolveCorruptionZap } from '../../simulation/wandCorruption';
 import { MONSTERS, BOSSES, isUndeadOrDemonic, type AnyMonsterId } from '../../monsters';
+import { addQuestScore } from '../../rankings';
+import { crabDodgesMelee } from '../../simulation/combat';
 
 /** Whether the hero was paralysed/vertigoed at a queued travel's first step, keyed by that travel's target object (`Hero.interrupt()` on gaining either). */
 const travelStartRestricted = new WeakMap<object, boolean>();
@@ -90,7 +94,7 @@ export const turnLoopAimingMethods = {
 		};
 		return colors[wandType as Exclude<WandType, 'warding'>] ?? 0xffffff;
 	},
-	fireWandShot(this: DungeonScene, wandType: WandType, zapLevel: number, target: Creature | Step, chargesPerCast: number, conjuredLevel?: number): boolean {
+	fireWandShot(this: DungeonScene, wandType: WandType, zapLevel: number, target: Creature | Step, chargesPerCast: number, conjuredLevel?: number, onWarlockProc?: (target: Creature) => void): boolean {
 		//A `Step` is only `{x, y}`; a creature always carries numeric HP. Never
 		//discriminate with `in` here: flag fields are sparse (the hero carries
 		//`isHero: true` while ordinary monsters omit every false-valued flag), so
@@ -133,6 +137,7 @@ export const turnLoopAimingMethods = {
 		//seeding with its adjacent-to-caster exception, doors, heaps, the neighbours-8
 		//ignition, and the per-charge damage and statuses). Lightning still arcs to visible
 		//adjacent foes instead of Java's Ballistica chain.
+		let warlockBonusTarget: Creature | undefined;
 		if (wandType === 'regrowth') {
 			this.useRegrowthWand(target, chargesPerCast, conjuredLevel);
 		} else if (wandType === 'fireblast') {
@@ -199,15 +204,6 @@ export const turnLoopAimingMethods = {
 				damage += enragedCatalystBonus(this.subclass(), this.talentRank('enraged_catalyst'), this.hero.hp, this.hero.maxHp) + this.wandBonusDamage;
 			}
 			if (wandType === 'lightning' && victim === this.hero) damage = Math.round(damage * 0.5);
-		//`Char.Property.ELECTRIC` (`Char.java`, tag `v3.3.8`) resists the
-		//`WandOfLightning` class: `Char.damage()` halves with `Math.round` on
-		//every holder (shock elemental, DM100, Pylon, BrightFist). The blob seam
-		//carries the `Electricity` class, `shockingArc` and the shock arc carry
-		//`Shocking`, and the stormvine (ShockingDart) proc carries it through its
-		//own `sourceElement: 'electric'` (`tippedDartEffects.ts`). `Potential` is an
-		//armor glyph that charges wands when the hero is hit - no damage seam.
-		if (wandType === 'lightning' && !victim.isHero
-			&& electricDamageHalved(victim.kind, victim.elementalType, victim.yogFistType)) damage = Math.round(damage * 0.5);
 			if (wandType === 'frost') {
 				//WandOfFrost.onZap() clears Fire at the collision cell. A frozen target
 				//cannot be affected again; otherwise existing Chill reduces this bolt's
@@ -227,11 +223,6 @@ export const turnLoopAimingMethods = {
 				else if (victim.buffs['chill'] !== undefined) {
 					damage = Math.round(damage * Math.pow(0.9333, Math.min(10, victim.buffs['chill'])));
 				}
-				//`Char.Property.ICY` (`Char.java`, tag `v3.3.8`) resists the `WandOfFrost`
-				//class: `Char.damage()` halves with `Math.round` after the chill cut
-				//above (Java computes that cut in `onZap`, then halves in `damage()`).
-				//The only ICY holder is the frost elemental.
-				if (icyDamageHalved(victim.kind, victim.elementalType)) damage = Math.round(damage * 0.5);
 			}
 			if (wandType === 'prismaticLight' && isUndeadOrDemonic(victim.kind)) {
 				//`WandOfPrismaticLight.affectTarget()`: against a `Property.DEMONIC` or
@@ -269,10 +260,13 @@ export const turnLoopAimingMethods = {
 				//`absorbHeroDamage(_, magical)`, else Aura, Doom, curves, shields, HP, hooks,
 				//wake and death - no `skipAura`: Java's zap src is the wand itself, a non-`Char`,
 				//so `damage()`'s aura clause runs (a no-op on foes, a real ally reduction).
-				//`pierceArmor` because no wand roll subtracts DR - the rolls above are
-				//`damage()`'s source-class resistances; the prismatic fade is `kill()`'s backstop.
+				//`pierceArmor` because no wand roll subtracts DR. `WandOfFrost` and
+				//`WandOfLightning` now pass their source element through the shared boundary, where
+				//ICY/ELECTRIC resistance follows Doom just as Java's Char.damage() does.
+				const sourceElement = wandType === 'frost' ? 'ice'
+					: wandType === 'lightning' ? 'electric' : undefined;
 				this.applyCharacterDamage(victim, damage, {
-					pierceArmor: true, cause: 'foe', magical: true,
+					pierceArmor: true, cause: 'foe', magical: true, sourceElement,
 				});
 				//`WandOfLightning.onZap()` (tag `v3.3.8`): the burst shakes
 				//(`2, 0.3f`) for every affected char that is the hero.
@@ -298,10 +292,6 @@ export const turnLoopAimingMethods = {
 				if (this.talentRank('arcane_vision') > 0) {
 					this.awareCreatures.set(victim, Math.max(this.awareCreatures.get(victim) ?? 0,
 						arcaneVisionDuration(this.talentRank('arcane_vision'))));
-				}
-				if (!victim.isHero && this.subclass() === 'warlock'
-					&& Random.float() > soulMarkProcThreshold(zapLevel, chargesPerCast)) {
-					addBuff(victim, 'soulmark', soulMarkDuration(zapLevel));
 				}
 				const zapPlan = talismanArtifactProcPlan({
 					heroClass: this.heroClass,
@@ -419,6 +409,15 @@ export const turnLoopAimingMethods = {
 			//Java kills any lethal hit - a non-prismatic ally no longer lingers at 0 HP.
 		}
 		}
+		//`Wand.wandProc()` runs once for the cast target after `onZap()` regardless of
+		//which Wand subclass handled the shot. The former generic victim-loop placement
+		//missed Fireblast, Regrowth and Transfusion's own dispatch paths.
+		if (targetCreature && targetCreature.hp > 0 && !targetCreature.isHero && this.subclass() === 'warlock'
+			&& Random.float() > soulMarkProcThreshold(zapLevel, chargesPerCast)) {
+			addBuff(targetCreature, 'soulmark', soulMarkDuration(zapLevel));
+			warlockBonusTarget = targetCreature;
+		}
+		if (warlockBonusTarget) onWarlockProc?.(warlockBonusTarget);
 		return true;
 	},
 
@@ -476,7 +475,11 @@ export const turnLoopAimingMethods = {
 			//prospectively changes the coming zap's level, including Disintegration's range - the charge is
 			//only consumed once the zap actually fires (see the zap branch), so this previews
 			//the bonus without spending it on a cancelled aim.
-			const range = special.kind === 'throw' ? 6 : wandTargetRange(this.wandType, this.weaponLevel + Math.max(this.empoweredZaps > 0 ? EMPOWERING_SCROLLS_BONUS : 0, this.inscribedPowerZaps > 0 ? 2 : 0));
+			const scrollEmpowerBonus = Math.max(
+				this.talentRank('empowering_scrolls') > 0 && this.scrollEmpowerCharges > 0 ? EMPOWERING_SCROLLS_BONUS : 0,
+				this.talentRank('inscribed_power') > 0 && this.scrollEmpowerCharges > 0 ? 2 : 0,
+			);
+			const range = special.kind === 'throw' ? 6 : wandTargetRange(this.wandType, this.weaponLevel + scrollEmpowerBonus);
 		if (special.kind === 'zap' && this.wandType === 'disintegration') {
 			this.beginAiming({
 				range,
@@ -632,6 +635,9 @@ export const turnLoopAimingMethods = {
 			if (hit) this.applyNaturesPowerOnHit(target);
 			//`Weapon.proc()` runs on a hit, before the durability bookkeeping below.
 			if (hit) this.applyMissileClassProc(target);
+			//`MissileWeapon.proc()`'s ID half (tag `v3.3.8`): a landed throw spends a use from its class's counters - a miss never runs
+			//`proc` (`rangedMiss` just drops the missile), so this sits on the hit branch, keyed on the thrown class.
+			if (hit) passiveIdOnThrownUse(this, thrownSourceClass);
 			//rangedHit(): durability decreases only on a HIT (a miss just drops the missile
 			//via rangedMiss -> onThrow) - hence resolving after attack()'s hit boolean rather
 			//than up front, which also wrongly wore missiles down on every miss.
@@ -676,7 +682,7 @@ export const turnLoopAimingMethods = {
 				//the thrown unit leaves the pile (a boomerang's own return already did); `recoverStone` credits it back on pickup
 				if (carried && this.ammoSourceClass !== 'HeavyBoomerang') { this.ammo = Math.max(0, this.ammo - 1); if (this.ammo === 0) this.ammoDurability = 0; }
 			}
-			if (this.heroClass === 'huntress' && this.talentRank('followup_strike') > 0) { this.followupTarget = target; this.followupDamage = this.talentRank('followup_strike') === 1 ? 2 : 3; }
+			if (this.talentRank('followup_strike') > 0) { this.followupTarget = target; this.followupDamage = this.talentRank('followup_strike') === 1 ? 2 : 3; }
 			if (this.talentRank('deadly_followup') > 0) this.deadlyFollowupTarget = target;
 			//`Talent.SEER_SHOT`: the thrown arrow lands at the victim's cell (see `procSeerShot`).
 			this.procSeerShot(target.x, target.y);
@@ -688,12 +694,22 @@ export const turnLoopAimingMethods = {
 			//+3 or +2 levels through `effectiveZapLevel()` below (damage, corrosion, statuses, and the
 			//regrowth/fireblast/transfusion/warding helpers). Consumed even when the bolt itself
 			//fizzles (crab parry): the charge paid for a zap, which is what arms it.
-			this.empoweredZapBonus = Math.max(this.empoweredZaps > 0 ? EMPOWERING_SCROLLS_BONUS : 0, this.inscribedPowerZaps > 0 ? 2 : 0);
-			if (this.empoweredZaps > 0) this.empoweredZaps--;
-			if (this.inscribedPowerZaps > 0) this.inscribedPowerZaps--;
+			const legacyEmpoweringRank = this.talentRank('empowering_scrolls');
+			const inscribedPowerRank = this.talentRank('inscribed_power');
+			this.empoweredZapBonus = Math.max(
+				legacyEmpoweringRank > 0 && this.scrollEmpowerCharges > 0 ? EMPOWERING_SCROLLS_BONUS : 0,
+				inscribedPowerRank > 0 && this.scrollEmpowerCharges > 0 ? 2 : 0,
+			);
+			//Java's one ScrollEmpower buff spends one charge per zap; the legacy port
+			//talent keeps its +3 bonus, with that higher bonus winning if both are ranked.
+			if (this.scrollEmpowerCharges > 0) this.scrollEmpowerCharges--;
 			const preservation = preservationChance(this.talentRank('wand_preservation'));
 			if (preservation > 0 && Random.chance(preservation)) this.wandCharges.refund(1);
 			if (lastCharge && this.talentRank('backup_barrier') > 0) this.grantHeroShield(this.talentRank('backup_barrier') === 1 ? 3 : 5, this.hero.maxHp);
+			//`Wand.wandUsed()` (tag `v3.3.8`): every spent-charge zap counts toward the wielded wand's identification, parried or not - Java runs
+			//it after `onZap` in the same `fx` callback, so a crab-parried bolt still counts. Cursed-wand and WildMagic conjured shots bypass
+			//this tail the way they bypass `Wand.zap()`.
+			passiveIdOnWandUse(this);
 			//GreatCrab.damage negates wand bolts from a seen hero - kept verbatim
 			//`GreatCrab.damage()` (tag v3.3.8): `enemySeen && state != SLEEPING && paralysed == 0
 			//&& src instanceof Wand && enemy == Dungeon.hero && enemy.invisible == 0`. This port's
@@ -705,16 +721,17 @@ export const turnLoopAimingMethods = {
 			//A parried bolt skips the tail like the pre-extraction `else` did: no
 			//excess-charge shield, no arcane-vision mark, and the empowered bonus (freshly
 			//set per zap above) is left for the next shot exactly as before.
-			if (this.fireWandShot(this.wandType, this.effectiveZapLevel(), target, chargesPerCast)) {
+			const zapLevel = this.effectiveZapLevel();
+			if (this.fireWandShot(this.wandType, zapLevel, target, chargesPerCast, undefined, (procTarget) => {
+				//`Wand.wandProc()` rolls the Warlock SoulMark before the normal Wand's
+				//`extraCurseEffectChance()` callback (`Wand.java`, tag `v3.3.8`). The Wand
+				//instance is not retained by this port, so its equipped staff identity is
+				//the source stand-in for the bonus effect's origin.
+				this.tryResinExtraCursedZap(procTarget, target, {
+					instanceId: this.weaponInstanceId ?? this.weaponId, level: zapLevel,
+				});
+			})) {
 				if (fullyCharged && this.talentRank('excess_charge') > 0) this.grantHeroShield(Math.ceil((this.talentRank('excess_charge') * Math.max(1, this.effectiveZapLevel())) / 1.5), this.hero.maxHp);
-				//Arcane Vision (Mage T2, `Wand.wandProc()`): every zap marks its target with
-				//`CharAwareness` for `5+5*points` turns (see through walls). No per-target
-				//awareness primitive exists here, so the existing all-mobs `mindvision` stands
-				//in at the real duration (over-broad, stated) - never shortened below an
-				//active potion's remainder.
-				if (this.heroClass === 'mage' && this.talentRank('arcane_vision') > 0) {
-					this.hero.buffs['mindvision'] = Math.max(this.hero.buffs['mindvision'] ?? 0, arcaneVisionDuration(this.talentRank('arcane_vision')));
-				}
 				this.empoweredZapBonus = 0;
 			}
 		} else {
@@ -737,6 +754,7 @@ export const turnLoopAimingMethods = {
 				true,
 				this.talentRank('point_blank'),
 			) * this.projectileMomentumAccFactor();
+			noteHeroTarget(this, target);
 			if (!rollHit(this.hero, target, false, false, bowAccFactor)) {
 				this.say(t('port.log.arrowmisses', { target: target.name }), 'negative');
 				//`GreatCrab.defenseSkill()`: the point-blank dodged bolt scores like a dodged swing.
@@ -836,10 +854,18 @@ export const turnLoopAimingMethods = {
 	 * `Creature` at the destination.
 	 */
 	spawnBoltTo(this: DungeonScene, from: Creature, to: { x: number; y: number }, tint: number, onArrive?: () => void, art?: MissileFlightArt | null, speed = 300): void {
+		this.spawnBoltFromCell({ x: from.x, y: from.y }, to, tint, onArrive, art, speed);
+	},
+
+	/** Same `MagicMissile` projectile path with an explicit cell origin. Used by
+	 * `HeavyBoomerang.CircleBack`, whose visual starts at the landing cell even when
+	 * the missile was effect-spawned and no creature remains there. */
+	spawnBoltFromCell(this: DungeonScene, from: { x: number; y: number }, to: { x: number; y: number }, tint: number,
+		onArrive?: () => void, art?: MissileFlightArt | null, speed = 300): void {
 		const sprite = new TintedSprite(art ? this.itemsSheet.get(art.frame) : this.dotTexture);
 		if (!art) sprite.tint = tint;
 		this.creatureLayer.addChild(sprite);
-		const [fx, fy] = this.worldOf(from);
+		const fx = (from.x + 0.5) * TILE, fy = (from.y + 0.5) * TILE;
 		const tx = (to.x + 0.5) * TILE, ty = (to.y + 0.5) * TILE;
 		this.projectiles.push({
 			flight: new Projectile(sprite, { x: fx, y: fy }, { x: tx, y: ty }, { speed }),
@@ -1410,6 +1436,7 @@ export const turnLoopAimingMethods = {
 	 * RingOfFuror/Haste).
 	 */
 	spendHeroTurn(this: DungeonScene, turnCost: number = 1): void {
+		refreshTrinketState(this, turnCost);
 		//The ascent challenge's own actor tick (`AscensionChallenge.act()`, tag `v3.3.8`),
 		//collapsed to the hero pass: distant enemies are beckoned once per hero action
 		//while the other per-turn challenge effects ride the cost-scaled bindings below.
@@ -1525,10 +1552,8 @@ export const turnLoopAimingMethods = {
 					for (const creature of this.creatures) delete creature.divineShield;
 				}
 			},
-			//Trinity's selected form is a temporary activation window. The Java form buffs
-			//also remove themselves on expiry; this state is the port's explicit hand-off
-			//for BodyForm's supported weapon-enchantment/glyph subset. MindForm and SpiritForm
-			//still have no item-effect dispatch.
+			//BodyForm and SpiritForm effects use timed windows here. Java stores Trinity's
+			//MindForm item separately on the armor, with no expiry, so this clock never owns it.
 			tickTrinityForm: () => {
 				if (this.trinityTurns <= 0) return;
 				this.trinityTurns = Math.max(0, this.trinityTurns - turnCost);
@@ -1537,7 +1562,6 @@ export const turnLoopAimingMethods = {
 					this.trinityBodyAffix = null;
 					this.trinityBodyGlyph = null;
 					this.trinitySpiritEffect = null;
-					this.trinityMindEffect = null;
 				}
 			},
 			tickWeaponAbility: () => this.tickWeaponAbility(turnCost),
@@ -1617,18 +1641,17 @@ export const turnLoopAimingMethods = {
 						this.barrierPartialLoss = 0;
 					}
 				}
-				//BrokenSeal.WarriorShield.act(): regenerates 1/30 per turn (while regen is on)
-				//toward armTier + armLvl + pointsInTalent(IRON_WILL), never decaying on its own.
-				//The gain is gated on `Regeneration.regenOn()` (the `LockedFloor` boss-arena lock).
-				if (this.armorSealed && this.regenOn()) {
-					const sealCap = this.armorTier + this.armorLevel + this.talentRank('iron_will');
-					if (this.sealBarrier.total < sealCap) {
-						this.sealPartialGain += 1 / 30;
-						while (this.sealPartialGain >= 1 && this.sealBarrier.total < sealCap) {
-							this.sealBarrier.add(1);
-							this.sealPartialGain -= 1;
-						}
-					} else this.sealPartialGain = 0;
+				//`BrokenSeal.WarriorShield.act()` (tag `v3.3.8`): the cooldown runs down while regeneration is on, and a shield
+				//left up with no enemy in view (and no Combo) for five turns is dropped, refunding part of the cooldown. It does
+				//NOT regenerate - it activates on a hit (`absorbHeroDamage`). The old 1/30-per-turn regrowth stood here.
+				if (this.armorSealed) {
+					const result = sealTick(this.sealState, {
+						regenOn: this.regenOn(), shielding: this.sealBarrier.total, comboActive: this.hero.buffs['combo'] !== undefined,
+						decayFactor: this.sealBarrier.total > 0 ? this.holdFastDecayFactor() : 1,
+						enemiesVisible: this.creatures.some((c) => !c.isHero && !c.isNPC && !c.isAlly && c.hp > 0 && this.fov.isVisible(c.x, c.y)),
+					});
+					this.sealState = result.state;
+					if (result.dropShield) this.sealBarrier.clear();
 				}
 			//`ArtifactRecharge.act()`: while the buff is up, every carried artifact is handed
 			//`min(1, left)` and the timer drops by one. This is the only caller of
@@ -1845,14 +1868,37 @@ export const turnLoopAimingMethods = {
 				//each rate property combines by maximum, so a Warden sungrass (`setHeal(HT,0,1)`)
 				//keeps its flat 1/turn through a later potion's 25% and vice versa.
 				if (this.healingLeft > 0) {
-					const tick = Math.min(this.healingLeft, Math.max(1, Math.round(this.healingLeft * this.healingPercent) + this.healingFlat));
+					let tick = Math.min(this.healingLeft, Math.max(1, Math.round(this.healingLeft * this.healingPercent) + this.healingFlat));
+					if (this.healingLimited && tick > vialMaxHealPerTurnOf(this)) tick = vialMaxHealPerTurnOf(this); //`Healing.healingThisTick()`'s vial cap
 					if (this.hero.hp < this.hero.maxHp) {
 						const before = this.hero.hp;
 						this.hero.hp = Math.min(this.hero.maxHp, this.hero.hp + tick);
 						if (this.hero.hp > before) this.showHeal(this.hero, this.hero.hp - before);
 					}
 					this.healingLeft -= tick;
+					//`Healing.act()` detaches at zero - a fresh buff starts with no flag or companions.
+					if (this.healingLeft <= 0) { this.healingLimited = false; this.healingPercent = 0; this.healingFlat = 0; }
 				}
+					//`ElixirOfAquaticRejuvenation.AquaHealing.act()` for the hero: the pool pays
+					//gradually, but ONLY while its owner swims - not flying (Levitation),
+					//standing in WATER, and still hurt. A dry, airborne or full-HP turn
+					//pays nothing and keeps the pool (Java's `spend(TICK)`-without-heal
+					//path); the pool ends at zero. `resting = false` has no expression -
+					//the port has no rest state - and the buff icon/tint stay unpresented.
+					if (this.aquaHealingLeft > 0) {
+						const swims = this.hero.buffs['levitation'] === undefined
+							&& this.level.get(this.hero.x, this.hero.y) === WATER
+							&& this.hero.hp < this.hero.maxHp;
+						const aqua = tickAquaHealing(
+							{ left: this.aquaHealingLeft, maxHp: this.hero.maxHp, missingHp: this.hero.maxHp - this.hero.hp, swims },
+							() => Random.float());
+						this.aquaHealingLeft = aqua.left;
+						if (aqua.healed > 0) {
+							const before = this.hero.hp;
+							this.hero.hp = Math.min(this.hero.maxHp, this.hero.hp + aqua.healed);
+							if (this.hero.hp > before) this.showHeal(this.hero, this.hero.hp - before);
+						}
+					}
 				if (this.hero.buffs['invisibility'] && this.talentRank('protective_shadows') > 0) {
 					this.stealthTalentTicks++;
 					const cadence = this.talentRank('protective_shadows') === 1 ? 2 : 1;
@@ -2062,8 +2108,10 @@ export const turnLoopAimingMethods = {
 
 	/** Hunger.act(): +10 per turn, warnings/1-damage on crossing STARVING, then continuous partialDamage accrual */
 	hungerStep(this: DungeonScene): void {
+		if (this.hero.buffs['challengeArena'] !== undefined) return; //`Hunger.act()` pauses inside a `ChallengeArena`
 		const wellFed = this.hero.buffs['wellFed'];
 		if (wellFed !== undefined) {
+			if (wellFedTicksThisTurn(this) < 1) return; //`SaltCube` stretches `WellFed`'s tick
 			const next = advanceWellFed(wellFed, this.hero.hp, this.hero.maxHp);
 			if (next.remaining === null) delete this.hero.buffs['wellFed'];
 			else this.hero.buffs['wellFed'] = next.remaining;
@@ -2078,7 +2126,7 @@ export const turnLoopAimingMethods = {
 		if (this.floorLocked()) return;
 		//Java's Hunger uses `hungerDelay = 1.5` while the CloakOfShadows stealth buff is
 		//active; this is the scene-only gate because the pure transition has no cloak state.
-		const hungerDelay = this.cloakStealthTurnsToCost > 0 && this.hero.buffs['invisibility'] ? 1.5 : 1;
+		const hungerDelay = (this.cloakStealthTurnsToCost > 0 && this.hero.buffs['invisibility'] ? 1.5 : 1) / saltHungerDelayDivisor(this); //`hungerDelay /= SaltCube.hungerGainMultiplier()`
 		this.simulation.hungerStep(MWL_TURN_CLOCK.hunger ?? 1, hungerDelay);
 		const reduction = ironStomachReduction(this.heroClass, this.talentRank('iron_stomach'));
 		if (reduction > 0) this.hunger = Math.max(0, this.hunger - reduction);
@@ -2146,6 +2194,7 @@ export const turnLoopAimingMethods = {
 			chaliceCursed: chalice?.cursed === true,
 			magicImmune: this.hero.magicImmune === true,
 			artifactChargeMultiplier: ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()) * this.lightCloakChargeMultiplier(),
+			saltCubeDivisor: saltRegenDelayDivisor(this, this.floorLocked()),
 		});
 		const next = tickRegeneration(this.hero.hp, this.hero.maxHp, this.regeneration.partial, {
 			regenOn: this.regenOn(), starving: this.hunger >= STARVING, delay, ticks: turnCost,

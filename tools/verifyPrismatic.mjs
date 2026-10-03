@@ -126,7 +126,7 @@ export function verifyPrismatic(require, check) {
 		assert.ok(alchemy.includes('scrollExoticResult(item.id) !== undefined'), 'the exotic picker eligibility moved with the flow');
 		assert.ok(alchemy.includes("craftScrollToExotic(scene.bag, selected.kind === 'scroll' ? selected.unit : undefined)"), 'the exotic craft moved with the flow');
 		const transmute = readFileSync(new URL('../src/items/transmutation.ts', import.meta.url), 'utf8');
-		assert.ok(transmute.includes("if (target.id === 'scrollPrismatic')"), 'the exotic transmutes to its regular counterpart');
+		assert.ok(transmute.includes("scrollRegularCounterpart(target.id)"), 'the exotic transmutes to its regular counterpart');
 	});
 	check('the scene wires the mirror/sheep halves of the ally chain', () => {
 		//42nd matrix (`MirrorImage.java`/`Sheep.java`, tag `v3.3.8`): the mirror

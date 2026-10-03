@@ -1,4 +1,5 @@
 import { t } from '../i18n/index';
+import { plantDesc, plantName } from '../items/plantText';
 import type { Region } from '../genericDungeon';
 import { Terrain } from '../spdLevelGen/paintLevel';
 import { DOOR, DOOR_CLOSED, GRASS, HIGH_GRASS, WALL, WATER } from '../dungeonConstants';
@@ -45,6 +46,28 @@ export function examineExitDesc(region: Region): string {
 	if (region === 'caves') return t('levels.caveslevel.exit_desc');
 	if (region === 'city') return t('levels.citylevel.exit_desc');
 	return t('levels.level.exit_desc');
+}
+/** `region_deco_name`: every region level overrides it for both deco tiles - only
+ * PrisonLevel splits `REGION_DECO_ALT` into its own hanging-cage keys, the other
+ * four answer the shared name (checked against each `*Level.java`, tag `v3.3.8`). */
+export function examineRegionDecoName(region: Region, alt: boolean): string {
+	switch (region) {
+		case 'sewers': return t('levels.sewerlevel.region_deco_name');
+		case 'prison': return alt ? t('levels.prisonlevel.region_deco_alt_name') : t('levels.prisonlevel.region_deco_name');
+		case 'caves': return t('levels.caveslevel.region_deco_name');
+		case 'city': return t('levels.citylevel.region_deco_name');
+		case 'halls': return t('levels.hallslevel.region_deco_name');
+	}
+}
+/** `region_deco_desc`, same split as the name above. */
+export function examineRegionDecoDesc(region: Region, alt: boolean): string {
+	switch (region) {
+		case 'sewers': return t('levels.sewerlevel.region_deco_desc');
+		case 'prison': return alt ? t('levels.prisonlevel.region_deco_alt_desc') : t('levels.prisonlevel.region_deco_desc');
+		case 'caves': return t('levels.caveslevel.region_deco_desc');
+		case 'city': return t('levels.citylevel.region_deco_desc');
+		case 'halls': return t('levels.hallslevel.region_deco_desc');
+	}
 }
 /** `bookshelf_desc`: Sewer/Prison/CavesLevel each override it; `Level`'s base `tileDesc()` has no
  *  BOOKSHELF case at all, so any other region falls through to no description - matching Java,
@@ -109,6 +132,9 @@ export interface TileExamineContext {
 	atStairs: boolean;
 	coarse: number;
 	isCrystalDoor: boolean;
+	/** Lowercase plant kind on the examined cell (`plantKindAt`), if any. */
+	plantKind: string | undefined;
+	isWarden: boolean;
 }
 
 /** Either the line to say, or the alchemy pot's recipe window (examining the pot is
@@ -171,6 +197,24 @@ export function examineTileOutcome(ctx: TileExamineContext): TileExamineOutcome 
 		}
 	}
 
+	//A growing plant on the examined cell answers as itself - `Plant.name()`/`desc()`,
+	//with the `warden_desc` paragraph for a Warden - ahead of the terrain below, the
+	//same position custom tiles hold above it. Kinds outside the twelve seed kinds
+	//(a blandfruit bush, which Java gives no `warden_desc`) fall through to the terrain.
+	if (ctx.plantKind !== undefined) {
+		const growing = plantName(ctx.plantKind);
+		const growingDesc = plantDesc(ctx.plantKind, ctx.isWarden);
+		if (growing !== undefined && growingDesc !== undefined) {
+			return { kind: 'say', text: `${growing}. ${growingDesc}` };
+		}
+	}
+	//Region decorations answer with their own name/desc (`tileName`/`tileDesc` on each
+	//region level) - a deco cell is never a plant cell or stairs, so this sits with
+	//the terrain answers below the custom-tile and plant answers above.
+	if (ctx.raw === Terrain.REGION_DECO || ctx.raw === Terrain.REGION_DECO_ALT) {
+		const alt = ctx.raw === Terrain.REGION_DECO_ALT;
+		return { kind: 'say', text: `${examineRegionDecoName(ctx.region, alt)}. ${examineRegionDecoDesc(ctx.region, alt)}` };
+	}
 	if (ctx.atStairs) {
 		name = t('levels.level.exit_name');
 		desc = examineExitDesc(region);

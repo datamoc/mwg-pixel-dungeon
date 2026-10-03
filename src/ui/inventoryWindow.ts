@@ -1,5 +1,5 @@
 import { SpriteSheet } from 'mwg';
-import { Container2D, Rectangle2D, Shape2D, Sprite2D } from 'mwg/two-d/render';
+import { Container2D, Rectangle2D, Shape2D, Sprite2D, TintedSprite } from 'mwg/two-d/render';
 import { IconGrid, TabbedList } from 'mwg/two-d/ui';
 import { SpdLabel as Label } from './spdLabel';
 import { SpdButton } from './spdButton';
@@ -23,6 +23,8 @@ export interface InventoryEntry {
 	instanceId?: string;
 	name: string;
 	frame: number;
+	/** Java `ItemSprite.Glowing` color for brewed Blandfruit; static tint is a stated pulse reduction. */
+	glowColor?: number;
 	quantity: number;
 	description?: string;
 	level?: number;
@@ -191,11 +193,18 @@ export class InventoryWindow extends Container2D {
 		});
 	}
 
-	private icon(frame: number): Sprite2D {
+	private icon(frame: number, glowColor?: number): Sprite2D | TintedSprite {
 		//`items.png` is a 16x16 grid, and a sheet caches each cut `Texture`: every redraw shares
 		//the frame textures instead of cutting a fresh one per row (MWG 0.8.0 item 326).
 		itemsSheet ??= SpriteSheet.fromTexture(runState.sprites.items, 16, 16);
-		return new Sprite2D(itemsSheet.get(frame));
+		const texture = itemsSheet.get(frame);
+		if (glowColor === undefined) return new Sprite2D(texture);
+		// Java pulses a color-add from 0 to 0.6 (`ItemSprite.update`, `ItemSprite.Glowing`, tag
+		// `v3.3.8`). The inventory window has no per-row update clock, so preserve its hue with
+		// a steady 0.3 tint; the reduced pulse is documented in R008 and the food coverage row.
+		const sprite = new TintedSprite(texture);
+		sprite.lerpTint(glowColor, 0.3);
+		return sprite;
 	}
 
 	private slotIcon(item: InventoryEntry | null, index: number): Container2D {
@@ -204,7 +213,7 @@ export class InventoryWindow extends Container2D {
 		const color = item?.cursed ? 0x9f394d : item && item.identified === false ? 0x995399 : equipped ? 0x91938c : 0x53564d;
 		slot.addChild(new Shape2D().rect(0, 0, 28, 28).fill({ color, alpha: 0.6 }));
 		if (item || equipped) {
-			const sprite = this.icon(item?.frame ?? [1, 2, 6, 0, 5][index]);
+			const sprite = this.icon(item?.frame ?? [1, 2, 6, 0, 5][index], item?.glowColor);
 			sprite.position.set(6, 6);
 			if (!item) sprite.alpha = 0.3;
 			slot.addChild(sprite);
@@ -307,7 +316,7 @@ export class InventoryWindow extends Container2D {
 		this.panel.alpha = 0.35;
 		this.panel.eventMode = 'none';
 		this.detail.addChild(spdPanel(140, 120 + (item.verbs && (item.verbs.drop || item.verbs.throw) ? 18 : 0)));
-		const sprite = this.icon(item.frame); sprite.position.set(8, 9); this.detail.addChild(sprite);
+		const sprite = this.icon(item.frame, item.glowColor); sprite.position.set(8, 9); this.detail.addChild(sprite);
 		const name = new Label({ text: item.name, size: 8, color: 0xffff44, wrapWidth: 102 }); name.position.set(28, 9); this.detail.addChild(name);
 		const tierRoman = item.wealthDropTier ? ({ 1: 'I', 2: 'II', 3: 'III', 4: 'IV' } as const)[item.wealthDropTier] : '';
 		// Java `RingOfWealth.java:172-187` communicates this tier with a transient flare; retain it as a compact detail label so the port's dropped item remains inspectable after pickup.

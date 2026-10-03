@@ -3,6 +3,7 @@ import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillRoomInset } from '../../paintLevel';
 import { SpdRandom } from '../../../spdRng';
 import { setupPatch, xyToPatchCoords } from './patchRoom';
+import { trapRevealChance } from '../../trinketLevelGen';
 
 export function paintBurnedRoom(level: PaintLevel, room: Room): void {
 	fillRoom(level, room, Terrain.WALL);
@@ -16,6 +17,8 @@ export function paintBurnedRoom(level: PaintLevel, room: Room): void {
 	// `canPlaceWater`/`canPlaceGrass`/`canPlaceTrap` - keep it on the room, not just this scope.
 	room.patch = patch;
 
+	const revealedChance = trapRevealChance();
+	let revealInc = 0;
 	for (let i = room.top + 1; i < room.bottom; i++) {
 		for (let j = room.left + 1; j < room.right; j++) {
 			if (!patch[xyToPatchCoords(room, j, i)]) continue;
@@ -33,8 +36,16 @@ export function paintBurnedRoom(level: PaintLevel, room: Room): void {
 					level.setTrap('burning', false, true, cell);
 					break;
 				case 3:
-					level.map[cell] = Terrain.SECRET_TRAP;
-					level.setTrap('burning', true, true, cell);
+					//`TrapMechanism`: a running credit reveals every `1/chance`-th of these hidden burning traps.
+					revealInc += revealedChance;
+					if (revealInc >= 1) {
+						level.map[cell] = Terrain.TRAP;
+						level.setTrap('burning', false, true, cell);
+						revealInc--;
+					} else {
+						level.map[cell] = Terrain.SECRET_TRAP;
+						level.setTrap('burning', true, true, cell);
+					}
 					break;
 				case 4:
 					level.map[cell] = Terrain.INACTIVE_TRAP;

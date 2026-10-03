@@ -18,6 +18,8 @@ export function planMonsterPopulation(
 	largeFeeling: boolean,
 	random: SimulationRandom,
 	roguelike: SimulationRoguelike,
+	/** `RatSkull.exoticChanceMultiplier()` (1 with none): scales every rotation alternative's 1/50. */
+	altChanceMultiplier = 1,
 ): MonsterPopulationPlan {
 	const rareMob: MonsterId | undefined = ({
 		4: 'thief',
@@ -38,15 +40,13 @@ export function planMonsterPopulation(
 		scorpio: 'acidic',
 	};
 	//Java's per-entry roll is `Random.Float() < 1/50 * RatSkull.exoticChanceMultiplier()`
-	//(`MobSpawner.swapMobAlts`, tag `v3.3.8`); this port has no trinket system, so the
-	//multiplier is always its default of 1 (the ParchmentScrap precedent in
-	//`src/items/generator.ts`, and the chaos roll in `src/actors/monsterSpawn.ts`).
+	//(`MobSpawner.swapMobAlts`, tag `v3.3.8`); the multiplier is the carried Rat Skull's (1 with none).
 	//The two gnoll/crab variants reuse their base AI and presentation; their authored stats
 	//live in `monsters.mwl`, while the 1/50 rotation alternative is carried here.
 	const roster = roguelike.rollRoster(
 		baseRoster.map((value) => ({
 			value,
-			alternative: altByBase[value] ? { value: altByBase[value]!, chance: 1 / 50 } : undefined,
+			alternative: altByBase[value] ? { value: altByBase[value]!, chance: 1 / 50 * altChanceMultiplier } : undefined,
 		})),
 		rareMob ? [{ value: rareMob, chance: 0.025 }] : [],
 	).roster as AnyMonsterId[];

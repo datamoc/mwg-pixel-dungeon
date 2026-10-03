@@ -8,7 +8,7 @@ import { titleIcon } from './titleIcons';
 export interface DungeonHudState {
 	place: string;
 	depth: number;
-	keys: { iron: number; golden: number; crystal: number };
+	keys: { iron: number; golden: number; crystal: number; worn: number };
 }
 
 /** `Icons.DEPTH` (`uvRectBySize(32, 80, 6, 7)`), located in this port's repacked `ui_icons.png` (`tools/scratch/icons-match.mjs`). */
@@ -115,12 +115,12 @@ export class DungeonHud extends Container {
 		this.depthText.setText(String(state.depth));
 		this.depthText.position.set(this.depthIcon.x + (6 - this.depthText.width) / 2, this.depthIcon.y + 7);
 		this.keys.removeChildren().forEach((child) => child.destroy({ children: true }));
-		const carried: [number, number][] = [[55, state.keys.crystal], [56, state.keys.golden], [57, state.keys.iron]];
+		const carried: [number, number][] = [[55, state.keys.crystal], [56, state.keys.golden], [57, state.keys.iron], [76, state.keys.worn]];
 		const first = carried.find(([, count]) => count > 0);
 		this.journalIcon.visible = !first;
 		if (!first) return;
 		//`JournalButton.updateKeyDisplay()`: the button darkens a little per carried key, up to six.
-		const total = state.keys.iron + state.keys.golden + state.keys.crystal;
+		const total = state.keys.iron + state.keys.golden + state.keys.crystal + state.keys.worn;
 		const shade = Math.round((0.8 - Math.min(6, total) / 20) * 255);
 		this.journalBg.tint = (shade << 16) | (shade << 8) | shade;
 		const [frame] = first;

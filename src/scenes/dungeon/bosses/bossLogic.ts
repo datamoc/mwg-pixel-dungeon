@@ -8,9 +8,9 @@ import { traceRayToTarget } from '../../../mechanics/rays';
 import { spawnTrapSpecks } from '../../../ui/effectBursts';
 import { runVertigoStep } from '../../../adapters/gameSimulation';
 import { planRatKingWave, ratKingP1Summon, type RatKingAddKind, type RatKingWavePlan } from '../../../simulation/ratKingBoss';
-import { chooseDM300Ability, dm300VentPath, planDM300Knockback, planDM300Rockfall } from '../../../simulation/dm300Boss';
+import { chooseDM300Ability, dm300TunnelMove, dm300VentPath, planDM300Knockback, planDM300Rockfall, planDM300Tunnel } from '../../../simulation/dm300Boss';
 import { kingLosingYell, kingPhase2Entry, kingPhase2Threshold, kingPhase3Entry } from '../../../simulation/dwarfKingPhase';
-import { aimYogDeathGaze, fistHalfHpCrossed, yogPhase4Floor, yogPhaseAdvance, yogPhaseThreshold } from '../../../simulation/yogBoss';
+import { aimYogDeathGaze, fistHalfHpCrossed, yogDamageResolution } from '../../../simulation/yogBoss';
 import { preparationLevel } from '../../../simulation/preparation';
 import { isOpenSpace } from '../../../simulation/crystalSpire';
 import { CLASS_KEYS, has, t, titleCase } from '../../../i18n/index';
@@ -574,6 +574,45 @@ export const bossLogicMethods = {
 			blocked,
 		});
 		if (decision.step) this.moveTo(dm300, decision.step);
+		else if (supercharged && dm300.seesHero && dm300.buffs['roots'] === undefined) this.dm300Tunnel(dm300);
+	},
+
+	/**
+	 * `DM300.getCloser()`'s supercharged branch (`DM300.java:603-651`, tag `v3.3.8`): when the normal
+	 * path step fails (`super.getCloser` false) a supercharged, hunting, unrooted DM-300 that is not
+	 * yet adjacent drills every wall in its 3x3 into `EMPTY_DECO` - except the gate band and
+	 * anything outside `diggableArea` - pauses `spend(2f : 3f)` and steps to the closest open
+	 * cell. Deviations: Java's `Dungeon.observe()` is the scene's usual per-turn FOV refresh here;
+	 * the pause is `scheduler.postpone` like `dm300Supercharge`'s own spend; the shake is `(5, 1)`.
+	 */
+	dm300Tunnel(this: DungeonScene, dm300: Creature): boolean {
+		const paint = this.portedPaint;
+		if (!paint || Roguelike.chebyshevDistance(dm300, this.hero) <= 1) return false;
+		const width = this.level.width;
+		const occupied = (x: number, y: number) => this.creatures.some((c) => c !== dm300 && c.hp > 0 && c.x === x && c.y === y);
+		const plan = planDM300Tunnel(dm300, this.hero, {
+			occupied,
+			isWall: (x, y) => this.level.inside(x, y) && (paint.map[y * width + x] === Terrain.WALL || paint.map[y * width + x] === Terrain.WALL_DECO),
+		});
+		if (!plan) return false;
+		runState.audio.cue('rocks', 0.7);
+		for (const cell of plan.dig) {
+			paint.map[cell.y * width + cell.x] = Terrain.EMPTY_DECO;
+			this.level.set(cell.x, cell.y, FLOOR);
+			this.restitchTilesAround(cell.x, cell.y);
+		}
+		if (plan.dig.length > 0) this.refreshVisualGrid();
+		this.scheduler.postpone(dm300, isChallengeEnabled('stronger_bosses') ? 2 : 3);
+		const step = dm300TunnelMove(dm300, this.hero, {
+			occupied,
+			isOpenSpace: (x, y) => isOpenSpace(this.level.index(x, y), width, (cell) => {
+				const sx = cell % width, sy = Math.floor(cell / width);
+				return !this.level.inside(sx, sy) || !this.level.passable(sx, sy);
+			}),
+		});
+		if (step) this.moveTo(dm300, step);
+		this.shakeScreen(5, 1);
+		return true;
 	},
 
 	/** DM300.ventGas(): toxic gas along a STOP_TARGET trajectory at the hero (100 at the
@@ -1231,22 +1270,17 @@ if (monster.hp <= 0) {
 		//the HP itself still applied above, exactly like `super.damage()` running first.
 		if ((yog.yogPhase ?? 1) === 0) return;
 		const phase = yog.yogPhase ?? 1;
-		const threshold = yogPhaseThreshold(phase, yog.maxHp);
-		if (phase < 4) {
-			yog.hp = Math.max(yog.hp, threshold);
-		} else if (phase === 4) {
-			yog.hp = Math.max(yog.hp, yogPhase4Floor(yog.maxHp));
-		}
-		//`YogDzewa.damage()` (tag `v3.3.8`): the taken damage is measured AFTER the
-		//clamp above (`int dmgTaken = preHP - HP`), and accelerates both cooldowns
-		//(`-= dmgTaken/10`). Found by the 13th monster-analysis matrix (bosses).
-		const dmgTaken = Math.max(0, preHp - yog.hp);
+		const resolution = yogDamageResolution(phase, preHp, yog.hp, yog.maxHp);
+		yog.hp = resolution.hp;
+		//Java measures cooldown acceleration from the clamped HP delta; this shared resolver is
+		//also compared against actual YogDzewa.damage() calls in the B3 runtime parity stage.
+		const dmgTaken = resolution.hpLost;
 		this.creditLockedFloor('yog', dmgTaken, dmgTaken);
 		if (dmgTaken > 0) {
 			yog.yogSummonCd = (yog.yogSummonCd ?? Random.normalRange(10, 15)) - dmgTaken / 10;
 			yog.yogBeamCd = (yog.yogBeamCd ?? Random.normalRange(10, 15)) - dmgTaken / 10;
 		}
-		if (yogPhaseAdvance(phase, yog.hp, yog.maxHp)) {
+		if (resolution.advances) {
 			yog.yogPhase = phase + 1;
 			this.say(t('actors.mobs.yogdzewa.darkness'), 'negative');
 			this.summonFist(yog);

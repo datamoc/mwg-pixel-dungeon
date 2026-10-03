@@ -28,11 +28,15 @@ function compile(source, destination) {
 
 try {
 	writeFileSync(join(output, 'package.json'), '{"type":"commonjs"}');
-	for (const file of ['simulation/mindFormCast', 'items/mindForm']) {
+	for (const file of ['simulation/mindFormCast', 'items/mindFormDiscovery', 'items/mindForm']) {
 		compile(new URL(`../src/${file}.ts`, import.meta.url), `${file}.js`);
 	}
+	writeFileSync(join(output, 'mwlContent.js'), "exports.MWL_MISSILE_BY_CLASS = new Map([['Javelin', {}], ['TippedDart', {}]]);\n");
+	writeFileSync(join(output, 'items', 'missiles.js'), "exports.TIPPED_DART_BY_SEED = { sungrass: 'healingdart', blindweed: 'blindingdart' };\n");
+	writeFileSync(join(output, 'items', 'wands.js'), "exports.wandTypeFromSource = (source) => source === 'WandOfFrost' ? 'frost' : null;\n");
 	const require = createRequire(join(output, 'tests.cjs'));
 	const { mindFormCastGate, resolveMindFormAim } = require('./simulation/mindFormCast');
+	const { mindFormDiscoveryKey, mindFormDiscoveriesFor, markMindFormItemDiscovered, restoreMindFormDiscoveries } = require('./items/mindFormDiscovery');
 	const { serializeMindEffect, parseMindEffect,
 		startMindFormFlow, confirmMindFormAim, reaimStoredMindForm } = require('./items/mindForm');
 
@@ -63,11 +67,27 @@ try {
 		assert.deepEqual(parseMindEffect('mind:wand:fireblast'), wand);
 		assert.deepEqual(parseMindEffect('mind:wand:frost'), { kind: 'wand', wandType: 'frost', isMultiCharge: false });
 		assert.deepEqual(parseMindEffect('mind:thrown:javelin'), { kind: 'thrown', missileClass: 'javelin' });
+		const tipped = { kind: 'thrown', missileClass: 'TippedDart', tippedSeed: 'sungrass' };
+		assert.equal(serializeMindEffect(tipped), 'mind:thrown:TippedDart:sungrass');
+		assert.deepEqual(parseMindEffect('mind:thrown:TippedDart:Sungrass'), tipped);
 		assert.equal(parseMindEffect(null), null);
 		assert.equal(parseMindEffect('mind:wand:'), null);
 		assert.equal(parseMindEffect('mind:charm:fireblast'), null);
 		assert.equal(parseMindEffect('body:wand:fireblast'), null);
 		assert.equal(parseMindEffect('garbage'), null);
+	});
+
+	check('MindForm catalogs only identified item types and preserves discoveries after consumption', () => {
+		const scene = {};
+		markMindFormItemDiscovered(scene, { id: 'wand', sourceClass: 'WandOfFrost', identified: false, quantity: 1 });
+		assert.equal(mindFormDiscoveriesFor(scene).size, 0);
+		markMindFormItemDiscovered(scene, { id: 'wand', sourceClass: 'WandOfFrost', identified: true, quantity: 1 });
+		markMindFormItemDiscovered(scene, { id: 'missile_javelin', sourceClass: 'Javelin', identified: true, quantity: 2 });
+		markMindFormItemDiscovered(scene, { id: 'missile_tippeddart', sourceClass: 'TippedDart', tippedSeed: 'Sungrass', identified: true, quantity: 1 });
+		assert.deepEqual([...mindFormDiscoveriesFor(scene)].sort(), ['thrown:Javelin', 'thrown:TippedDart:sungrass', 'wand:frost']);
+		const restored = {};
+		restoreMindFormDiscoveries(restored, [...mindFormDiscoveriesFor(scene)]);
+		assert.equal(mindFormDiscoveriesFor(restored).has(mindFormDiscoveryKey({ kind: 'thrown', missileClass: 'TippedDart', tippedSeed: 'sungrass' })), true);
 	});
 
 	/** A stub Trinity scene: armor holds 100 charge, one rat at (2,0), rays stop at (4,0). */
@@ -89,7 +109,7 @@ try {
 			pickMindEffect: (options, onPick) => { state.picked = options.length; onPick(options[0].value); },
 			aimMindEffect: (effect, onConfirm) => { state.aimed = true; onConfirm({ x: 2, y: 0 }); },
 			fireMindWand: (wandType, level, targetCell, targetId) => { state.fired.push(['wand', wandType, level, targetCell, targetId]); return true; },
-			fireMindThrown: (missileClass, level, targetCell, targetId) => { state.fired.push(['thrown', missileClass, level, targetCell, targetId]); return true; },
+			fireMindThrown: (missileClass, level, targetCell, targetId, tippedSeed) => { state.fired.push(['thrown', missileClass, level, targetCell, targetId, ...(tippedSeed ? [tippedSeed] : [])]); return true; },
 			spendTurn: () => { state.turns += 1; },
 			say: (key, level) => { said.push([key, level]); },
 			storeMindEffect: (id) => { state.stored = id; },
@@ -134,6 +154,14 @@ try {
 		startMindFormFlow(fizzle.ctx, onlyThrown);
 		assert.equal(fizzle.state.armor, 100);
 		assert.equal(fizzle.state.turns, 0);
+	});
+
+	check('a tipped-dart pick keeps its seed through the conjured throw', () => {
+		const { ctx, state } = stub();
+		const effect = { kind: 'thrown', missileClass: 'TippedDart', tippedSeed: 'sungrass' };
+		assert.equal(confirmMindFormAim(ctx, effect, { x: 2, y: 0 }), true);
+		assert.deepEqual(state.fired, [['thrown', 'TippedDart', 5, { x: 2, y: 0 }, 'rat-1', 'sungrass']]);
+		assert.equal(state.turns, 1);
 	});
 
 	check('an effect-spawned thrown missile flies to an empty collision cell without dropping', () => {
@@ -183,14 +211,49 @@ try {
 		const scene = readFileSync(new URL('../src/scenes/dungeon/hero/armorAbilityUse.ts', import.meta.url), 'utf8');
 		assert.match(scene, /chooseTrinityMindEffect\(this: DungeonScene, cost: number\)/,
 			'the Trinity ability offers a Mind picker');
+		assert.match(scene, /const storedKnown = stored !== null\s*&& \(stored\.kind === 'wand'/,
+			'the stored MindForm item remains available independently of timed Body/Spirit windows');
+		assert.doesNotMatch(scene, /this\.trinityTurns = 20;[\s\S]{0,80}onPick\(option\.value\)/,
+			'selecting MindForm does not start the port-only 20-turn expiry');
+		assert.doesNotMatch(scene, /this\.trinityMindEffect = null/,
+			'other form transitions and timed expiry do not erase Java’s separately stored MindForm item');
 		assert.match(scene, /mindFormFlowContext\(this: DungeonScene, baseCost: number\)/,
 			'the flow context is bound scene-side');
 		assert.match(scene, /wandChargesPerCast\(type, fullCharges\)/,
 			'conjured wands compute charge-scaled effects from their own full charge count');
 		assert.match(scene, /this\.fireWandShot\(type, level, target \?\? targetCell, wandChargesPerCast\(type, fullCharges\)\)/,
 			'conjured zaps retain bare cell targets without spending bag charges');
-		assert.match(scene, /fireMindThrown: \(missileClass, level, targetCell, targetId\)[\s\S]{0,420}spawnBoltTo\(this\.hero, targetCell, 0xffffff, undefined, missileFlightArt\(missileClass\)\)/,
+		assert.match(scene, /fireMindThrown: \(missileClass, level, targetCell, targetId, tippedSeed\)[\s\S]{0,420}spawnBoltTo\(this\.hero, targetCell, 0xffffff, undefined, missileFlightArt\(missileClass, tippedSeed\)\)/,
 			'effect-spawned thrown misses fly to the selected cell without entering item-drop handling');
+		assert.match(scene, /Object\.keys\(TIPPED_DART_BY_SEED\)\.map\(\(tippedSeed\)[\s\S]{0,180}missileClass: 'TippedDart', tippedSeed/,
+			'the Mind picker offers every seed-specific TippedDart catalog class');
+		assert.match(scene, /markMindFormItemsDiscovered\(this, this\.bag\.items\)/,
+			'the picker captures identified stacks still in the bag');
+		assert.match(scene, /wands: allCatalog\.wands\.filter\(\(option\) => discovered\.has\(mindFormDiscoveryKey\(option\.value\)\)\)/,
+			'the picker gates each modeled class against persistent run discovery');
+		assert.match(scene, /if \(missileClass === 'TippedDart'\) this\.applyTippedDartEffect\(target, tippedSeed\)/,
+			'a conjured TippedDart routes its hit through the established seed effect');
+		assert.match(scene, /this\.attack\(\{ \.\.\.this\.hero, kind: undefined, attackMode: 'throw', damage: \[lo, hi\] \}, target, acc, 1, missileClass\)/,
+			'thrown MindForm attacks pass their conjured source class into class-specific proc gates');
+		assert.match(scene, /missileClass === 'HeavyBoomerang'\) this\.scheduleBoomerangReturn\(targetCell\.x, targetCell\.y, false,[\s\S]{0,100}spawnedForEffect: true, level/,
+			'MindForm schedules Java CircleBack for a bare-cell HeavyBoomerang cast');
+		assert.match(scene, /missileClass === 'HeavyBoomerang'\) this\.scheduleBoomerangReturn\(target\.x, target\.y, false,[\s\S]{0,100}spawnedForEffect: true, level/,
+			'MindForm schedules Java CircleBack after a HeavyBoomerang hit or miss');
+		const boomerang = readFileSync(new URL('../src/scenes/dungeon/hero/inventoryQuickslot.ts', import.meta.url), 'utf8');
+		assert.match(boomerang, /pending\.left--[\s\S]*?spawnBoltFromCell\(\{ x: pending\.fromX, y: pending\.fromY \}, \{ x: pending\.returnX, y: pending\.returnY \}/,
+			'the five-turn return animates from the landing cell to the original hero cell');
+		assert.match(boomerang, /for \(const pending of \[\.\.\.this\.boomerangReturns\]\)[\s\S]{0,120}pending\.inFlight[\s\S]{0,180}pending\.left--/,
+			'each appended CircleBack has an independent five-turn counter and return flight');
+		assert.match(boomerang, /this\.boomerangReturns\.push\(/,
+			'multiple Java CircleBack instances can coexist without replacing earlier returns');
+		assert.match(boomerang, /if \(pending\.spawnedForEffect\) return;[\s\S]{0,300}this\.spawnGroundItem\('stone', pending\.returnX, pending\.returnY\)/,
+			'spawnedForEffect returns exit before the ordinary boomerang drop path');
+		const save = readFileSync(new URL('../src/scenes/dungeon/deathSaveRefresh.ts', import.meta.url), 'utf8');
+		const load = readFileSync(new URL('../src/scenes/dungeon/panelsSingleUse.ts', import.meta.url), 'utf8');
+		assert.match(save, /boomerangReturns: this\.boomerangReturns\.map\(/,
+			'all pending CircleBack states are saved');
+		assert.match(load, /s\.boomerangReturns \?\? \(s\.boomerangReturn \? \[s\.boomerangReturn\] : \[\]\)/,
+			'all pending CircleBack states are restored, including legacy single-return saves');
 		assert.match(scene, /trinityChargeUsePerEffect\(baseCost,[\s\S]{0,200}'mind'\)/,
 			'conjured fires spend the Trinity armor charge per effect class');
 		assert.doesNotMatch(scene, /commitTrinityForm\(this: DungeonScene/,

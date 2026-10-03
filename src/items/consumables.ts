@@ -9,6 +9,8 @@ import type { ClassId } from '../classes';
 import { WATERSKIN_MAX } from '../dungeonConstants';
 import { MWL_CONSUMABLE_STATS, mwlItemEffectValue } from '../mwlContent';
 import { BUFF_DURATION_DATA } from '../simulation/mwlBuffDurations';
+import { POTION_QUAFF_ANONYMOUS } from './potionKnow';
+import { cookedFruitInstanceId, isCookedFruit, findFruitStack, removeFruitUnits } from './blandfruit';
 
 interface BarrierLike {
 	total: number;
@@ -36,7 +38,24 @@ export interface ConsumableContext {
 	readonly wandCharges: { refund(amount: number): void };
 	showHeal(target: Creature, amount: number): void;
 	say(line: string, level?: 'info' | 'positive' | 'negative' | 'warning'): void;
-	applyPotionEffect(id: string): void;
+	applyPotionEffect(id: string, opts?: { anonymous?: boolean }): void;
+	/** `PotionOfMastery`'s item picker; the potion is spent when an item is chosen, so the quaff does not pre-consume it. */
+	readonly startMasteryPick?: (instanceId: string | undefined) => boolean;
+	/** `PotionOfDragonsBreath`'s cell picker + cone; spent when a cell is chosen. */
+	readonly startDragonsBreath?: (instanceId: string | undefined) => boolean;
+	/** `PotionOfDivineInspiration`'s tier picker; spent when a tier is chosen. */
+	readonly startDivineInspiration?: (instanceId: string | undefined) => boolean;
+	/** The carried Vial of Blood's hooks on a multi-drop drink (`Waterskin.execute()` / `Dewdrop.consumeDew`), absent in test doubles. */
+	readonly vial?: {
+		/** A Vial of Blood is carried (`VialOfBlood.delayBurstHealing()`). */
+		carried(): boolean;
+		/** `dropsNeeded /= totalHealMultiplier()` when more than one drop is needed. */
+		dropsNeeded(dropsNeeded: number): number;
+		/** Turns the heal into a capped heal-over-time; false with no vial (heal instantly). */
+		delayedHeal(amount: number): boolean;
+		/** `VialOfBlood.totalHealMultiplier()` (1 with none). */
+		totalHealMultiplier(): number;
+	};
 }
 
 /** `MysteryMeat.effect(hero)` (tag `v3.3.8`): `Random.Int(5)` over burning
@@ -91,12 +110,12 @@ export function applyMealEatenEffects(scene: ConsumableContext, baseHeal: number
 		const pts = scene.talentRank('hearty_meal');
 		if (scene.hero.hp / scene.hero.maxHp < 0.334) heal += 2 + 2 * pts;
 	}
-	if (scene.heroClass === 'mage') scene.wandBonusDamage = Math.max(scene.wandBonusDamage, 2 * scene.talentRank('empowering_meal'));
-	if (scene.heroClass === 'mage' && scene.talentRank('energizing_meal') > 0) scene.wandCharges.refund(scene.talentRank('energizing_meal') === 1 ? 5 : 8);
-	if (scene.heroClass === 'duelist' && scene.talentRank('focused_meal') > 0) scene.ammo += scene.talentRank('focused_meal') === 1 ? 1 : 2;
-	if (scene.heroClass === 'rogue' && scene.talentRank('mystical_meal') > 0) scene.hero.buffs['cloak'] = 9999;
-	if (scene.heroClass === 'huntress' && scene.talentRank('invigorating_meal') > 0) scene.freeTurnNext = true;
-	if (scene.heroClass === 'duelist' && scene.talentRank('strengthening_meal') > 0) {
+	scene.wandBonusDamage = Math.max(scene.wandBonusDamage, 2 * scene.talentRank('empowering_meal'));
+	if (scene.talentRank('energizing_meal') > 0) scene.wandCharges.refund(scene.talentRank('energizing_meal') === 1 ? 5 : 8);
+	if (scene.talentRank('focused_meal') > 0) scene.ammo += scene.talentRank('focused_meal') === 1 ? 1 : 2;
+	if (scene.talentRank('mystical_meal') > 0) scene.hero.buffs['cloak'] = 9999;
+	if (scene.talentRank('invigorating_meal') > 0) scene.freeTurnNext = true;
+	if (scene.talentRank('strengthening_meal') > 0) {
 		scene.physicalBonusDamage = 3;
 		scene.physicalBonusAttacks = scene.talentRank('strengthening_meal') + 1;
 	}
@@ -104,13 +123,13 @@ export function applyMealEatenEffects(scene: ConsumableContext, baseHeal: number
 	//`v3.3.8`): a Cleric with the talent gains the `SatiatedSpellsTracker`, which the
 	//next spell cast converts to shielding. The non-Cleric half (a delayed 3/5 Barrier
 	//via metamorphosis) needs a system this port has none of.
-	if (scene.heroClass === 'cleric' && scene.talentRank('satiated_spells') > 0) addBuff(scene.hero, 'satiatedSpells');
+	if (scene.talentRank('satiated_spells') > 0) addBuff(scene.hero, 'satiatedSpells');
 	//`ENLIGHTENING_MEAL`'s Cleric half (same method): eating grants the carried tome
 	//`(1+points)/3` of a charge with no exp (`HolyTome.directCharge`). The -2 eat time
 	//joins every other meal talent's eating-time half as unported (eating takes the
 	//same turn here regardless of class or talents), as do the non-Cleric
 	//`Recharging`/`ArtifactRecharge` turns via metamorphosis.
-	if (scene.heroClass === 'cleric' && scene.talentRank('enlightening_meal') > 0) {
+	if (scene.talentRank('enlightening_meal') > 0) {
 		const mealTome = findHolyTome(scene.bag);
 		if (mealTome) {
 			const charged = directTomeCharge(mealTome.charge ?? 0, mealTome.partialCharge ?? 0, mealTome.level ?? 0,
@@ -166,13 +185,30 @@ const POTION_OF_HEALING_CURED_BUFFS = [
 /** Food.satisfy() and the class talents that react to eating. */
 export function eatFood(scene: ConsumableContext): boolean {
 	const food = scene.requestedItemId
-		? scene.bag.find(scene.requestedItemId, scene.requestedItemInstanceId)
+		? scene.requestedItemId === 'blandfruit' ? findFruitStack(scene.bag, scene.requestedItemInstanceId) : scene.bag.find(scene.requestedItemId, scene.requestedItemInstanceId)
 		: scene.bag.find('food') ?? scene.bag.find('smallRation') ?? scene.bag.find('meat');
 	if (!food) {
 		scene.say(t('port.log.nothingtoeat'), 'negative');
 		return false;
 	}
-	scene.bag.remove(food.id, 1);
+	//`Blandfruit.execute()` (tag `v3.3.8`): a cooked fruit feeds at STARVING
+	//through the shared meal tail below, then runs the imbued potion's own
+	//`apply(hero)` - anonymized like `imbuePotion()`'s potion, so the class
+	//is never revealed by the meal (R112's `!anonymous` gate). The brew removal
+	//carries the instance id: plain and cooked fruits share one bag id.
+	const fruitBrew = isCookedFruit(food as typeof food & { potionAttrib?: string })
+		? (food as typeof food & { potionAttrib?: string }).potionAttrib!
+		: undefined;
+	if (food.id === 'blandfruit' && fruitBrew === undefined) {
+		//A plain (uncooked, potionAttrib-less) fruit refuses `AC_EAT` with the
+		//`raw` line instead of feeding - refuse before consuming, exactly like
+		//Java's early return ahead of `super.execute()`.
+		scene.say(t('items.food.blandfruit.raw'), 'negative');
+		return false;
+	}
+	if (food.id === 'blandfruit') {
+		if (!removeFruitUnits(scene.bag, food, 1)) return false;
+	} else scene.bag.remove(food.id, 1);
 	if (food.id === 'meat') applyMysteryMeatEffect(scene);
 	if (food.id === 'berry') {
 		// `Berry.SeedCounter` (tag `v3.3.8`) is revive-persistent and drops a random
@@ -180,7 +216,7 @@ export function eatFood(scene: ConsumableContext): boolean {
 		scene.eatBerrySeedPayout();
 	}
 	const cached = cachedRationChance(scene.heroClass, scene.talentRank('cached_rations'));
-	if (cached > 0 && Random.chance(cached)) scene.bag.add({ id: food.id, quantity: 1, stackable: true, identified: food.identified });
+	if (cached > 0 && Random.chance(cached)) scene.bag.add({ id: food.id, quantity: 1, stackable: true, identified: food.identified, ...(fruitBrew !== undefined ? { potionAttrib: fruitBrew, instanceId: cookedFruitInstanceId(fruitBrew) } : {}) });
 	const stats = MWL_CONSUMABLE_STATS[food.id] ?? MWL_CONSUMABLE_STATS.food;
 	if (!stats) throw new Error(`MWL consumable stats are missing food fallback`);
 	const energy = stats.hunger;
@@ -226,6 +262,7 @@ export function eatFood(scene: ConsumableContext): boolean {
 	scene.say(food.id === 'meat'
 		? t(heal > 5 ? 'port.log.eatmeathearty' : 'port.log.eatmeat', { heal })
 		: t(heal > 0 ? 'port.log.eathearty' : 'port.log.eat', { heal }), 'positive');
+	if (fruitBrew !== undefined) scene.applyPotionEffect(fruitBrew, { anonymous: true });
 	return true;
 }
 
@@ -259,7 +296,7 @@ export function quaffPotion(scene: ConsumableContext): boolean {
 	const hurt = scene.hero.hp < scene.hero.maxHp;
 	const ids = scene.requestedItemId === 'waterskin'
 		? []
-		: scene.bag.items.filter((i) => i.id.startsWith('potion') && i.quantity > 0).map((i) => i.id);
+		: scene.bag.items.filter((i) => (i.id.startsWith('potion') || i.id === 'elixirAquaticRejuvenation') && i.quantity > 0).map((i) => i.id);
 	if (ids.length === 0) {
 		if (scene.waterskin <= 0) {
 			scene.say(t('port.log.nothingtodrink'), 'negative');
@@ -273,10 +310,17 @@ export function quaffPotion(scene: ConsumableContext): boolean {
 			missingHealthPercent += missingShieldPercent;
 		}
 		const healFraction = mwlItemEffectValue('waterskin', 'healFractionPerDrop');
-		const dropsNeeded = Math.max(1, Math.min(scene.waterskin, Math.ceil(missingHealthPercent / healFraction - 0.01)));
+		const rawDrops = scene.vial ? scene.vial.dropsNeeded(missingHealthPercent / healFraction) : missingHealthPercent / healFraction;
+		const dropsNeeded = Math.max(1, Math.min(scene.waterskin, Math.ceil(rawDrops - 0.01)));
 		const heal = Math.round(scene.hero.maxHp * healFraction * dropsNeeded);
-		const effectiveHeal = Math.min(scene.hero.maxHp - scene.hero.hp, heal);
-		scene.hero.hp += effectiveHeal;
+		let effectiveHeal = Math.min(scene.hero.maxHp - scene.hero.hp, heal);
+		//`Dewdrop.consumeDew(quantity > 1)`: with a vial the heal pool is capped heal-over-time, and the Shielding Dew
+		//split reserves only the share the boosted pool will actually need (`heal / totalHealMultiplier`).
+		const delayed = dropsNeeded > 1 && scene.vial?.carried() === true;
+		if (delayed && rank > 0 && effectiveHeal < heal) effectiveHeal = Math.round(effectiveHeal / scene.vial!.totalHealMultiplier());
+		if (delayed && effectiveHeal > 0 && scene.vial!.delayedHeal(effectiveHeal)) {
+			//the pool pays out over later turns; the shield share below still lands now
+		} else scene.hero.hp += effectiveHeal;
 		if (rank > 0 && heal > effectiveHeal) {
 			const maxShield = Math.round(scene.hero.maxHp * 0.2 * rank);
 			scene.heroBarrier.add(Math.min(heal - effectiveHeal, Math.max(0, maxShield - scene.heroBarrier.total)));
@@ -293,7 +337,14 @@ export function quaffPotion(scene: ConsumableContext): boolean {
 		scene.say(t('port.log.savedraught'));
 		return false;
 	}
+	if (id === 'potionDivineInspiration' && scene.startDivineInspiration) return scene.startDivineInspiration(scene.requestedItemInstanceId);
+	if (id === 'potionDragonsBreath' && scene.startDragonsBreath) return scene.startDragonsBreath(scene.requestedItemInstanceId);
+	if (id === 'potionMastery' && scene.startMasteryPick) return scene.startMasteryPick(scene.requestedItemInstanceId);
 	scene.bag.remove(id, 1, scene.requestedItemInstanceId);
-	scene.applyPotionEffect(id);
+	//Quaffs whose Java `apply()` never calls `identify()` stay anonymous through
+	//the shared dispatch (`Potion.setKnown()`'s `!anonymous` gate, R112) - today
+	//only the aquatic elixir; the UnstableBrew's anonymized rolls pass their own
+	//flag from its drink flow instead of routing through here.
+	scene.applyPotionEffect(id, { anonymous: POTION_QUAFF_ANONYMOUS.has(id) });
 	return true;
 }

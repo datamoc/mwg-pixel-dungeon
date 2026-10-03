@@ -8,6 +8,7 @@
  * seventeenth extraction, behavior-identical.
  */
 import { Random } from 'mwg';
+import { SpdRandom } from '../spdRng';
 import type { AnyMonsterId } from '../monsters';
 import type { TrapKind } from '../dungeonConstants';
 import { BUFF_DURATION } from '../simulation/buffs';
@@ -27,6 +28,31 @@ export interface TargetedSpellAim {
 	spendTurn(): void;
 	say(line: string, level?: 'info' | 'positive' | 'negative' | 'warning'): void;
 	t(key: string, params?: Record<string, string | number>): string;
+}
+
+/**
+ * `UnstableSpell.onCast()`'s v3.3.8 weighted scroll pools. Java repeatedly draws
+ * from the same weighted table until the result matches the visible-enemy gate;
+ * choosing once from the matching subset would have the same conditional
+ * distribution but not the same number of RNG draws, so the retry loop stays.
+ * The Java table is a HashMap keyed by Class objects whose iteration order is not
+ * stable; this port uses declaration order while preserving every weight.
+ */
+export function rollUnstableSpellScroll(visibleEnemies: number): string {
+	const combat = visibleEnemies > 0;
+	const candidates: Array<[string, number]> = [
+		['scrollIdentify', 3], ['scrollCleanse', 2], ['scrollMapping', 2], ['scrollMirror', 2],
+		['scrollRecharging', 2], ['scrollLullaby', 2], ['scrollRetribution', 2], ['scrollRage', 2],
+		['scrollTeleportation', 2], ['scrollTerror', 2], ['scrollTransmutation', 1],
+	];
+	const eligible = new Set(combat
+		? ['scrollMirror', 'scrollRecharging', 'scrollLullaby', 'scrollRetribution', 'scrollRage', 'scrollTeleportation', 'scrollTerror']
+		: ['scrollIdentify', 'scrollCleanse', 'scrollMapping', 'scrollRecharging', 'scrollLullaby', 'scrollTeleportation', 'scrollTransmutation']);
+	for (;;) {
+		const index = SpdRandom.chances(candidates.map(([, weight]) => weight));
+		const selected = candidates[index]?.[0];
+		if (selected !== undefined && eligible.has(selected)) return selected;
+	}
 }
 
 /** A ground heap where the grab needs one: Java refuses chests and FOR_SALE heaps. Only
@@ -412,12 +438,14 @@ export function useMagicalInfusionFlow(ctx: InfusionBase, instanceId?: string): 
  * cleanse path removes the curse affix but does not yet reverse the level marker. Both
  * omissions are recorded in PORT_COVERAGE.md rather than hidden in the action. A cursed
  * staff also runs Java's `MagesStaff.updateWand(true)` charge half through
- * `infuseStaffCharges` (the level sync is a shared-`weaponLevel` no-op); the
- * Ring-of-Might `updateHT` half stays not ported (R004 sub-clause (c)). */
+ * `infuseStaffCharges` (the level sync is a shared-`weaponLevel` no-op). There is no
+ * Ring-of-Might `updateHT` half to port (R004 sub-clause (c), closed): Java's own branch
+ * is unreachable - `Ring extends KindofMisc`, so no ring passes `usableOnItem` and the
+ * picker never offers one (see `usableForCurseInfusion`, which refuses rings too). */
 export function useCurseInfusionFlow(ctx: CurseInfusionContext, instanceId?: string): void {
 	if (!ctx.hasSpell('curseInfusion', instanceId)) return;
 	//`CurseInfusion.usableOnItem`: an upgradable equipable, or a wand or the spirit bow.
-	//The predicate covers the missile stacks Java's `Weapon` reaches as well - `usableOnItem` is the same rule for both
+	//The predicate covers the missile stacks Java's `Weapon` reaches as well - `usableOnItem`
 	//infusion spells, so both pickers run it rather than hand-rolling the id list.
 	const candidates = ctx.infusables().filter((item) => item.quantity > 0
 		&& usableForCurseInfusion(item));
@@ -432,6 +460,9 @@ export function useCurseInfusionFlow(ctx: CurseInfusionContext, instanceId?: str
 			item.cursed = true;
 		} else {
 			const pool = item.id === 'armorReward' ? getArmorCurses() : getWeaponCurses();
+			//Simplified: Java re-rolls a curse of the SAME class when the item already has
+			//a good affix or the marker, else a fresh random curse; this port picks any curse
+			//other than the current affix (stated here and in R004, never silently narrowed).
 			const available = pool.filter((curse) => curse.id !== item.affix);
 			const curse = Random.element(available.length > 0 ? available : pool) ?? pool[0];
 			if (!curse) return;
@@ -440,14 +471,15 @@ export function useCurseInfusionFlow(ctx: CurseInfusionContext, instanceId?: str
 		}
 		if (!item.curseInfusionBonus) {
 			item.curseInfusionBonus = true;
-			item.level = (item.level ?? 0) + 1;
-			//`Item.upgrade()` (not `MissileWeapon.upgrade()`): the infusion's level is the
-			//ordinary one, so the stack is relabelled but its wear and count are left alone.
+			//No stored level: Java's `onItemSelected` never upgrades - the bonus is the
+			//virtual `1 + level/6` the effective-level readers add (`curseInfusionLevelBonus`,
+			//e.g. the equipped weapon/armor readers). Storing +1 here double-counted on top
+			//of it. The stack is still relabelled so its display follows the marker.
 			ctx.relabelAfterInfusion(item);
+		}
 		//`CurseInfusion.onItemSelected()`'s `MagesStaff.updateWand(true)` leg (tag `v3.3.8`):
 		//unconditional, like Java - it fires even when the marker was already set.
 		if (item.sourceClass === 'MagesStaff') ctx.infuseStaffCharges();
-		}
 		ctx.consumeSpell('curseInfusion', instanceId);
 		// CurseInfusion uses the spell recipe's 1/3 talent chance (v3.3.8).
 		ctx.onScrollUsed?.(1, 1 / 3);

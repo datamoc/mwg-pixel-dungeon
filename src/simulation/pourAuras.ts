@@ -49,6 +49,8 @@ export interface PourAuraCreature {
 	hasGnollSapper?: boolean;
 	/** `Goo.pumpedUp` while charging the slam - drives the warn pour below. */
 	pumped?: number;
+	/** `Golem.teleporting` while charging the self-teleport - drives the Elmo pour below. */
+	teleporting?: boolean;
 }
 
 /** `SparkParticle.STATIC`: white, static, life 0.25-0.5, size 5. */
@@ -214,9 +216,11 @@ export function pourAurasFor(creature: PourAuraCreature): PourAuraSpec[] {
 	}
 	//`LotusSprite.link` pours leaves over the lotus's own cell too (distance 0 is in range); the remote range cells ride `lotusLeafCells` below.
 	if (creature.allyKind === 'lotus') return [lotusLeafPourSpec()];
+	//`GolemSprite` pours `ElmoParticle` at 0.05 from its `teleParticles` emitter while `teleporting` - the emitter follows the sprite, so a creature-following aura is exact.
+	if (creature.kind === 'golem' && creature.teleporting === true) return [elmo(1 / 0.05)];
 	//No representable trigger, so silence rather than a wrong aura: the necromancer/spectral
-	//summonings pour at remote cells off the unported `summoningPos` state, and the golem's
-	//mid-teleport pour has no such state here (T178 owns that delay state);
+	//summonings pour at remote cells off the unported `summoningPos` state
+	//(the golem's mid-teleport pour is handled above, gated on `teleporting`);
 	//PhantomPiranha's own light sparkle is handled above.
 	return [];
 }

@@ -18,6 +18,7 @@ import { paintStandardRoom } from './rooms/standard/registry';
 import { entranceRoomContext } from './rooms/standard/entranceRoom';
 import { spdPatchGenerate } from './spdPatch';
 import { xyToPatchCoords } from './rooms/standard/patchRoom';
+import { trapRevealChance } from './trinketLevelGen';
 
 /**
  * `Level.Feeling`'s ordinals, matching `Level.java`'s enum order. `null` is `Feeling.NONE`
@@ -531,6 +532,10 @@ function paintTraps(level: PaintLevel, rooms: Room[], nTrapsRequested: number, t
 
 	// 5x as many traps on a TRAPS-feeling floor, but only the first `nTraps` are hidden.
 	const trapsToPlace = feeling === Feeling.TRAPS ? 5 * nTraps : nTraps;
+	//`TrapMechanism.revealHiddenTrapChance()` (`RegularPainter.java:465-486`): a running credit reveals every `1/chance`-th trap;
+	//deterministic, so it draws nothing and is the identity (0) without the trinket.
+	const revealedChance = trapRevealChance();
+	let revealInc = 0;
 	for (let i = 0; i < trapsToPlace; i++) {
 		const idx = SpdRandom.chances(table.chances);
 		const kind = table.classes[idx];
@@ -543,8 +548,10 @@ function paintTraps(level: PaintLevel, rooms: Room[], nTrapsRequested: number, t
 		if (inAll >= 0) remainingCells.splice(inAll, 1);
 		const inNonHall = remainingNonHallways.indexOf(pos);
 		if (inNonHall >= 0) remainingNonHallways.splice(inNonHall, 1);
-		// `if (i < nTraps) trap.hide(); else trap.reveal();`
-		const hidden = i < nTraps;
+		// `revealInc += chance; if (i >= nTraps || revealInc >= 1) { trap.reveal(); revealInc--; } else trap.hide();`
+		revealInc += revealedChance;
+		let hidden = true;
+		if (i >= nTraps || revealInc >= 1) { hidden = false; revealInc--; }
 		level.setTrap(kind, hidden, true, pos);
 		level.map[pos] = hidden ? Terrain.SECRET_TRAP : Terrain.TRAP;
 	}

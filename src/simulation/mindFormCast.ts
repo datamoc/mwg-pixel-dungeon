@@ -14,7 +14,7 @@
 /** What the picker hands the planner: a wand type or a missile class, by port id. */
 export type MindFormEffect =
 	| { kind: 'wand'; wandType: string; isMultiCharge: boolean }
-	| { kind: 'thrown'; missileClass: string };
+	| { kind: 'thrown'; missileClass: string; tippedSeed?: string };
 
 /** The conjured level is the live `trinityMindItemLevel()` (2 + talent points),
  * passed in by the caller - never re-derived here, so the mapping stays

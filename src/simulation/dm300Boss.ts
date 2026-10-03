@@ -144,3 +144,91 @@ export const DM300_MIN_COOLDOWN = 5;
 export function dm300ChargeEndTurns(turnsSinceLastAbility: number): number {
 	return Math.min(turnsSinceLastAbility, DM300_MIN_COOLDOWN - 3);
 }
+
+/** `DM300.totalPylonsToActivate()` and the `loseSupercharge()` finale gate (tag `v3.3.8`). */
+export function dm300PylonsFinished(pylonsActivated: number, strongerBosses: boolean): boolean {
+	return pylonsActivated >= (strongerBosses ? 3 : 2);
+}
+
+export type DM300PylonEnergyTerrain = 'water' | 'inactiveTrap' | 'sign' | 'other';
+
+/** `CavesBossLevel.activatePylon()` (`CavesBossLevel.java`, tag `v3.3.8`) seeds
+ * PylonEnergy from `(mainArena.top - 1) * width`; mainArena.top is 14, so direct
+ * seeds start at row 13. Water above that row is not seeded by this method. */
+export function dm300PylonEnergySeeds(
+	width: number,
+	height: number,
+	terrainAt: (cell: number) => DM300PylonEnergyTerrain,
+): number[] {
+	const cells: number[] = [];
+	const start = 13 * width;
+	for (let cell = start; cell < width * height; cell++) {
+		const terrain = terrainAt(cell);
+		if (terrain === 'water' || terrain === 'inactiveTrap' || terrain === 'sign') cells.push(cell);
+	}
+	return cells;
+}
+
+/** `CavesBossLevel.diggableArea` (`Rect(2, 11, 31, 40)`) and `gate` (`Rect(14, 13, 19, 14)`),
+ * `levels/CavesBossLevel.java:109,111`, tag `v3.3.8`, in `Rect`'s exclusive right/bottom form. */
+export const CAVES_DIGGABLE_AREA = { left: 2, top: 11, right: 31, bottom: 40 } as const;
+export const CAVES_BOSS_GATE = { left: 14, top: 13, right: 19, bottom: 14 } as const;
+
+/** `PathFinder.NEIGHBOURS8` / `NEIGHBOURS9` in Java's row-major order: ties in the strict
+ * "closer than best" scans below resolve to the first entry, so the order is observable. */
+const NEIGHBOURS8: readonly Step[] = [
+	{ x: -1, y: -1 }, { x: 0, y: -1 }, { x: 1, y: -1 }, { x: -1, y: 0 }, { x: 1, y: 0 }, { x: -1, y: 1 }, { x: 0, y: 1 }, { x: 1, y: 1 },
+];
+const NEIGHBOURS9: readonly Step[] = [...NEIGHBOURS8.slice(0, 4), { x: 0, y: 0 }, ...NEIGHBOURS8.slice(4)];
+
+const trueDistance = (a: Step, b: Step): number => Math.hypot(a.x - b.x, a.y - b.y);
+
+/** Strictly-closest-to-`target` neighbour passing `accept`, starting from the origin itself. */
+function closestNeighbour(from: Step, target: Step, accept: (x: number, y: number) => boolean): Step {
+	let best = from;
+	for (const d of NEIGHBOURS8) {
+		const at = { x: from.x + d.x, y: from.y + d.y };
+		if (accept(at.x, at.y) && trueDistance(best, target) > trueDistance(at, target)) best = at;
+	}
+	return best;
+}
+
+export interface DM300TunnelContext {
+	/** `Actor.findChar(cell) != null`. */
+	readonly occupied: (x: number, y: number) => boolean;
+	/** `map[cell] == WALL || WALL_DECO` on the paint grid. */
+	readonly isWall: (x: number, y: number) => boolean;
+	/** `Dungeon.level.openSpace[cell]` once the walls are dug (DM-300 is LARGE). */
+	readonly isOpenSpace: (x: number, y: number) => boolean;
+}
+
+/**
+ * `DM300.getCloser()`'s supercharged tunnelling branch (`DM300.java:603-651`, tag `v3.3.8`), planned
+ * pure. The caller owns Java's gate (`super.getCloser` failed, supercharged, HUNTING, not rooted,
+ * target neither the origin nor adjacent) and the post-plan effects (`spend(2/3)`, sound, shake).
+ * Returns null when no neighbouring cell is strictly closer to the target (Java returns false).
+ * Walls inside the arena's gate band (`p.y < gate.bottom`, `gate.left-2 <= p.x < gate.right+2`)
+ * or outside `diggableArea` are skipped. Java digs and then reads `openSpace` for the step, so
+ * the caller applies `dig` first and only then asks `dm300TunnelMove`.
+ */
+export function planDM300Tunnel(from: Step, target: Step, ctx: Pick<DM300TunnelContext, 'occupied' | 'isWall'>): { dig: Step[] } | null {
+	const best = closestNeighbour(from, target, (x, y) => !ctx.occupied(x, y));
+	if (best.x === from.x && best.y === from.y) return null;
+	const dig: Step[] = [];
+	for (const d of NEIGHBOURS9) {
+		const p = { x: from.x + d.x, y: from.y + d.y };
+		if (!ctx.isWall(p.x, p.y)) continue;
+		const gate = CAVES_BOSS_GATE;
+		if (p.y < gate.bottom && p.x >= gate.left - 2 && p.x < gate.right + 2) continue;
+		const area = CAVES_DIGGABLE_AREA;
+		if (!(p.x >= area.left && p.x < area.right && p.y >= area.top && p.y < area.bottom)) continue;
+		dig.push(p);
+	}
+	return { dig };
+}
+
+/** The post-dig `move(bestpos)` cell: closest unoccupied open-space neighbour, or null. */
+export function dm300TunnelMove(from: Step, target: Step, ctx: Pick<DM300TunnelContext, 'occupied' | 'isOpenSpace'>): Step | null {
+	const best = closestNeighbour(from, target, (x, y) => !ctx.occupied(x, y) && ctx.isOpenSpace(x, y));
+	return best.x === from.x && best.y === from.y ? null : best;
+}

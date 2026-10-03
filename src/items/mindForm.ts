@@ -7,14 +7,15 @@
  * branch; the throw spends its own time through `thrown.cast()`).
  *
  * This port has no temporary-item path, so the flow stays conjured end to end: pick
- * from the modeled catalogs (the same no-discovery-gate simplification BodyForm's
- * picker already makes - this port has no run-wide discovery journal), store the
+ * from the modeled catalogs, including the twelve seed-specific tipped-dart variants
+ * (`TippedDart.types`, tag `v3.3.8`), filtered by Java's run-wide discovered-item catalog,
+ * store the
  * pick in `Trinity.mindForm`'s slot, aim, and fire through the scene's existing
  * level-explicit seams with no ammo/durability/drop bookkeeping. Everything the
  * scene owns (catalogs, picker, aimer, firing, armor charge, turns) arrives through
  * the context, so this module has zero runtime imports and
- * `tools/verifyMindForm.mjs` drives the whole flow headlessly. The one-line scene
- * builder that binds this context is someone else's claimed file, deliberately.
+ * `tools/verifyMindForm.mjs` drives the whole flow headlessly; the scene binds the
+ * catalog and cast callbacks through this context.
  */
 
 import type { MindFormAim, MindFormEffect } from '../simulation/mindFormCast';
@@ -48,7 +49,7 @@ export interface MindFormContext {
 	pickMindEffect(options: MindFormOption[], onPick: (effect: MindFormEffect | null) => void): void;
 	aimMindEffect(effect: MindFormEffect, onConfirm: (cell: { x: number; y: number }) => void): void;
 	fireMindWand(wandType: string, level: number, targetCell: { x: number; y: number }, targetId: string | null): boolean;
-	fireMindThrown(missileClass: string, level: number, targetCell: { x: number; y: number }, targetId: string | null): boolean;
+	fireMindThrown(missileClass: string, level: number, targetCell: { x: number; y: number }, targetId: string | null, tippedSeed?: string): boolean;
 	spendTurn(): void;
 	say(key: string, level?: 'info' | 'positive' | 'negative' | 'warning'): void;
 	/** `Trinity.mindForm`'s slot (a `mind:<kind>:<key>` id, or null). Owned and
@@ -61,17 +62,20 @@ export interface MindFormContext {
  * shape is documented here so the Trinity UI can share the slot instead of
  * inventing a second one. */
 export function serializeMindEffect(effect: MindFormEffect): string {
-	return effect.kind === 'wand' ? `mind:wand:${effect.wandType}` : `mind:thrown:${effect.missileClass}`;
+	return effect.kind === 'wand' ? `mind:wand:${effect.wandType}`
+		: `mind:thrown:${effect.missileClass}${effect.tippedSeed ? `:${effect.tippedSeed.toLowerCase()}` : ''}`;
 }
 
 export function parseMindEffect(id: string | null): MindFormEffect | null {
 	if (!id) return null;
 	const parts = id.split(':');
-	if (parts.length !== 3 || parts[0] !== 'mind') return null;
+	if ((parts.length !== 3 && parts.length !== 4) || parts[0] !== 'mind') return null;
 	if (parts[1] === 'wand' && parts[2]) {
 		return { kind: 'wand', wandType: parts[2], isMultiCharge: parts[2] === 'fireblast' || parts[2] === 'regrowth' };
 	}
-	if (parts[1] === 'thrown' && parts[2]) return { kind: 'thrown', missileClass: parts[2] };
+	if (parts[1] === 'thrown' && parts[2] && (parts.length === 3 || parts[3])) {
+		return { kind: 'thrown', missileClass: parts[2], ...(parts[3] ? { tippedSeed: parts[3].toLowerCase() } : {}) };
+	}
 	return null;
 }
 
@@ -135,7 +139,7 @@ export function confirmMindFormAim(
 	const level = ctx.mindItemLevel();
 	const fired = isWand
 		? ctx.fireMindWand(effect.wandType, level, targetCell, target?.id ?? null)
-		: ctx.fireMindThrown(effect.missileClass, level, targetCell, target?.id ?? null);
+		: ctx.fireMindThrown(effect.missileClass, level, targetCell, target?.id ?? null, effect.tippedSeed);
 	if (!fired) return false;
 	ctx.spendArmor(cost);
 	if (!isWand) ctx.spendTurn();
@@ -152,7 +156,8 @@ export function reaimStoredMindForm(ctx: MindFormContext, catalog: MindFormCatal
 	if (!effect) return;
 	const known = effect.kind === 'wand'
 		? catalog.wands.some((option) => option.value.kind === 'wand' && option.value.wandType === effect.wandType)
-		: catalog.thrown.some((option) => option.value.kind === 'thrown' && option.value.missileClass === effect.missileClass);
+		: catalog.thrown.some((option) => option.value.kind === 'thrown' && option.value.missileClass === effect.missileClass
+			&& option.value.tippedSeed === effect.tippedSeed);
 	if (!known) return;
 	ctx.aimMindEffect(effect, (cell) => confirmMindFormAim(ctx, effect, cell));
 }

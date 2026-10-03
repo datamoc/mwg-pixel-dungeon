@@ -118,7 +118,7 @@ import { SpdToolbar } from '../ui/toolbar';
 import { StatusPane } from '../ui/statusPane';
 import { DungeonHud } from '../ui/dungeonHud';
 import { SpdAudio } from '../audio';
-import { onBrightnessChanged, onZoomChanged, screenShake, setZoomOffset, uiMode, zoomForOffset, zoomOffset, customSeed, lastDaily } from '../settings';
+import { onBrightnessChanged, onZoomChanged, screenShake, setZoomOffset, uiMode, zoomForOffset, zoomOffset } from '../settings';
 import { arcaneVisionDuration, assassinReachBonus, bountyHunterDropBonus, canImproviseProjectile, cleaveComboSeed, deathlessFuryTriggers, EMPOWERING_SCROLLS_BONUS, enhancedRingsDuration, enragedCatalystBonus, empoweredStrikeBonus, farsightMultiplier, ironStomachReduction, lethalHasteDuration, lightCloakArtifactBonus, lightCloakRechargeRate, allyWarpRange, monasticVigorShield, preservationChance, rejuvenatingStepHeal, seerShotDuration, SEER_SHOT_COOLDOWN, shieldBatteryGain, soulSiphonCharge, unencumberedSpiritEvasion, weaponRechargingDamage } from '../talentEffects';
 import { NEW_MOMENTUM, type Momentum } from '../simulation/momentum';
 import pixelFontUrl from '../assets/pixel_font.ttf';
@@ -277,9 +277,6 @@ import {
 import {
 	COLOR,
 	spdSeedValue,
-	seedTextValue,
-	dailySeedLabel,
-	SEED_TOTAL,
 	regionForDepth,
 	REGION_WATER,
 	REGION_GRASS,
@@ -311,7 +308,7 @@ import {
 import { nextEntityId } from '../simulation/entityId';
 import { applyChillFreeze, tickMonsterTurnEnd } from '../simulation/buffs';
 import { heroSheet, MONSTERS, mobRosterForDepth, liveStats, BOSSES, MOB_LOOT, LIMITED_DROP_DECAY, NPC_KINDS, BOSS_KINDS, MINIBOSS_KINDS, UNDEAD_KINDS, isUndeadOrDemonic, IMMOVABLE_KINDS, INORGANIC_KINDS, NEVER_SLEEPS_KINDS, FLYING_KINDS, BLOB_IMMUNE_KINDS, MWL_AI_PROFILES, type AnyMonsterId, type MonsterId } from '../monsters';
-import { APPEARANCE_TABLES, AUGMENT_OPTIONS, BLACKSMITH_QUEST, BLACKSMITH_SMITH_COST, ETERNAL_FIRE_BURN, HARMFUL_PLANTS, HERO_SCHEDULER_ID, IMP_QUEST, MOB_SCHEDULER_ID_PREFIX, NATURES_POWER_DURATION, NON_STATBLOCK_RING_STATS, SAD_GHOST_QUEST, SPD_LEVEL_CURVE, STARTING_WEAPON_CLASS, SUBCLASS_OPTIONS, SUBCLASS_TRACK, TENGU_CIRCLE8, WANDMAKER_CLASS_INTROS, WANDMAKER_QUEST, effectMarkSheet, isStatueLoot, scenarioQuest, wardTexture, type BonesShape, type SaveShape } from './dungeon/shared';
+import { APPEARANCE_TABLES, AUGMENT_OPTIONS, BLACKSMITH_QUEST, BLACKSMITH_SMITH_COST, ETERNAL_FIRE_BURN, HARMFUL_PLANTS, HERO_SCHEDULER_ID, IMP_QUEST, MOB_SCHEDULER_ID_PREFIX, NATURES_POWER_DURATION, NON_STATBLOCK_RING_STATS, SAD_GHOST_QUEST, SPD_LEVEL_CURVE, STARTING_WEAPON_CLASS, SUBCLASS_OPTIONS, SUBCLASS_TRACK, TENGU_CIRCLE8, WANDMAKER_CLASS_INTROS, WANDMAKER_QUEST, effectMarkSheet, isStatueLoot, scenarioQuest, wardTexture, type BoomerangReturnState, type BonesShape, type SaveShape } from './dungeon/shared';
 import { coreSpawnTilesMethods } from './dungeon/coreSpawnTiles';
 import { npcShopBlacksmithMethods } from './dungeon/npcShopBlacksmith';
 import { environmentFireTrapsMethods } from './dungeon/environmentFireTraps';
@@ -613,7 +610,7 @@ export class DungeonScene extends Scene2D {
 	 * (`returnDepth == Dungeon.depth && returnBranch == Dungeon.branch`), which is why `depth` is
 	 * stored and compared rather than the state being discarded on descent.
 	 */
-	boomerangReturn: { fromX: number; fromY: number; returnX: number; returnY: number; left: number; level: number; setId: string; depth: number } | null = null;
+	boomerangReturns: BoomerangReturnState[] = [];
 	missileThresholds = new Map<string, number>();
 	/** `CorpseDust.DustGhostSpawner.spawnPower`, carried while the dust is (tag `v3.3.8`). */
 	dustSpawnPower = 0;
@@ -754,6 +751,8 @@ export class DungeonScene extends Scene2D {
 	impSpawned = false;
 	/** Imp token ask for this run (5 monk tokens on odd depths, 4 golem tokens on even) */
 	impNeed = 5;
+	/** `Imp.Quest.reward`: generated when the quest appears and retained through save/load until turn-in. */
+	impReward: GenItem | null = null;
 	/** `Dungeon.LimitedDrops`: how many times each of these mobs has already dropped its special
 	 * loot this run - real Java scales `lootChance()` down further with every successful drop
 	 * (`Bat`/`Necromancer`/`Guard` below), reset only on a new game, not per floor. */
@@ -768,6 +767,10 @@ export class DungeonScene extends Scene2D {
 	wealthDropsToEquip = -1;
 	/** Java `Dungeon.LimitedDrops.UPGRADE_SCROLLS` and `COOKING_HP` run counters. */
 	upgradeScrollDrops = 0;
+	/** `Dungeon.LimitedDrops.TRINKET_CATA`: the run's one trinket catalyst has been placed. */
+	trinketCatalystDropped = false;
+	/** `TargetHealthIndicator.target()`: the enemy the hero last attacked or aimed at (read by the Chaotic Censer). */
+	censerTarget: Creature | null = null;
 	/** Ghost Quest.type for this run (1 Fetid Rat, 2 Gnoll Trickster, 3 Great Crab) */
 	ghostType = 1;
 	/** Version 3 adds MWG actor serializers (Barrier/Inventory/progression state). Legacy fields
@@ -885,7 +888,7 @@ export class DungeonScene extends Scene2D {
 	unstableDelegated: string | null = null;
 	/** Swiftthistle's TimeBubble: hero actions advance while automatic actors are frozen. */
 	timeBubbleTurns = 0;
-	timeBubblePresses = new Set<number>();	superNova: { x: number; y: number; depth: number; turnsLeft: number } | null = null; gravityChaos: { left: number; wait: number } | null = null; //`SuperNovaTracker`/`GravityChaosTracker` (CursedWand VeryRare, v4.0.0)
+	timeBubblePresses = new Set<number>();	superNova: { x: number; y: number; depth: number; turnsLeft: number; harmsAllies?: boolean } | null = null; gravityChaos: { left: number; wait: number; positiveOnly?: boolean } | null = null; //`SuperNovaTracker`/`GravityChaosTracker` (CursedWand VeryRare, v3.3.8)
 	/** `Buff.mnemonicExtended`: which of the hero's own current buffs `MnemonicPrayer`
 	 * has already extended once - cleared per id as soon as that buff is no longer on
 	 * the hero (Java's flag lives on the buff instance itself, so it vanishes with it). */
@@ -912,7 +915,6 @@ export class DungeonScene extends Scene2D {
 	sealBarrier = new Actors.Barrier();
 	armorSealed = false;
 	sealState = { cooldown: 0, turnsSinceEnemies: 0, initialShield: 0 }; //`BrokenSeal.WarriorShield`'s cooldown, idle counter and activation size (`simulation/sealShield.ts`)
-	sealPartialGain = 0;
 	/** `WandOfLivingEarth.RockArmor`: stored rock armor and the wand level that set its cap. */
 	livingEarthArmor = 0;
 	/** `Earthroot.Armor` (`plants/Earthroot.java`, tag `v3.3.8`): a block *pool* of `level` points
@@ -996,6 +998,10 @@ export class DungeonScene extends Scene2D {
 	healingEvasionTurns = 0;
 	/** Sungrass' Java Health buff: healing is gradual and ends when the hero moves. */
 	sungrassHealing = 0;
+	/** `ElixirOfAquaticRejuvenation.AquaHealing`'s `left` pool (tag `v3.3.8`): banked by
+	 * quaffing, drained gradually while the hero swims. Saved/loaded beside the
+	 * sungrass pool below. */
+	aquaHealingLeft = 0;
 	sungrassPartial = 0;
 	/** `Healing` buff's `healingLeft` (`PotionOfHealing.heal()`): HP still owed by a HoT heal,
 	 * with `setHeal`'s property-wise-maximum companions (`percentHealPerTick`,
@@ -1004,6 +1010,8 @@ export class DungeonScene extends Scene2D {
 	healingLeft = 0;
 	healingPercent = 0;
 	healingFlat = 0;
+	/** `Healing.healingLimited` (`Healing.java`): set by `applyVialEffect` - the tick is capped at `VialOfBlood.maxHealPerTurn()`. */
+	healingLimited = false;
 	sungrassPos = -1;
 	rageState = { mode: 'normal' as 'normal' | 'berserk' | 'recovering', power: 0, powerLossBuffer: 0, levelRecovery: 0, turnRecovery: 0, zeroHp: false }; rageBarrier = new Actors.Barrier(); //`Berserk` (Berserker, `hero/berserkRage.ts`): the rage state machine (+ the death-berserk's 0-HP stand-in) and its extra shield pool
 	/** `Momentum` (Freerunner, `hero/momentum.ts`): stacks banked by completed steps, the live
@@ -1021,13 +1029,16 @@ export class DungeonScene extends Scene2D {
 	deadlyFollowupTarget: Creature | null = null;
 	/** worn ring {id, level} or null; ring modifiers live on heroStats under source 'ring' */
 	equippedRing: EquippedRing | null = null;
-	/**
-	 * `Talent.EMPOWERING_SCROLLS`: remaining wand zaps that read +3 levels, armed by reading
-	 * a scroll (Mage, 1/2/3 charges by rank) and consumed one per zap action. Persisted.
-	 */
-	empoweredZaps = 0;
-	/** Mage `INSCRIBED_POWER`'s remaining +2 wand-zap charges (`Talent.onScrollUsed`). */
-	inscribedPowerZaps = 0;
+	/** `ScrollEmpower.left` (`ScrollEmpower.reset()`/`use()`, tag `v3.3.8`): the shared
+	 * remaining wand-zap charges. The two compatibility accessors below keep old save
+	 * fields readable; their setters use Java's raise-only `reset()` semantics. */
+	scrollEmpowerCharges = 0;
+	/** Legacy Battlemage/Warlock talent view; old saves restore into the shared max pool. */
+	get empoweredZaps(): number { return this.scrollEmpowerCharges; }
+	set empoweredZaps(value: number) { this.scrollEmpowerCharges = Math.max(this.scrollEmpowerCharges, Math.max(0, Math.trunc(value))); }
+	/** Mage `INSCRIBED_POWER` view of that same `ScrollEmpower` buff. */
+	get inscribedPowerZaps(): number { return this.scrollEmpowerCharges; }
+	set inscribedPowerZaps(value: number) { this.scrollEmpowerCharges = Math.max(this.scrollEmpowerCharges, Math.max(0, Math.trunc(value))); }
 	/**
 	 * `Talent.ENHANCED_RINGS`: remaining turns the worn ring reads one upgrade level higher,
 	 * armed by using an artifact (Rogue, 3/6/9 turns by rank). Ticked on the hero clock,
@@ -1088,6 +1099,8 @@ export class DungeonScene extends Scene2D {
 	 * for blizzard, mutual annihilation either way). */
 	inferno!: Blob;
 	blizzard!: Blob;
+	/** `StormCloud` (`actors/blobs/StormCloud.java`): turns the cells it covers to water. */
+	stormCloud!: Blob;
 	/** MagicalFireRoom.EternalFire (`levels/rooms/special/MagicalFireRoom.java`): a permanent,
 	 * non-spreading, non-decaying fire wall. Unlike every other blob here it is never
 	 * `spread()`ed - seeded once at 1 per wall cell (Java's own `Blob.seed(cell, 1,
@@ -1511,7 +1524,9 @@ export class DungeonScene extends Scene2D {
 		dotCtx.fillRect(0, 0, 4, 4);
 		this.dotTexture = Texture.from(canvas);
 
-		this.camera = new Camera({ zoom: zoomForOffset(zoomOffset()), deadzone: 0.25 });
+		//The game-side hero target in coreSpawnTiles reproduces Java's live follow deadzone;
+		//leave MWG's constructor-only deadzone at zero so the two margins are not stacked.
+		this.camera = new Camera({ zoom: zoomForOffset(zoomOffset()), deadzone: 0 });
 		//`SPDSettings.zoom()`: a settings change mid-run re-zooms the live camera, so the
 		//dungeon does not need a scene rebuild to honour it.
 		this.onDestroy.add(onZoomChanged(() => this.applyZoom()));
@@ -1537,21 +1552,10 @@ export class DungeonScene extends Scene2D {
 		//every kind is drawn now, inside the seed, so later lookups never touch the RNG
 		const seedText = new URLSearchParams(window.location.search).get('seed');
 		const requestedSeed = spdSeedValue(seedText);
-		//Game-options seeds (`HeroSelectScene.java`, tag `v3.3.8`): a daily run seeds
-		//from its date (out of user-seed range) and a custom seed from its text; both
-		//override the URL/dev seed, and the daily flag is consumed here so the next
-		//run starts clean. The label shows the seed text (custom text, daily date, or
-		//the URL text), falling back to the numeric seed exactly as before.
-		const daily = runState.pendingDaily;
-		runState.pendingDaily = false;
-		const customText = customSeed();
-		const dailyMs = daily ? lastDaily() : 0;
-		const panelSeed = daily && dailyMs > 0 ? BigInt(dailyMs) + SEED_TOTAL : seedTextValue(customText);
-		const panelLabel = daily && dailyMs > 0 ? dailySeedLabel(dailyMs) : customText;
-		this.seededRun = Boolean(panelLabel || seedText?.trim());
-		this.runSeedLong = panelSeed ?? requestedSeed ?? BigInt(Random.int(1, 1 << 30));
+		this.seededRun = Boolean(seedText?.trim());
+		this.runSeedLong = requestedSeed ?? BigInt(Random.int(1, 1 << 30));
 		this.runSeed = Number(this.runSeedLong % 4294967296n) >>> 0;
-		this.runSeedLabel = panelLabel || seedText?.trim() || String(this.runSeed);
+		this.runSeedLabel = seedText?.trim() || String(this.runSeed);
 		//a new run: drop any cached ported floors so Dungeon.init()'s run-level resets
 		//(SecretRoom's budget, the SpecialRoom queue, Generator's decks) run again from scratch
 		resetPortedRun();

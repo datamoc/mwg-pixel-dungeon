@@ -21,4 +21,11 @@ assert.equal(upperWallFrame(grid([[1], [2]]), 0, 0, 50), -1);
 assert.equal(foregroundGrassFrame(2, 50), -1);
 assert.equal(upperWallFrame(grid([[4]]), 0, 0, 0), 160);
 assert.equal(raisedWallFrame(grid([[4]]), 0, 0, 0), -1);
+// `DungeonWallsTilemap.getTileVisual` (tag `v3.3.8`, R010): the cell above a region
+// deco draws its overhang (spliced v3.3.8 cells at 245/248), while the deco cell
+// itself draws nothing on the walls layer - REGION_DECO is not wall-stitchable.
+assert.equal(upperWallFrame(grid([[1], [33]]), 0, 0, 0), 245);
+assert.equal(upperWallFrame(grid([[1], [34]]), 0, 0, 0), 248);
+assert.equal(upperWallFrame(grid([[33], [1]]), 0, 0, 0), -1);
+assert.equal(upperWallFrame(grid([[34], [1]]), 0, 0, 0), -1);
 console.log('Visual wall regression checks passed.');

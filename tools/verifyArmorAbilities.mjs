@@ -27,6 +27,17 @@ export function verifyArmorAbilities(require, check) {
 	const { ELEMENTAL_BLAST_DAMAGE_FACTORS, elementalBlastEffectMulti, elementalBlastAoeSize, elementalBlastAim, elementalBlastDamage, elementalBlastUndeadDamage, elementalBlastTransfusionSplit, elementalBlastCorrosion, elementalBlastParalysisDuration, elementalBlastFrostDuration, elementalBlastBlindnessDuration, elementalBlastLightDuration, elementalBlastCharmDuration, elementalBlastAmokDuration, elementalBlastRootsDuration, elementalBlastRechargingDuration, elementalBlastRegrowthChance, elementalBlastKnockback, elementalBlastReactiveShield } = require('./simulation/mageAbilities');
 	const { BUFF_DURATION } = require('./simulation/buffs');
 	const { trinityBodyDuration, trinityBodyGlyphActive, trinityMindItemLevel, trinitySpiritRingLevel, trinitySpiritArtifactLevel, trinityChargeUsePerEffect, POWER_OF_MANY_TURNS, POWER_OF_MANY_ATTACK_FACTOR, powerOfManyDamageFactor } = require('./simulation/clericSpells');
+	check('Overgrowth chooses its plant with Java Generator.randomUsingDefaults(SEED)', () => {
+		//`Overgrowth.proc()` (`items/armor/curses/Overgrowth.java`, tag `v3.3.8`) uses
+		//the weighted default SEED generator, not a uniform pick from the supported kinds.
+		const mobOnHit = readFileSync(new URL('../src/scenes/mobOnHit.ts', import.meta.url), 'utf8');
+		assert.match(mobOnHit, /import \{ Cat, randomUsingDefaults \} from '\.\.\/items\/generator'/,
+			'the mob on-hit seam reuses the ported category generator');
+		assert.match(mobOnHit, /randomUsingDefaults\(Cat\.SEED\)\.cls\.replace\(\/Seed\$\/, ''\)\.toLowerCase\(\)/,
+			'Overgrowth uses Java seed weights and normalizes the selected seed class');
+		assert.doesNotMatch(mobOnHit, /Random\.element\(\['blindweed', 'earthroot', 'fadeleaf'/,
+			'the old uniform supported-seed list is gone');
+	});
 
 	//`HeroClass.armorAbilities()`, in its own order.
 	check('every class offers its three real armor abilities, in Java order', () => {
@@ -402,8 +413,8 @@ export function verifyArmorAbilities(require, check) {
 		}
 		assert.ok(source.includes('this.spawnSheep({ x: cx, y: cy }, 6)'), 'SummonSheep reuses the flock-trap spawn shape');
 		assert.ok(source.includes("activateGeyserTrapFlow({"), 'Geyser reuses the ported geyser-trap flow');
-		assert.ok(source.includes("addBuff(targetEligible ? target : caster, 'levitation')"), 'Levitate falls back to the caster when the target is ineligible');
-		assert.ok(source.includes("if (!mob.fleeing) mob.lastSeen = { x: caster.x, y: caster.y };"), 'Alarm wakes mobs toward the caster');
+		assert.ok(source.includes("addBuff(targetEligible ? target : this.hero, 'levitation')"), 'Levitate falls back to the caster when the target is ineligible');
+		assert.ok(source.includes("if (!mob.fleeing) mob.lastSeen = { x: this.hero.x, y: this.hero.y };"), 'Alarm wakes mobs toward the caster');
 		//AntiMagic.RESISTS lists CursedWand as a source class: HealthTransfer's damage half
 		//must zero against a magicImmune victim while its heal half still lands (fixed 2026-09-21).
 		assert.ok(source.includes('if (victim.magicImmune) return;'), 'HealthTransfer must RESISTS-gate its damage half only');
@@ -417,19 +428,19 @@ export function verifyArmorAbilities(require, check) {
 		assert.ok(source.includes('applyBlastDamage(victim, Math.max(0, Random.normalRange(lo, hi)), true, context)'),
 			'LightningBolt reuses applyBlastDamage with pierceArmor true (Electricity source)');
 		assert.ok(source.includes("if (victim.isHero) reigniteBuff(this.hero, 'recharging');"), 'LightningBolt grants Recharging to the hero additively');
-		assert.ok(source.includes("if (victim.hp > 0) reigniteBuff(victim, 'paralysis');"), 'LightningBolt paralyzes every survivor, hero included');
+		assert.ok(source.includes("if (victim.hp > 0) reigniteBuff(victim, 'paralysis');"), 'LightningBolt paralyzes every non-allied survivor');
 	});
 	check('castCursedWandEffect dispatches all tiers, and castCursedWandRareEffect ports six Rare effects', () => {
 		const source = readSceneSource();
-		assert.ok(source.includes("if (tier === 'common') this.castCursedWandCommonEffect(target, cell);"), 'the tier dispatch must branch on common');
-		assert.ok(source.includes("else if (tier === 'uncommon') this.castCursedWandUncommonEffect(target, cell);"), 'the tier dispatch must branch on uncommon');
-		assert.ok(source.includes("else if (tier === 'rare') this.castCursedWandRareEffect(target, cell);"), 'the tier dispatch must branch on rare, leaving VeryRare separate (Java rolls common/uncommon/rare/v.rare at 60/30/9/1, CursedWand.java v3.3.8)');
+		assert.ok(source.includes("if (tier === 'common') this.castCursedWandCommonEffect(target, cell, positiveOnly);"), 'the tier dispatch must branch on common and thread Resin positiveOnly');
+		assert.ok(source.includes("else if (tier === 'uncommon') this.castCursedWandUncommonEffect(target, cell, positiveOnly);"), 'the tier dispatch must branch on uncommon and thread Resin positiveOnly');
+		assert.ok(source.includes("else if (tier === 'rare') this.castCursedWandRareEffect(target, cell, positiveOnly);"), 'the tier dispatch must branch on rare and thread Resin positiveOnly, leaving VeryRare separate (Java rolls common/uncommon/rare/v.rare at 60/30/9/1, CursedWand.java v3.3.8)');
 		assert.ok(source.includes("addBuff(creature, 'invulnerability', 10)") && source.includes("addBuff(creature, 'bless')"),
 			'MassInvuln grants every character Invulnerability 10 and a full Bless');
 		assert.ok(source.includes("degrees: 90,") && source.includes("maxDistance: 8,"), 'ConeOfColors must build Java\'s exact 90-degree, 8-radius cone');
 		assert.ok(source.includes("trace: (coneFrom, coneTo) => this.coneRay(coneFrom, coneTo, false),"),
 			'ConeOfColors casts STOP_SOLID alone, so the ray must not stop at a character (coneRay\'s stopAtTarget: false)');
-		assert.ok(source.includes("if (coneCell.x === caster.x && coneCell.y === caster.y) continue;"),
+		assert.ok(source.includes("if (coneCell.x === this.hero.x && coneCell.y === this.hero.y) continue;"),
 			'ConeOfColors excludes the caster\'s own cell from the affected set, matching Java\'s `if (cell == user.pos) continue;`');
 		assert.ok(source.includes("Random.normalRange(5 + this.depth, 10 + this.depth * 2)"),
 			'ConeOfColors damage must be Java\'s NormalIntRange(5 + scalingDepth(), 10 + scalingDepth()*2)');
@@ -685,7 +696,7 @@ export function verifyArmorAbilities(require, check) {
 			'a delegated swing rolls at Java base proc chance and keeps the hero trackers armed');
 		assert.match(cloneCombat, /if \(!gearDelegated && this\.subclass\(\) === 'battlemage'\)/,
 			'Battlemage/Monk subclass hooks stay hero-only on a delegated swing');
-		assert.match(cloneCombat, /const cloneDefenderGate = roseArmorGate \|\| \(defender\.allyKind === 'shadowClone'\s*&& shadowCloneArmorProc\(Random\.int\(4\), this\.talentRank\('cloned_armor'\), this\.armorGlyph != null\)\)/,
+		assert.match(cloneCombat, /const cloneDefenderGate = roseArmorGate \|\| \(defender\.allyKind === 'shadowClone'\s*&& shadowCloneArmorProc\(Random\.int\(4\), this\.talentRank\('cloned_armor'\), this\.armorId != null\)\)/,
 			'attack() draws the single defenseProc roll for a landed attack on the clone (rose ghost bypasses)');
 		assert.match(cloneCombat, /if \(defender\.allyKind === 'shadowClone' \|\| roseArmorGate\) this\.mobOnHit\(attacker, defender, damage, cloneDefenderGate\)/,
 			'the hero-as-attacker path reaches the clone defend-side glyphs too (rose ghost included)');
@@ -694,6 +705,21 @@ export function verifyArmorAbilities(require, check) {
 			'generic defend-side glyph sites accept the clone (rose ghost included)');
 		assert.match(cloneMobOnHit, /if \(defender\.isHero && armorGlyph\('metabolism'\)/,
 			'hero-scoped glyph sites stay keyed on the hero');
+		assert.match(cloneMobOnHit, /if \(glyphDefender && armorGlyph\('antientropy'\)[\s\S]*?level\.get\(defender\.x, defender\.y\)[\s\S]*?reigniteBuff\(defender, 'burning'/,
+			'generic AntiEntropy effects apply around the clone wearer');
+		assert.match(cloneMobOnHit, /if \(glyphDefender && armorGlyph\('overgrowth'\)[\s\S]*?level\.index\(defender\.x, defender\.y\)[\s\S]*?triggerMobPlantAt\(defender\)/,
+			'Overgrowth couches and activates its seed on the actual clone defender');
+		assert.match(cloneMobOnHit, /if \(glyphDefender && \(armorGlyph\('entanglement'\)[\s\S]*?defender\.earthrootArmorLevel = Math\.max\(defender\.earthrootArmorLevel \?\? 0, pool\)[\s\S]*?defender\.earthrootArmorPos = ctx\.level\.index\(defender\.x, defender\.y\)/,
+			'Entanglement stores Earthroot armor on the clone, at the clone cell');
+		const cloneAdapter = readFileSync(new URL('../src/scenes/dungeon/combatResolution.ts', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+		assert.match(cloneAdapter, /trinityBodyGlyphIs: \(glyph\) => \(defender\.isHero \|\| cloneDefenseGate\) && scene\.trinityBodyGlyphIs\(glyph\)/,
+			'a CLONED_ARMOR-gated clone receives Java Armor.proc shared BodyForm glyphs');
+		assert.match(cloneAdapter, /triggerMobPlantAt: \(creature\) => scene\.triggerMobPlantAt\(creature\)/,
+			'the scene routes generic Overgrowth activation through the mob plant path');
+		assert.match(cloneAdapter, /heroArmorPresent: scene\.armorId != null/,
+			'CLONED_ARMOR shares BodyForm even when the worn armor has no glyph');
+		assert.match(cloneAdapter, /const arcana = defender\.allyKind === 'ghost' \|\| defender\.allyKind === 'shadowClone'\s*\? 1/,
+			'a clone has no hero-worn Arcana ring; only Java Aura can modify its glyph chance');
 		//`ShadowAlly.defenseProc()`'s AntiMagic/Viscosity shares (B9-a): the shared
 		//dispatch reduces magical hits and defers hits on a CLONED_ARMOR-gated clone
 		//off the hero's armor level, and the ally turn pays the clone's pool out.
@@ -1003,7 +1029,7 @@ export function verifyArmorAbilities(require, check) {
 		//Polarized/Sacrificial/Displacing resolve in the affix seam (@214dfa94):
 		//the method routes the live affix in and the seam gates each curse
 		//(pinned behaviorally in verifyEnchantProcChances).
-		const cursePre = /\tcursedWeaponPreProcs\(this: DungeonScene[^)]*\)[^{]*\{([\s\S]*?)\n\t\},/.exec(res);
+		const cursePre = /	cursedWeaponPreProcs\(this: DungeonScene[^)]*\)[^{]*\{([\s\S]*?)\n	\},/.exec(res);
 		assert.ok(cursePre, 'cursedWeaponPreProcs still exists');
 		assert.ok(cursePre[1].includes('affix: this.weaponAffix'), 'the curse trio routes through the affix seam');
 	});

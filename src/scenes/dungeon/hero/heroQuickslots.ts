@@ -1,6 +1,7 @@
 import type { DungeonScene } from '../../dungeonScene';
 import { Game } from 'mwg';
 import { t } from '../../../i18n/index';
+import { appearanceKindOf } from '../../../items/alchemy';
 import {
 	QUICKSLOT_SIZE,
 	assignQuickslotToFree as assignQuickslotToFreeEntry,
@@ -97,7 +98,7 @@ export const heroQuickslotMethods = {
 			itemFrame: (id) => quickslotItemFrame(id, (kind) => {
 				const category = kind.startsWith('potion') ? 'potion' as const : kind.startsWith('scroll') ? 'scroll' as const : null;
 				if (!category) return undefined;
-				try { return appearanceItemFrame(category, scene.appearances.appearanceOf(category, kind)); } catch { return undefined; }
+				try { return appearanceItemFrame(category, scene.appearances.appearanceOf(category, appearanceKindOf(kind))); } catch { return undefined; }
 			}),
 			useItem: (id, instanceId) => this.useItemById(id, instanceId),
 		};

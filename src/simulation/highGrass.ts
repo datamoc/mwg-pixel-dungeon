@@ -34,6 +34,8 @@ export interface HighGrassDrops {
 	/** `1/(25f - naturalismLevel*4f) * PetrifiedSeed.grassLootMultiplier()`: 1/25 with no
 	 *  sandals, 1/9 at the artifact's maximum `naturalismLevel` of 4. */
 	seedChance: number;
+	/** `PetrifiedSeed.stoneInsteadOfSeedChance()`: the share of seed hits that drop a runestone instead (0 with none). */
+	stoneChance: number;
 	/** `1/(6f - naturalismLevel/2f)`, halved on a GRASS-feeling floor: 1/6 with no sandals. */
 	dewChance: number;
 }
@@ -62,11 +64,13 @@ export interface HighGrassOptions {
 	naturalismLevel?: NaturalismLevel;
 	/** `Dungeon.level.feeling == Level.Feeling.GRASS`: grassy floors spawn half as much dew. */
 	grassFeeling?: boolean;
+	/** `PetrifiedSeed.grassLootMultiplier()` (1 with none): scales the seed chance (`HighGrass.java:133`). */
+	grassLootMultiplier?: number;
+	/** `PetrifiedSeed.stoneInsteadOfSeedChance()` (0 with none): on a seed hit, a runestone instead (`HighGrass.java:136`). */
+	stoneInsteadOfSeedChance?: number;
 }
 
-/** Java's `PetrifiedSeed.grassLootMultiplier()` with no trinket equipped. This port has no
- *  trinket system at all (see `PORT_COVERAGE.md`), so the multiplier's identity case is the
- *  only one reachable here - named so the missing factor is visible rather than implicit. */
+/** `PetrifiedSeed.grassLootMultiplier()`'s identity case, used when no trinket value is passed. */
 const GRASS_LOOT_MULTIPLIER = 1;
 
 /**
@@ -96,7 +100,8 @@ export function trampleHighGrass(
 		next: 'plain',
 		rollDrops: true,
 		drops: {
-			seedChance: (1 / (rules.seedChanceBase - level * rules.seedChancePerLevel)) * GRASS_LOOT_MULTIPLIER,
+			seedChance: (1 / (rules.seedChanceBase - level * rules.seedChancePerLevel)) * (options.grassLootMultiplier ?? GRASS_LOOT_MULTIPLIER),
+			stoneChance: options.stoneInsteadOfSeedChance ?? 0,
 			dewChance,
 		},
 	};
@@ -137,7 +142,11 @@ export interface HighGrassApplyContext {
 	/** Scripted rolls: `Random.chance` in play, a queue in the suite. */
 	readonly rollChance: (p: number) => boolean;
 	readonly drawSeedClass: () => string;
-	readonly spawnDrop: (kind: 'seed' | 'dewdrop' | 'food' | 'berry', x: number, y: number, seedClass?: string) => void;
+	/** The carried Petrified Seed's grass multipliers (absent = no trinket). */
+	readonly petrifiedSeed?: { lootMultiplier: number; stoneChance: number };
+	/** `Generator.randomUsingDefaults(Category.STONE)`'s class, for a stone-instead-of-seed drop. */
+	readonly drawStoneClass?: () => string;
+	readonly spawnDrop: (kind: 'seed' | 'dewdrop' | 'food' | 'berry' | 'stone', x: number, y: number, seedClass?: string) => void;
 	readonly say: (key: string, level: 'positive' | 'negative') => void;
 	readonly isBloomGround: (terrain: number) => boolean;
 	readonly isPlanted: (cell: number) => boolean;
@@ -151,6 +160,8 @@ export function applyHighGrassTrample(context: HighGrassApplyContext, x: number,
 	const trample = trampleHighGrass(state, context.heroClass === 'huntress', context.lootRules, {
 		naturalismLevel: context.naturalismLevel,
 		grassFeeling: context.grassFeeling,
+		grassLootMultiplier: context.petrifiedSeed?.lootMultiplier,
+		stoneInsteadOfSeedChance: context.petrifiedSeed?.stoneChance,
 	});
 	if (state === 'plain') return;
 	//`SandalsOfNature.Naturalism.charge()` runs on every trampled high-grass cell, ahead of the
@@ -203,7 +214,11 @@ export function applyHighGrassTrample(context: HighGrassApplyContext, x: number,
 	const drops = trample.drops;
 	if (!drops) return;
 	const seedDropped = context.rollChance(drops.seedChance);
-	if (seedDropped) context.spawnDrop('seed', x, y, context.drawSeedClass());
+	//`PetrifiedSeed.stoneInsteadOfSeedChance()`: Java's third draw on a seed hit, made here only with the trinket (chance > 0).
+	if (seedDropped) {
+		if (drops.stoneChance > 0 && context.drawStoneClass && context.rollChance(drops.stoneChance)) context.spawnDrop('stone', x, y, context.drawStoneClass());
+		else context.spawnDrop('seed', x, y, context.drawSeedClass());
+	}
 	if (context.rollChance(drops.dewChance)) context.spawnDrop('dewdrop', x, y);
 	//HighGrass.trample()'s real Nature's Bounty: NOT a dew-chance boost (that guess was
 	//simply wrong, found auditing it against the real source) - it drops a depth-paced

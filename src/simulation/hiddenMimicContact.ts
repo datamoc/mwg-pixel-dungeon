@@ -7,6 +7,8 @@ export interface HiddenMimicContactInput {
 	invisible: boolean;
 	timeStopped: boolean;
 	depth: number;
+	/** `EbonyMimic.damageRoll()`: a hidden one hits for double. */
+	ebony?: boolean;
 }
 
 export interface HiddenMimicContactPlan {
@@ -36,6 +38,6 @@ export function planHiddenMimicContact(input: HiddenMimicContactInput): HiddenMi
 		revealWhen: heroBump ? 'beforeAttack' : 'onHit',
 		counterattack,
 		cancelHeroAttack: heroBump,
-		counterDamage: counterattack ? 2 + 2 * input.depth : 0,
+		counterDamage: counterattack ? (2 + 2 * input.depth) * (input.ebony ? 2 : 1) : 0,
 	};
 }

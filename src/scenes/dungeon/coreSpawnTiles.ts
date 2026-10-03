@@ -1,3 +1,4 @@
+import { passiveIdGainExperience } from './passiveId';
 import type { DungeonScene } from '../dungeonScene';
 import { fallenItemStore } from './fallenItems';
 import { monsterSpeedFactor } from './monsters/monsterSpeed';
@@ -7,7 +8,7 @@ import { FogOfWar } from '../../ui/fogOfWar';
 import { syncDoomSpriteTint, syncFrozenSpriteTint } from '../../ui/doomSprite';
 import { WaterSurface } from '../../ui/waterSurface';
 import { Container, FillGradient, Graphics, TilingSprite } from 'mwg/two-d/pixi-interop';
-import { Actors, AnimatedSprite, Blob, Game, Label, Random, ReactionTable, Roguelike, SpriteSheet, TileMap, TintedSprite, theme } from 'mwg';
+import { Actors, AnimatedSprite, Blob, Camera, Game, Label, Random, ReactionTable, Roguelike, SpriteSheet, TileMap, TintedSprite, theme } from 'mwg';
 import { SceneSimulationAdapter } from '../../adapters/sceneSimulation';
 import { weaponAbilityFor } from '../../items/weaponAbilities';
 import { shatterPotionAt } from '../../items/potionEffects';
@@ -31,6 +32,7 @@ import { Terrain } from '../../spdLevelGen/paintLevel';
 import { WallDecorationLayer, WaterEmberLayer, WellRippleLayer } from '../../ui/wallDecorations';
 import { runState } from '../../runState';
 import { isChallengeEnabled } from '../../challenges';
+import { dm300PylonsFinished } from '../../simulation/dm300Boss';
 import { TALENT_TIERS } from '../../talents';
 import { spiritHawkDodges } from '../../simulation/huntressAbilities';
 import { prismaticGuardMaxHp, prismaticImageStats } from '../../simulation/prismatic';
@@ -42,7 +44,7 @@ import { allyIdentityColorAdd, buildMonsterCreature, buildMonsterSprite } from '
 import { repairBossUnsealStairs } from '../bossUnseal';
 import { timeBubbleTurnCost } from '../../simulation/timeBubble';
 import { gridFrames } from '../dungeonGridFrames';
-import { visualGrid } from '../../settings';
+import { cameraFollowDeadzone, visualGrid } from '../../settings';
 import { mineTileFrames, foregroundGrassFrames as buildForegroundGrassFrames, terrainFrameAt as buildTerrainFrameAt, terrainFrames as buildTerrainFrames, wallFrameAt as buildWallFrameAt, wallFrames as buildWallFrames, waterFrames as buildWaterFrames, type DungeonTileFrameContext } from '../dungeonTileFrames';
 import { bindZoomShortcuts } from './zoomShortcuts';
 import { STARTING_WEAPON_CLASS, armorReductionRange, isClassArmorId, weaponCombat } from '../../items/catalog';
@@ -51,18 +53,37 @@ import { dungeonRegion } from '../regions';
 import { applyArmbandGainCharge, applyChainsGainExp, applyHornGainCharge, applyToolkitGainCharge } from '../../items/artifactActions';
 import { applyRoseGhostEquipment } from '../../items/rose';
 import { type FloorState, type SavedCreature } from '../floorState';
-import { heldItemValue, noteFloorExplored, scoreStateFor, type RunEndScore, type ScoredBelonging } from '../../rankings';
 import { monsterSpawnProfile } from '../../actors/monsterSpawn';
 import { ritualSiteState } from '../../spdLevelGen/rooms/standard/ritualSiteRoom';
 import { DOOR, GAME_KIND_CODES, HIGH_GRASS, SOLID, TERRAIN_KINDS, TILE, WALL, WATER, type GroundItemKind } from '../../dungeonConstants';
+import { heldItemValue, noteFloorExplored, scoreStateFor, type RunEndScore, type ScoredBelonging } from '../../rankings';
 import { levelExplorePercent } from './levelExplorePercent';
 import { REGION_GRASS, REGION_WATER, generateSpdDungeon, regionForDepth, type Region } from '../../genericDungeon';
 import { INFINITE_EVASION, addBuff, baseCreature, rollHit, setAscensionActive, type BuffId, type Creature, type GroundItem, type Step } from '../../combat';
 import { BOSSES, MONSTERS, heroSheet, type AnyMonsterId } from '../../monsters';
 import { HERO_SCHEDULER_ID, MOB_SCHEDULER_ID_PREFIX, NON_STATBLOCK_RING_STATS, SPD_LEVEL_CURVE, SUBCLASS_OPTIONS, wardTexture } from './shared';
+import { applyTrinketStats, markHeapHidden, trinketLevelOf, withLevelGenTrinkets } from './trinkets';
+import { ratSkullMultiplier } from '../../simulation/trinkets';
+import { armorDrPenalty, heroArmorEncumbrance, heroWeaponStrReq } from './strengthGear';
+import { evasionDivisor } from '../../items/strReq';
 
 /** DungeonScene methods, moved verbatim from `dungeonScene.ts` (group `coreSpawnTiles`). Each takes the scene as 	his`;
  * `dungeonScene.ts` merges them back onto the class prototype. */
+/** Emulates Java Camera's per-axis deadzone formula while keeping the fraction live.
+ * The camera call still uses MWG's exponential easing rather than Java Camera's linear
+ * `panFollow` step (HeroSprite.java, tag `v3.3.8`); the intensity uses Java's value of 5. */
+function deadzoneAdjustedTarget(camera: Camera, target: { x: number; y: number }): { x: number; y: number } {
+	const adjust = (position: number, center: number, viewSize: number): number => {
+		const delta = position - center;
+		const deadzoneEdge = (viewSize * cameraFollowDeadzone()) / 2;
+		return center + Math.sign(delta) * Math.max(0, Math.abs(delta) - deadzoneEdge);
+	};
+	return {
+		get x() { return adjust(target.x, camera.x, camera.view.width); },
+		get y() { return adjust(target.y, camera.y, camera.view.height); },
+	};
+}
+
 export const coreSpawnTilesMethods = {
 	/** `Dungeon.dropToChasm()`: queue the item for the depth below. */
 	dropToChasm(this: DungeonScene, kind: GroundItemKind, item?: GroundItem['item'], chest?: GroundItem['chest']): void {
@@ -243,7 +264,8 @@ export const coreSpawnTilesMethods = {
 		this.blockingBarrier.clear();
 		this.blockingTurnsLeft = 0;
 		this.sealBarrier.clear();
-		this.sealPartialGain = 0;
+		this.sealState = { cooldown: 0, turnsSinceEnemies: 0, initialShield: 0 };
+		this.trinketCatalystDropped = false;
 		this.armorSealed = false;
 		this.itemPickerOpen = false;
 		this.itemPickerEntries = [];
@@ -349,7 +371,7 @@ export const coreSpawnTilesMethods = {
 		//Burning immunity in Char.isImmune(). Derive the shared buff-boundary flag
 		//from the currently equipped glyph whenever equipment/stats are refreshed.
 		this.hero.fireImmune = this.armorGlyphActive() && this.armorGlyph === 'brimstone';
-		this.hero.magicImmune = this.armorGlyphActive() && this.armorGlyph === 'antimagic';
+		this.hero.magicImmune = (this.armorGlyphActive() && this.armorGlyph === 'antimagic') || this.hero.buffs['magicImmune'] !== undefined; //`AntiMagic` glyph or the `ScrollOfAntiMagic` buff
 		//Hero.java increments the raw skills, then applies weapon/armor factors when
 		//attackSkill()/defenseSkill() is queried. Keep those counters separate from
 		//talent points so every level has the real +1/+1 combat-skill growth.
@@ -366,7 +388,11 @@ export const coreSpawnTilesMethods = {
 		this.hero.str = this.heroStr + ringMightBonus(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
 		if (this.hero.buffs['adrenalineSurge']) this.hero.str += 1;
 		this.hero.str += Math.floor(this.heroStr * (0.03 + 0.05 * this.talentRank('strongman')));
-		this.hero.evasion = this.heroStats.get('evasion') + this.momentumEvasionBonus() + unencumberedSpiritEvasion(this.subclass(), this.talentRank('unencumbered_spirit'));
+		//`Armor.evasionFactor()`: an under-strength armor divides the hero's evasion by `1.5^encumbrance` before the Momentum
+		//bonus and the other additive terms (`items/strReq.ts`). Armor evasion, the one place the port has no armor-evasion
+		//model, is this single divisor.
+		const armorEvasionDivisor = evasionDivisor(heroArmorEncumbrance(this));
+		this.hero.evasion = this.heroStats.get('evasion') / armorEvasionDivisor + this.momentumEvasionBonus() + unencumberedSpiritEvasion(this.subclass(), this.talentRank('unencumbered_spirit'));
 		//`Quarterstaff` defensive stance: triples evasion while up (`ability_desc`).
 		if (this.defensiveStanceTurns > 0) this.hero.evasion *= 3;
 		//Guard (`Hero.defenseSkill`, tag `v3.3.8`): infinite evasion while the tracker
@@ -374,6 +400,7 @@ export const coreSpawnTilesMethods = {
 		//hit model in 	akeHeroDamage` is gone with it.
 		if (this.guardTurns > 0) this.hero.evasion = 1000000;
 		if (this.healingEvasionTurns > 0) this.hero.evasion = this.talentRank('restored_agility') >= 2 ? 1000000 : this.hero.evasion * 4;
+		applyTrinketStats(this);
 		//Strongman and dynamic STR were resolved above before Momentum's Evasive Armor bonus.
 		//MeleeWeapon: min = tier+lvl, max = 5*(tier+1)+lvl*(tier+1). Tier affects scaling:
 		//tier 1: [1+lvl, 10+2*lvl], tier 2: [2+lvl, 15+3*lvl], etc.
@@ -387,6 +414,12 @@ export const coreSpawnTilesMethods = {
 		//thirty-one melee classes override the default formula, so a tier alone gave most weapons the wrong range.
 		const weaponRule = weaponCombat(this.weaponMeleeKey(), this.weaponTier, effWeapon);
 		this.hero.damage = [weaponRule.min, weaponRule.max];
+		//`Weapon.STRReq()` of the wielded melee weapon: `Weapon.accuracyFactor` divides accuracy by `1.5^encumbrance` and
+		//`MeleeWeapon.damageRoll` adds `IntRange(0, STR - STRReq)` above it (both read in `simulation/combat.ts` off these two
+		//fields). Before 2026-10-02 `strReq` stayed at the base 10 for every weapon, so a heavy weapon was penalty-free (R121).
+		this.hero.strReq = heroWeaponStrReq(this);
+		//`Hero.drRoll()`: the armor roll drops by `2 * (STRReq - STR)` before it is added (floored at 0 inside the roll).
+		this.hero.armorStrPenalty = armorDrPenalty(this);
 		const bark = this.talentRank('barkskin');
 		//Armor: min = lvl, max = tier*(2+lvl). Tier 1 (cloth): [lvl, 2+lvl],
 		//tier 2 (leather): [lvl, 4+2*lvl], tier 3 (mail): [lvl, 6+3*lvl], etc.
@@ -412,7 +445,8 @@ export const coreSpawnTilesMethods = {
 		}
 		//`Hero.drRoll()`: a wielded weapon adds its own `NormalIntRange(0, defenseFactor)` roll (the shields,
 		//katana, quarterstaff, rapier). Folded into the armor range like Hold Fast above: the ends and the
-		//mean match Java, the bell is flatter. Not ported: the `2 * missing STR` penalty on that roll.
+		//mean match Java, the bell is flatter. Not ported: the `2 * missing STR` penalty on that separate roll (the armor's own
+		//penalty is applied to the combined range in `simulation/combat.ts`'s `armorStrPenalty`, which includes this term).
 		if (weaponRule.defense > 0) {
 			this.hero.armor = [this.hero.armor[0], this.hero.armor[1] + weaponRule.defense];
 		}
@@ -465,7 +499,7 @@ export const coreSpawnTilesMethods = {
 			if (relevantStats.size > 0) {
 				// Rebuild every cached evasion term after ring modifiers. The previous assignment
 				// dropped Momentum, stance, guard, and healing bonuses whenever a ring affected stats.
-				this.hero.evasion = this.heroStats.get('evasion') + this.momentumEvasionBonus()
+				this.hero.evasion = this.heroStats.get('evasion') / armorEvasionDivisor + this.momentumEvasionBonus()
 					+ unencumberedSpiritEvasion(this.subclass(), this.talentRank('unencumbered_spirit'))
 					+ (this.heroClass === 'rogue' ? 3 : 0);
 				if (this.defensiveStanceTurns > 0) this.hero.evasion *= 3;
@@ -521,6 +555,8 @@ export const coreSpawnTilesMethods = {
 			}
 		}
 
+		//`Hero.earnExp()` -> `Item.onHeroGainExp(levelPercent)`: the worn gear's identification pool refills / its ring counter runs
+		if (amount > 0) passiveIdGainExperience(this, amount / Math.max(1, SPD_LEVEL_CURVE.experienceFor(this.progression.level + 1) - SPD_LEVEL_CURVE.experienceFor(this.progression.level)));
 		const gained = this.progression.addExperience(amount);
 		if (gained <= 0) return;
 
@@ -559,7 +595,7 @@ export const coreSpawnTilesMethods = {
 
 	/** any monster in MONSTERS, cut from its own real sprite sheet at its own real frame size */
 	spawnMonster(this: DungeonScene, kind: AnyMonsterId, at: Step, restoring = false, mimicLoot?: string, isAlly = false, allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost' | 'ninjaLog' | 'spiritHawk' | 'lightAlly' | 'afterImage' | 'shadowClone' | 'prismatic', championEligible = false, initialSentryWarmup?: number, schedulerDelay?: number, restoredShamanType?: Creature['shamanType']): Creature {
-		const profile = monsterSpawnProfile(kind, this.depth, restoring, isAlly, championEligible, this.mobsToChampion);
+		const profile = monsterSpawnProfile(kind, this.depth, restoring, isAlly, championEligible, this.mobsToChampion, ratSkullMultiplier(trinketLevelOf(this, 'trinketRatSkull')));
 		//A restored Shaman keeps the saved Java subtype without drawing a new Random.Float().
 		//The same subtype selects its ShamanSprite sheet block and its spell effects.
 		if (kind === 'shaman' && restoring) profile.shamanType = restoredShamanType ?? 'red';
@@ -585,6 +621,8 @@ export const coreSpawnTilesMethods = {
 		if (allyKind === 'spiritHawk') monster.attacksAutomatically = false;
 		//Monk.java: enters HUNTING with Focus (one guaranteed dodge, re-earned over ~6 turns)
 		if (kind === 'monk' || kind === 'senior') addBuff(monster, 'focus');
+		//`Mimic.generatePrize()`: with a Mimic Tooth carried when the mimic is created it holds one more random item
+		if (kind === 'mimic' && !restoring && trinketLevelOf(this, 'trinketMimicTooth') >= 0) monster.mimicToothExtra = true;
 		this.creatures.push(monster);
 		if (kind === 'crystalSpire') this.refreshMineTiles();
 		this.applyStatueKit(monster);
@@ -829,6 +867,7 @@ export const coreSpawnTilesMethods = {
 		return lotus;
 	},
 
+	/**
 	/** The Lotus ally's leaf range for the aura sync (`LotusSprite.link`, tag `v3.3.8`): the wand level is recovered the same way `lotusPreservesSeed` does (`maxHp` never drops, while `hp`/`sheepTurns` count the remaining turns), and the ring uses Java's Euclidean `inRange` (see `lotusLeafCells` for the stated reductions). A dead lotus reports undefined, so the sync keeps it to nothing at all. */
 	lotusLeafCells(this: DungeonScene, creature: Creature): Array<{ x: number; y: number }> | undefined {
 		if (creature.allyKind !== 'lotus' || (creature.hp ?? 0) <= 0) return undefined;
@@ -923,8 +962,8 @@ export const coreSpawnTilesMethods = {
 				accuracy: creature.accuracy, evasion: creature.evasion,
 				damage: [...creature.damage] as [number, number], armor: [...creature.armor] as [number, number],
 				buffs: Object.entries(creature.buffs) as [BuffId, number][],
-				sleeping: creature.sleeping, champion: creature.champion, championPower: creature.championPower, pumped: creature.pumped,
-				combo: creature.combo, moving: creature.moving, arenaJumps: creature.arenaJumps, tenguPhase: creature.tenguPhase, tenguAbilityCd: creature.tenguAbilityCd, tenguAbilityUses: creature.tenguAbilityUses, tenguLastAbility: creature.tenguLastAbility,
+				sleeping: creature.sleeping, champion: creature.champion, championPower: creature.championPower, pumped: creature.pumped, teleporting: creature.teleporting,
+				combo: creature.combo, dustAtkCount: creature.dustAtkCount, moving: creature.moving, arenaJumps: creature.arenaJumps, tenguPhase: creature.tenguPhase, tenguAbilityCd: creature.tenguAbilityCd, tenguAbilityUses: creature.tenguAbilityUses, tenguLastAbility: creature.tenguLastAbility,
 				// These collections are mutated in place by the live boss turns (`shift` and the
 				// shocker tick). Copy them so an in-memory FloorState cannot alias a live creature.
 				tenguFire: creature.tenguFire ? {
@@ -956,7 +995,7 @@ export const coreSpawnTilesMethods = {
 				earthrootArmorLevel: creature.earthrootArmorLevel, earthrootArmorPos: creature.earthrootArmorPos,
 						barkskinLevel: creature.barkskinLevel, barkskinInterval: creature.barkskinInterval, barkskinCooldown: creature.barkskinCooldown,
 				kingReactionsState: this.kingReactionsFor.get(creature.id)?.toJSON(),
-				weaponLevel: creature.weaponLevel, stolen: creature.stolen, mimicLoot: creature.mimicLoot, generation: creature.generation,
+				weaponLevel: creature.weaponLevel, stolen: creature.stolen, mimicLoot: creature.mimicLoot, ebonyMimic: creature.ebonyMimic, ebonyPrizes: creature.ebonyPrizes, mimicToothExtra: creature.mimicToothExtra, generation: creature.generation,
 				armbandStolen: creature.armbandStolen,
 				spawnCooldown: creature.spawnCooldown, seesHero: creature.seesHero,
 				fleeing: creature.fleeing,
@@ -985,7 +1024,6 @@ export const coreSpawnTilesMethods = {
 				dmAbilityTurns: creature.dmAbilityTurns, dmAbilityCd: creature.dmAbilityCd, dmLastAbility: creature.dmLastAbility,
 				dmSupercharged: creature.dmSupercharged, dmPylonsActivated: creature.dmPylonsActivated, dmBarrier: creature.dmBarrier,
 				wraithLevel: creature.wraithLevel,
-				wraithAtkCount: creature.wraithAtkCount,
 				skeletonIndex: creature.skeleton ? savedIndex.get(creature.skeleton) : undefined,
 				firstSummon: creature.firstSummon,
 				impShopkeeperGreeted: creature.impShopkeeperGreeted,
@@ -1031,6 +1069,7 @@ export const coreSpawnTilesMethods = {
 			smokeScreen: this.smokeScreen.toJSON(),
 			inferno: this.inferno.toJSON(),
 			blizzard: this.blizzard.toJSON(),
+			stormCloud: this.stormCloud.toJSON(),
 			portedFeatures: this.portedFeatures.toJSON(),
 			ritualPos: this.ritualPos,
 			ritualCandles: [...this.ritualCandles],
@@ -1039,7 +1078,7 @@ export const coreSpawnTilesMethods = {
 			sacrificialFireCharge: this.sacrificialFireCharge,
 			sacrificialFireCell: this.sacrificialFireCell,
 			sacrificialFirePrize: this.sacrificialFirePrize,
-			groundItems: this.groundItems.map(({ kind, x, y, item, chest, forSale, missileLevel, missileSet, tippedSeed, autoExplored, tomb }) => ({ kind, x, y, item, chest, forSale, missileLevel, missileSet, tippedSeed, autoExplored, tomb })),
+			groundItems: this.groundItems.map(({ kind, x, y, item, chest, forSale, missileLevel, missileSet, tippedSeed, autoExplored, tomb, hidden }) => ({ kind, x, y, item, chest, forSale, missileLevel, missileSet, tippedSeed, autoExplored, tomb, hidden })),
 			fallingRocks: this.fallingRocks.map((v) => ({ cells: v.cells.map((c) => ({ ...c })), turns: v.turns })),
 			cavesBossEnergyCells: [...this.cavesBossEnergyCells],
 			manualPlants: [...this.manualPlants.entries()],
@@ -1086,6 +1125,7 @@ export const coreSpawnTilesMethods = {
 		this.smokeScreen = state.smokeScreen ? Blob.fromJSON(state.smokeScreen) : new Blob(this.level.width, this.level.height);
 		this.inferno = state.inferno ? Blob.fromJSON(state.inferno) : new Blob(this.level.width, this.level.height);
 		this.blizzard = state.blizzard ? Blob.fromJSON(state.blizzard) : new Blob(this.level.width, this.level.height);
+		this.stormCloud = state.stormCloud ? Blob.fromJSON(state.stormCloud) : new Blob(this.level.width, this.level.height);
 		this.manualPlants = new Map(state.manualPlants ?? []);
 		this.furrowedGrass = new Set(state.furrowedGrass ?? []);
 		this.fallingRocks = (state.fallingRocks ?? []).map((v) => ({ cells: v.cells.map((c) => ({ ...c })), turns: v.turns }));
@@ -1115,6 +1155,7 @@ export const coreSpawnTilesMethods = {
 				heap.tippedSeed = item.tippedSeed;
 				heap.autoExplored = item.autoExplored;
 				heap.tomb = item.tomb;
+				if (item.hidden) markHeapHidden(this, heap);
 			}
 		}
 
@@ -1127,7 +1168,7 @@ export const coreSpawnTilesMethods = {
 				hp: saved.hp, maxHp: saved.maxHp, accuracy: saved.accuracy, evasion: saved.evasion,
 				damage: [...saved.damage] as [number, number], armor: [...saved.armor] as [number, number],
 				buffs: Object.fromEntries(saved.buffs), sleeping: saved.sleeping, champion: saved.champion,
-				championPower: saved.championPower, pumped: saved.pumped, gooHealInc: saved.gooHealInc, focusCooldown: saved.focusCooldown, shamanType: saved.shamanType ?? (saved.kind === 'shaman' ? 'red' : undefined), combo: saved.combo, moving: saved.moving, arenaJumps: saved.arenaJumps, tenguPhase: saved.tenguPhase, tenguAbilityCd: saved.tenguAbilityCd, tenguAbilityUses: saved.tenguAbilityUses, tenguLastAbility: saved.tenguLastAbility, tenguFire: saved.tenguFire, tenguShockers: saved.tenguShockers,
+				championPower: saved.championPower, pumped: saved.pumped, teleporting: saved.teleporting, gooHealInc: saved.gooHealInc, focusCooldown: saved.focusCooldown, shamanType: saved.shamanType ?? (saved.kind === 'shaman' ? 'red' : undefined), combo: saved.combo, dustAtkCount: saved.dustAtkCount, moving: saved.moving, arenaJumps: saved.arenaJumps, tenguPhase: saved.tenguPhase, tenguAbilityCd: saved.tenguAbilityCd, tenguAbilityUses: saved.tenguAbilityUses, tenguLastAbility: saved.tenguLastAbility, tenguFire: saved.tenguFire, tenguShockers: saved.tenguShockers,
 				yogPhase: saved.yogPhase, yogFistType: saved.yogFistType, elementalType: saved.elementalType, yogSummonCd: saved.yogSummonCd, yogSummonIndex: saved.yogSummonIndex, yogBeamCd: saved.yogBeamCd, yogTargeted: saved.yogTargeted, yogFistDeck: saved.yogFistDeck, yogChallengeDeck: saved.yogChallengeDeck, yogMinionDeck: saved.yogMinionDeck, fistZapCd: saved.fistZapCd,
 				potPos: saved.potPos ? { ...saved.potPos } : undefined, potHolderId: saved.potHolderId,
 				kingPhase: saved.kingPhase, kingSummonsMade: saved.kingSummonsMade, kingSummonCd: saved.kingSummonCd,
@@ -1138,7 +1179,7 @@ export const coreSpawnTilesMethods = {
 				sungrassLevel: saved.sungrassLevel, sungrassPartial: saved.sungrassPartial, sungrassPos: saved.sungrassPos,
 				earthrootArmorLevel: saved.earthrootArmorLevel, earthrootArmorPos: saved.earthrootArmorPos,
 						barkskinLevel: saved.barkskinLevel, barkskinInterval: saved.barkskinInterval, barkskinCooldown: saved.barkskinCooldown,
-				weaponLevel: saved.weaponLevel, stolen: saved.stolen, mimicLoot: saved.mimicLoot, generation: saved.generation,
+				weaponLevel: saved.weaponLevel, stolen: saved.stolen, mimicLoot: saved.mimicLoot, ebonyMimic: saved.ebonyMimic, ebonyPrizes: saved.ebonyPrizes, mimicToothExtra: saved.mimicToothExtra, generation: saved.generation,
 				armbandStolen: saved.armbandStolen,
 				spawnCooldown: saved.spawnCooldown, seesHero: saved.seesHero,
 				fleeing: saved.fleeing,
@@ -1167,13 +1208,12 @@ export const coreSpawnTilesMethods = {
 				dmAbilityTurns: saved.dmAbilityTurns, dmAbilityCd: saved.dmAbilityCd, dmLastAbility: saved.dmLastAbility,
 				dmSupercharged: saved.dmSupercharged ?? false, dmPylonsActivated: saved.dmPylonsActivated ?? 0, dmBarrier: saved.dmBarrier ?? 0,
 				wraithLevel: saved.wraithLevel,
-				wraithAtkCount: saved.wraithAtkCount,
 				firstSummon: saved.firstSummon ?? true,
 				impShopkeeperGreeted: saved.impShopkeeperGreeted ?? false,
 				isAlly: saved.isAlly,
 				summonedByElementalSpell: saved.summonedByElementalSpell,
 				allyKind: saved.allyKind,
-				allyDefendCell: saved.allyDefendCell ? { ...saved.allyDefendCell } : undefined,
+				allyDefendCell: saved.allyDefendCell,
 				beamingRayTarget: saved.beamingRayTarget,
 				allyMovingToDefend: saved.allyMovingToDefend,
 				lightAllyClass: saved.lightAllyClass,
@@ -1206,11 +1246,13 @@ export const coreSpawnTilesMethods = {
 		this.roseGhost = roseGhost;
 		const rose = this.roseItem();
 		if (rose && roseGhost) applyRoseGhostEquipment(roseGhost, rose, this.progression.level);
-		//`BossHealthBar.bleed(true)` is transition-latched, not HP-derived: a save loaded
-		//into King P3 or Yog P5 re-latches from the persisted phase (see `bossBleedLatched`).
+		//`BossHealthBar.bleed(true)` is transition-latched, not HP-derived. Java restores
+		//DM300's latch when all required pylons are activated and charge has ended; King P3
+		//and Yog P5 similarly re-latch from their persisted phases.
 		this.bossBleedLatched = restored.some((creature) =>
 			(creature.kind === 'king' && (creature.kingPhase ?? 1) === 3)
-			|| (creature.kind === 'yog' && (creature.yogPhase ?? 1) === 5));
+			|| (creature.kind === 'yog' && (creature.yogPhase ?? 1) === 5)
+			|| (creature.kind === 'dm300' && !creature.dmSupercharged && dm300PylonsFinished(creature.dmPylonsActivated ?? 0, isChallengeEnabled('stronger_bosses'))));
 		//The turn queue itself: `Scheduler.restore` puts back `now`, the `sequence` counter and each
 		//entry's time/sequence/priority, so a load resumes the exact queue instead of re-deriving one.
 		//Actors are looked up by the same keys `captureActiveFloor` wrote - `mob-<index>` into the
@@ -1251,28 +1293,6 @@ export const coreSpawnTilesMethods = {
 				this.tenguBeams.set(creature, this.rebuildTenguBeam(creature.tenguFire.direction, creature.tenguFire.beam, creature));
 			}
 		}
-	},
-
-	/** Recompute floor music from live state and play it (a no-op when the selection is
-	 * unchanged - the audio players' own track-key check absorbs that). Floor entry calls
-	 * it; the boss-bleed edge and the Wandmaker quest flips call it mid-floor, matching
-	 * Java's own replay points (`CavesBossLevel` etc. evaluate at scene entry, PrisonLevel
-	 * additionally replays when `Wandmaker.Quest.active()` flips). Java never replays for
-	 * Ghost completion, Amulet pickup, un-bleeding or boss death, and neither does this:
-	 * those keep playing until the next floor, exactly like Java's entry-evaluated music.
-	 * (The one deliberate improvement over entry-only: a boss that starts bleeding
-	 * mid-fight switches to its finale live, where Java would keep the boss track until
-	 * a save/load re-entry - the finale's whole point is sounding while the boss bleeds.) */
-	replayDungeonMusic(this: DungeonScene): void {
-		runState.audio.enterDungeon(regionForDepth(this.depth), {
-			boss: this.depth in BOSSES,
-			locked: this.floorLocked(),
-			bleeding: this.bossBleeding || this.bossBleedLatched,
-			ghostActive: this.quests.status('sadGhost') === 'active',
-			wandmakerActive: this.quests.status('wandmaker') === 'active',
-			amuletObtained: this.gameState.switch('amuletObtained'),
-			depth: this.depth,
-		});
 	},
 
 	enterLevel(this: DungeonScene): void {
@@ -1372,8 +1392,18 @@ export const coreSpawnTilesMethods = {
 
 		const region = regionForDepth(this.depth);
 		const savedFloor = this.miningBranchActive ? null : this.floorStates.get(this.depth);
-		if (this.depth === 26) runState.audio.vaultMusic(this.gameState.switch('amuletObtained'));
-		else this.replayDungeonMusic();
+		//`SewerBossLevel.playLevelMusic()` (and the other boss-level classes, v3.3.8)
+		//switches from the looping boss cue to the region queue once its seal is open.
+		//The port's unsealed-depth set is its persisted equivalent. Java uses the
+		//active SadGhost/Wandmaker quest for Sewer/Prison tense tracks respectively;
+		//the port's persisted quest manager exposes those active states directly.
+		const amuletObtained = this.gameState.switch('amuletObtained');
+		if (this.depth === 26) runState.audio.vaultMusic(amuletObtained);
+		else {
+			const questTense = region === 'sewers' ? this.quests.status('sadGhost') === 'active'
+				: region === 'prison' && this.quests.status('wandmaker') === 'active';
+			runState.audio.enterDungeon(region, this.depth in BOSSES, amuletObtained, this.bossUnsealedDepths.has(this.depth), this.depth, questTense);
+		}
 		this.terrainSheet = SpriteSheet.fromTexture(runState.sprites[region], TILE);
 
 		//One run seed owns every floor.  The previous depth-only seed made floor 1 identical
@@ -1398,7 +1428,7 @@ export const coreSpawnTilesMethods = {
 		ritualSiteState.ritualPos = -1;
 		const ported = this.miningBranchActive
 			? miningBranchFloor(this.runSeedLong, this.depth, this.blacksmithQuestType, isChallengeEnabled('darkness'))
-			: isPortedDepth(this.depth) ? portedFloor(this.runSeedLong, this.depth, isChallengeEnabled('stronger_bosses')) : null;
+			: isPortedDepth(this.depth) ? withLevelGenTrinkets(this, () => portedFloor(this.runSeedLong, this.depth, isChallengeEnabled('stronger_bosses'))) : null;
 		this.portedFloorActive = ported !== null;
 		this.portedPaint = ported?.paint ?? null;
 		//`HallsBossLevel.seal()` persists in Java's own saved map; this port regenerates paint
@@ -1484,6 +1514,7 @@ export const coreSpawnTilesMethods = {
 		this.smokeScreen = new Blob(this.level.width, this.level.height);
 		this.inferno = new Blob(this.level.width, this.level.height);
 		this.blizzard = new Blob(this.level.width, this.level.height);
+		this.stormCloud = new Blob(this.level.width, this.level.height);
 		this.eternalFire = new Blob(this.level.width, this.level.height);
 		this.ritualPos = -1;
 		this.ritualCandles = [false, false, false, false];
@@ -1858,11 +1889,13 @@ export const coreSpawnTilesMethods = {
 		// the spawner was killed.
 		if (this.demonSpawnerFloor) this.demonSpawnerFloor.setLayerData('demonSpawnerFloor', this.demonSpawnerFloorFrames(!savedFloor));
 
-		// GameScene.java pans to hero.center() without clamping to map bounds.
-		// Clamping pushed the hero to the screen edge on wide windows.
+		// Java GameScene sets Camera.followDeadzone to 0, .2, .5 or .9, and its Camera.update
+		// subtracts half that fraction of each viewport axis before panning (tag v3.3.8).
+		// MWG only accepts deadzone in the Camera constructor; this dynamic target reproduces
+		// the same edge-follow behavior and reads the setting on each update, so the slider is live.
 		this.camera.setBounds(null);
 		this.camera.snapTo(...this.worldOf(this.hero));
-		this.camera.follow(this.heroPoint());
+		this.camera.follow(deadzoneAdjustedTarget(this.camera, this.heroPoint()), 5);
 
 		this.refresh();
 		//SPD seals the starting room behind hidden doors as its search tutorial - see
@@ -1960,6 +1993,7 @@ export const coreSpawnTilesMethods = {
 		return {
 			width: this.level.width,
 			height: this.level.height,
+			depth: this.depth,
 			tileVariance: this.tileVariance,
 			terrainAt: (x, y) => this.level.get(x, y),
 			visualTerrainAt: this.visualTerrainAt,

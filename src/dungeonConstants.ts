@@ -252,6 +252,7 @@ export type GroundItemKind =
 	| 'crystalKey'
 	| 'ironKey'
 	| 'goldenKey'
+	| 'wornKey'
 	| 'bomb'
 	| 'corpseDust'
 	| 'candle'
@@ -263,12 +264,14 @@ export type GroundItemKind =
 	| 'alchemize'
 	| 'bag'
 	| 'sandBag'
-	| 'torch';
+	| 'torch'
+	| 'trinket'
+	| 'trinketCatalyst';
 
 export const GROUND_ITEM_KINDS: readonly GroundItemKind[] = [
 	'dewdrop', 'petal', 'stone', 'potion', 'scroll', 'meat', 'gold', 'armor', 'weapon', 'wand', 'food', 'seed',
-	'darkGold', 'dwarfToken', 'amulet', 'ring', 'crystalKey', 'ironKey', 'goldenKey', 'bomb',
-	'corpseDust', 'candle', 'embers', 'ankh', 'stylus', 'brokenSeal', 'honeypot', 'alchemize', 'bag', 'sandBag', 'torch',
+	'darkGold', 'dwarfToken', 'amulet', 'ring', 'crystalKey', 'ironKey', 'goldenKey', 'wornKey', 'bomb',
+	'corpseDust', 'candle', 'embers', 'ankh', 'stylus', 'brokenSeal', 'honeypot', 'alchemize', 'bag', 'sandBag', 'torch', 'trinket', 'trinketCatalyst',
 ];
 
 /** `ItemSpriteSheet` frame metadata is authored in MWL; this adapter validates the closed

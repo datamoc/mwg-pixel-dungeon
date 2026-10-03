@@ -52,8 +52,6 @@ export function nearestVisibleEnemy(
  * the scene as the file-size refactor's thirty-sixth extraction,
  * behavior-identical, following this module's own `SimulationRoguelike` seam -
  * the scene only binds its level and the real geometry. The caller keeps the
- * Java’s Aggression.detach() clears stale enemy-to-enemy references. This port stores no selected
- * enemy pointer and recomputes this query each actor turn, so buff expiry needs no cleanup pass.
  * one-line scene adapter.
  */
 export function aggressionTarget(

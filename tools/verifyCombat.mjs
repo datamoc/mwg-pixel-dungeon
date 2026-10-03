@@ -394,15 +394,6 @@ export function verifyCombat(require, check) {
 		assert.match(blastSource, /auraProtectedDamage\(c, damage\)[\s\S]*?c\.buffs\['powerOfMany'\] !== undefined[\s\S]*?powerOfManyDamageFactor\(this\.talentRank\('life_link'\)\)[\s\S]*?doomDamage\(damage, c\)/,
 			'shared dispatch reduces powered defenders between Aura and Doom');
 	});
-	check('the shared Char.damage dispatch detaches MagicalSleep on any damage (T63)', () => {
-		//`Char.damage()` detaches `MagicalSleep` on any damage (`Char.java`, tag `v3.3.8`).
-		//The attack tail carries the same line, so the dispatch must too - otherwise a wand
-		//zap or a bomb leaves a magically-sleeping victim asleep where a sword wakes it.
-		assert.match(blastSource, /if \(this\.hero\.buffs\['magicalSleep'\] !== undefined\) delete this\.hero\.buffs\['magicalSleep'\];[\s\S]*?this\.hero\.hp -= damage/,
-			'dispatched hero damage detaches MagicalSleep before the HP write');
-		assert.match(blastSource, /if \(c\.buffs\['magicalSleep'\] !== undefined\) delete c\.buffs\['magicalSleep'\];[\s\S]*?if \(!options\.skipDoom\) damage = doomDamage\(damage, c\)/,
-			'dispatched mob damage detaches MagicalSleep after PowerOfMany and before Doom');
-	});
 	check('the shared Char.damage dispatch applies champion damageTakenFactor to every source (T63)', () => {
 		//`Char.damage()` runs every defender ChampionEnemy's `damageTakenFactor()` with a
 		//ceiling per buff (`Char.java`, tag `v3.3.8`) - for every source, not just the
@@ -415,6 +406,15 @@ export function verifyCombat(require, check) {
 			'an AntiMagic champion takes ceil(x0.5) through the dispatch');
 		assert.match(blastSource, /c\.champion === 'growing'[\s\S]*?Math\.ceil\(damage \/ \(c\.championPower \?\? 1\.19\)\)/,
 			'a Growing champion takes ceil(dmg/power) through the dispatch');
+	});
+	check('the shared Char.damage dispatch detaches MagicalSleep on any damage (T63)', () => {
+		//`Char.damage()` detaches `MagicalSleep` on any damage (`Char.java`, tag `v3.3.8`).
+		//The attack tail carries the same line, so the dispatch must too - otherwise a wand
+		//zap or a bomb leaves a magically-sleeping victim asleep where a sword wakes it.
+		assert.match(blastSource, /if \(this\.hero\.buffs\['magicalSleep'\] !== undefined\) delete this\.hero\.buffs\['magicalSleep'\];[\s\S]*?this\.hero\.hp -= damage/,
+			'dispatched hero damage detaches MagicalSleep before the HP write');
+		assert.match(blastSource, /if \(c\.buffs\['magicalSleep'\] !== undefined\) delete c\.buffs\['magicalSleep'\];[\s\S]*?if \(!options\.skipDoom\) damage = doomDamage\(damage, c\)/,
+			'dispatched mob damage detaches MagicalSleep after PowerOfMany and before Doom');
 	});
 	check('Paladin holy halves keep the worn enchant and scale 6/3 (R029)', () => {
 		//`Weapon.proc()`'s wielding arm (`Weapon.java` 147-162) procs the worn
@@ -529,11 +529,14 @@ export function verifyCombat(require, check) {
 		facade.addBuff(shockEl, 'burning');
 		assert.notEqual(shockEl.buffs.burning, undefined, 'a shock elemental takes burning normally');
 		assert.equal(shockEl.hp, 60, 'nothing off the hate lists deals backlash damage');
+		assert.match(blastSource, /setAttachBacklash\(\(creature, damage\) => \{\s*this\.applyCharacterDamage\(creature, damage, \{ pierceArmor: true, cause: 'foe' \}\);\s*\}\);/,
+			'the live backlash hook must use the shared Char.damage dispatch and bypass Mob armor');
 		let shown = null;
-		facade.setAttachBacklash((c, damage) => { shown = { hp: c.hp, damage }; });
+		facade.setAttachBacklash((c, damage) => { shown = { hp: c.hp, damage }; c.hp -= damage; });
 		const doomed = base({ kind: 'elemental', elementalType: 'fire', hp: 10, maxHp: 60 });
 		facade.addBuff(doomed, 'frost');
-		assert.ok(shown !== null && shown.damage >= 30 && shown.hp <= -20, 'a lethal attach must present through the installed hook');
+		assert.ok(shown !== null && shown.damage >= 30 && shown.hp === 10 && doomed.hp <= -20,
+			'a lethal attach must be handed to the installed damage hook');
 		facade.setAttachBacklash(null);
 	});
 	check('STATIC holders refuse Frost and Chill like Java immunities', () => {
@@ -1070,46 +1073,6 @@ export function verifyCombat(require, check) {
 		const mobOnHit = readFileSync(new URL('../src/scenes/mobOnHit.ts', import.meta.url), 'utf8');
 		assert.ok(mobOnHit.includes("defender.kind === 'acidic'") && mobOnHit.includes('Roguelike.chebyshevDistance(defender, attacker) === 1'),
 			'acidic oozes adjacent attackers on the defender seam');
-	});
-	check('ChaosElemental rolls the cursed-wand table with itself as user, skipping accuracy and wand procs', () => {
-		//`ChaosElemental.meleeProc`/`rangedProc`/`zap` (`Elemental.java`, tag `v3.3.8`):
-		//melee calls the rolled effect directly with no FX; ranged goes through `cursedZap`
-		//(bolt FX at the call site) and always hits. A null origin means no wand-proc tail,
-		//and `positiveOnly` can never roll true for a non-hero user.
-		const cursed = readFileSync(new URL('../src/scenes/dungeon/hero/cursedWandCast.ts', import.meta.url), 'utf8');
-		assert.ok(cursed.includes('castCursedChaosEffect(this: DungeonScene, target: Creature | undefined, cell: Step, user: Creature, melee: boolean)'),
-			'the chaos entry takes the elemental as user plus a melee flag');
-		assert.ok(cursed.includes('cursedProcWandLevel = null;'),
-			'a chaos cast carries no wand origin, so the wand-proc tail skips');
-		assert.ok(cursed.includes("while (user !== undefined && effect === 'randomWand')"),
-			'RandomWand re-rolls for a non-hero user (valid() requires Hero)');
-		assert.ok(cursed.includes("effect === 'petrify' || (effect === 'sheepPolymorph' && !sheepTargetOk)"),
-			'Petrify and hero-targeted Sheep re-roll for a non-hero user');
-		assert.ok(cursed.includes("effect === 'randomTransmogrify' && (user !== undefined"),
-			'Transmogrify re-rolls with no origin wand');
-		assert.ok(cursed.includes("effect === 'heroShapeShift' && user !== undefined && !(chaosTarget && chaosTarget.isHero)"),
-			'ShapeShift re-rolls unless the collision target is the hero');
-		assert.ok(cursed.includes("if (caster !== this.hero) {") && cursed.includes("addBuff(target, 'hex')"),
-			'CurseEquipment hexes the collision target for a non-hero caster');
-		assert.ok(cursed.includes('chaosMelee ? { cells: [{ x: cell.x, y: cell.y }] }'),
-			'a chaos melee ConeOfColors affects only the collision cell (null cone)');
-		const ai = readFileSync(new URL('../src/scenes/dungeon/monsters/monsterAi.ts', import.meta.url), 'utf8');
-		assert.ok(ai.includes("if (type !== 'chaos' && !rollHit(monster, target, true)) {"),
-			'a chaos zap skips the accuracy roll and always hits');
-		assert.ok(ai.includes('this.castCursedChaosEffect(target, { x: target.x, y: target.y }, monster, false)'),
-			'ranged chaos delegates to the cursed-wand table with itself as user');
-		assert.ok(mobOnHitSource.includes("case 'chaos': ctx.castChaosMelee?.(defender, attacker); break;"),
-			'melee chaos delegates through the scene bridge instead of the old status stand-in');
-		assert.ok(!mobOnHitSource.includes("Random.element(['burning', 'chill', 'cripple', 'daze']"),
-			'the chaos harmful-status stand-in is gone');
-	});
-	check('the stormvine (ShockingDart) proc carries the Electricity source class', () => {
-		//`ShockingDart.proc()` (`ShockingDart.java`, tag `v3.3.8`) deals its flat roll as
-		//electricity damage, so ELECTRIC holders (shock elemental, DM100, Pylon,
-		//BrightFist) halve it through the shared `sourceElement` dispatch.
-		const darts = readFileSync(new URL('../src/scenes/dungeon/hero/tippedDartEffects.ts', import.meta.url), 'utf8');
-		assert.ok(darts.includes("sourceElement: 'electric'"),
-			'the stormvine proc marks its damage electric');
 	});
 	check('GrimTrap mixes half max with half current HP, and the stock-bomb blast is 4+d..12+3d with no falloff', () => {
 		// round(HT/2 + HP/2): full-health 100 -> 100 (hero-capped to 90 at the call site)

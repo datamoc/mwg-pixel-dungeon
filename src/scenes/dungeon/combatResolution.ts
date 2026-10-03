@@ -1,12 +1,21 @@
+import { passiveIdOnHit } from './passiveId';
+import { recoverFromFear } from '../../simulation/fear';
+import { heroWeaponStrReq } from './strengthGear';
+import { MWL_HERO_BASE_STATS } from '../../mwlContent';
+import { CHALLENGE_DAMAGE_FACTOR } from './challengeArena';
 import type { DungeonScene } from '../dungeonScene';
 import { noteMonsterAttack } from './monsters/monsterSpeed';
 import { faceCharacter, placeCharacterArt } from '../../ui/characterPlacement';
 import { AnimatedSprite, Random, Roguelike, SpriteSheet } from 'mwg';
 import { preparationCanKo } from '../../simulation/preparation';
+import { sealActivate, sealMaxShield, sealShouldActivate } from '../../simulation/sealShield';
+import { spawnBloodBurst } from './bloodBurst';
+import { noteHeroTarget, trinketLevelOf } from './trinkets';
+import { newtVisionMultiplier } from '../../simulation/trinkets';
 import { planHiddenMimicContact } from '../../simulation/hiddenMimicContact';
 import { planShockElementalArc } from '../../simulation/shockArc';
 import { applyDefenderDamageCurves } from '../../simulation/defenderDamageCurves';
-import { dm300ChargeEndTurns, dm300SuperchargeEntry, dm300SuperchargeThreshold } from '../../simulation/dm300Boss';
+import { dm300ChargeEndTurns, dm300PylonsFinished, dm300PylonEnergySeeds, dm300SuperchargeEntry, dm300SuperchargeThreshold } from '../../simulation/dm300Boss';
 import { annoyingProcChance, blazingProcChance, blockingProcChance, bloomingProcChance, chillingProcChance, corruptingProcChance, dazzlingProcChance, elasticProcChance, explosiveFuseWear, friendlyProcChance, grimExecuteChance, holyWeaponHitDamage, kineticConserveRelease, kineticOverkillStore, lethalMomentumChance, luckyProcChance, resolveAttackWeaponAffixes, shockingProcChance, spiritBladesFires, vampiricHealChance, waywardProcChance } from '../../simulation/attackWeaponAffixes';
 import { simulationRandom } from '../../adapters/mwgRandom';
 import { weaponHitDisqualifiesDwarfKingChallenge } from '../../simulation/bossChallenge';
@@ -29,7 +38,7 @@ import { mobOnHit } from '../mobOnHit';
 import { absorbEarthrootArmor } from '../../simulation/plantPools';
 import { getCurse } from '../../items/itemCurses';
 import { applyCapeOfThornsProc } from '../../items/artifactActions';
-import { canSurpriseAttack, weaponSTRReq } from '../../items/strReq';
+import { canSurpriseAttack } from '../../items/strReq';
 import { EMBERS, FLOOR, GRASS, HIGH_GRASS, VIEW_RADIUS, WATER } from '../../dungeonConstants';
 import { BUFF_DURATION, INFINITE_ACCURACY, INFINITE_EVASION, NEGATIVE_BUFFS, absorbShield, addBuff, applyElementalBacklash, buffBlocked, doomDamage, electricDamageHalved, fieryElementalSourceDamage, reigniteBuff, rollDamage, rollHit, setBleeding, stoneGlyphReduction, type Creature } from '../../combat';
 import { absorbCreatureShields } from '../../simulation/allyShields';
@@ -88,27 +97,18 @@ export const combatResolutionMethods: Record<string, any> = {
 	 * Warlock degrades; weapon enchants and Thorns fire; Blazing champions ignite; Swarm
 	 * splits (numbers verbatim); Fury kindles below half HP.
 	 */
-	attack(this: DungeonScene, attacker: Creature, defender: Creature, accFactor = 1, damageMultiplier = 1): boolean {
-		//R015 quest-score attempts (both tag `v3.3.8`, both counted in the Java `attack()`
-		//overrides, so misses count too - these hook the attempt here, never a landed proc):
-		//`RotLasher.attack()` scores `questScores[1] -= 100` on every attempt against the
-		//hero (replacing the old landed-hit write in `mobOnHit`, which missed dodges);
-		//`CorpseDust.DustWraith.attack()` increments the wraith's own persisted counter
-		//instead, scoring at the 2nd and 3rd attempts (first free, max -200 per wraith).
-		if (defender.isHero) {
-			if (attacker.kind === 'rotLasher') addQuestScore(this, 1, -100);
-			else if (attacker.kind === 'dustWraith') {
-				attacker.wraithAtkCount = (attacker.wraithAtkCount ?? 0) + 1;
-				if (attacker.wraithAtkCount === 2 || attacker.wraithAtkCount === 3) addQuestScore(this, 1, -100);
-			}
-		}
+	attack(this: DungeonScene, attacker: Creature, defender: Creature, accFactor = 1, damageMultiplier = 1, thrownSourceClass?: string): boolean {
+		if (attacker.isHero) noteHeroTarget(this, defender); //`QuickSlotButton.target(enemy)` (`Hero.actAttack`) - the Chaotic Censer aims at it
+		//A thrown missile is judged by its own `STRReq()` in Java, not the wielded weapon's; this port carries the melee weapon's
+		//requirement on the hero, so a throw falls back to the base strength it always used (the missile requirement is not ported).
+		if (attacker.isHero && attacker.attackMode === 'throw' && attacker.strReq !== undefined) attacker = { ...attacker, strReq: MWL_HERO_BASE_STATS.strength };
 		//`DriedRose.GhostHero.weapon()`/`armor()` (DriedRose.java, tag v3.3.8) expose the ghost's
 		//own carried gear to the ordinary attack/defense proc pipeline. The port's mature proc hooks
 		//are scene-slot based, so install only the relevant slot for this synchronous exchange and
 		//restore it in finally; no hero turn can observe the temporary view.
 		const gearOwner = attacker.allyKind === 'ghost' && attacker.roseWeapon ? attacker
 			: defender.allyKind === 'ghost' && defender.roseArmor ? defender : undefined;
-		if (!gearOwner) return combatResolutionMethods.resolveAttackWithGear.call(this, attacker, defender, accFactor, damageMultiplier);
+		if (!gearOwner) return combatResolutionMethods.resolveAttackWithGear.call(this, attacker, defender, accFactor, damageMultiplier, thrownSourceClass);
 		const previous = {
 			weaponId: this.weaponId, weaponInstanceId: this.weaponInstanceId, weaponSourceClass: this.weaponSourceClass,
 			weaponTier: this.weaponTier, weaponLevel: this.weaponLevel, weaponAffix: this.weaponAffix,
@@ -136,11 +136,11 @@ export const combatResolutionMethods: Record<string, any> = {
 				armorIdentified: gearOwner.roseArmor.identified ?? false, armorHardened: gearOwner.roseArmor.hardened ?? false,
 				armorCurseInfusionBonus: gearOwner.roseArmor.curseInfusionBonus ?? false,
 			});
-			return combatResolutionMethods.resolveAttackWithGear.call(this, attacker, defender, accFactor, damageMultiplier);
+			return combatResolutionMethods.resolveAttackWithGear.call(this, attacker, defender, accFactor, damageMultiplier, thrownSourceClass);
 		} finally { Object.assign(this, previous); }
 	},
 
-	resolveAttackWithGear(this: DungeonScene, attacker: Creature, defender: Creature, accFactor = 1, damageMultiplier = 1): boolean {
+	resolveAttackWithGear(this: DungeonScene, attacker: Creature, defender: Creature, accFactor = 1, damageMultiplier = 1, thrownSourceClass?: string): boolean {
 		//Reset before any early return below, so a previous delegated `ShadowAlly` swing can never
 		//leak into a later `heroOnHit` call from another path (`armorAbilityUse`, elemental strike).
 		delegatedGearSwing = false;
@@ -200,6 +200,7 @@ export const combatResolutionMethods: Record<string, any> = {
 			invisible: Boolean(attacker.buffs['invisibility']),
 			timeStopped: this.timeBubbleTurns > 0,
 			depth: this.depth,
+			ebony: defender.ebonyMimic === true,
 		});
 		const revealMimic = () => {
 			if (mimicContact.reveal === 'crystal') this.revealCrystalMimic(defender);
@@ -573,12 +574,13 @@ export const combatResolutionMethods: Record<string, any> = {
 		//same stated placement every other defend effect here already carries.
 		//`ShadowAlly.defenseProc()` (`ShadowClone.java` 249-257, tag `v3.3.8`): a landed attack on
 		//the clone runs the *hero's* `Armor.proc` when `Random.Int(4) < pointsInTalent(CLONED_ARMOR)`
-		//and the hero is armored. Java makes exactly one `defenseProc` call per attack, so the roll
+		//and any armor is equipped (even one with no glyph, because BodyForm supplies a separate
+		//`trinityGlyph`). Java makes exactly one `defenseProc` call per attack, so the roll
 		//is drawn once here - after the attacker's own `attackProc` above, matching Java's order -
 		//and the result is handed to `mobOnHit` instead of being re-rolled per glyph site.
 		const roseArmorGate = defender.allyKind === 'ghost' && defender.roseArmor !== undefined;
 		const cloneDefenderGate = roseArmorGate || (defender.allyKind === 'shadowClone'
-			&& shadowCloneArmorProc(Random.int(4), this.talentRank('cloned_armor'), this.armorGlyph != null));
+			&& shadowCloneArmorProc(Random.int(4), this.talentRank('cloned_armor'), this.armorId != null));
 		if ((defender.isHero || cloneDefenderGate) && ((this.armorGlyphActive(defender) && this.armorGlyph === 'stone') || (defender.isHero && this.trinityBodyGlyphIs('stone'))) && damage > 0) {
 			damage = Math.ceil(damage * stoneGlyphReduction(liveStats(attacker).accuracy, defender.evasion, this.armorProcMultiplier(defender)));
 		}
@@ -684,8 +686,10 @@ export const combatResolutionMethods: Record<string, any> = {
 		//has already subtracted the target's `drRoll()` and after Hero/Talent attack procs, but
 		//before `enemy.damage()` runs defender-side reductions. The former range-minimum patch
 		//ran before DR and could miss the guarantee by exactly the armor roll.
+		//MindForm passes its synthetic missile class here because Java dispatches this proc from
+		//the actual thrown item's `Hero.attackProc()`, even when no item is wielded.
 		if (attacker.isHero && attacker.attackMode === 'throw') {
-			damage = fishingSpearPiranhaDamage(this.ammoSourceClass, defender.kind, defender.hp, damage);
+			damage = fishingSpearPiranhaDamage(thrownSourceClass ?? this.ammoSourceClass, defender.kind, defender.hp, damage);
 		}
 		//`Char.attack()`'s `AuraOfProtection` clause (tag `v3.3.8`) runs after the attacker's
 		//multiplier/proc chain and before the defender's damage override. Same-alignment
@@ -1018,6 +1022,7 @@ export const combatResolutionMethods: Record<string, any> = {
 		//`statue` did, leaving a struck armored statue asleep forever.
 		if (defender.kind === 'statue' || defender.kind === 'armoredStatue') defender.sleeping = false;
 		this.showDamage(defender, damage);
+		passiveIdOnHit(this, attacker, defender); //`Weapon.proc` / `Armor.proc`: a landed hit counts toward identifying the worn gear
 		//`Mob.defenseProc()` surprise presentation (`Mob.java`, tag `v3.3.8`): a
 		//surprise hit plays `HIT_STRONG` and shows the red `Wound` slash when the
 		//hero attacked with Preparation up, the `!` `Surprise` mark otherwise.
@@ -1041,7 +1046,9 @@ export const combatResolutionMethods: Record<string, any> = {
 			delete defender.buffs['magicalSleep'];
 			delete defender.buffs['paralysis'];
 		}
+		recoverFromFear(defender.buffs); //`Char.damage()`: `Terror.recover()` / `Dread.recover()`
 		this.sprite(defender).setColorAdd(1, 1, 1);
+		spawnBloodBurst(this, attacker, defender, damage);
 		//the one log line whose severity depends on which way the blow went: SPD colours
 		//damage the hero takes red and leaves the hero's own hits plain
 		this.say(
@@ -1249,7 +1256,7 @@ export const combatResolutionMethods: Record<string, any> = {
 			//Endless Rage's old free-turn line is gone outright: real `ENDLESS_RAGE` only raises
 			//the Berserk rage cap (`1+0.1667x` max power), which needs the rage gain/decay clock
 			//this port doesn't model (see the Berserk row) - a free turn had no Java basis.
-			if (attacker.isHero && this.heroClass === 'warrior' && this.talentRank('lethal_momentum') > 0 && Random.chance(lethalMomentumChance(this.talentRank('lethal_momentum')))) this.freeTurnNext = true;
+			if (attacker.isHero && this.talentRank('lethal_momentum') > 0 && Random.chance(lethalMomentumChance(this.talentRank('lethal_momentum')))) this.freeTurnNext = true;
 			if (attacker.isHero) this.lethalHasteOnKill();
 			this.kill(defender);
 			return true;
@@ -1284,7 +1291,7 @@ export const combatResolutionMethods: Record<string, any> = {
 		if (defender.buffs['illuminated'] === undefined) return false;
 		if (!attacker.isHero) return true;
 		return this.heroClass === 'cleric'
-			&& weaponSTRReq(this.weaponTier, this.weaponLevel) <= (this.hero.str ?? 0);
+			&& heroWeaponStrReq(this) <= (this.hero.str ?? 0);
 	},
 
 	genericProcMultiplier(this: DungeonScene): number {
@@ -1301,15 +1308,18 @@ export const combatResolutionMethods: Record<string, any> = {
 	 * (`+0.25 + 0.25*points`) for a same-alignment defender near an active aura -
 	 * NOT the Berserk/catalyst term, which lives only on Java's `Weapon` attacker-side
 	 * twin. Every defend-side glyph seam below (stone, displacement, repulsion,
-	 * antimagic, viscosity, the HolyWard block, obfuscation stealth) routes through
-	 * here; attacker-side rolls (enchants, kinetic, holy-weapon bonus, projecting
-	 * reach, mob on-hit hooks) stay on the shared `genericProcMultiplier()`. */
+	 * antimagic, viscosity, the HolyWard block, obfuscation stealth, and the hero's
+	 * worn glyphs shared with a CLONED_ARMOR defender) route through here; weapon-side
+	 * rolls (enchants, kinetic, holy-weapon bonus, projecting reach) use
+	 * `genericProcMultiplier()`. */
 	armorProcMultiplier(this: DungeonScene, defender: Creature): number {
 		const sameAlignment = defender.isHero === true || defender.isAlly === true || defender.isNPC === true;
 		const withinRange = Roguelike.chebyshevDistance(defender, this.hero) <= 2;
 		//Armor.Glyph.genericProcChanceMultiplier() uses Arcana plus Aura only; Java's
 		//Weapon.Enchantment twin alone adds the Berserk/EnragedCatalyst term.
-		const arcana = defender.allyKind === 'ghost' ? 1 : ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
+		const arcana = defender.allyKind === 'ghost' || defender.allyKind === 'shadowClone'
+			? 1
+			: ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
 		return arcana + auraProcBonus(this.talentRank('aura_of_protection'),
 			this.hero.buffs['auraProtection'] !== undefined, sameAlignment, withinRange);
 	},
@@ -1858,7 +1868,8 @@ export const combatResolutionMethods: Record<string, any> = {
 		//shared base). Replaces a wrong-shaped stand-in that spent the talent as a +2/point
 		//RANGED TARGETING range in `useSpecial` instead - Farsight never touches targeting.
 		//The darkness minimum still applies on top, matching `updateVisibility()`'s own order.
-		const scaled = base * farsightMultiplier(this.subclass(), this.talentRank('farsight'));
+		//`Level.updateFieldOfView()` (`Level.java:1336-1339`): `viewDist *= EyeOfNewt.visionRangeMultiplier()` beside Farsight's.
+		const scaled = base * farsightMultiplier(this.subclass(), this.talentRank('farsight')) * newtVisionMultiplier(trinketLevelOf(this, 'trinketEyeOfNewt'));
 		const radius = isChallengeEnabled('darkness') ? Math.min(scaled, 2) : scaled;
 		//`Light.attachTo()`: `viewDistance = max(level.viewDistance, Light.DISTANCE)` - the buff
 		//floors sight at 6, which is what lets a lit torch pierce the Darkness challenge's radius of 2.
@@ -1900,13 +1911,13 @@ export const combatResolutionMethods: Record<string, any> = {
 		this.cavesBossEnergyCells.clear();
 		const paint = this.portedPaint;
 		if (paint) {
-			for (let cell = 0; cell < paint.map.length; cell++) {
+			const seeds = dm300PylonEnergySeeds(paint.w, paint.map.length / paint.w, (cell) => {
 				const terrain = paint.map[cell];
-				const y = Math.floor(cell / paint.w);
-				if (terrain === Terrain.WATER || (y >= 13 && (terrain === Terrain.INACTIVE_TRAP || terrain === Terrain.SIGN))) {
-					this.cavesBossEnergyCells.add(cell);
-				}
-			}
+				return terrain === Terrain.WATER ? 'water'
+					: terrain === Terrain.INACTIVE_TRAP ? 'inactiveTrap'
+						: terrain === Terrain.SIGN ? 'sign' : 'other';
+			});
+			for (const cell of seeds) this.cavesBossEnergyCells.add(cell);
 		}
 		this.say(t('port.log.dm300overcharge'), 'warning');
 	},
@@ -1928,6 +1939,11 @@ export const combatResolutionMethods: Record<string, any> = {
 		const remaining = this.creatures.filter((creature) => creature.kind === 'pylon' && creature.hp > 0).length;
 		const finalPylons = isChallengeEnabled('stronger_bosses') ? 1 : 2;
 		if (remaining > finalPylons) this.cavesBossEnergyCells.clear();
+		//`DM300.loseSupercharge()` calls `BossHealthBar.bleed(true)` and schedules
+		//CAVES_BOSS_FINALE once `pylonsActivated >= totalPylonsToActivate()`.
+		if (dm300PylonsFinished(dm300.dmPylonsActivated ?? 0, isChallengeEnabled('stronger_bosses'))) {
+			this.bossBleedLatched = true;
+		}
 		dm300.dmBarrier = 0;
 	},
 
@@ -1996,6 +2012,8 @@ export const combatResolutionMethods: Record<string, any> = {
 		//slightly kinder to the hero than Java's melee case - stated in `PORT_COVERAGE.md`. It runs
 		//before every shield, which is Java's order in both of its placements.
 		if (amount > 0) amount = this.endureAdjustDamageTaken(amount);
+		//`ChallengeArena`: 33% less damage from every source (`Char.attack()`'s `dmg *= 0.67f` for a character, `Hero.damage()` for the rest).
+		if (amount > 0 && this.hero.buffs['challengeArena'] !== undefined) amount = Math.trunc(amount * CHALLENGE_DAMAGE_FACTOR);
 		//`Earthroot.Armor.absorb()`: the pool blocks `min(damage, (scalingDepth + 5)/2)` of every
 		//hit and detaches once exhausted or once its owner has left the cell it was granted on.
 		//Java runs this in `Char.defenseProc()` - before the armor subtraction and ahead of every
@@ -2071,6 +2089,16 @@ export const combatResolutionMethods: Record<string, any> = {
 		//for that unspecified order, not a reproduction of a real priority field - the seal drains
 		//first here because `HeroClass.initHero()` affixes it before any other buff could exist
 		//for a fresh Warrior, making it the earliest-attached shield in the common case.
+		//`Char.damage()` (tag `v3.3.8`): a hit that leaves the hero at or below half HP - counting the shield already up -
+		//activates a ready `BrokenSeal.WarriorShield` BEFORE the shields absorb, so the fresh shield takes this very hit.
+		if (this.armorSealed && sealShouldActivate({
+			damage: viscosityDamage, hp: this.hero.hp, maxHp: this.hero.maxHp, shielding: this.heroShieldPoolTotal(), coolingDown: this.sealState.cooldown > 0,
+		})) {
+			const size = sealMaxShield(this.armorTier, this.talentRank('iron_will'));
+			this.sealBarrier.add(size);
+			this.sealState = sealActivate(this.sealState, size);
+			this.say(t('port.log.shield', { amount: size }), 'positive');
+		}
 		const afterLivingEarth = Math.max(0, viscosityDamage - livingEarthBlocked);
 		const blockedSeal = this.sealBarrier.absorb(afterLivingEarth);
 		const blockedBlocking = this.blockingBarrier.absorb(Math.max(0, afterLivingEarth - blockedSeal));
@@ -2117,7 +2145,7 @@ export const combatResolutionMethods: Record<string, any> = {
 	/** Returns the amount actually added (may be less than `amount` if capped). */
 	grantHeroShield(this: DungeonScene, amount: number, cap = 999): number {
 		if (amount <= 0) return 0;
-		const max = cap + this.talentRank('iron_will');
+		const max = cap;
 		const room = Math.max(0, max - this.heroBarrier.total);
 		const added = Math.min(room, amount);
 		this.heroBarrier.add(added);
@@ -2150,22 +2178,21 @@ export const combatResolutionMethods: Record<string, any> = {
 			get armorGlyph() { return scene.armorGlyph; }, set armorGlyph(value) { scene.armorGlyph = value; },
 			armorGlyphActive: scene.armorGlyphActive(defender),
 			get armorLevel() { return scene.armorLevel; },
+			heroArmorPresent: scene.armorId != null,
 			get hunger() { return scene.hunger; }, set hunger(value) { scene.hunger = value; },
 			get earthrootArmor() { return scene.earthrootArmor; }, set earthrootArmor(value) { scene.earthrootArmor = value; },
 			hero: scene.hero, level: scene.level, charmTargets: scene.charmTargets, manualPlants: scene.manualPlants,
 			stenchGas: scene.stenchGas, toxicGas: scene.toxicGas, wandCharges: scene.wandCharges,
 			addQuestScore: (index, delta) => { addQuestScore(scene, index, delta); },
 			creatureAt: (x, y) => scene.creatureAt(x, y), degradedLevel: (level) => scene.degradedLevel(level),
-			genericProcMultiplier: () => defender.allyKind === 'ghost' ? scene.armorProcMultiplier(defender) : scene.genericProcMultiplier(), armorProcMultiplier: (defender) => scene.armorProcMultiplier(defender),
-			trinityBodyGlyphIs: (glyph) => defender.isHero && scene.trinityBodyGlyphIs(glyph), grantHeroShield: (amount, cap) => scene.grantHeroShield(amount, cap),
+			armorProcMultiplier: (defender) => scene.armorProcMultiplier(defender),
+			trinityBodyGlyphIs: (glyph) => (defender.isHero || cloneDefenseGate) && scene.trinityBodyGlyphIs(glyph), grantHeroShield: (amount, cap) => scene.grantHeroShield(amount, cap),
 			isChasmCell: (x, y) => scene.isChasmCell(x, y), placePortedFeature: (cell, kind) => scene.placePortedFeature(cell, kind),
 			say: (message, level) => scene.say(message, level), shakeScreen: (magnitude, duration) => scene.shakeScreen(magnitude, duration),
 			showHeal: (target, amount) => scene.showHeal(target, amount), spawnMonster: (kind, at) => scene.spawnMonster(kind, at),
 			subclass: () => scene.subclass(), talentRank: (id) => scene.talentRank(id), thiefSteal: (thief) => scene.thiefSteal(thief),
 			triggerPortedPlantAt: (x, y) => scene.triggerPortedPlantAt(x, y),
-			//ChaosElemental melee delegation: roll the cursed-wand table with the attacker
-			//as user at the defender's cell, with no FX (`Elemental.java`, tag `v3.3.8`).
-			castChaosMelee: (victim, elemental) => scene.castCursedChaosEffect(victim, { x: victim.x, y: victim.y }, elemental, true),
+			triggerMobPlantAt: (creature) => scene.triggerMobPlantAt(creature),
 			//`ShadowAlly.defenseProc`'s single roll, drawn in `attack()`; omitted by callers that
 			//are not an ordinary landed attack (e.g. `monsterAi`'s own hook), in which case
 			//`mobOnHit` draws it itself.

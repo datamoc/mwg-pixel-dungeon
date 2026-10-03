@@ -1,0 +1,42 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { readSceneSource } from './sceneSource.mjs';
+
+// Called by verifySimulation.mjs. dungeonScene.ts cannot load in this harness
+// (Pixi), so the shake audit pins its call sites at source level, the way
+// verifyCombat's champion-eligible spawn check and verifyRings' multiplier
+// checks do. The full 41-site Java audit lives in PORT_COVERAGE.md's
+// "Screen shake" paragraph; these pins guard the wirings that regress silently
+// (a deleted shake is invisible in every other suite).
+export function verifyShakes(require, check) {
+	check('every ported shake feature shakes at Java\u2019s site', () => {
+		const source = readSceneSource();
+		const sites = [
+			// [Java site, port call-site fragment]
+			['FistSprite 143 (4, 0.2f) on the melee swing', "if (attacker.kind === 'yogFist') this.shakeScreen(4, 0.2);"],
+			['DM300Sprite.slam (3, 0.7f) on the melee swing', "if (attacker.kind === 'dm300') this.shakeScreen(3, 0.7);"],
+			['Hero 1385 rooted stair refusal (1, 1f)', "else if (plan.kind === 'rooted') { this.shakeScreen(1, 1);"],
+			['DelayedRockFall 68 / RockfallTrap 117 impact (3, 0.7f)', 'this.shakeScreen(3, 0.7);\n\t\t\tconst challenge = isChallengeEnabled'],
+			//Relocated by the `fireWandShot` extraction: the zap body (including this
+			//shake) now takes its wand class as a parameter rather than reading the
+			//wielded scalar, so `WildMagic` can fire spare wands through the same code.
+			['WandOfLightning on the hero (2, 0.3f)', "if (victim.isHero && wandType === 'lightning') this.shakeScreen(2, 0.3);"],
+		];
+		for (const [java, fragment] of sites) assert.ok(source.includes(fragment), `${java} must stay wired`);
+		//Relocated by the plant-trigger extraction (file-size refactor): the hero half's
+		//burst now lives in `simulation/plantTriggers.ts` behind the shake callback.
+		const triggers = readFileSync(new URL('../src/simulation/plantTriggers.ts', import.meta.url), 'utf8');
+		//Relocated by the `mobOnHit` extraction: Entanglement's hero burst (1, 0.4f) lives in `scenes/mobOnHit.ts`.
+		const mobOnHit = readFileSync(new URL('../src/scenes/mobOnHit.ts', import.meta.url), 'utf8');
+		assert.ok(mobOnHit.includes('the burst shakes') && mobOnHit.includes('ctx.shakeScreen(1, 0.4);'), 'Entanglement on the hero (1, 0.4f) must stay wired');
+		assert.ok(triggers.includes('if (ctx.isVisible(x, y)) ctx.shake(1, 0.4);'), 'Earthroot plant burst, hero half (1, 0.4f) must stay wired');
+		assert.ok(triggers.includes('if (ctx.isVisibleCell(cell)) ctx.shake(1, 0.4);'), 'Earthroot plant burst, mob half (1, 0.4f) must stay wired');
+		// The three short ability-refusal shakes are a documented deliberate
+		// divergence (Java shakes a full second at each); the comments must keep
+		// saying so, or the divergence becomes silent.
+		for (const anchor of ['`activateHeroicLeap`', '`Feint.java` 93', '`SmokeBomb.java` 91']) {
+			assert.ok(source.includes(anchor), `the refusal-shake divergence note must keep citing ${anchor}`);
+		}
+		assert.ok(source.includes('Short refusal form'), 'the refusal-shake divergence must stay stated');
+	});
+}

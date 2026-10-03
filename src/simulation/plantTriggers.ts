@@ -31,7 +31,7 @@ export interface HeroPlantContext {
 	grantBuff: (target: Creature, id: BuffId, duration?: number) => void;
 	prolongBuff: (target: Creature, id: BuffId, duration?: number) => void;
 	cureHero: () => void;
-	spawnFood: (x: number, y: number) => void;
+	spawnBlandfruit: (x: number, y: number) => void;
 	dropLoot: (x: number, y: number, min: number, max: number, kind: 'dew' | 'seed') => void;
 	seedFreeze: (x: number, y: number, volume: number) => void;
 	seedGas: (x: number, y: number, volume: number) => void;
@@ -105,9 +105,12 @@ export function runHeroPlantEffect(
 			}
 			ctx.say(ctx.t('port.log.sungrassheal'), 'positive');
 			break;
+		//`BlandfruitBush.activate(ch)` (`plants/BlandfruitBush.java:36`, tag `v3.3.8`)
+		//drops a plain `Blandfruit` (no potion imbued), never generic food - for
+		//either bush kind the garden rooms plant.
 		case 'blandfruit':
 		case 'blandfruitbush':
-			ctx.spawnFood(x, y);
+			ctx.spawnBlandfruit(x, y);
 			ctx.say(ctx.t('port.log.plantfruit'), 'positive');
 			break;
 		case 'starflower':
@@ -276,6 +279,7 @@ export function runHeroPlantEffect(
  * and the immovable-kind gate stay scene-owned services on the context.
  */
 export interface MobPlantContext {
+	spawnBlandfruit: (x: number, y: number) => void;
 	heroClass: () => string;
 	talentRank: (id: string) => number;
 	setHeroBarkskin: (level: number, interval: number) => void;
@@ -412,6 +416,12 @@ export function runMobPlantEffect(
 			//in the hero's bubble (`Level.pressCell` reads the hero's buff).
 			//`TimeBubble.reset()` overwrites unconditionally - re-triggering restarts it.
 			creature.timeBubbleTurns = TIME_BUBBLE_TURNS;
+			break;
+		case 'blandfruit':
+		case 'blandfruitbush':
+			//Same plain-`Blandfruit` drop as the hero half above; Java marks no
+			//hazard for it, so neither does this half.
+			ctx.spawnBlandfruit(creature.x, creature.y);
 			break;
 	}
 }

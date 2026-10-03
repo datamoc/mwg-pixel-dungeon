@@ -15,23 +15,44 @@
  * `MissileWeapon.STRReq(lvl)` (`items/weapon/missiles/MissileWeapon.java`, both tags):
  * one less STR than normal for the tier.
  *
- * Not applied: the instance-level `-2` for `masteryPotionBonus` (all three classes).
- * This port has no per-item mastery-potion system (the exotic potion itself is
- * unported), stated, not silent.
+ * `masteryPotionBonus` (`Weapon`/`Armor`, set by `PotionOfMastery`): `STRReq(lvl)` subtracts 2 on top of the formula in
+ * `MeleeWeapon`, `MissileWeapon` and `Armor`; the optional `mastery` argument below is that flag.
+ *
+ * The two melee overrides: `Greataxe.STRReq(lvl)` is `STRReq(tier+1, lvl)` (20 base, up from 18) and
+ * `Pickaxe.STRReq(lvl)` is `super + 2` (tier 3 strength with tier 2 damage).
  */
-export function weaponSTRReq(tier: number, level: number): number {
+export function weaponSTRReq(tier: number, level: number, mastery = false): number {
 	const lvl = Math.max(0, level);
-	return (8 + tier * 2) - Math.trunc(Math.trunc(Math.sqrt(8 * lvl + 1) - 1) / 2);
+	return (8 + tier * 2) - Math.trunc(Math.trunc(Math.sqrt(8 * lvl + 1) - 1) / 2) - (mastery ? 2 : 0);
 }
 
-export function armorSTRReq(tier: number, level: number): number {
-	const lvl = Math.max(0, level);
-	return (8 + Math.round(tier * 2)) - Math.trunc(Math.trunc(Math.sqrt(8 * lvl + 1) - 1) / 2);
+/** A wielded melee weapon's `STRReq()` including the Greataxe and Pickaxe overrides; `meleeKey` is `weaponMeleeKey()`. */
+export function meleeWeaponSTRReq(meleeKey: string, tier: number, level: number, mastery = false): number {
+	if (meleeKey === 'greataxe') return weaponSTRReq(tier + 1, level, mastery);
+	return weaponSTRReq(tier, level, mastery) + (meleeKey === 'pickaxe' ? 2 : 0);
 }
 
-export function missileSTRReq(tier: number, level: number): number {
-	return weaponSTRReq(tier, level) - 1;
+export function armorSTRReq(tier: number, level: number, mastery = false): number {
+	const lvl = Math.max(0, level);
+	return (8 + Math.round(tier * 2)) - Math.trunc(Math.trunc(Math.sqrt(8 * lvl + 1) - 1) / 2) - (mastery ? 2 : 0);
 }
+
+export function missileSTRReq(tier: number, level: number, mastery = false): number {
+	return weaponSTRReq(tier, level, mastery) - 1;
+}
+
+/**
+ * The under-strength penalties of `Hero` gear (`Weapon.accuracyFactor`/`baseDelay`, `Armor.evasionFactor`/`speedFactor`,
+ * `Hero.drRoll`, tag `v3.3.8`), all driven by the encumbrance `STRReq() - STR()` when positive: accuracy and evasion divide by
+ * `1.5^enc`, attack delay and armor speed by `1.2^enc`, and each armor/weapon-defense roll drops by `2*enc`.
+ */
+export function encumbrance(strReq: number, heroStr: number): number {
+	return Math.max(0, strReq - heroStr);
+}
+export const accuracyDivisor = (enc: number): number => Math.pow(1.5, enc);
+export const evasionDivisor = accuracyDivisor;
+export const delayMultiplier = (enc: number): number => Math.pow(1.2, enc);
+export const drPenalty = (enc: number): number => 2 * enc;
 
 export interface SurpriseGateInput {
 	/** a thrown attack reads the missile, never the melee weapon */

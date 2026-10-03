@@ -140,6 +140,8 @@ export interface Creature extends Combatant {
 	kind?: AnyMonsterId;
 	/** Goo's pump-up counter: 0 idle, 1 first charge turn, 2 primed to unleash next turn - `Goo.java`'s `pumpedUp` field */
 	pumped?: number;
+	/** Whether a golem is mid self-teleport: set on the 2-turn charge, cleared on arrival - `Golem.java`'s `teleporting` field */
+	teleporting?: boolean;
 	/** Goo.java's water-healing increment; STRONGER_BOSSES ramps this from 1 to 3. */
 	gooHealInc?: number;
 	/** Monk.java's floating Focus cooldown, reduced by action time and extra movement time. */
@@ -213,6 +215,9 @@ export interface Creature extends Combatant {
 	impShopkeeperGreeted?: boolean;
 	/** GnollTrickster.combo: attacks escalate the longer it keeps hitting */
 	combo?: number;
+	/** `CorpseDust.DustWraith.atkCount` (persisted `atk_count`): per-wraith attack counter;
+	 * the 2nd and 3rd attacks on the hero score `questScores[1] -= 100` (max -200). */
+	dustAtkCount?: number;
 	/** Port-owned mirror of the rage power for the damage roll (`hero/berserkRage.ts`):
 	 * Java keeps it on the buff, this port reads it off the hero when arming strikes. */
 	berserkPower?: number;
@@ -225,9 +230,6 @@ export interface Creature extends Combatant {
 	firstSummon?: boolean;
 	/** `Wraith.level`, set by `adjustStats()` at spawn and persisted (`storeInBundle`). */
 	wraithLevel?: number;
-	/** `CorpseDust.DustWraith.atkCount`, incremented per attack attempt vs the hero and
-	 * persisted (`ATK_COUNT`), scoring at the 2nd and 3rd attempts. */
-	wraithAtkCount?: number;
 	/** Tengu.arenaJumps: how many times it has relocated this fight */
 	arenaJumps?: number;
 	/** `PrisonBossLevel.State` collapse for this port's single arena: `cell` is Java's
@@ -257,6 +259,12 @@ export interface Creature extends Combatant {
 	stolen?: string | null;
 	/** Mimic.java's generated bonus item, carried until the mimic dies. */
 	mimicLoot?: string;
+	/** `EbonyMimic` (`actors/mobs/EbonyMimic.java`): a base mimic that stays almost invisible; see `scenes/dungeon/ebonyMimic.ts`. */
+	ebonyMimic?: boolean;
+	/** The Ebony Mimic's prize items (JSON of inventory payloads), dropped on death. */
+	ebonyPrizes?: string;
+	/** `MimicTooth` was carried when this mimic spawned: `generatePrize()` added one random item (`Mimic.java:355`). */
+	mimicToothExtra?: boolean;
 	/** `MasterThievesArmband.StolenTracker` (tag `v3.3.8`): a one-shot marker set the first time
 	 * this creature is targeted by `AC_STEAL`, win or lose - real Java's `CounterBuff` tracks a
 	 * 0/1 count so a second steal attempt against the same mob can never roll loot again, only
@@ -464,6 +472,8 @@ export interface GroundItem extends Step {
 	 * see `levelExplorePercent`'s stated reduction.
 	 */
 	autoExplored?: boolean;
+	/** `Heap.hidden` (`Heap.java:80`): drawn at 15% alpha (`ItemSprite.java:236`) - the Cracked Spyglass's extra loot. */
+	hidden?: boolean;
 	/** Concrete inventory payload; absent only for legacy scripted/cosmetic drops. */
 	item?: { id: string; quantity: number; level?: number; tier?: number; sandBags?: number; charges?: number; warmUpDelay?: number; affix?: string; cursed?: boolean; cursedKnown?: boolean; identified?: boolean; instanceId?: string; sourceClass?: string; depth?: number;
 		/** Ring of Wealth's presentation-only bonus tier, retained through pickup/save for its item-detail tag. */
@@ -521,10 +531,9 @@ export function resistedBuffDuration(c: Creature, effect: TimedResistanceEffect,
 
 /**
  * Where attach-time backlash damage lands. `addBuff`/`reigniteBuff` are module-level
- * with dozens of scene call sites, none of which could show the damage or run the
- * death path - so like `announceBuff` above, the live scene installs itself here
- * (show the number, kill at zero) instead of every site growing a branch. Buffs the
- * port applies before a scene exists simply subtract HP with no presentation.
+ * with dozens of scene call sites, none of which can run the scene's shared
+ * `Char.damage()` dispatch themselves. The live scene installs that dispatch here;
+ * callers before a scene exists retain a raw HP fallback for pure-state setup/tests.
  */
 export let attachBacklash: ((c: Creature, damage: number) => void) | null = null;
 
@@ -539,13 +548,14 @@ export function setAttachBacklash(hook: ((c: Creature, damage: number) => void) 
  * route the ordinary path through `buffBlocked`). HT is the port's `maxHp`
  * (60 on every real elemental); the inclusive Java range rides the same exclusive-
  * upper-bound `int()` vehicle `advanceBuffs` uses for Burning's own NormalIntRange.
- * Simplified and stated: the damage bypasses aura/shield reductions - it lands raw,
- * the way this module's other direct HP writes do. */
+ * In a live scene the roll enters `Char.damage()`'s shared dispatch through
+ * `attachBacklash`; only calls made before a scene installs that hook use the
+ * headless Doom-amplified HP fallback. */
 export function applyElementalBacklash(c: Creature, id: BuffId): number {
 	if (!elementalBacklashApplies(c.kind, c.elementalType, id)) return 0;
-	const damage = doomDamage(simulationRandom.int(Math.floor(c.maxHp / 2), Math.floor(c.maxHp * 3 / 5) + 1), c);
-	c.hp -= damage;
-	attachBacklash?.(c, damage);
+	const damage = simulationRandom.int(Math.floor(c.maxHp / 2), Math.floor(c.maxHp * 3 / 5) + 1);
+	if (attachBacklash) attachBacklash(c, damage);
+	else c.hp -= doomDamage(damage, c);
 	return damage;
 }
 
@@ -660,8 +670,21 @@ export function buffBlocked(c: Creature, id: BuffId): boolean {
 	//`Char.isImmune()`'s mob half (`resistance-rules.mwl`'s `monsterStatusImmunities` table):
 	//per-kind refusals (INORGANIC/STATIC/ACIDIC/FIERY properties plus the instance lists)
 	//that travel with the kind through every caller above, since all of them funnel here.
+	//`Dread.immunities.add(Terror.class)`: while Dread holds, Terror cannot attach.
+	if (id === 'terror' && c.buffs.dread !== undefined) return true;
+	//`Dread` immunity (tag `v3.3.8`): `Property.BOSS`, `MINIBOSS` and `STATIC` (CrystalSpire, DemonSpawner, Pylon, RotHeart,
+	//YogDzewa, the Regrowth Lotus, which refuses every buff above) carry `Dread.class` in their immunities, as do `Tengu`, `WandOfWarding.Ward` and the
+	//`SmokeBomb` shadow clone. `ScrollOfDread` applies plain Terror to those instead.
+	if (id === 'dread' && (c.boss === true || c.miniboss === true || DREAD_IMMUNE_KINDS.has(c.kind ?? '') || c.allyKind === 'ward' || c.allyKind === 'shadowClone')) return true;
 	return monsterBuffImmune(c.kind, c.yogFistType, id);
 }
+
+/** `buff(Terror.class) != null || buff(Dread.class) != null` - the test `Mob.act()`, `Mob.add()` and `Mob.remove()` all share. */
+export function isTerrified(c: Creature): boolean {
+	return c.buffs.terror !== undefined || c.buffs.dread !== undefined;
+}
+
+const DREAD_IMMUNE_KINDS: ReadonlySet<string> = new Set(['tengu', 'crystalSpire', 'demonSpawner', 'pylon', 'rotHeart', 'yog']);
 
 /** `Buff.affect(c, id, duration?)`: set the duration (the table's own unless overridden). */
 export function addBuff(c: Creature, id: BuffId, duration?: number): void {
@@ -680,6 +703,8 @@ export function addBuff(c: Creature, id: BuffId, duration?: number): void {
 	//`Mob.Sleeping.awaken()`. A visible CrystalGuardian can therefore wake from ScrollOfRage's
 	//Amok after its `beckon()` override correctly did nothing; keep the port's sleeping flag in step.
 	if (event.fresh && id === 'amok' && !c.isHero && !c.isNPC) c.sleeping = false;
+	//`Dread.attachTo()`: "dread overrides terror" - the Terror already on the target is detached.
+	if (id === 'dread') delete c.buffs.terror;
 	if (event.fresh && announceBuff && ANNOUNCED_BUFFS.has(id)) announceBuff(c, id);
 }
 

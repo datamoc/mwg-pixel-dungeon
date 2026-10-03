@@ -31,13 +31,15 @@ export function noteMonsterAttack(monster: object): void {
 }
 
 /** The multiplier on this monster's turn cost for what it just did (1 for everyone else). */
-export function monsterSpeedFactor(monster: { kind?: string; x: number; y: number; attackDelay?: number }): number {
+export function monsterSpeedFactor(monster: { kind?: string; x: number; y: number; attackDelay?: number; buffs?: Record<string, number | undefined> }): number {
 	const kind = monster.kind;
 	if (kind === undefined) return 1;
 	let factor = 1;
 	const from = startedAt.get(monster);
 	const speed = MOVE_SPEED[kind];
 	if (speed !== undefined && from && (from.x !== monster.x || from.y !== monster.y)) factor /= speed;
+	//`Char.speed()`: `if (buff(Dread.class) != null) speed *= 2f` - a dreaded mob runs at double speed (stacking on `baseSpeed`).
+	if (monster.buffs?.['dread'] !== undefined && from && (from.x !== monster.x || from.y !== monster.y)) factor /= 2;
 	//a statue's own weapon `DLY` rides the creature (`applyStatueKit`); the class table covers the rest
 	const delay = ATTACK_DELAY[kind] ?? monster.attackDelay;
 	if (delay !== undefined && swung.has(monster)) factor *= delay;

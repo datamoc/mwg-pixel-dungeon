@@ -42,8 +42,9 @@ for (const name of ['kingPhase2Entry', 'kingPhase2Threshold', 'kingPhase3Entry',
 }
 assert.ok(!table.includes('? 100 : 50'), 'no duplicated threshold ternary remains in the table');
 
-// Optional live trace from the project-authored Java harness, invoking the real v3.3.8
-// DwarfKing.damage() under a small GDX launcher and checking the same production predicates.
+// Optional live trace from the project-authored Java harness, which invokes the real v3.3.8
+// DwarfKing.damage() under a small GDX launcher. Compare its post-damage HP/phase and the
+// P3 one-time yell edge against these same production predicates.
 if (process.argv[2]) {
 	const javaFile = process.argv[2];
 	assert.ok(existsSync(javaFile), `Java trace exists: ${javaFile}`);

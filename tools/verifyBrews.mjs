@@ -257,4 +257,32 @@ export function verifyBrews(require, check) {
 		assert.ok(d.seeds.filter((s) => s !== center).every(([, , , volume]) => volume === 120),
 			'open neighbours take 120 each');
 	});
+check('UnstableBrew rolls its weighted drink table and rerolls the harmful four', () => {
+	// `UnstableBrew.apply()` (`UnstableBrew.java`, tag `v3.3.8`): Healing 3,
+	// Experience 1, the other nine regulars 2 each; a drunk brew rerolls the
+	// four must-throw potions until a drinkable one lands.
+	const { UNSTABLE_BREW_DRINK_TABLE, UNSTABLE_BREW_DRINK_REROLL, UNSTABLE_BREW_SHATTER_KEEP, rollUnstableBrewDrink, rollUnstableBrewShatter, rollWeightedPotionId } = require('./simulation/brews');
+	assert.deepEqual(Object.fromEntries(UNSTABLE_BREW_DRINK_TABLE), {
+		potionHealing: 3, potionMindVision: 2, potionFrost: 2, potionFlame: 2,
+		potionToxicGas: 2, potionHaste: 2, potionInvis: 2, potionLevitation: 2,
+		potionParalyticGas: 2, potionPurity: 2, potionExperience: 1,
+	});
+	assert.deepEqual([...UNSTABLE_BREW_DRINK_REROLL].sort(), ['potionFlame', 'potionFrost', 'potionParalyticGas', 'potionToxicGas']);
+	assert.deepEqual([...UNSTABLE_BREW_SHATTER_KEEP].sort(), ['potionFlame', 'potionFrost', 'potionLevitation', 'potionParalyticGas', 'potionPurity', 'potionToxicGas']);
+	//Cumulative weights: healing [0,3), mindVision [3,5), frost [5,7), ... experience [21,22).
+	assert.equal(rollWeightedPotionId(UNSTABLE_BREW_DRINK_TABLE, () => 0), 'potionHealing');
+	assert.equal(rollWeightedPotionId(UNSTABLE_BREW_DRINK_TABLE, () => 0.999), 'potionExperience');
+	assert.equal(rollWeightedPotionId(UNSTABLE_BREW_DRINK_TABLE, () => 0.25), 'potionFrost');
+	//A scripted frost-then-healing draw drinks healing after one reroll.
+	const frostThenHealing = [0.25, 0];
+	assert.equal(rollUnstableBrewDrink(() => frostThenHealing.shift() ?? 0, false), 'potionHealing');
+	//Under Pharmacophobia Healing's own weight zeroes, so a zero draw lands mindVision.
+	assert.equal(rollUnstableBrewDrink(() => 0, true), 'potionMindVision');
+	//A scripted healing-then-frost draw shatters frost after one reroll.
+	const healingThenFrost = [0, 0.25];
+	assert.equal(rollUnstableBrewShatter(() => healingThenFrost.shift() ?? 0), 'potionFrost');
+	//Purity and Levitation survive the shatter keep-list on the first draw.
+	assert.equal(rollUnstableBrewShatter(() => 20.5 / 22), 'potionPurity');
+});
+
 }

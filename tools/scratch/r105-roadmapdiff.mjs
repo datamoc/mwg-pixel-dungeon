@@ -1,0 +1,12 @@
+import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+const git = (...a) => execFileSync('git', a, { encoding: 'utf8' });
+const made = readFileSync('C:/Users/miche/AppData/Local/Temp/r105blobs-PlNt61/ROADMAP.md', 'utf8').split('\n');
+const base = new Set(git('show', ':ROADMAP.md').split('\n'));
+const extra = made.filter((l) => !base.has(l));
+console.log(`extra: ${extra.length}`);
+for (const l of extra) console.log(' + ' + JSON.stringify(l.slice(0, 100)));
+const madeSet = new Set(made);
+const missing = [...base].filter((l) => !madeSet.has(l));
+console.log(`missing: ${missing.length}`);
+for (const l of missing) console.log(' - ' + JSON.stringify(l.slice(0, 100)));

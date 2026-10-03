@@ -53,11 +53,18 @@ function compile(source, destination) {
 
 try {
 	writeFileSync(join(output, 'package.json'), '{"type":"commonjs"}');
-	for (const file of ['simulation/movement', 'simulation/heroTurn', 'simulation/hunger', 'simulation/turns', 'simulation/mobLoot', 'adapters/sceneSimulation',
+	check('Blacksmith quest completion adds its computed favor to questScores[2]', () => {
+		const blacksmithScene = readFileSync('src/scenes/dungeon/npcShopBlacksmith.ts', 'utf8');
+		const completion = blacksmithScene.match(/completeBlacksmithQuest\(this: DungeonScene\): void \{([\s\S]*?)\n\t\},/);
+		assert.ok(completion, 'Blacksmith quest completion exists');
+		assert.match(completion[1], /blacksmithTurnInFavor\(gold, this\.blacksmithBossBeaten\)/);
+		assert.match(completion[1], /addQuestScore\(this, 2, this\.blacksmithFavor\)/);
+	});
+	for (const file of ['actors/npcs', 'simulation/movement', 'simulation/heroTurn', 'simulation/hunger', 'simulation/turns', 'simulation/mobLoot', 'adapters/sceneSimulation',
 		'adapters/hungerSimulation', 'simulation/random', 'simulation/combatState', 'simulation/momentum', 'simulation/subclassPassives', 'simulation/mwlBuffDurations', 'simulation/mwlStatusImmunities', 'simulation/mwlMonsterImmunities', 'simulation/mwlMonsterStateStats', 'simulation/buffs', 'simulation/combat', 'simulation/entityId', 'talentEffects',
 		'adapters/combatSimulation', 'adapters/mwgRandom', 'combat', 'simulation/heroActions', 'adapters/heroActionSimulation', 'adapters/heroActions',
-	'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/warriorAbilities', 'simulation/huntressAbilities', 'simulation/duelistAbilities', 'simulation/mageAbilities', 'simulation/rogueAbilities', 'simulation/ratmogrify', 'simulation/fishingSpearProc', 'talents', 'armorAbilities', 'simulation/tenguAbility', 'simulation/tenguBeam', 'simulation/gooBoss', 'simulation/ratKingBoss', 'simulation/dm300Boss', 'simulation/gnollGeomancer', 'simulation/yogBoss', 'simulation/defenderDamageCurves', 'simulation/preparation', 'simulation/disintegration', 'items/wands', 'items/missiles', 'mechanics/cone', 'dungeonConstants',
-	'simulation/javaBlob', 'simulation/prismaticWandLight', 'simulation/regionMusic', 'simulation/swarmIntelligence', 'simulation/crystalSpire', 'simulation/fireSpread', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops', 'simulation/plantTriggers', 'simulation/teleport', 'simulation/trapAreas', 'simulation/tenguDart', 'simulation/teleportAppear', 'simulation/timeBubble', 'simulation/targeting', 'simulation/ripperLeap', 'simulation/succubusBlink', 'simulation/prismatic', 'simulation/mirrorImage', 'simulation/sentryTurn', 'simulation/brews', 'simulation/levelPopulation', 'simulation/smoke', 'simulation/deathBursts', 'simulation/pourAuras', 'simulation/skeletonExplosion', 'simulation/vertigo', 'simulation/ringKnow', 'simulation/actorCollision', 'simulation/wandering', 'simulation/zoomStep', 'simulation/chasmJump', 'simulation/spareWands', 'simulation/clericSpells', 'simulation/shockArc', 'simulation/geyserTrap', 'simulation/cursedWand', 'ui/buffOverlays', 'settings',
+	'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/warriorAbilities', 'simulation/huntressAbilities', 'simulation/duelistAbilities', 'simulation/mageAbilities', 'simulation/rogueAbilities', 'simulation/ratmogrify', 'simulation/fishingSpearProc', 'talents', 'armorAbilities', 'simulation/tenguAbility', 'simulation/tenguBeam', 'simulation/gooBoss', 'simulation/ratKingBoss', 'simulation/dm300Boss', 'simulation/trinkets', 'simulation/gnollGeomancer', 'simulation/yogBoss', 'simulation/defenderDamageCurves', 'simulation/preparation', 'simulation/disintegration', 'items/wands', 'items/missiles', 'mechanics/cone', 'dungeonConstants',
+	'simulation/javaBlob', 'simulation/prismaticWandLight', 'simulation/swarmIntelligence', 'simulation/crystalSpire', 'simulation/fireSpread', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops', 'simulation/plantTriggers', 'simulation/teleport', 'simulation/trapAreas', 'simulation/tenguDart', 'simulation/teleportAppear', 'simulation/timeBubble', 'simulation/targeting', 'simulation/ripperLeap', 'simulation/succubusBlink', 'simulation/prismatic', 'simulation/mirrorImage', 'simulation/sentryTurn', 'simulation/brews', 'simulation/aquaHealing', 'simulation/levelPopulation', 'simulation/smoke', 'simulation/deathBursts', 'simulation/pourAuras', 'simulation/skeletonExplosion', 'simulation/vertigo', 'simulation/ringKnow', 'simulation/actorCollision', 'simulation/wandering', 'simulation/zoomStep', 'simulation/chasmJump', 'simulation/spareWands', 'simulation/clericSpells', 'simulation/shockArc', 'simulation/geyserTrap', 'simulation/cursedWand', 'ui/buffOverlays', 'settings',
 	// `actors/monsterSpawn` (plus its `monsters`/`challenges`/i18n chain) for the spawn-profile
 	// checks: the chaos-elemental roll, the rare-alt table, and the unported-mob absences.
 	'monsters', 'challenges', 'i18n/index', 'i18n/portStrings', 'i18n/portMineStrings', 'i18n/languages', 'i18n/spdKeys', 'generated/spdMessages', 'items/artifacts', 'actors/monsterSpawn',
@@ -103,6 +110,7 @@ try {
 		`const random = require(${JSON.stringify(join(dist, 'core', 'Random.js'))}); exports.Random = random; exports.Generator = random.Generator; exports.I18n = require(${JSON.stringify(join(dist, 'i18n', 'index.js'))}); exports.Roguelike = require(${JSON.stringify(join(dist, 'roguelike', 'index.js'))});\n`);
 	const require = createRequire(join(output, 'tests.cjs'));
 	const { advanceHunger, advanceWellFed, exertHunger } = require('./simulation/hunger');
+	const { interactWithImp } = require('./actors/npcs');
 	const { runHungerStep } = require('./adapters/hungerSimulation');
 	const { runMovement } = require('./adapters/movementSimulation');
 	const { resolveAttack } = require('./simulation/attackResolution');
@@ -118,7 +126,7 @@ try {
 	const { evolveElectricity, evolveJavaBlob } = require('./simulation/javaBlob');
 	const { planFireSpread } = require('./simulation/fireSpread');
 	const { planMonsterPopulation } = require('./simulation/levelPopulation');
-	const { wraithCombatStats, dustSpawnerStep, dustSpawnerCap } = require('./simulation/wraith');
+	const { wraithCombatStats, dustSpawnerStep, dustSpawnerCap, dustWraithScoresOnAttackNumber } = require('./simulation/wraith');
 const { grantSungrassHealth, tickSungrassHealth, grantEarthrootArmor, absorbEarthrootArmor } = require('./simulation/plantPools');
 const { plantDropCandidates, plantDropCount } = require('./simulation/plantDrops');
 const { runHeroPlantEffect, runMobPlantEffect, naturesAidBarkskin } = require('./simulation/plantTriggers');
@@ -154,9 +162,9 @@ const { selectRangedTarget, findEnemyAlly, pursueTarget } = require('./simulatio
 		assert.equal(fishingSpearPiranhaDamage('ThrowingSpear', 'piranha', 11, 1), 1);
 		assert.equal(fishingSpearPiranhaDamage('FishingSpear', 'bat', 11, 1), 1);
 		const resolution = readFileSync(new URL('../src/scenes/dungeon/combatResolution.ts', import.meta.url), 'utf8');
-		assert.ok(resolution.includes('fishingSpearPiranhaDamage(this.ammoSourceClass, defender.kind, defender.hp, damage)'),
-			'thrown hero attacks apply the proc to post-DR damage in the shared attack resolution');
-		assert.ok(resolution.indexOf('fishingSpearPiranhaDamage(this.ammoSourceClass, defender.kind, defender.hp, damage)')
+		assert.ok(resolution.includes('fishingSpearPiranhaDamage(thrownSourceClass ?? this.ammoSourceClass, defender.kind, defender.hp, damage)'),
+			'thrown hero attacks use their explicit missile class, falling back to wielded ammo, for post-DR procs');
+		assert.ok(resolution.indexOf('fishingSpearPiranhaDamage(thrownSourceClass ?? this.ammoSourceClass, defender.kind, defender.hp, damage)')
 			< resolution.indexOf('damage = this.auraProtectedDamage(defender, damage)'),
 			'the proc runs before damage() overrides, after the shared attack procs');
 		assert.ok(!readFileSync(new URL('../src/scenes/dungeon/turnLoopAiming.ts', import.meta.url), 'utf8')
@@ -170,7 +178,7 @@ const { selectRangedTarget, findEnemyAlly, pursueTarget } = require('./simulatio
 		assert.deepEqual(trampleHighGrass('furrowed', true, grassRules), { next: 'furrowed', rollDrops: false, drops: null });
 		assert.deepEqual(trampleHighGrass('furrowed', false, grassRules), { next: 'plain', rollDrops: false, drops: null });
 		assert.deepEqual(trampleHighGrass('high', false, grassRules), {
-			next: 'plain', rollDrops: true, drops: { seedChance: 1 / 25, dewChance: 1 / 6 },
+			next: 'plain', rollDrops: true, drops: { seedChance: 1 / 25, stoneChance: 0, dewChance: 1 / 6 },
 		});
 	});
 	check('grass loot scales with Sandals of Nature, and a cursed pair suppresses it', () => {
@@ -389,6 +397,13 @@ const { selectRangedTarget, findEnemyAlly, pursueTarget } = require('./simulatio
 		assert.equal(dustSpawnerCap(30, 1), 4, 'with no candidate the bank caps at 2*wraiths');
 		assert.equal(dustSpawnerCap(3, 1), 3);
 	});
+	check('DustWraith scores questScores[1] -= 100 on its 2nd and 3rd attacks on the hero', () => {
+		assert.equal(dustWraithScoresOnAttackNumber(0), false, 'no attacks yet');
+		assert.equal(dustWraithScoresOnAttackNumber(1), false, 'first attack free');
+		assert.equal(dustWraithScoresOnAttackNumber(2), true);
+		assert.equal(dustWraithScoresOnAttackNumber(3), true);
+		assert.equal(dustWraithScoresOnAttackNumber(4), false, 'max -200 per wraith');
+	});
 	check('Sungrass.Health boosts additively and pays out (40+HT)/150 per turn', () => {
 	assert.deepEqual(grantSungrassHealth(undefined, 20), { level: 20, partial: 0 });
 	//`boost()` is additive, never keep-max, and keeps the fractional carry.
@@ -428,7 +443,7 @@ check('the moved hero plant-effect switch fires every branch', () => {
 		const hero = { x: 1, y: 2, maxHp: 20, hp: 10, buffs: {} };
 		if (heroBuffs) Object.assign(hero.buffs, heroBuffs);
 		const rec = {
-			said: [], grants: [], prolongs: [], foods: [], loots: [],
+			said: [], grants: [], prolongs: [], foods: [], blandfruits: [], loots: [],
 			freezes: [], gases: [], fires: [], hazards: [], shakes: [],
 			armor: null, barkskin: null, bubble: null, cured: false, synced: false,
 			healLeft: 0, healFlat: 0, sungrass: null, moved: null,
@@ -446,7 +461,7 @@ check('the moved hero plant-effect switch fires every branch', () => {
 			grantBuff: (target, id, duration) => { rec.grants.push([id, duration]); target.buffs[id] = duration ?? 0; },
 			prolongBuff: (target, id, duration) => { rec.prolongs.push([id, duration]); target.buffs[id] = duration ?? 0; },
 			cureHero: () => { rec.cured = true; },
-			spawnFood: (x, y) => { rec.foods.push([x, y]); },
+			spawnBlandfruit: (x, y) => { rec.blandfruits.push([x, y]); },
 			dropLoot: (x, y, min, max, lootKind) => { rec.loots.push([x, y, min, max, lootKind]); },
 			seedFreeze: (x, y, volume) => { rec.freezes.push([x, y, volume]); },
 			seedGas: (x, y, volume) => { rec.gases.push([x, y, volume]); },
@@ -483,10 +498,11 @@ check('the moved hero plant-effect switch fires every branch', () => {
 	assert.equal(r.rec.sungrass, null);
 	assert.equal(r.rec.healLeft, 20);
 	assert.equal(r.rec.healFlat, 1);
-	//Blandfruit (and its bush) drops exactly one food.
+	//Blandfruit (and its bush) drops exactly one plain fruit, never generic food.
 	for (const kind of ['blandfruit', 'blandfruitbush']) {
 		r = drive(kind);
-		assert.deepEqual(r.rec.foods, [[3, 4]], kind);
+		assert.deepEqual(r.rec.blandfruits, [[3, 4]], kind);
+		assert.deepEqual(r.rec.foods, [], kind);
 		assert.equal(r.rec.said.length, 1, kind);
 	}
 	//Starflower blesses anyone, and only a Warden recharges (both prolongs).
@@ -642,6 +658,26 @@ check('high-grass trample still furrows and flattens after the aid removal', () 
 	assert.deepEqual(t.sets, [[7, 12, 2]]);
 	assert.ok(!t.furrowed.has(12 * 32 + 7));
 });
+check('AquaHealing pays its gated pool only while swimming', () => {
+	//`AquaHealing.act()` (`ElixirOfAquaticRejuvenation.java`, tag `v3.3.8`): the
+	//dose is `round(HT*1.5)`; each turn pays `gate(1, HT/50, left)` capped at the
+	//missing HP, with Java's probabilistic ceil/floor on the fraction. Dry,
+	//full-HP or empty turns pause without draining.
+	const { aquaHealingDose, tickAquaHealing } = require('./simulation/aquaHealing');
+	assert.equal(aquaHealingDose(20), 30);
+	let t = tickAquaHealing({ left: 150, maxHp: 100, missingHp: 50, swims: true }, () => 0);
+	assert.deepEqual(t, { left: 148, healed: 2 });
+	t = tickAquaHealing({ left: 148, maxHp: 100, missingHp: 50, swims: false }, () => 0);
+	assert.deepEqual(t, { left: 148, healed: 0 });
+	t = tickAquaHealing({ left: 148, maxHp: 100, missingHp: 0, swims: true }, () => 0);
+	assert.deepEqual(t, { left: 148, healed: 0 });
+	t = tickAquaHealing({ left: 10, maxHp: 99, missingHp: 1, swims: true }, () => 0);
+	assert.deepEqual(t, { left: 9, healed: 1 });
+	t = tickAquaHealing({ left: 10, maxHp: 90, missingHp: 50, swims: true }, () => 0.5);
+	assert.deepEqual(t, { left: 8, healed: 2 });
+	t = tickAquaHealing({ left: 10, maxHp: 90, missingHp: 50, swims: true }, () => 0.9);
+	assert.deepEqual(t, { left: 9, healed: 1 });
+});
 check('the moved mob plant-effect switch fires every branch', () => {
 	//Drive of `runMobPlantEffect` (the `triggerMobPlantAt` half moved to
 	//`simulation/plantTriggers.ts` in the file-size refactor, fifth extraction):
@@ -655,7 +691,7 @@ check('the moved mob plant-effect switch fires every branch', () => {
 		};
 		if (presetBuffs) Object.assign(creature.buffs, presetBuffs);
 		const rec = {
-			grants: [], prolongs: [], fires: [], gases: [], freezes: [],
+			grants: [], prolongs: [], fires: [], gases: [], freezes: [], blandfruits: [],
 			hazards: [], areas: [], shakes: [], placed: [], teleports: [], patrols: [],
 			heroBarkskin: null,
 		};
@@ -677,6 +713,7 @@ check('the moved mob plant-effect switch fires every branch', () => {
 			isVisibleCell: () => true,
 			shake: (intensity, duration) => { rec.shakes.push([intensity, duration]); },
 			isImmovableKind: () => false,
+			spawnBlandfruit: (x, y) => { rec.blandfruits.push([x, y]); },
 			heroClass: () => 'none',
 			talentRank: () => 0,
 			setHeroBarkskin: (level, interval) => { rec.heroBarkskin = [level, interval]; },
@@ -696,6 +733,9 @@ check('the moved mob plant-effect switch fires every branch', () => {
 	m = driveMob('firebloom');
 	assert.deepEqual(m.rec.fires, [[5, 5, 2]]);
 	assert.deepEqual(m.rec.hazards, ['rat']);
+	m = driveMob('blandfruitbush');
+	assert.deepEqual(m.rec.blandfruits, [[5, 5]]);
+	assert.deepEqual(m.rec.hazards, [], 'the fruit drop never marks');
 	m = driveMob('rotberry');
 	assert.deepEqual(m.rec.gases, [[5, 5, 100]]);
 	assert.deepEqual(m.rec.hazards, [], 'rotberry never marks its own gas');
@@ -988,8 +1028,28 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 			isToxicImmune: () => false,
 			applyDamage: () => true,
 		});
-		assert.deepEqual(advanced, ['plantGas', 'plantFreeze', 'toxicGas', 'paralyticGas', 'stenchGas', 'corrosiveGas', 'confusionGas', 'web', 'electricity', 'smokeScreen', 'inferno', 'blizzard']);
+		assert.deepEqual(advanced, ['plantGas', 'plantFreeze', 'toxicGas', 'paralyticGas', 'stenchGas', 'corrosiveGas', 'confusionGas', 'web', 'electricity', 'smokeScreen', 'inferno', 'blizzard', 'stormCloud']);
 		assert.deepEqual(buffs, [[target, 'paralysis', 2], [target, 3]]);
+	});
+	check('StormCloud turns cells to water and clears fire; BlobImmunity blocks its FIERY damage', () => {
+		const ordinary = { hp: 10, buffs: {} };
+		const immune = { hp: 10, buffs: { blobImmunity: 10 } };
+		const events = [];
+		applyEnvironmentalBlobs({
+			creatures: [], passable: () => true, advance: () => {},
+			cellsAbove: (blob) => blob === 'stormCloud' ? [{ x: 1, y: 2 }, { x: 3, y: 4 }] : [],
+			creatureAt: (x) => x === 1 ? ordinary : immune,
+			makeWaterCell: (x, y) => events.push(['water', x, y]),
+			clearFireCell: (x, y) => events.push(['fire', x, y]),
+			stormCloudBurn: (target) => events.push(['burn', target]),
+			isBlobImmune: (target) => target.buffs.blobImmunity !== undefined,
+			addBuff: () => {}, applyCorrosion: () => {}, corrosiveStrength: () => 0,
+			toxicDamage: () => 0, isToxicImmune: () => false, applyDamage: () => true,
+		});
+		assert.deepEqual(events, [
+			['water', 1, 2], ['fire', 1, 2], ['burn', ordinary],
+			['water', 3, 4], ['fire', 3, 4],
+		]);
 	});
 	check('Warden BlobImmunity blocks every shared harmful blob effect', () => {
 		const target = { hp: 10, buffs: { blobImmunity: 10 } };
@@ -1059,60 +1119,21 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.deepEqual([0, 1, 3].map((level) => prismaticWandLightDuration(4, false, level)), [10, 15, 25]);
 		assert.equal(prismaticWandLightDuration(8, false, 3), 0);
 	});
-	check('dungeon music selects Java region queues, tense loops and boss finales', () => {
-		//`*Level.playLevelMusic()` plus the three `*BossLevel` overrides (tag `v3.3.8`,
-		//R107): every region rotates `[R_1, R_2, R_2, R_1, R_3, R_3]` at chances
-		//`[1, 1, 0.5, 0.25, 1, 0.5]`, plays its tense loop under its own conditions,
-		//and switches a sealed bleeding finale-region arena to its `_boss_finale`.
-		const { selectDungeonMusic, filterMusicQueue, FINALE_REGIONS, REGION_QUEUE_SLOTS, REGION_QUEUE_CHANCES } = require('./simulation/regionMusic');
-		assert.deepEqual(REGION_QUEUE_SLOTS, [1, 2, 2, 1, 3, 3]);
-		assert.deepEqual(REGION_QUEUE_CHANCES, [1, 1, 0.5, 0.25, 1, 0.5]);
-		assert.deepEqual([...FINALE_REGIONS].sort(), ['caves', 'city', 'halls']);
-		const rolls = (vals) => { let i = 0; return () => vals[i++ % vals.length]; };
-		assert.deepEqual(filterMusicQueue(['a', 'b'], [1, 1], rolls([0.999, 0.999])), ['a', 'b']);
-		assert.deepEqual(filterMusicQueue(['a', 'b'], [0, 0], rolls([0, 0])), []);
-		assert.deepEqual(
-			filterMusicQueue(['1', '2', '2b', '1b', '3', '3b'], [1, 1, 0.5, 0.25, 1, 0.5], rolls([0, 0, 0.49, 0.24, 0, 0.49])),
-			['1', '2', '2b', '1b', '3', '3b'], 'flips below each chance pass');
-		assert.deepEqual(
-			filterMusicQueue(['1', '2', '2b', '1b', '3', '3b'], [1, 1, 0.5, 0.25, 1, 0.5], rolls([0, 0, 0.5, 0.25, 0, 0.5])),
-			['1', '2', '3'], 'boundary flips fail (<, not <=)');
-		const calm = { boss: false, locked: false, bleeding: false, ghostActive: false, wandmakerActive: false, amuletObtained: false, depth: 3 };
-		assert.deepEqual(selectDungeonMusic('sewers', calm, rolls([0])).files,
-			['sewers_1.ogg', 'sewers_2.ogg', 'sewers_2.ogg', 'sewers_1.ogg', 'sewers_3.ogg', 'sewers_3.ogg'],
-			'a calm floor plays the full regional queue');
-		assert.deepEqual(selectDungeonMusic('prison', { ...calm, wandmakerActive: true }, rolls([0])), { kind: 'track', file: 'prison_tense.ogg' });
-		assert.deepEqual(selectDungeonMusic('sewers', { ...calm, ghostActive: true }, rolls([0])), { kind: 'track', file: 'sewers_tense.ogg' });
-		assert.deepEqual(selectDungeonMusic('city', { ...calm, amuletObtained: true }, rolls([0])), { kind: 'track', file: 'city_tense.ogg' });
-		assert.deepEqual(selectDungeonMusic('sewers', { ...calm, amuletObtained: true, depth: 1 }, rolls([0])), { kind: 'track', file: 'theme_finale.ogg' },
-			'depth 1 plus the Amulet plays the theme finale');
-		assert.deepEqual(selectDungeonMusic('sewers', { ...calm, amuletObtained: true, depth: 2 }, rolls([0])), { kind: 'track', file: 'sewers_tense.ogg' });
-		for (const region of ['sewers', 'prison', 'caves', 'city', 'halls']) {
-			assert.deepEqual(selectDungeonMusic(region, { ...calm, boss: true }, rolls([0])), { kind: 'track', file: `${region}_boss.ogg` });
-		}
-		assert.deepEqual(selectDungeonMusic('caves', { ...calm, boss: true, locked: true, bleeding: true }, rolls([0])), { kind: 'track', file: 'caves_boss_finale.ogg' });
-		assert.deepEqual(selectDungeonMusic('caves', { ...calm, boss: true, locked: false, bleeding: true }, rolls([0])), { kind: 'track', file: 'caves_boss.ogg' },
-			'unsealed bleeding keeps the boss track');
-		assert.deepEqual(selectDungeonMusic('sewers', { ...calm, boss: true, locked: true, bleeding: true }, rolls([0])), { kind: 'track', file: 'sewers_boss.ogg' },
-			'finale regions only: Goo and Tengu have no finale file');
-		//Wiring: the audio seam plays the selection, the floor entry recomputes it from
-		//live state, and the bleed edge plus the Wandmaker flips replay it mid-floor.
-		const audioSource = readFileSync(new URL('../src/audio.ts', import.meta.url), 'utf8');
-		assert.match(audioSource, /const selection = selectDungeonMusic\(region, state, \(\) => Math\.random\(\)\);/,
-			'queue flips ride Math.random, never the gameplay RNG stream');
-		const tilesSource = readFileSync(new URL('../src/scenes/dungeon/coreSpawnTiles.ts', import.meta.url), 'utf8');
-		assert.match(tilesSource, /ghostActive: this\.quests\.status\('sadGhost'\) === 'active',/,
-			'floor entry reads the live Ghost quest state');
-		assert.match(tilesSource, /wandmakerActive: this\.quests\.status\('wandmaker'\) === 'active',/,
-			'floor entry reads the live Wandmaker quest state');
-		const deathSource = readFileSync(new URL('../src/scenes/dungeon/deathSaveRefresh.ts', import.meta.url), 'utf8');
-		assert.match(deathSource, /if \(!this\.miningBranchActive\) this\.replayDungeonMusic\(\);/,
-			'the bleed edge replays outside the mining branch');
-		const shopSource = readFileSync(new URL('../src/scenes/dungeon/npcShopBlacksmith.ts', import.meta.url), 'utf8');
-		assert.equal((shopSource.match(/this\.replayDungeonMusic\(\);/g) ?? []).length, 2,
-			'Wandmaker start and completion both replay prison music');
-	});
 	const initial = (extra = {}) => ({ hunger: 0, partialDamage: 0, hp: 20, maxHp: 20, ...extra });
+	check('Imp quest turn-in consumes every token, then flees and completes once', () => {
+		const events = [];
+		const context = {
+			status: 'active', need: 4, heldTokens: 6,
+			startQuest: () => events.push('start'), advanceQuest: () => events.push('advance'),
+			removeTokens: (quantity) => events.push(`remove:${quantity}`),
+			reward: () => { events.push('reward'); return 'reward-ring'; },
+			flee: () => events.push('flee'), completeQuest: () => events.push('complete'),
+			say: (message) => events.push(`say:${message}`),
+			messages: { offer: 'offer', done: 'done', remind: 'remind', reward: 'reward' },
+		};
+		interactWithImp(context);
+		assert.deepEqual(events, ['remove:6', 'reward', 'flee', 'complete', 'say:reward-ring']);
+	});
 	check('WellFed pauses hunger, heals every 18 turns, and expires after its Java clock', () => {
 		assert.deepEqual(advanceWellFed(450, 10, 20), { remaining: 449, heal: 0 });
 		assert.deepEqual(advanceWellFed(433, 10, 20), { remaining: 432, heal: 1 });
@@ -1181,7 +1202,7 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.ok(turnLoop.includes('this.projectileMomentumAccFactor()'), 'thrown weapons and the Spirit Bow use the accuracy factor');
 		assert.ok(spawn.includes('this.momentumEvasionBonus()'), 'cached hero evasion uses the active freerun bonus');
 		const ringEvasionReset = spawn.indexOf('if (relevantStats.size > 0)');
-		const resolvedEvasion = spawn.indexOf('this.hero.evasion = this.heroStats.get(\'evasion\') + this.momentumEvasionBonus()', ringEvasionReset);
+		const resolvedEvasion = spawn.indexOf('this.hero.evasion = this.heroStats.get(\'evasion\') / armorEvasionDivisor + this.momentumEvasionBonus()', ringEvasionReset);
 		assert.ok(ringEvasionReset >= 0 && resolvedEvasion > ringEvasionReset, 'ring stat refresh rebuilds evasion with Momentum after modifiers');
 		assert.ok(spawn.indexOf('if (this.guardTurns > 0) this.hero.evasion = 1000000', resolvedEvasion) > resolvedEvasion, 'ring stat refresh preserves stance, guard and healing evasion factors');
 		assert.ok(save.includes('momentumState: {') && load.includes('movedLastTurn: false'), 'stacks and timers save; restore resets the unsaved movement flag');
@@ -2067,44 +2088,12 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		//in the hero's FOV - on the hero, mob and empty-root wither paths alike.
 		const scene = readSceneSource();
 		const bursts = readFileSync(new URL('../src/ui/effectBursts.ts', import.meta.url), 'utf8');
-		assert.equal((scene.match(/'leaf'\)/g) ?? []).length, 4,
-			'hero, mob and empty-root withers plus the R113 planting furrow all burst leaves');
+		assert.equal((scene.match(/'leaf'\)/g) ?? []).length, 3,
+			'hero, mob and empty-root withers all burst leaves');
 		assert.ok(/tint: 0x448822/.test(bursts), 'leaf carries the GENERAL midpoint tint');
 		assert.ok(/leaf: \{[\s\S]*?count: 6/.test(bursts), 'leaf bursts six');
 		assert.ok(/triggerPortedPlantAt\(this: DungeonScene[\s\S]{0,1500}portedFeatures\.remove\(cell\)/.test(scene),
 			'hero wither uproots the feature like the mob and root paths');
-	});
-	check('R015 residual quest writes all land on attempts, not landed hits', () => {
-		//`StenchGas.evolve()` (tag `v3.3.8`): an unparalysed hero breathing the gas
-		//while its rat lives scores `questScores[0] -= 100` - the simulation write was
-		//already committed; the scene seam just never passed the hook through.
-		const blobs = readFileSync(new URL('../src/simulation/environmentalBlobs.ts', import.meta.url), 'utf8');
-		assert.ok(blobs.includes('context.addQuestScore?.(0, -100)'),
-			'the stench write fires while a live fetidRat shares the gas');
-		const traps = readFileSync(new URL('../src/scenes/dungeon/environmentFireTraps.ts', import.meta.url), 'utf8');
-		assert.ok(traps.includes('addQuestScore: (index, delta) => { addQuestScore(this, index, delta); },'),
-			'the blob seam carries the quest-score hook into the simulation');
-		//`Blacksmith.Quest.complete()` (tag `v3.3.8`): `questScores[2] += favor`.
-		const shop = readFileSync(new URL('../src/scenes/dungeon/npcShopBlacksmith.ts', import.meta.url), 'utf8');
-		assert.ok(shop.includes('addQuestScore(this, 2, this.blacksmithFavor);'),
-			'the turn-in writes the capped favor plus boss bonus to questScores[2]');
-		//`RotLasher.attack()` (tag `v3.3.8`) scores on the attempt, before the hit
-		//roll; `CorpseDust.DustWraith.attack()` counts per-wraith attempts (persisted)
-		//and scores at the 2nd and 3rd. Both hook the `attack()` head, never a proc.
-		const resolution = readFileSync(new URL('../src/scenes/dungeon/combatResolution.ts', import.meta.url), 'utf8');
-		assert.ok(resolution.includes("if (attacker.kind === 'rotLasher') addQuestScore(this, 1, -100);"),
-			'RotLasher scores every attempt against the hero, misses included');
-		assert.ok(resolution.includes('attacker.wraithAtkCount = (attacker.wraithAtkCount ?? 0) + 1;'),
-			'DustWraith counts its own attempts');
-		assert.ok(resolution.includes('if (attacker.wraithAtkCount === 2 || attacker.wraithAtkCount === 3) addQuestScore(this, 1, -100);'),
-			'the 2nd and 3rd wraith attempts score (first free, max -200 per wraith)');
-		const hits = readFileSync(new URL('../src/scenes/mobOnHit.ts', import.meta.url), 'utf8');
-		assert.ok(!hits.includes('ctx.addQuestScore?.(1, -100)'),
-			'the old landed-hit lasher write is gone (no double count)');
-		const tiles = readFileSync(new URL('../src/scenes/dungeon/coreSpawnTiles.ts', import.meta.url), 'utf8');
-		assert.ok(tiles.includes('wraithAtkCount: creature.wraithAtkCount,')
-			&& tiles.includes('wraithAtkCount: saved.wraithAtkCount,'),
-			'the wraith counter survives save/load like Java bundle field');
 	});
 	check('bomb detonations play BLAST and burst when destructive', () => {
 		//`Bomb.explode()` (tag `v3.3.8`, R062): BLAST on every detonation, plus the
@@ -2120,6 +2109,24 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.ok(/destructive && this\.fov\.isVisible\(x, y\)\) spawnTrapSpecks\(this\.effectLayer, this\.effectBursts, x, y, 'blast'\)/.test(scene), 'burst is destructive- and FOV-gated');
 		assert.ok(/tint: 0xEE7722/.test(bursts), 'blast carries Java shard color');
 		assert.ok(/blast: \{[\s\S]*?count: 30/.test(bursts), 'blast bursts thirty');
+	});
+	check('golem self-teleport lands with the shared teleport light', () => {
+		//`Golem.act()` (tag `v3.3.8`, R059) lands its self-teleport via `ScrollOfTeleportation.appear`; only the 2-tick charge pour waits on the `teleporting` delay state (coord T178).
+		const scene = readSceneSource();
+		assert.ok(scene.includes('this.playTeleportAppear(golemFrom, landing, monster)'),
+			'the golem self-teleport must keep flashing the shared teleport light on arrival');
+	});
+	check('Golem teleporting flag and cooldown survive a floor save', () => {
+		//T178: the 2-turn charge flag and the 30-turn cooldown both round-trip
+		//through the floor save like the sentry delay above.
+		const floorState = readFileSync(new URL('../src/scenes/floorState.ts', import.meta.url), 'utf8');
+		const spawn = readFileSync(new URL('../src/scenes/dungeon/coreSpawnTiles.ts', import.meta.url), 'utf8');
+		assert.ok(floorState.includes('teleporting?: boolean'), 'save schema carries the charge flag');
+		assert.ok(floorState.includes('golemSelfTeleCooldown?: number'), 'save schema carries the cooldown');
+		assert.ok(spawn.includes('teleporting: creature.teleporting'), 'capture writes the charge flag');
+		assert.ok(spawn.includes('golemSelfTeleCooldown: creature.golemSelfTeleCooldown'), 'capture writes the cooldown');
+		assert.ok(spawn.includes('teleporting: saved.teleporting'), 'restore reads the charge flag');
+		assert.ok(spawn.includes('golemSelfTeleCooldown: saved.golemSelfTeleCooldown'), 'restore reads the cooldown');
 	});
 	check('lotus leaf range pours over the wand radius', () => {
 		//`LotusSprite.link` (tag `v3.3.8`, R059): every non-solid cell within Euclidean wand-level range pours leaves at 0.5 (fixed GENERAL greens for Java's level-palette `LEVEL_SPECIFIC`); the scene recovers the wand level from the lotus's undropping `maxHp` and FOV-gates each cell like every other speck seam.
@@ -2150,6 +2157,22 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.equal((scene.match(/cue\('trample', 1, 0\.96 \+ Math\.random\(\) \* 0\.09\)/g) ?? []).length, 2,
 			'step and teleport plant deferrals both cue trample');
 	});
+	check('burning sewer barrels burst shards and become water', () => {
+		//`SewerLevel.destroy()` (tag `v3.3.8`, R010): barrels become WATER, alts
+		//EMPTY_SP, and both burst `Splash.at(pos, 0xFF507B5D, 10)` - ten green-teal
+		//shards, FOV-gated through the shared speck seam on both the fire and the
+		//bomb path (`Level.destroy()` serves both in Java).
+		const scene = readSceneSource();
+		const bursts = readFileSync(new URL('../src/ui/effectBursts.ts', import.meta.url), 'utf8');
+		assert.ok(/sewerBarrel \? Terrain\.WATER : sewerBarrelAlt \? Terrain\.EMPTY_SP/.test(scene),
+			'barrels burn to water and alts to empty sp');
+		assert.equal((scene.match(/spawnTrapSpecks\(this\.effectLayer, this\.effectBursts, x, y, 'splash'\)/g) ?? []).length, 2,
+			'fire and bomb barrel burns both burst splash');
+		assert.ok(/tint: 0x507B5D/.test(bursts), 'splash carries Java shard color');
+		assert.ok(/splash: \{[\s\S]*?count: 10/.test(bursts), 'splash bursts ten shards');
+		assert.ok(/setLayerData\('water', this\.waterFrames\(\)\)/.test(scene),
+			'restitch refreshes the water layer for mid-game water');
+	});
 	check('Fire spreads onto webbed cells without destroying the floor', () => {
 		//`Web.onUpdateCellFlags()` (tag `v3.3.8`) marks webbed cells flammable so
 		//`Fire.evolve()` ignites them; the web decays on its own clock and the
@@ -2168,16 +2191,51 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		//- `waterStitcheable` includes FURROWED_GRASS (Terrain id 30);
 		//- FURROWED_GRASS draws RAISED_FURROWED_GRASS (150, alt 154), not floor;
 		//- UNLOCKED_EXIT draws FLAT_WALLS+12 (76), not 78.
+		//R010 adds the v3.3.8 deco cells to that layout: spliced bodies 157/158 (no
+		//alts), REGION_DECO 33 in the dry set, alt 34 stitching water only past depth
+		//20, and the alt's region-dependent chasm face (`stitchChasmTile`).
 		const frames = readFileSync(new URL('../src/scenes/dungeonTileFrames.ts', import.meta.url), 'utf8');
 		const dry = /const dry = new Set<number>\(\[([^\]]+)\]\)/.exec(frames);
 		assert.ok(dry, 'waterFrames carries a literal dry set');
 		const ids = dry[1].split(',').map((s) => Number(s.trim())).sort((a, b) => a - b);
-		assert.deepEqual(ids, [1, 2, 3, 5, 6, 7, 8, 9, 10, 13, 15, 17, 18, 19, 20, 23, 24, 25, 28, 30, 31, 35, 36]);
+		assert.deepEqual(ids, [1, 2, 3, 5, 6, 7, 8, 9, 10, 13, 15, 17, 18, 19, 20, 23, 24, 25, 28, 30, 31, 33, 35, 36]);
 		assert.ok(/Terrain\.FURROWED_GRASS\) return alternate\(150\)/.test(frames),
 			'furrowed grass renders its own raised frame');
 		assert.ok(frames.includes('150: 154'), 'furrowed alt variant registered');
 		assert.ok(/raw === 22\) return 76/.test(frames), 'unlocked exit draws frame 76');
 		assert.ok(!/raw === 22\) return 78/.test(frames), 'unlocked exit no longer draws frame 78');
+		assert.ok(/REGION_DECO\) return 157/.test(frames), 'region deco draws spliced body 157');
+		assert.ok(/REGION_DECO_ALT\) return 158/.test(frames), 'alt deco draws spliced body 158');
+		assert.ok(/raw === 34 && altStitches/.test(frames), 'alt deco stitches water only past depth 20');
+		assert.ok(/above === Terrain\.REGION_DECO_ALT/.test(frames), 'alt deco has its own chasm face');
+	});
+	check('bumping the Goo sealed exit consumes a depth-matched worn key', () => {
+		//`bumpLockedExit` (tag `v3.3.8`, R023 WornKey half): a `wornKey` stamped
+		//for this depth is consumed, the paint becomes UNLOCKED_EXIT and the
+		//stairs anchor moves on; without one the bump refuses like a locked door.
+		const scene = readSceneSource();
+		const start = scene.indexOf('bumpLockedExit(this:');
+		const fn = start < 0 ? '' : scene.slice(start, start + 1400);
+		assert.ok(fn.includes("it.id === 'wornKey'"), 'sealed exit looks for a worn key');
+		assert.ok(fn.includes('.depth === this.depth'), 'only a depth-matched key counts');
+		assert.ok(fn.includes("this.bag.remove('wornKey', 1"), 'the matched key is consumed');
+		assert.ok(fn.includes('Terrain.UNLOCKED_EXIT'), 'the paint becomes UNLOCKED_EXIT');
+		assert.ok(fn.includes('openBossExitStairs'), 'the stairs anchor moves onto the exit');
+		assert.ok(fn.includes('port.log.locked'), 'no key refuses like a locked door');
+	});
+	check('planting as a Warden furrows the neighbouring plantable cells', () => {
+		//`Seed.onThrow()`'s Warden furrow (`Plant.java` 160-169, tag `v3.3.8`, R113 half 1):
+		//every adjacent EMPTY/EMPTY_DECO/EMBERS/GRASS cell becomes FURROWED_GRASS with a
+		//map restitch. The live shape is `level.set(HIGH_GRASS)` + `furrowedGrass` (the
+		//rejuvenating-steps representation the paint derives 30 from).
+		const scene = readSceneSource();
+		const start = scene.indexOf('plantSeed(this: DungeonScene');
+		const fn = start < 0 ? '' : scene.slice(start, start + 2600);
+		assert.ok(fn.includes("this.subclass() === 'warden'"), 'only a Warden furrows');
+		assert.ok(fn.includes('Terrain.EMPTY_DECO'), 'EMPTY_DECO counts as furrowable');
+		assert.ok(fn.includes('Terrain.EMBERS'), 'EMBERS counts as furrowable');
+		assert.ok(fn.includes('furrowedGrass.add'), 'furrowed cells join the overlay');
+		assert.ok(fn.includes('restitchTilesAround(nx, ny)'), 'each furrowed cell restitches');
 	});
 	check('Thief\u2019s Intuition marks ring types known by rank', () => {
 		const { thiefsIntuitionKnownIds } = require('./simulation/ringKnow');

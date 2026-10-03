@@ -1,16 +1,23 @@
+import { startMasteryPick } from '../masteryPotion';
+import { startDragonsBreath } from '../dragonsBreath';
+import { startDivineInspiration } from '../divinePotion';
+import { heroArmorStrReq, heroWeaponStrReq } from '../strengthGear';
 import type { DungeonScene } from '../../dungeonScene';
-import { potionRegularCounterpart } from '../../../items/alchemy';
+import { potionExoticResult, potionRegularCounterpart, scrollExoticResult } from '../../../items/alchemy';
+import { EXOTIC_CLASS_TO_ID } from '../../../items/itemKinds';
+import { appearanceKindOf } from '../../../items/alchemy';
+import { itemDescription as describeInventoryItem } from '../../../items/displayName';
 import { markPotionKindsKnown } from '../../../items/potionKnow';
+import { markMindFormItemDiscovered } from '../../../items/mindFormDiscovery';
 import { refreshInventoryPanel as refreshInventoryPanelView, type InventoryPanelContext } from '../../../ui/inventoryPanel';
 import { createJournalWindow } from '../../../ui/journalWindow';
 import { createJournalTabs } from '../../../ui/journalContent';
 import { inventoryDocked } from '../../../ui/interfaceMode';
 import { uiMode } from '../../../settings';
-import { armorSTRReq, weaponSTRReq } from '../../../items/strReq';
 import { toolkitWarmupPercent } from '../../../simulation/toolkitWarmup';
 import { Actors, Blob, Camera, Game, Random, Roguelike, TintedSprite, Window } from 'mwg';
 import { spawnDeathBursts, spawnFlare, spawnHitFlash, spawnShadowBurst, spawnTeleportBurst, syncBlobCells, syncPourAuras } from '../../../ui/effectBursts';
-import { BOOMERANG_RETURN_ACC_FACTOR, BOOMERANG_RETURN_TURNS, MISSILE_DEFAULT_QUANTITY, MISSILE_MAX_DURABILITY, bolasCrippleTurns, missileDamageRange, missileStackId, recordMissileUpgrade, tomahawkBleedRange } from '../../../items/missiles';
+import { BOOMERANG_RETURN_ACC_FACTOR, BOOMERANG_RETURN_TURNS, MISSILE_DEFAULT_QUANTITY, MISSILE_MAX_DURABILITY, bolasCrippleTurns, missileDamageRange, missileFlightArt, missileStackId, recordMissileUpgrade, tomahawkBleedRange } from '../../../items/missiles';
 import { applyMealEatenEffects, type ConsumableContext } from '../../../items/consumables'; import { eatBerrySeed } from '../../../items/berry';
 import { readScrollFlow, recallPortScrollId, recallTrackedPortId } from '../../../items/scrollEffects';
 import { applyPotionPurity, cureHeroBuffs } from '../../../items/potionEffects';
@@ -30,6 +37,8 @@ import { entranceRoomContext } from '../../../spdLevelGen/rooms/standard/entranc
 import { Terrain } from '../../../spdLevelGen/paintLevel';
 import { runState } from '../../../runState';
 import { STARVING } from '../../../simulation/hunger';
+import { applyVialEffect, trinketLevelOf, vialDelayedHeal, vialDropsNeeded } from '../trinkets';
+import { vialDelaysBurstHealing, vialTotalHealMultiplier } from '../../../simulation/trinkets';
 import { MEAL_TALENTS } from '../../../simulation/heroActions';
 import { armorAbilityDef, armorAbilityKey, armorChargeUse, type ArmorAbilityDef } from '../../../armorAbilities';
 import { CLASSES } from '../../../classes';
@@ -62,10 +71,10 @@ import { artifactRechargeAmount, artifactRechargeEffect, bankArtifactCharge, cha
 import { getAllArtifactIds } from '../../../items/artifacts';
 import { openClassArmorTransfer as openInventoryClassArmorTransfer } from '../../../items/equipment';
 import { DOOR, DOOR_CLOSED, FLOOR, GRASS, HIGH_GRASS, SOLID, TILE, WALL, WATER } from '../../../dungeonConstants';
-import { addQuestScore } from '../../../rankings';
 import { BUFF_DURATION, NEGATIVE_BUFFS, addBuff, buffBlocked, doomDamage, reigniteBuff, type BuffId, type Creature, type GroundItem, type Step } from '../../../combat';
 import { BOSSES, IMMOVABLE_KINDS, LIMITED_DROP_DECAY, MOB_LOOT, MONSTERS, isLargeCreature, isUndeadOrDemonic, type MonsterId } from '../../../monsters';
 import { APPEARANCE_TABLES, SPD_LEVEL_CURVE, effectMarkSheet } from '../shared';
+import { addQuestScore } from '../../../rankings';
 
 // `Terrain.java` SOLID flag members used by `RegularLevel.randomDropCell()`; open doors are
 // handled from the live game terrain because the raw paint map retains their closed state.
@@ -136,6 +145,8 @@ export const inventoryQuickslotMethods = {
 			seedToxicGas: (x: number, y: number, volume: number) => scene.toxicGas.seed(x, y, volume),
 			seedParalyticGas: (x: number, y: number, volume: number) => scene.paralyticGas.seed(x, y, volume),
 			seedSmoke: (x: number, y: number, volume: number) => scene.smokeScreen.seed(x, y, volume),
+			seedStormCloud: (x: number, y: number, volume: number) => scene.stormCloud.seed(x, y, volume),
+			seedCorrosiveGas: (x: number, y: number, volume: number) => { scene.corrosiveGas.seed(x, y, volume); scene.corrosiveGasStrength = Math.max(scene.corrosiveGasStrength, 2 + Math.floor(scene.depth / 5)); },
 			seedConfusionGas: (x: number, y: number, volume: number) => scene.confusionGas.seed(x, y, volume),
 			freezeHeapAt: (x: number, y: number) => scene.freezeHeapAt(x, y),
 			//`BlobImmunity.immunities()`: every harmful blob the port models (the persistent eternal-fire wall is cleared by frost only).
@@ -154,7 +165,12 @@ export const inventoryQuickslotMethods = {
 			get healingPercent() { return scene.healingPercent; },
 			set healingPercent(value: number) { scene.healingPercent = value; },
 			set healingEvasionTurns(turns: number) { scene.healingEvasionTurns = turns; },
+			get aquaHealingLeft() { return scene.aquaHealingLeft; },
+			set aquaHealingLeft(value: number) { scene.aquaHealingLeft = value; },
 			grantHeroShield: (amount: number, cap: number) => { scene.grantHeroShield(amount, cap); },
+			applyVialEffect: () => applyVialEffect(scene),
+			setHeroBarkskin: (level: number, interval: number) => scene.setHeroBarkskin(level, interval),
+			cleanseCharacter: (target: Creature, duration: number) => scene.cleanseCharacter(target, duration),
 			setHeroBarrier: (amount: number) => {
 				// `Barrier.setShield()` (v3.3.8): preserve a higher pool; reset fractional decay
 				// when the resulting shield equals the requested value, including equal top-ups.
@@ -291,14 +307,18 @@ export const inventoryQuickslotMethods = {
 		const context: InventoryPanelContext = {
 			panel: this.inventoryPanel,
 			dock: docked ? this.inventoryDock : null,
-			weaponLevel: this.weaponLevel, weaponStrReq: weaponSTRReq(this.weaponTier, this.weaponLevel),
-			armorStrReq: armorSTRReq(this.armorTier, this.armorLevel), heroStr: this.hero?.str ?? 0,
+			weaponLevel: this.weaponLevel, weaponStrReq: heroWeaponStrReq(this),
+			armorStrReq: heroArmorStrReq(this), heroStr: this.hero?.str ?? 0,
 			open: this.inventoryOpen,
 			items: this.bag.items,
-			//R113: seed rows show their plant `desc` (+ `warden_desc` for a Warden).
-			isWarden: this.subclass() === 'warden',
-			itemDescription: (id) => {
-				if (id !== 'toolkit') return undefined;
+			itemDescription: (id, _identified, instanceId) => {
+				if (id !== 'toolkit') {
+					// `Blandfruit.desc()` (v3.3.8) belongs to the selected imbued stack:
+					// different brews share an item id, so the bag must retain the instance.
+					const item = this.bag.items.find((entry) => entry.id === id && entry.instanceId === instanceId) as
+						(typeof this.bag.items[number] & { sourceClass?: string; potionAttrib?: string }) | undefined;
+					return describeInventoryItem(id, item?.sourceClass, { warden: this.subclass() === 'warden', potionAttrib: item?.potionAttrib });
+				}
 				const toolkit = this.bag.find('toolkit') as (typeof this.bag.items[number] & { warmUpDelay?: number; cursed?: boolean }) | undefined;
 				if (!toolkit || toolkit.cursed || (toolkit.warmUpDelay ?? 0) <= 0) return undefined;
 				return `${t('items.artifacts.alchemiststoolkit.desc')}\n\n${t('items.artifacts.alchemiststoolkit.desc_warming')}\n${toolkitWarmupPercent(toolkit.warmUpDelay!)}%`;
@@ -336,7 +356,7 @@ export const inventoryQuickslotMethods = {
 			if (!category) return undefined;
 			//`appearanceOf` throws on an unmapped kind (see shared.ts); an unknown id keeps
 			//the generic family frame instead of crashing the bag.
-			const appearanceId = category === 'potion' ? potionRegularCounterpart(id) ?? id : id;
+			const appearanceId = appearanceKindOf(id);
 			try { return appearanceItemFrame(category, this.appearances.appearanceOf(category, appearanceId)); } catch { return undefined; }
 		},
 			addToStage: (panel) => this.stage.addChild(panel),
@@ -393,7 +413,7 @@ export const inventoryQuickslotMethods = {
 	 * halves, tag `v3.3.8`): the non-Cleric DivineSense glimpse and the non-Cleric
 	 * Cleanse shed, each gated on its talent exactly like the rings leg. */
 	armEnhancedRingsFromArtifact(this: DungeonScene): void {
-		if (this.heroClass === 'rogue' && this.talentRank('enhanced_rings') > 0) {
+		if (this.talentRank('enhanced_rings') > 0) {
 			this.enhancedRingsTurns = enhancedRingsDuration(this.talentRank('enhanced_rings'));
 		}
 		if (this.heroClass !== 'cleric' && this.talentRank('divine_sense') > 0) {
@@ -464,11 +484,14 @@ export const inventoryQuickslotMethods = {
 	itemActionContext(this: DungeonScene): ItemActionContext {
 		return {
 			awaitingInput: this.awaitingInput,
+			findHeld: (id, instanceId) => this.bag.find(id, instanceId) as { potionAttrib?: string } | undefined,
+			throwBagItem: this.throwBagItem.bind(this),
+			chooseFruitAction: this.chooseFruitAction.bind(this),
 			setRequestedItem: (id, instanceId) => { this.requestedItemId = id; this.requestedItemInstanceId = instanceId; },
 			onAction: this.onAction.bind(this),
 			equipRing: this.equipRing.bind(this), equipArmor: this.equipArmor.bind(this), transferClassArmor: this.transferClassArmor.bind(this),
 			equipWeapon: this.equipWeapon.bind(this), equipWand: this.equipWand.bind(this), chooseWandUse: this.chooseWandUse.bind(this),
-			mineWithPickaxe: this.mineWithPickaxe.bind(this), plantSeed: this.plantSeed.bind(this),
+			mineWithPickaxe: this.mineWithPickaxe.bind(this), useShardOfOblivion: this.useShardOfOblivion.bind(this), plantSeed: this.plantSeed.bind(this),
 			useHourglass: this.useHourglass.bind(this), useCloak: this.useCloak.bind(this),
 			useChalice: this.useChalice.bind(this),
 			useToolkit: this.useToolkit.bind(this), useRose: this.useRose.bind(this),
@@ -481,11 +504,12 @@ export const inventoryQuickslotMethods = {
 			useStoneById: this.useStoneById.bind(this), useCandle: this.useCandle.bind(this),
 			useTorch: this.useTorch.bind(this),
 			useAnkh: this.useAnkh.bind(this),
-			useBomb: this.useBomb.bind(this), useHoneypot: this.useHoneypot.bind(this), useBrew: this.useBrew.bind(this), useStylus: this.useStylus.bind(this),
+			useBomb: this.useBomb.bind(this), useHoneypot: this.useHoneypot.bind(this), useBrew: this.useBrew.bind(this), useUnstableBrew: this.useUnstableBrew.bind(this), useStylus: this.useStylus.bind(this),
 			useBrokenSeal: this.useBrokenSeal.bind(this),
 			useAlchemize: this.useAlchemize.bind(this), useKingsCrown: this.useKingsCrown.bind(this), useTengusMask: this.useTengusMask.bind(this),
 			useFeatherFall: this.useFeatherFall.bind(this),
 			useWildEnergy: this.useWildEnergy.bind(this), useTelekineticGrab: this.useTelekineticGrab.bind(this),
+			useUnstableSpell: this.useUnstableSpell.bind(this),
 			usePhaseShift: this.usePhaseShift.bind(this),
 			useSummonElemental: this.useSummonElemental.bind(this),
 			useReclaimTrap: this.useReclaimTrap.bind(this),
@@ -1532,6 +1556,9 @@ export const inventoryQuickslotMethods = {
 				this.say(t('port.log.unknownmob', { kind: missile.sourceClass }), 'negative');
 				return;
 			}
+			//`Item.collect()` preserves discovered classes beyond their inventory lifetime;
+			//record an identified wielded stack before moving it out of the bag as well.
+			markMindFormItemDiscovered(this, missile);
 			//Java wields the *stack* (`Hero.belongings.weapon = stack`), so the whole thing moves into
 			//the pile - carrying its own level, set and wear - and whatever was already in the pile
 			//goes back to the bag. The port used to move a single unit into a shared counter and only
@@ -1548,26 +1575,34 @@ export const inventoryQuickslotMethods = {
 		},
 
 		useBrokenSeal(this: DungeonScene, instanceId?: string): void {
-			if (!this.bag.find('brokenSeal', instanceId)) return;
-			if (getCurse(this.armorGlyph ?? '')) {
+			const seal = this.bag.find('brokenSeal', instanceId);
+			if (!seal) return;
+			const sealGlyph = (seal as typeof seal & { affix?: string }).affix ?? null;
+			// `BrokenSeal.affixToArmor()` permits cursed armor only when the seal carries
+			// a curse glyph, then `Armor.affixSeal()` inscribes that glyph (`BrokenSeal.java`
+			// 126-135 / `Armor.java` 306-315, tag `v3.3.8`).
+			if (this.armorCursed && !getCurse(sealGlyph ?? '')) {
 				this.say(t('items.brokenseal.cursed_armor'), 'negative');
 				return;
 			}
 			this.bag.remove('brokenSeal', 1, instanceId);
 			this.armorSealed = true;
+			if (sealGlyph) this.setArmorGlyph(sealGlyph);
 			this.say(t('items.brokenseal.affix'), 'positive');
 			this.refreshInventoryPanel();
 		},
 
 		cancelBoomerangReturn(this: DungeonScene): void {
-			if (!this.boomerangReturn) return;
-			this.boomerangReturn = null;
-			this.ammo++;
+			if (!this.boomerangReturns.length) return;
+			this.ammo += this.boomerangReturns.filter((pending) => pending.spawnedForEffect !== true).length;
+			this.boomerangReturns = [];
 		},
 
-		offerSealTransfer(this: DungeonScene, outgoingWasSealed: boolean, incomingCursed: boolean): void {
+		offerSealTransfer(this: DungeonScene, outgoingWasSealed: boolean, incomingCursed: boolean, sealGlyph: string | null): void {
 			if (this.heroClass !== 'warrior' || !outgoingWasSealed) return;
-			if (incomingCursed) {
+			// `Armor.doEquip()` allows a cursed target only when the outgoing seal's own
+			// glyph is a curse (`Armor.java:261-264`, tag `v3.3.8`).
+			if (incomingCursed && !getCurse(sealGlyph ?? '')) {
 				this.say(t('items.brokenseal.cursed_armor'), 'negative');
 				return;
 			}
@@ -1817,11 +1852,29 @@ export const inventoryQuickslotMethods = {
 						sourceInventoryItem(plan.kind, generated.cls, (kind) => this.newItemInstanceId(kind)));
 					return this.groundItemAt(cell.x, cell.y);
 				}
+				case 'exoticPotion':
+				case 'exoticScroll': {
+					//`ExoticPotion.regToExo` / `ExoticScroll.regToExo` of a defaults-rolled regular potion or scroll
+					const potion = plan.kind === 'exoticPotion';
+					const generated = randomUsingDefaults(potion ? Cat.POTION : Cat.SCROLL);
+					const cell = this.freeCellNear(at);
+					if (!cell) return null;
+					const item = sourceInventoryItem(potion ? 'potion' : 'scroll', generated.cls, (kind) => this.newItemInstanceId(kind));
+					const exotic = item ? (potion ? potionExoticResult(item.id) : scrollExoticResult(item.id)) : undefined;
+					if (item && exotic) {
+						item.id = exotic;
+						item.sourceClass = Object.entries(EXOTIC_CLASS_TO_ID).find(([, id]) => id === exotic)?.[0] ?? item.sourceClass;
+					}
+					this.spawnGroundItem(potion ? 'potion' : 'scroll', cell.x, cell.y, item);
+					return this.groundItemAt(cell.x, cell.y);
+				}
 				case 'bomb':
 				case 'doubleBomb':
 				case 'honeypot':
 				case 'stoneOfEnchantment':
 				case 'potionExperience':
+				case 'potionDivineInspiration':
+				case 'scrollMetamorphosis':
 				case 'scrollTransmutation': {
 					const cell = this.freeCellNear(at);
 					if (!cell) return null;
@@ -1881,60 +1934,64 @@ export const inventoryQuickslotMethods = {
 				&& !this.groundItemAt(cell.x, cell.y) && !this.creatureAt(cell.x, cell.y)) ?? null;
 		},
 
-		scheduleBoomerangReturn(this: DungeonScene, fromX: number, fromY: number, carried: boolean): void {
-			if (!carried) return;
+		scheduleBoomerangReturn(this: DungeonScene, fromX: number, fromY: number, carried: boolean,
+			options?: { spawnedForEffect?: boolean; level?: number }): void {
+			const spawnedForEffect = options?.spawnedForEffect === true;
+			if (!carried && !spawnedForEffect) return;
 			//The thrown unit leaves the pile the way Java's item leaves the inventory, and comes back
 			//when it lands - so a boomerang in flight cannot be thrown a second time.
-			this.ammo = Math.max(0, this.ammo - 1);
-			this.boomerangReturn = {
+			if (carried) this.ammo = Math.max(0, this.ammo - 1);
+			this.boomerangReturns.push({
 				fromX, fromY,
 				returnX: this.hero.x, returnY: this.hero.y,
 				left: BOOMERANG_RETURN_TURNS,
-				level: this.missileLevel,
-				setId: this.ammoSetId,
+				level: options?.level ?? this.missileLevel,
+				setId: spawnedForEffect ? '' : this.ammoSetId,
 				depth: this.depth,
-			};
+				branch: this.miningBranchActive,
+				spawnedForEffect,
+			});
 		},
 
 		tickBoomerangReturn(this: DungeonScene): void {
-			const pending = this.boomerangReturn;
-			if (!pending || this.depth !== pending.depth) return;
-			pending.left--;
-			if (pending.left > 0) return;
-			this.boomerangReturn = null;
-			const occupant = this.creatureAt(pending.returnX, pending.returnY);
-			if (occupant && occupant.isHero) {
-				//`boomerang.doPickUp(hero)`: straight back into the pile, at the durability it left
-				//with (the port's `ammoDurability` already carries the hit's wear).
-				this.ammo++;
-				this.ammoDurability = Math.max(this.ammoDurability, 0);
-				this.say(t('port.log.boomerangreturn'), 'positive');
-				return;
-			}
-			if (occupant) {
-				//`else if (returnTarget != null)`: the hero throws the returning boomerang at whoever
-				//took his place. `circlingBack` is true here, so `HeavyBoomerang.adjacentAccFactor`
-				//returns its flat 1.5 rather than the melee-range penalty.
-				const missile = MWL_MISSILE_BY_CLASS.get(this.ammoSourceClass);
-				const sharpshooting = ringSharpshootingBonus(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
-				const damage = missile ? missileDamageRange(missile.sourceClass, pending.level, sharpshooting) : [1, 1] as [number, number];
-				const hit = this.attack({ ...this.hero, kind: undefined, attackMode: 'throw', damage }, occupant, BOOMERANG_RETURN_ACC_FACTOR);
-				if (hit) {
-					const cost = this.missileDurabilityCost();
-					this.ammoDurability -= cost;
-					if (this.ammoDurability <= 0) {
-						this.say(t('port.log.missilebroken'), 'negative');
-						return;
-					}
-				}
-			}
-			//The empty-cell branch, and the survivor of the branch above: `Dungeon.level.drop(boomerang,
-			//returnPos)`. The heap keeps the pile's own level and set, so the dust rule still applies.
-			this.spawnGroundItem('stone', pending.returnX, pending.returnY);
-			const heap = this.groundItemAt(pending.returnX, pending.returnY);
-			if (heap) {
-				heap.missileLevel = pending.level;
-				heap.missileSet = pending.setId;
+			for (const pending of [...this.boomerangReturns]) {
+				if (pending.inFlight || this.depth !== pending.depth || this.miningBranchActive !== (pending.branch ?? false)) continue;
+				pending.left--;
+				if (pending.left > 0) continue;
+				pending.inFlight = true;
+				//`Buff.append()` permits multiple `CircleBack` instances, and each `act()` animates
+				//from its throw cell to its own original hero cell (`HeavyBoomerang.java`, v3.3.8).
+				this.spawnBoltFromCell({ x: pending.fromX, y: pending.fromY }, { x: pending.returnX, y: pending.returnY },
+					0xffffff, () => {
+						const index = this.boomerangReturns.indexOf(pending);
+						if (index < 0 || this.depth !== pending.depth || this.miningBranchActive !== (pending.branch ?? false)) return;
+						this.boomerangReturns.splice(index, 1);
+						const occupant = this.creatureAt(pending.returnX, pending.returnY);
+						if (occupant?.isHero) {
+							if (!pending.spawnedForEffect) {
+								//`boomerang.doPickUp(hero)`: straight back into the pile at the durability it left with.
+								this.ammo++;
+								this.ammoDurability = Math.max(this.ammoDurability, 0);
+								this.say(t('port.log.boomerangreturn'), 'positive');
+							}
+							return;
+						}
+						if (occupant) {
+							//`Hero.shoot()` uses HeavyBoomerang's flat 1.5 adjacent accuracy factor on the return.
+							const sharpshooting = ringSharpshootingBonus(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
+							const damage = missileDamageRange('HeavyBoomerang', pending.level, sharpshooting);
+							this.attack({ ...this.hero, kind: undefined, attackMode: 'throw', damage }, occupant, BOOMERANG_RETURN_ACC_FACTOR);
+						}
+						if (pending.spawnedForEffect) return;
+						//Ordinary boomerangs drop at the return cell when the hero moved or another
+						//creature replaced him. Effect-spawned boomerangs never enter item drops.
+						this.spawnGroundItem('stone', pending.returnX, pending.returnY);
+						const heap = this.groundItemAt(pending.returnX, pending.returnY);
+						if (heap) {
+							heap.missileLevel = pending.level;
+							heap.missileSet = pending.setId;
+						}
+					}, missileFlightArt('HeavyBoomerang'), 20 * TILE);
 			}
 		},
 
@@ -2038,6 +2095,18 @@ export const inventoryQuickslotMethods = {
 	//plus every visible ally). FOV-gated like `playDeathBursts`: Java's
 	//`Flare.show` always emits but the camera culls off-screen sprites, and
 	//every resolve target is visible by construction anyway.
+	/** `PotionOfCleansing.cleanse(ch, duration)` (`PotionOfCleansing.java:62-86`, tag `v3.3.8`): every negative buff off
+	 * (`AllyBuff`/`LostInventory` have no port model), a `Hunger` goes through `satisfy(STARVING)`, then `Cleanse`
+	 * (immunity to new negative buffs) is prolonged for `duration` and the pink flare shows. */
+	cleanseCharacter(this: DungeonScene, target: Creature, duration: number): void {
+		for (const id of Object.keys(target.buffs)) {
+			if (NEGATIVE_BUFFS.has(id as BuffId)) delete target.buffs[id as BuffId];
+		}
+		if (target.isHero) this.hunger = Math.max(0, this.hunger - STARVING);
+		reigniteBuff(target, 'cleanseImmunity', duration);
+		this.burstCleanseFlare({ x: target.x, y: target.y });
+	},
+
 	burstCleanseFlare(this: DungeonScene, cell: Step): void {
 		if (!this.fov.isVisible(cell.x, cell.y)) return;
 		spawnFlare(this.effectLayer, this.effectBursts, cell.x, cell.y, 0xff4cd2);
@@ -2109,6 +2178,7 @@ export const inventoryQuickslotMethods = {
 				{ id: 'toxicGas', tint: 0x50FF60, volumeAt: (x, y) => this.toxicGas.volumeAt(x, y) },
 				{ id: 'corrosiveGas', tint: 0xAAAAAA, volumeAt: (x, y) => this.corrosiveGas.volumeAt(x, y) },
 				{ id: 'blizzard', tint: 0xFFFFFF, volumeAt: (x, y) => this.blizzard.volumeAt(x, y) },
+				{ id: 'stormCloud', tint: 0x8EE3FF, volumeAt: (x, y) => this.stormCloud.volumeAt(x, y) },
 				{ id: 'web', tint: 0xCCCCCC, volumeAt: (x, y) => this.web.volumeAt(x, y) },
 				{ id: 'smokeScreen', tint: 0x000000, volumeAt: (x, y) => this.smokeScreen.volumeAt(x, y) },
 			], dt); syncPourAuras(this);
@@ -2250,7 +2320,16 @@ export const inventoryQuickslotMethods = {
 			wandCharges: this.wandCharges,
 			showHeal: this.showHeal.bind(this),
 			say: this.say.bind(this),
+			startMasteryPick: (instanceId: string | undefined) => startMasteryPick(scene, instanceId),
+			startDragonsBreath: (instanceId: string | undefined) => startDragonsBreath(scene, instanceId),
+			startDivineInspiration: (instanceId: string | undefined) => startDivineInspiration(scene, instanceId),
 			applyPotionEffect: this.applyPotionEffect.bind(this),
+			vial: {
+				carried: () => vialDelaysBurstHealing(trinketLevelOf(scene, 'trinketVialOfBlood')),
+				dropsNeeded: (n: number) => vialDropsNeeded(scene, n),
+				delayedHeal: (amount: number) => vialDelayedHeal(scene, amount),
+				totalHealMultiplier: () => vialTotalHealMultiplier(trinketLevelOf(scene, 'trinketVialOfBlood')),
+			},
 		};
 	},
 
@@ -2327,7 +2406,7 @@ export const inventoryQuickslotMethods = {
 			openItemPicker: (title, items, onPick) => this.openItemPicker(title, items, (entry) => onPick({ ...entry, quantity: 1 })),
 			rollAffix: (kind) => rollGeneratedAffix(kind === 'weapon' ? ENCHANT_TABLE : GLYPH_TABLE, false, true),
 			curseOf: (affix) => getCurse(affix)?.id,
-			identify: (item) => Actors.identify(item),
+			identify: (item) => { Actors.identify(item); markMindFormItemDiscovered(scene, item); },
 			potionKinds: Object.keys(POTION_CLASS_BY_PORT_ID).filter((id) => id !== 'potion'),
 			scrollKinds: APPEARANCE_TABLES.scroll.kinds.filter((id) => id !== 'scroll'),
 			ringKinds: Object.keys(RING_DEFS).map((id) => `ring_${id}`),
@@ -2348,7 +2427,7 @@ export const inventoryQuickslotMethods = {
 		// no `identify()` call at all.
 		if (!opts?.anonymous) markPotionKindsKnown(this, [id]);
 		const effect = this.potionEffects[id];
-		if (effect) effect();
+		if (effect) effect(opts);
 		else {
 			// Keep unknown generated ids observable instead of silently consuming them as a
 			// different item. The known fallback remains PotionOfPurity's effect.

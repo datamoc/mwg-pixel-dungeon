@@ -30,7 +30,6 @@ deviation still needs both a code comment at the point of deviation and a row he
 | `coverage/rows-items-equipment-and-artifacts.md` | 47 | 143 KB | Weapons, armor, rings, wands, artifacts and item generation |
 | `coverage/rows-misc.md` | 24 | 15 KB | Rows that fit no other area |
 | `coverage/rows-monsters-bosses-and-combat.md` | 68 | 101 KB | Monsters, bosses, buffs and combat resolution |
-| `coverage/rows-monsters-and-quests.md` | 1 | 1 KB | Monsters and quest rosters |
 | `coverage/rows-terrain-traps-and-levelgen.md` | 31 | 38 KB | Terrain, blobs, traps and level generation |
 | `coverage/rows-ui-visual-audio-and-i18n.md` | 19 | 19 KB | UI, visuals, audio, badges and text |
 

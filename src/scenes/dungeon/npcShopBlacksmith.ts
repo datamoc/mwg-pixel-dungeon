@@ -1,3 +1,4 @@
+import { maybeSpawnEbonyMimic } from './ebonyMimic';
 import type { DungeonScene } from '../dungeonScene';
 import { Actors, Random, Roguelike, TintedSprite } from 'mwg';
 import { PRISON_START_CELLS } from '../../spdLevelGen/bossLevels';
@@ -12,6 +13,7 @@ import { placeGroundItems as placeGeneratedGroundItems } from '../../items/groun
 import { planShopStock } from '../../items/shopStock';
 import { BAG_IDS, bagFitsPickup, chooseShopBag, ownsBag, type BagPickupStack } from '../../items/bags';
 import { pickupGroundItem as pickupGroundItemWorkflow } from '../../items/groundPickup';
+import { setSupportNagged, supportNagged } from '../../settings';
 import { BLACKSMITH_FREE_PICKAXE_FAVOR, blacksmithHardenCost as itemBlacksmithHardenCost, blacksmithReforgeCost as itemBlacksmithReforgeCost, blacksmithReforgePairValid, blacksmithTurnInFavor, blacksmithUpgradeCost as itemBlacksmithUpgradeCost, reforgeDiscardedMissileSet, rollCarriedAffixLoss, selectBlacksmithHardenItems, selectBlacksmithReforgeItems, selectBlacksmithUpgradeItems, type BlacksmithItem } from '../../items/blacksmith';
 import { simulationRandom } from '../../adapters/mwgRandom';
 import { simulationRoguelike } from '../../adapters/mwgRoguelike';
@@ -19,10 +21,14 @@ import { planMonsterPopulation } from '../../simulation/levelPopulation';
 import { interactWithGhost as runGhostInteraction, interactWithImp as runImpInteraction, interactWithRatKing as runRatKingInteraction, interactWithWandmaker as runWandmakerInteraction } from '../../actors/npcs';
 import { groundKindForItem, sourceInventoryItem } from '../../items/itemKinds';
 import { startTransmutationPick } from '../../items/transmutation';
+import { startEnchantmentScroll } from './enchantScroll';
+import { startMetamorphosis } from './metamorphScroll';
+import { shardMarkReady } from './passiveId';
+import { startSirensSong } from './sirensSong';
 import { RING_DEFS } from '../../items/ringModifiers';
 import { CLASS_KEYS, RING_KEYS, WAND_KEYS, capitalize, has, language, t } from '../../i18n/index';
 import { SPD_STATUS_COLOR } from '../../ui/spdTheme';
-import { SpdRandom, genericLargeFeeling, torchRoller } from '../../spdRng';
+import { SpdRandom, genericLargeFeeling } from '../../spdRng';
 import { vaultCenterVisualFrames, vaultCenterWallFrames, vaultFloorFrames } from '../../spdLevelGen/vaultVisuals';
 import { buybackPrice, getShopPrice } from '../../items/shopPricing';
 import { Terrain } from '../../spdLevelGen/paintLevel';
@@ -35,24 +41,28 @@ import { showChoiceWindow, showConfirmWindow, showInfoWindow } from '../../ui/po
 import { confirmBlacksmithCashout, confirmBlacksmithSmith, openBlacksmithWindow, type BlacksmithWindowContext } from '../../ui/blacksmithWindow';
 import { getCurse } from '../../items/itemCurses';
 import { addQuestScore, noteGoldCollected, recordRun, setQuestScore } from '../../rankings';
-import { Cat, blacksmithSmithRewards, generatorRandom, ghostQuestReward, randomArmor, randomArtifact, randomCategory, randomUsingDefaults, randomWeapon, setGeneratorDepth, type GenItem } from '../../items/generator';
+import { Cat, blacksmithSmithRewards, generatorRandom, ghostQuestReward, impQuestReward, randomArmor, randomArtifact, randomCategory, randomUsingDefaults, randomUsingDefaultsAnyCategory, randomWeapon, setGeneratorDepth, type GenItem } from '../../items/generator';
+import { markHeapHidden, syncGeneratorTrinkets, trinketLevelOf } from './trinkets';
+import { MWL_ITEM_SPECIFIC_FRAMES } from '../../mwlContent';
+import { mimicChanceMultiplier, ratSkullMultiplier, spyglassExtraLootChance } from '../../simulation/trinkets';
 import { mwlItemEffectValue } from '../../mwlContent';
 import { hallsDemonSpawnerFloorFrames } from '../regions/halls';
 import { resolveWandPickup, wandInitialCharges, wandTypeFromSource } from '../../items/wands';
 import { newSpareWandCharges } from '../../simulation/spareWands';
 import { itemDescription, itemStatsLine } from '../../items/displayName';
 import { normalizePlantKindName } from '../../items/plantText';
-import { spawnTrapSpecks } from '../../ui/effectBursts';
 import { wandmakerQuestType, wandmakerQuestWands } from '../../spdLevelGen/wandmaker';
 import { CHEST_FRAME, CRYSTAL_CHEST_FRAME, DOOR, DOOR_CLOSED, EMBERS, FLOOR, GRASS, HIGH_GRASS, ITEM_FRAME, LOCKED_CHEST_FRAME, TERRAIN_FRAME, TILE, WALL, WATER, type GroundItemKind } from '../../dungeonConstants';
 import { REGION_GRASS, REGION_WATER, patchGenerate, type Region } from '../../genericDungeon';
 import { type Creature, type GroundItem, type Step } from '../../combat';
 import { nextEntityId } from '../../simulation/entityId';
 import { markRingTypesKnown } from '../../simulation/ringKnow';
+import { markMindFormItemDiscovered } from '../../items/mindFormDiscovery';
 import { markPotionKindsKnown, potionKindKnown, potionKindsKnownFor } from '../../items/potionKnow';
 import { BOSSES, FLYING_KINDS, mobRosterForDepth, type MonsterId } from '../../monsters';
 import { BLACKSMITH_SMITH_COST, STARTING_WEAPON_CLASS, WANDMAKER_CLASS_INTROS, scenarioQuest } from './shared';
 import { mineTileFrames } from '../dungeonTileFrames';
+import { appearanceKindOf } from '../../items/alchemy';
 
 /** DungeonScene methods, moved verbatim from `dungeonScene.ts` (group `npcShopBlacksmith`). Each takes the scene as `this`;
  * `dungeonScene.ts` merges them back onto the class prototype. */
@@ -83,27 +93,26 @@ export const npcShopBlacksmithMethods = {
 		this.bag.remove('seed', 1, seed.instanceId);
 		this.manualPlants.set(cell, kind);
 		this.placePortedFeature(cell, kind);
-		//`Plant.Seed.onThrow()` (`plants/Plant.java:160-169`, tag `v3.3.8`): a Warden's planting
-		//furrows every adjacent EMPTY/EMPTY_DECO/EMBERS/GRASS cell into FURROWED_GRASS (with an
-		//updateMap plus a 4-mote `LeafParticle.LEVEL_SPECIFIC` burst each). EMPTY_DECO collapses
-		//into this port's FLOOR (the coarse-grid convention), and FURROWED_GRASS itself is the
-		//`furrowedGrass` overlay over HIGH_GRASS (raw id 30, see the tile-sheet row), so each
-		//match becomes HIGH_GRASS plus the overlay bit, restitched like every other terrain
-		//change; the burst reuses the shared `leaf` speck (whose count is the seam's own 6, a
-		//stated presentation-count simplification, FOV-gated like the wither bursts).
-		//HIGH_GRASS neighbours are skipped exactly like Java skips them (its list has no
-		//HIGH_GRASS or FURROWED_GRASS entry), and only the terrain gates - never occupants.
+		//`Seed.onThrow()`'s Warden furrow (`Plant.java` 160-169, tag `v3.3.8`): planting as a
+		//Warden furrows every adjacent EMPTY/EMPTY_DECO/EMBERS/GRASS cell into FURROWED_GRASS
+		//with a map restitch. Reads the paint ids like Java while the paint is live (the
+		//`growRegrowthBomb` precedent), else the coarse set; writes the live furrow shape
+		//(`level.set(HIGH_GRASS)` + `furrowedGrass`, the rejuvenating-steps representation -
+		//the paint derives 30 from the overlay). Java's per-cell `LeafParticle.LEVEL_SPECIFIC`
+		//x4 burst has no seam here - stated, the Blooming precedent.
 		if (this.subclass() === 'warden') {
 			for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
 				const nx = x + dx, ny = y + dy;
 				if (!this.level.inside(nx, ny)) continue;
-				const terrain = this.level.get(nx, ny);
-				if (terrain !== FLOOR && terrain !== EMBERS && terrain !== GRASS) continue;
+				const ncell = this.level.index(nx, ny);
+				const raw = this.portedPaint?.map[ncell];
+				const furrowable = raw !== undefined
+					? raw === Terrain.EMPTY || raw === Terrain.EMPTY_DECO || raw === Terrain.EMBERS || raw === Terrain.GRASS
+					: this.level.terrain[ncell] === FLOOR || this.level.terrain[ncell] === GRASS || this.level.terrain[ncell] === EMBERS;
+				if (!furrowable) continue;
 				this.level.set(nx, ny, HIGH_GRASS);
-				this.furrowedGrass.add(this.level.index(nx, ny));
+				this.furrowedGrass.add(ncell);
 				this.restitchTilesAround(nx, ny);
-				this.featuresMap?.setLayerData('features', this.featureFrames());
-				if (this.fov.isVisible(nx, ny)) spawnTrapSpecks(this.effectLayer, this.effectBursts, nx, ny, 'leaf');
 			}
 		}
 		this.say(t('port.log.plantseed', { kind }), 'positive');
@@ -112,8 +121,8 @@ export const npcShopBlacksmithMethods = {
 	},
 
 	seedPlantKind(this: DungeonScene, sourceClass?: string): string | null {
-		//Single-sourced on `plantText`'s normalization (same twelve kinds, same strip rule)
-		//so the planter and the description seam cannot drift apart.
+		//The kind set lives in `items/plantText.ts` now (shared with the seed examine
+		//body), so the two normalizations cannot drift apart.
 		return normalizePlantKindName(sourceClass) ?? null;
 	},
 
@@ -178,6 +187,12 @@ export const npcShopBlacksmithMethods = {
 				this.wallsMap.setTile('grass', cx, cy, foregroundGrassFrame(this.visualTerrainAt(cx, cy), this.tileVariance[this.level.index(cx, cy)]));
 			}
 		}
+		//Burnt sewer barrels create WATER mid-game (`SewerLevel.destroy()`); without a
+		//water-layer refresh the new cell and its neighbours' shorelines render black.
+		//The scrolling `WaterSurface` still misses the cell - the framework's
+		//`LiquidLayer` builds its quads once at construction, so fresh water gets tile
+		//art but no scroll (coverage row 10 carries the residual).
+		this.map.setLayerData('water', this.waterFrames());
 	},
 
 	/** both layers at once, for the floor-wide reveals where restitching each cell's ring would redo most of the map anyway */
@@ -355,6 +370,7 @@ export const npcShopBlacksmithMethods = {
 			(this.portedFloorActive && this.portedPaint?.feeling === 4) || genericLargeFeeling(this.runSeedLong, this.depth),
 			simulationRandom,
 			simulationRoguelike,
+			ratSkullMultiplier(trinketLevelOf(this, 'trinketRatSkull')),
 		);
 		const roster = population.roster;
 		let rotationIndex = 0;
@@ -508,21 +524,25 @@ export const npcShopBlacksmithMethods = {
 
 	/**
 	 * Imp.Quest spawn: `depth > 16 && Random.Int(20-depth)==0` (depths 17-19), once per
-	 * run. The monks-vs-golems variant is fixed by depth parity here (odd: monks, even:
-	 * golems need one fewer token) instead of Java's coin flip - the 5/4 token counts
-	 * are real either way.
+	 * run. Java fixes depth 17 to Monks and 19 to Golems, then flips a coin on depth 18
+	 * (`Imp.java`, tag `v3.3.8`). The port makes that same choice after its spawn gate;
+	 * Java inserts the room before this roll and generates the ring reward here, whereas
+	 * this fallback chooses a cell now and creates the reward on turn-in, so full RNG order
+	 * remains simplified.
 	 */
 	maybeSpawnImp(this: DungeonScene): void {
 		const quest = scenarioQuest('imp');
 		if (this.impSpawned || !quest.depths.includes(this.depth)) return;
 		if (Random.int(0, quest.rollBase - this.depth) !== 0) return;
+		const wantsMonkTokens = this.depth === 17 || (this.depth === 18 && Random.int(2) === 0);
 
 		const at = this.standableCellIn(this.randomSpawnRoom());
 		if (!at) return;
 		this.spawnMonster('imp', at);
 		this.impSpawned = true;
-		//odd depths want 5 monk tokens, even depths 4 golem tokens (Java flips a coin)
-		this.impNeed = this.depth % 2 === 1 ? 5 : 4;
+		this.impNeed = wantsMonkTokens ? 5 : 4;
+		//Java generates and stores `Quest.reward` during `Imp.Quest.spawn()` (Imp.java, tag `v3.3.8`).
+		this.impReward = impQuestReward();
 	},
 
 	/**
@@ -729,9 +749,9 @@ export const npcShopBlacksmithMethods = {
 		this.bag.remove('pickaxe', 1);
 		//Old Java's alternative branch (`Blacksmith.java` before the v3.0 quest rework)
 		//grants no favor at all and scores a flat `questScores[2] = 3000`, which clears
-		//that version's `score >= 2500` free-buy-back gate. This port tracks no
-		//quest-score table, so the observable half is recorded directly: no favor,
-		//and the buy-back is free.
+		//that version's `score >= 2500` free-buy-back gate. This pre-v3 compatibility
+		//branch is outside the v3.3.8 quest flow; preserve its free buy-back effect
+		//directly without adding its obsolete flat score to the current score table.
 		this.blacksmithPickaxeFree = true;
 		this.finishBlacksmithQuest();
 		this.say(t('windows.wndblacksmith.prompt', { '0': this.blacksmithFavor }), 'positive');
@@ -760,8 +780,7 @@ export const npcShopBlacksmithMethods = {
 	completeBlacksmithQuest(this: DungeonScene): void {
 		const gold = this.carriedDarkGold();
 		this.blacksmithFavor = blacksmithTurnInFavor(gold, this.blacksmithBossBeaten);
-		//`Blacksmith.Quest.complete()` (tag `v3.3.8`): `Statistics.questScores[2] += favor`
-		//(the favor above: capped DarkGold plus the boss bonus, computed beside it).
+		// `Blacksmith.Quest.complete()` (tag `v3.3.8`) adds favor to `Statistics.questScores[2]`.
 		addQuestScore(this, 2, this.blacksmithFavor);
 		if (gold > 0) this.bag.remove('darkGold', gold);
 		if (this.bag.find('pickaxe')) this.bag.remove('pickaxe', 1);
@@ -1090,7 +1109,13 @@ export const npcShopBlacksmithMethods = {
 		//Java floor-drops a consumed armor's seal as a `BrokenSeal` item
 		// (`WndBlacksmith.java` 277-285); the seal no longer vanishes with its armor.
 		if ((discard as typeof discard & { seal?: boolean }).seal) {
-			this.spawnGroundItem('brokenSeal', this.hero.x, this.hero.y, { id: 'brokenSeal', quantity: 1, identified: true });
+			// `Armor.inscribe()` mirrors its glyph onto an attached BrokenSeal, so a reforge
+			// drops that seal with the glyph it carried (`WndBlacksmith.java:278-280`,
+			// `Armor.java:728-733`, tag `v3.3.8`). The port stores the armor glyph as `affix`.
+			this.spawnGroundItem('brokenSeal', this.hero.x, this.hero.y, {
+				id: 'brokenSeal', quantity: 1, identified: true,
+				...((discard as typeof discard & { affix?: string }).affix ? { affix: (discard as typeof discard & { affix?: string }).affix } : {}),
+			});
 		}
 		this.blacksmithFavor -= this.blacksmithReforgeCost();
 		this.blacksmithReforges++;
@@ -1100,9 +1125,12 @@ export const npcShopBlacksmithMethods = {
 		this.say(t('port.npc.blacksmith.reforged', { item: this.itemDisplayName(keep.id, true, keep.instanceId), level: keep.level ?? 0 }), 'positive');
 	},
 
-	/** Imp quest: dwarf tokens in, a +2 cursed ring out (Java's exact reward shape) */
+	/** Imp quest: dwarf tokens in, Java-generated +2 cursed ring out. */
 	interactWithImp(this: DungeonScene, npc: Creature): void {
 		const status = this.quests.status('imp');
+		// Java opens `WndImp` and waits for its reward-button press (`Imp.act()`/`WndImp.java`,
+		// tag `v3.3.8`). This port resolves an eligible turn-in directly on the NPC interaction,
+		// so it omits that confirmation window; the token/reward/flee/complete order stays explicit.
 		runImpInteraction({
 			status: status === 'available' || status === 'complete' ? status : 'active',
 			need: this.impNeed,
@@ -1111,15 +1139,22 @@ export const npcShopBlacksmithMethods = {
 			advanceQuest: () => this.quests.advanceStage('imp', this.gameState),
 			removeTokens: (quantity) => this.bag.remove('dwarfToken', quantity),
 			reward: () => {
-				const ringId = 'ring_' + Random.element(Object.keys(RING_DEFS))!;
-				this.bag.add({ id: ringId, quantity: 1, instanceId: this.newItemInstanceId('ring'), identified: true, level: 2 });
-				const item = this.bag.find(ringId)!;
+				//`Imp.Quest.spawn()` generates and stores an uncursed ring, upgrades it +2,
+				//then curses it (Imp.java, tag `v3.3.8`). Older saves have no stored reward;
+				//the fallback generates one at turn-in, while current saves preserve spawn-time state.
+				const item = this.generatedInventoryItem(this.impReward ?? impQuestReward());
+				item.identified = true;
+				this.bag.add(item);
 				Actors.applyAffix(item, { id: 'cursed', trigger: 'passive', weight: 1, curse: true });
-				this.gameState.setSwitch('impDone', true);
-				//`Imp.Quest.complete()` (tag `v3.3.8`): `questScores[3] = 4000` - assigned,
-				//not added, so a replayed turn-in cannot stack it.
+				this.impReward = null;
+				return t('port.npc.imp.reward', { ring: t(RING_KEYS[item.id.slice(5)]) });
+			},
+			completeQuest: () => {
+				// Java completes only after `Imp.flee()` in `WndImp.takeReward()` and assigns
+				// questScores[3] = 4000 (`Imp.Quest.complete()`, tag `v3.3.8`).
 				setQuestScore(this, 3, 4000);
-				return t('port.npc.imp.reward', { ring: t(RING_KEYS[ringId.slice(5)]) });
+				this.gameState.setSwitch('impDone', true);
+				this.quests.advanceStage('imp', this.gameState);
 			},
 			flee: () => {
 				this.scheduler.remove(npc);
@@ -1147,13 +1182,7 @@ export const npcShopBlacksmithMethods = {
 			type,
 			hasItem: (id) => this.bag.find(id) !== undefined,
 			rotberrySeedInstance: () => this.bag.items.find((item) => item.id === 'seed' && (item as typeof item & { sourceClass?: string }).sourceClass === 'Rotberry')?.instanceId,
-			startQuest: () => {
-				this.quests.start('wandmaker');
-				//R107 (`PrisonLevel`, tag `v3.3.8`): the prison music replays when the
-				//Wandmaker quest flips active - the tense loop starts mid-floor. Anywhere
-				//else the selection is unchanged and the replay is a silent no-op.
-				this.replayDungeonMusic();
-			},
+			startQuest: () => this.quests.start('wandmaker'),
 			advanceQuest: () => this.quests.advanceStage('wandmaker', this.gameState),
 			offerReward: () => this.offerWandmakerReward(type),
 			say: (message) => this.say(message),
@@ -1207,10 +1236,6 @@ export const npcShopBlacksmithMethods = {
 		const item = this.wandmakerQuestItem();
 		if (!item) return;
 		this.bag.remove(item.id, 1, item.instanceId);
-		//`Wandmaker.Quest.complete()` (tag `v3.3.8`): `questScores[1] += 2000`, but only
-		//for the corpse-dust type - the ember/berry types score on their kills instead
-		//(Elemental/RotHeart deaths above).
-		if (this.wandmakerType === 1) addQuestScore(this, 1, 2000);
 		if (item.id === 'corpseDust') {
 			//`DustGhostSpawner.dispel()` on handover: every DustWraith dies with the curse
 			//(the music fade has no layer here; the score penalties no system).
@@ -1226,6 +1251,10 @@ export const npcShopBlacksmithMethods = {
 		if (existing) existing.identified = true;
 		else this.bag.add({ id: 'wand', quantity: 1, stackable: true, identified: true });
 		this.say(t('actors.hero.hero.you_now_have', { 0: t(WAND_KEYS[wandType] ?? WAND_KEYS.magicMissile) }), 'positive');
+		//`Wandmaker.Quest.complete()` (tag `v3.3.8`): `questScores[1] += 2000`, but only
+		//for the corpse-dust type - the ember/berry types score on their kills instead
+		//(Elemental/RotHeart deaths above).
+		if (this.wandmakerType === 1) addQuestScore(this, 1, 2000);
 		this.gameState.setSwitch('wandQuestDone', true);
 		this.quests.advanceStage('wandmaker', this.gameState);
 		const npc = this.creatures.find((c) => c.kind === 'wandmaker' && c.hp > 0);
@@ -1236,9 +1265,6 @@ export const npcShopBlacksmithMethods = {
 			this.sprite(npc).destroy();
 			this.spriteFor.delete(npc.id);
 		}
-		//R107 (`PrisonLevel`, tag `v3.3.8`): completing the quest flips `active()` off,
-		//replaying the prison music drops the tense loop back to the rotation queue.
-		this.replayDungeonMusic();
 	},
 
 	/** The quest item the Wandmaker is currently waiting for, as it sits in the bag - the same
@@ -1370,9 +1396,9 @@ export const npcShopBlacksmithMethods = {
 	 * plus its per-class stats line (`itemStatsLine` - damage/DR with Java's real STR sentences),
 	 * `undefined` when the id has neither. The stand-purchase window builds the same body inline;
 	 * that verified-live path is deliberately untouched, and this is its twin for the shelf. */
-	tradeItemBody(this: DungeonScene, item: { id: string; sourceClass?: string; tier?: number; level?: number }): string | undefined {
+	tradeItemBody(this: DungeonScene, item: { id: string; sourceClass?: string; tier?: number; level?: number; potionAttrib?: string }): string | undefined {
 		const parts = [
-			itemDescription(item.id, item.sourceClass, this.subclass() === 'warden'),
+			itemDescription(item.id, item.sourceClass, { warden: this.subclass() === 'warden', potionAttrib: item.potionAttrib }),
 			itemStatsLine(item.id, { tier: item.tier, level: item.level, sourceClass: item.sourceClass, heroStr: this.hero.str }),
 		].filter((part): part is string => part !== undefined);
 		return parts.length > 0 ? parts.join('\n') : undefined;
@@ -1525,24 +1551,21 @@ export const npcShopBlacksmithMethods = {
 	 */
 	placeGroundItems(this: DungeonScene): void {
 		setGeneratorDepth(this.depth);
-		//R088 (`RegularLevel.java:470-491`, tag `v3.3.8`): torch candidates draw off
-		//one dedicated depth-seeded roller per floor (Java's pushed generator),
-		//sequential room-pick/cell draws with the same entrance-room skip as the
-		//ordinary loop below - stable across revisits, never gameplay RNG.
-		const torchDraw = torchRoller(this.runSeedLong, this.depth);
-		this.upgradeScrollDrops = placeGeneratedGroundItems({
+		syncGeneratorTrinkets(this); //Parchment Scrap / Exotic Crystals read by this floor's rolls
+		const placed = placeGeneratedGroundItems({
 			depth: this.depth,
 			isBossDepth: this.depth in BOSSES,
 			largeFeeling: (this.portedPaint?.feeling === 4) || genericLargeFeeling(this.runSeedLong, this.depth),
 			darknessChallenge: isChallengeEnabled('darkness'),
 			upgradeScrollDrops: this.upgradeScrollDrops,
+			trinketCatalystDropped: this.trinketCatalystDropped,
+			placeTrinketCatalyst: () => this.placeQueuedPortedItem('TrinketCatalyst', this.level.rooms),
+			mimicMultiplier: mimicChanceMultiplier(trinketLevelOf(this, 'trinketMimicTooth')),
+			spyglassExtraLootChance: spyglassExtraLootChance(trinketLevelOf(this, 'trinketCrackedSpyglass')),
+			generateDefaultItem: () => randomUsingDefaultsAnyCategory(),
+			spawnHiddenGround: (kind, x, y, item) => { const heap = this.spawnGroundItem(kind as GroundItemKind, x, y, item); if (heap) markHeapHidden(this, heap); },
 			noScrolls: isChallengeEnabled('no_scrolls'),
 			randomSpawnRoom: () => this.randomSpawnRoom(),
-			torchRoom: () => {
-				const first = this.portedFloorActive ? 0 : 1;
-				return this.level.rooms[first + torchDraw(Math.max(0, this.level.rooms.length - first))] ?? this.level.rooms[0];
-			},
-			torchInt: (bound: number) => torchDraw(bound),
 			generateItem: () => generatorRandom(),
 			materialize: (generated) => this.generatedInventoryItem(generated),
 			canPlaceFloorItem: (x, y) => [FLOOR, GRASS, HIGH_GRASS].includes(this.level.get(x, y))
@@ -1562,7 +1585,7 @@ export const npcShopBlacksmithMethods = {
 					this.level.set(x, y, GRASS);
 					if (this.portedPaint?.map[cell] === Terrain.HIGH_GRASS) this.portedPaint.map[cell] = Terrain.GRASS;
 				}
-				//Only the ported painter exposes the full Java Feeling enum. Generic floors
+								//Only the ported painter exposes the full Java Feeling enum. Generic floors
 				//retain LARGE through `genericLargeFeeling` (the `largeFeeling` flag above),
 				//so a LARGE generic floor drops the second Torch; other feelings stay unmodeled.
 				this.furrowedGrass.delete(cell);
@@ -1573,7 +1596,10 @@ export const npcShopBlacksmithMethods = {
 			spawnGround: (kind, x, y, item, chest) => this.spawnGroundItem(kind as GroundItemKind, x, y, item, chest),
 			placeUpgradeScroll: () => this.placeQueuedPortedItem('ScrollOfUpgrade', this.level.rooms),
 		});
+		this.upgradeScrollDrops = placed.upgradeScrollDrops;
+		this.trinketCatalystDropped = placed.trinketCatalystDropped;
 		this.placeRosePetals();
+		maybeSpawnEbonyMimic(this);
 	},
 
 	/**
@@ -1646,11 +1672,13 @@ export const npcShopBlacksmithMethods = {
 		let groundFrame = chest === 'crystal' ? CRYSTAL_CHEST_FRAME
 			: chest === 'locked' ? LOCKED_CHEST_FRAME
 			: chest === 'normal' ? CHEST_FRAME
-			: kind === 'bomb' && item?.id === 'doubleBomb' ? ITEM_FRAME[kind] + 1 : ITEM_FRAME[kind];
+			: kind === 'bomb' && item?.id === 'doubleBomb' ? ITEM_FRAME[kind] + 1
+			//each trinket wears its own sprite (`ItemSpriteSheet.RAT_SKULL`..), not the family cell
+			: kind === 'trinket' && item ? (MWL_ITEM_SPECIFIC_FRAMES[item.id] ?? ITEM_FRAME[kind]) : ITEM_FRAME[kind];
 		const groundCategory = item && kind === 'potion' && item.id.startsWith('potion') ? 'potion' as const
 			: item && kind === 'scroll' && item.id.startsWith('scroll') ? 'scroll' as const : null;
 		if (groundCategory && item) {
-			try { groundFrame = appearanceItemFrame(groundCategory, this.appearances.appearanceOf(groundCategory, item.id)) ?? groundFrame; } catch { /* unknown id keeps the family frame */ }
+			try { groundFrame = appearanceItemFrame(groundCategory, this.appearances.appearanceOf(groundCategory, appearanceKindOf(item.id))) ?? groundFrame; } catch { /* unknown id keeps the family frame */ }
 		}
 		const sprite = new TintedSprite(this.itemsSheet.get(groundFrame));
 		//`Bomb.glowing()`: a lit fuse glows red - reapplied here (rather than only at
@@ -1715,6 +1743,13 @@ export const npcShopBlacksmithMethods = {
 			rollWealthBonusOnOpen: () => this.tryWealthBonusDrop(this.hero, 1),
 			cursedKeyDistracts: () => this.cursedKeyDistracts(),
 			realKeyLockOpened: (kind) => this.realKeyLockOpened(kind),
+			//`WornKey.doPickUp()` (tag `v3.3.8`): the first pickup shows
+			//`WndSupportPrompt` and records `SPDSettings.supportNagged()`.
+			supportNagged: () => supportNagged(),
+			showSupportPrompt: () => {
+				setSupportNagged(true);
+				showInfoWindow(this.gameWindows, t('windows.wndsupportprompt.title'), t('windows.wndsupportprompt.intro'));
+			},
 			setGold: (amount) => this.heroStats.setBase('gold', amount),
 			shopPrice: (payload) => getShopPrice(payload.id, this.depth, payload.quantity, payload.identified ?? false),
 			//`WndTradeItem`: the shop window is the same generic picker the keeper's own window
@@ -1724,7 +1759,7 @@ export const npcShopBlacksmithMethods = {
 			offerPurchase: (name, price, buy) => this.openItemPicker(t(name), [
 				{ id: item.item?.id ?? 'gold', instanceId: item.item?.instanceId, identified: true, quantity: item.item?.quantity ?? 1, note: t('windows.wndtradeitem.buy', { '0': price }) },
 			], () => { buy(); this.pickupGroundItemAt(x, y); }, item.item ? [
-				itemDescription(item.item.id, item.item.sourceClass, this.subclass() === 'warden'),
+				itemDescription(item.item.id, item.item.sourceClass, { warden: this.subclass() === 'warden', potionAttrib: (item.item as typeof item.item & { potionAttrib?: string }).potionAttrib }),
 				//`WndTradeItem extends WndInfoItem`: the body is the item's description plus its
 				//per-class stats line (damage/DR with Java's real STR sentences - wand charges
 				//are not shown because Java does not show them either, see `itemStatsLine`).
@@ -1741,10 +1776,11 @@ export const npcShopBlacksmithMethods = {
 			playSound: (kind) => runState.audio.cue(kind === 'gold' ? 'gold' : kind === 'dewdrop' ? 'dewdrop' : 'item', 0.6),
 			addItem: (payload, stackable = false) => {
 				this.bag.add(stackable ? { ...payload, stackable: true } : payload);
+				markMindFormItemDiscovered(this, payload);
 				this.noteBagAcquired(payload.id);
 			},
 			bagFitsPickup: (incoming) => this.bagFitsPickup(incoming),
-			identify: (payload) => Actors.identify(payload),
+			identify: (payload) => { Actors.identify(payload); markMindFormItemDiscovered(this, payload); },
 			say: (message, level) => this.say(message, level),
 			showStatus: (message) => { if (language().code === 'en') this.showStatus(this.hero, message, SPD_STATUS_COLOR.neutral); },
 			collectDewdrop: (force) => this.collectDewdrop(force),
@@ -1761,7 +1797,7 @@ export const npcShopBlacksmithMethods = {
 				this.say(hourglass.sandBags >= 5 ? 'Your hourglass is filled with magical sand.' : 'You add the sand to your hourglass.', 'positive');
 			},
 			addEnergy: (amount) => { this.alchemyEnergy += amount; this.showStatus(this.hero, '+' + amount, SPD_STATUS_COLOR.neutral); },
-			addLooseGold: (amount) => { this.heroStats.setBase('gold', this.heroStats.base('gold') + amount); this.say(t('port.log.pickupgold', { amount }), 'positive'); },
+			addLooseGold: (amount) => { this.heroStats.setBase('gold', this.heroStats.base('gold') + amount); noteGoldCollected(this, amount); this.say(t('port.log.pickupgold', { amount }), 'positive'); },
 			recoverStone: (ground) => {
 				//A reclaimed heap joins the pile as the stack it was thrown from: an empty pile
 				//adopts the heap's set and level (Java wields the picked-up stack), a pile already
@@ -1963,7 +1999,11 @@ export const npcShopBlacksmithMethods = {
 			itemDisplayName: (id, identified) => scene.itemDisplayName(id, identified),
 			procIdentifyTalents: () => scene.procIdentifyTalents(),
 			armRecallInscription: (sourceClass) => scene.armRecallInscription(sourceClass),
-			startTransmutationPick: (instanceId) => startTransmutationPick(scene.transmuteFlowContext(), instanceId),
+			startTransmutationPick: (instanceId, opts) => startTransmutationPick(scene.transmuteFlowContext(), instanceId, opts),
+			startEnchantmentPick: (instanceId, consume) => startEnchantmentScroll(scene, instanceId, consume),
+			startMetamorphosis: (instanceId, consume) => startMetamorphosis(scene, instanceId, consume),
+			shardMarkReady: (item) => shardMarkReady(scene, item),
+			startSirensSong: (instanceId, consume) => startSirensSong(scene, instanceId, consume),
 			get weaponAffix() { return scene.weaponAffix; },
 			set weaponAffix(affix: string | null) { scene.weaponAffix = affix; },
 			get armorGlyph() { return scene.armorGlyph; },
@@ -1971,6 +2011,7 @@ export const npcShopBlacksmithMethods = {
 			equippedRing: scene.equippedRing,
 			markRingTypesKnown: (ids) => markRingTypesKnown(scene, ids),
 			markPotionKindsKnown: (ids) => markPotionKindsKnown(scene, ids),
+			markMindFormItemDiscovered: (item) => markMindFormItemDiscovered(scene, item),
 			potionKindKnown: (id) => potionKindKnown(potionKindsKnownFor(scene), id),
 			syncHeroFromStats: () => scene.syncHeroFromStats(),
 		};

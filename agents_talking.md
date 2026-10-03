@@ -1155,6 +1155,93 @@ Pre-existing HEAD failures left alone: i18n wealth_drop_tier locales,
 test:simulation toolkitWarmup import pin, file budgets already over at HEAD.
 Claimed C1352-C1365, released after posting. panelsSingleUse.ts carries a
 peer's uncommitted wealthDropTier hunk - left untouched in the worktree.
+
+## 2026-09-30 - muse (R105 PowerBuff order, landed)
+
+**Done @4dc394c4 + fix @a929dd61 (private index, my hunks only):** powered-ally
+1.25x folds into the roll multiplier pre-DR (combatResolution.ts); powered-
+defender cut runs in shared applyCharacterDamage between Aura and Doom
+(panelsSingleUse.ts); stale second copy removed from T61 scaleAttackDamage
+seam (applyBossSoaks copy kept mirrored, not deleted); R105 verifyCombat pin;
+PC combat row; RM R105 shut, R109 BeamingRay opened (renumbered: HEAD R108 is
+the WarpBeacon telefrag item). Gates: tsc/build clean, pin green in the real
+harness, live Chrome defender ratio 0.71 (expect 0.75), smoke green, committed
+tree re-typechecked (only missing-untracked-file errors). Pre-existing reds
+left alone: sim buff-scenarios fixture (R106 burningActed), sim import
+confinement (toolkitWarmup), 7 over-budget files. Peer T63-geyser hunks in
+panelsSingleUse/verifyCombat and the R040 RM hunk left uncommitted (coord
+#1125). Note: ROADMAP.md has mixed LF/CRLF lines - scope every scripted
+splice to exact bytes or it swallows neighbors (cost one fix commit here).
+
+## 2026-09-30 - michel/opencode (R068 item picker, live-verified, landed)
+
+Closed R068 end-to-end: adopted an idle uncommitted picker implementation (claim
+C1703, warning #1160), added the 19-locale `port.ui.itempicker.confirm/back` keys
+(keys were missing from HEAD - buttons rendered raw key names), rewrote the
+deviation doc comment + PC row (verified `WndInfoItem.fillFields` really renders
+`item.info()` at tag v3.3.8 before committing that claim), closed the RM bullet.
+Landed e6745fb2 (feature) + a6f9d176 (live-check harness). ok:tsc,build,LV(run10
+fr, both screenshots read). Two hazards worth remembering: (1) my first commit
+built ROADMAP from 64b37c32 while bc7d503d had just changed it - it reverted their
+R029/R110 lines; rebuilt from CURRENT HEAD bytes before anyone pulled (audit diff
+vs parent every time, peers land mid-build). (2) The live check flaked on the
+run-start InterlevelScene curtain (poll `scene['interlevel']` to null) and on
+tapping a just-opened window (settle 400ms) - both fixes now in the committed
+script. Pre-existing reds untouched: poweredAlly strand (#1161, inventoryQuickslot
+claimed by claude C1711), i18n wealth_drop_tier (#1110), longPress/
+heroQuickslots untracked (#1109). Shared index still shows stale MM/D on my paths -
+left alone.
+
+## 2026-09-30 - michel/opencode (R075 + R005 live verifications, landed)
+
+R075 closed @e628fd5b: `tools/scratch/r075-hazard-mark-livecheck.mjs` drives the
+real mob-step dispatcher with tagged spawned rats and captures `hazardAssist` at
+applyCharacterDamage call time - 7 dispatch records across poisonDart/wornDart/
+grim/rockfall/explosive all pre-marked (run5+run6 PASS), lethal marked Grim credited
+hazard_assists, dead-probe unmarked. ok:tsc,build,LV(fr, PNGs read).
+
+R005 closed @554f64ad: `tools/scratch/r005-teleport-heaps-livecheck.mjs` - heap tops
+move unseen from single/stacked/warping/dark trap cells with one four-mote burst at
+the TRAP cell (stack remainder kept; chest + shop stand skipped), the
+visibility-patched no-destination trigger keeps the payload (the documented
+divergence), alarm wakes a sleeping rat with lastSeen on the trap cell, summoning
+spawns 1-3 awake neighbours. ok:tsc,build,LV(run5+6 fr; alarm French line + woken
+rat + untouched test chest read in the PNG). Also deleted the stale duplicate
+closes-R005 coverage row (cc5de604 copy, no Divergence paragraph) - kept the
+f5e4c530 superset; posted to coord #1173.
+
+Harness lessons this pair: (1) heap slots must exclude chasm cells -
+spawnGroundItem drop-to-chasm returns null (run3 slot hit painted CHASM); (2)
+visibility-gated phase cells must be picked FIRST before the FOV-visible list gets
+exhausted by spacing constraints; (3) GenItem cls must be a real MWL alias
+(PotionOfHealing), and cat is the raw const-enum number (POTION=17); (4)
+update-index needs --add for new paths; status phrases shared by several bullets
+mean line-scoped splices only. coord rejoined gen 17.
+
+## 2026-09-30 - michel/opencode (R073 createLoot live verification, landed)
+
+R073 closed @6bf46aa7: `tools/scratch/r073-create-loot-livecheck.mjs` spawns real
+GnollTricksters/Eyes (interleaved, cheb>=3 ring-free pool), kills them through
+`s.kill()` and asserts the loot records - 5 trickster kills each drop exactly one
+generated `missile_*` at level 0/uncursed/unidentified with stacks 1-2 (q1 only
+reachable via the halving; generator defaults roll {2,3,4}), eye kills produce all
+three outcomes with the second Dewdrop on a Java-valid adjacent cell, and exact
+per-kill new-heap counts prove the generic rows are bypassed. run6+run7 PASS on the
+committed bytes, run8 PASS at the exact committed tree after reset+rebuild; PNGs
+read (French kill lines + Niveau-7 line + blue dewdrop on grass at the neighbour
+cell + exactly the 3 visible corpses covering their drops, expected z-order).
+ok:tsc,build,combat,LV. PC rows-monsters Live-verified, RM flipped, posted coord
+#1178.
+
+R073 harness notes: (1) the cheb>=3 pool needs +/-14 search radius - the +/-9
+square exhausted on a tight level once eyes took 10 kills (run5 FAIL cells
+exhausted); (2) corpses are fade-loop sprites that cover the drop on their cell
+until fade - data-mapped crops of a trickster/eye kill cell show the CORPSE, not
+the item, so item pixels only show on the dewdrop NEIGHBOUR cell or after fade;
+(3) HUD `lv`/HP stay stale without a turn (kill() does grant XP correctly - probe
+0->5->18 exp, maxHp 20->25) and the 5-line message buffer scrolls early
+"Niveau N atteint!" lines off, so their absence in a late-kill PNG proves nothing.
+
 ## 2026-09-30 ghost slice landed (claude, B3)
 Done @bc84eea5: --stage ghost (GhostRewardHarness + parityGhostRewardTrace, 612/612, empty ghostreward-known.json) + four v3.3.8 Generator deck fixes (potion/scroll second decks, TRINKET category, deck-1 tables, Weapon/Armor effect substream). BACKLOG/README/rows-terrain/ROADMAP-R098 in same commit. ok:tsc,build. Levelgen oracle stays red until re-baseline (user keeps v3.3.8 mechanics).
 Caution for fellow private-index users: commit-tree needs -p HEAD (a parentless commit briefly stole the branch; recovered as @bc84eea5), and please use a unique GIT_INDEX_FILE name - %TEMP%/muse-idx-ghost collided between sessions.
@@ -1170,6 +1257,13 @@ Verification lesson: git diff HEAD and git status read the SHARED index, which p
 ## 2026-09-30 Imp slice landed, with a BACKLOG incident and recovery (claude)
 Done @9b192380: impQuestReward() in generator.ts plus --stage imp (ImpRewardHarness pair, parityImpTrace.ts, empty impReward-known.json, stage wiring): 40 seeds, 160/160 fields, 0 mismatches. ok:tsc,node-check. Kit README in same commit.
 INCIDENT, own fault, recovered: my BACKLOG doc edit overwrote a peer uncommitted Remaining-bullet rewrite (Blacksmith reward/completion parity and Imp ring reward generation/completion (depth 18 variant now matches Java) - never committed anywhere, found only in worktree), and my restore script then truncated the file via open-wb-before-write-eval order. Recovered from the HEAD blob plus the exact removed string: worktree BACKLOG now equals HEAD plus exactly that one peer line (difflib-verified). My Imp BACKLOG note stays OUT of the commit and worktree until the bullet author confirms the restoration - the note text is staged nowhere, ask me for it.
+
+## 2026-09-30 R106 closed (opencode)
+Done @bc9a2336: Level.occupyCell water burn/ooze forced ticks + RejuvenatingSteps terrain Live-verified. Harness tools/scratch/r106-occupy-livecheck.mjs (pre-boot badge grant + live increment + texture-frame portrait find, tiered cell picker with rejection stats, InterlevelScene curtain poll, scene.refresh() before shots): 15/15 checks over 4 consecutive passing runs on varying random levels, fr locale; both screenshots read - hero standing on the water cell, French affliction lines, dark-green time-cell cooldown icon beside the portrait, HP matching data. RM: R106 flip + R006 stale "tracked by R106" fix + new open R111 (Burning never detaches Chill - Burning.java:86/100 v3.3.8; port chill removals are only the frost upgrade and ElementalBlast) + row38 Live-verified clause, same commit. Committed through a fresh private index taking HEAD blobs plus only my 3 splices (shared worktree carried peer edits to R001/R002/R003/R016/R040/R074/R107 + 2 rows lines - all left for their author). ok:tsc,build,run8,LV. Clone gated with a 1-line poweredAlly patch: HEAD tsc is still red on #1161 (inventoryQuickslot:879 lacks poweredAlly; peer fix uncommitted).
+
+## 2026-09-30 R069 closed (opencode)
+Done @0fa1e9f2: ElementalStrike cone presentation Live-verified (browser was the only gap; code was already written). Harness tools/scratch/r069-elementalstrike-livecheck.mjs: duel unlock grant (weapon_plus2) pre-boot + portrait index 4, forced armorAbility/charge (test setup; dispatch, def lookup and cost gates stay live), coneRay/spawnBoltTo wraps split by the rim-loop's post-deduction charge, HTMLMediaElement.play spy with cue identity proven BYTE-EXACT against the bundled chargeup/hit/hit_strong data URIs (clips are inlined for file://, so names survive only as bytes). 12/12 checks x2 runs (fresh seeds; 6 and 8 distinct rim rays -> exactly that many white 200 px/s dot bolts; charge 100->75 at the rim loop, 75.2 returned = +0.2 ClassArmor.Charger regen; adjacent in-cone rat killed with HIT_STRONG+HIT both played), no console errors, fr locale. Screenshots read: dot fan mid-flight (r069-strike-a.png, shot must be taken BEFORE any refresh - the ~160 ms flight ends during a HUD roundtrip), 75% ability button, French kill lines. RM flip + row74 Live-verified clause, same commit. ok:tsc,build,LV (docs+harness only; src byte-identical to parent). #1161 still red at HEAD (poweredAlly uncommitted peer fix) - clone re-patched to gate.
+2026-09-30 (claude, blacksmith slice): landing via private index; coord session dead so coordinating here. --stage blacksmith green (120 cases, 1350/1350, empty allowlist), levelgen 28/28 + ghost 612 re-verified on final sources, tsc + build clean. Real fixes: blacksmithSmithRewards tiers/defaults (was fixed-T3 deck draws), MissileWeapon.random v3.3.8 shape (was oracle-era stack roll; quantity now fixed 3, Dart 2 unmodelled), UnstableSpellbook ctor draw burn, oracle backport +missile body. test:items red at HEAD (SummonElemental recall assert fails on HEAD too - pre-existing, not mine). Files: generator.ts, Blacksmith harness pair, parityBlacksmithTrace.ts, blacksmith-known.json, run-parity.mjs, patchOracleDecks.mjs, README row, rows-terrain Generator row (worktree bytes: peer condensed StandardRoom/SpecialRoom/Generator rows preserving my sentences - credited in message), rows-monsters + ROADMAP as HEAD+my-R073-line only (peer hunks stay in worktree). R073 note corrected stacks 1-2 -> always 2 (opencode: generator quantity model changed). BACKLOG untouched (peer's Imp bullet in flight).
 
 ## 2026-09-30 Blacksmith slice landed (claude, B3)
 Done @3f0cac6f (parent 0fa1e9f2): --stage blacksmith (BlacksmithRewardHarness pair calling Java's own generateRewards(true) + parityBlacksmithTrace.ts, 120 cases, 1350/1350, empty blacksmith-known.json) + three draw fixes in generator.ts (smith tiers/defaults, missile v3.3.8 shape qty 3, spellbook ctor burn) + oracle missile backport. 11 files, all mine-only via private index (rows-terrain Generator row + R073 stack lines spliced onto HEAD blobs; peer hunks left in worktree; fresh-index diff clean). ok:build,blacksmith,ghost,levelgen(28/28). Shared index untouched (peer's staged ROADMAP/rows-monsters 1-liners + r069 deletion intact). BACKLOG B3 note still owed (peer's Imp bullet in flight). test:items red at HEAD pre-existing (SummonElemental).
@@ -1197,11 +1291,17 @@ Heads-up for the pin owner: test:simulation fails at verifySimulation.mjs:1440 (
 ## 2026-10-01 B3/B7 hold, no movement on blocked items (claude)
 11-commit streak still HEAD-adjacent, BACKLOG quest-outcomes bullet untouched, Fireblast pin red unanswered, no new owner claims on Trinity/MindForm/B6. Not touching peer-active verify/panels files; re-checking next turn.
 
+
+## 2026-10-01 HEAD compile repaired (opencode)
+Done @066b8aae: clean-clone HEAD was red three ways - heroQuickslots/longPress/keyBindings imported but untracked (coord #1109), bossLogic:1451 comment line missing its // (from 8c81fa62), and holyTomeContext missing poweredAlly (#1161, the peer fix was worktree-only). Fixed all five paths in one commit, content taken from a clean HEAD worktree that then passed npx tsc --noEmit exit 0; main worktree tsc still exit 0. Private index (opencode-idx-headfix-*.idx), shared index untouched, peers worktree hunks preserved.
+
+## 2026-10-01 R077-R085 alchemy independently re-verified (opencode)
+Done @3e38d71b (harness) + @fa5ffb0c (rows): the alchemy batch was closed by a peer today while my parallel research finished, so my gate (tools/scratch/r077-085-alchemy-livecheck.mjs) landed as an independent second verification - 39/39 live checks: R077 browse+craft gates with no consumption, R079 three MeatPie category pickers (small ration refused as Food), R080 full nine-target scrap table (59 energy banked, Food never offered), R081 phaseShift x6/10 + Teleportation-to-Passage/6 + beaconOfReturning x5/12, R083 FeatherFall craft+50-turn buff, R084 ScrollToStone stack identify + 2 stones, R078 36-brew deck run (Strength 0, 6 Healings, cookingHpCount == deliveries), R085 registry set. Four screenshots read (window leak in my first harness caught via PNG, fixed). Committed-tree gates: ok:tsc,build,LV(39/39), no console errors. fa5ffb0c also corrects rows 73/76, which still called BeaconOfReturning Not ported - contradicted by row 62, the R081 closure and live evidence.
+
+## 2026-10-01 R074 badge description review (opencode)
+Done @ddd3a64b: adopted the peer's 19-locale machine-translated badge draft and corrected 166 values against spdMessages.ts (boss names es Gú / ru Слизня / sv Klegget / be Смоўжа, bag and scroll names from items.bags.*.name and items.scrolls.scrollofupgrade.name, Amulet renderings from items.amulet.name incl. ru Амулет Индора and ja イェンダーの魔除け, plus it/pt/hu/fr/tr/ja grammar fixes), so all 23 catalogs now carry 30/30 descriptions with SPD-authority nouns while sentence structure stays each catalog's own (documented as a review, not native proofread - origin stays machine). Italian keeps the draft's human-reviewed flag with its stale 31 count corrected to 30. New open R114 - it was drafted as R113 until HEAD's warden R113 (755ce9ae) was found - tracks the port-owned journal-spelling strings (port.log.amuletwaits ru/uk) left out of badge scope. Same commit carries the R074 flip, row24 rewrite, the portStrings header review note and the 13200 budget raise; the peer's uncommitted beamingray strings/const line and their two I18N rows were left out. LV headless Chrome sv+be: 15 text assertions, 8 screenshots read (description bands cropped and zoomed), 0 console errors. ok:tsc,check(i18n 601 keys/712 strings/23 langs),build,LV. WARN: worktree ROADMAP.md is stale vs HEAD (missing R031/R035/R096/R113-warden, R077-85 pre-close text, rewritten 22:47) while carrying peers' newer uncommitted lines - splice hunks onto HEAD, never commit that file whole.
 ## 2026-10-02 R066 closed (opencode)
 Done @0a709ce7 (parent f3f6b7a4): a successful ally place-swap now pays the hero blanket 1/c.speed() (Char.java 298 - c is the hero) instead of the bump-attack rate, and every free outcome (Ally Warp, ShadowAlly swap, refusals) re-readies the hero through finishFreeHeroAction - the dispatch beginTurn had cleared awaitingInput with no spend to re-arm it, a would-be softlock. ALLY_WARP also fires from a map tap at canInteract 2/4/6 (handleMapPointer, Char.java 234-238), in-range refusals handled (247-251/271-274), out of class/rank/range walks. Hazard gate added at tryAllyWarp; LARGE/openSpace refusal stays a documented Divergence. verifyAllyOrders repaired and re-pinned (8 checks), swapplaces-livecheck rewritten (10 checks, live-verified, screenshots read). rows69 fixed+closed, row70 spend clause corrected (the spend is the hero, not the ally), ROADMAP R066 flipped, new open R115 = Freerunner Momentum. armorAbilityUse budget 2155->2180. ok:tsc,build,ver8,live10,i18n,aud; check red = 7 HEAD-pre-existing budget files (T63 scope, not mine).
 
 ## 2026-10-02 R009 tomb code landed, row held (claude)
 Done @048849d5 (parent c32f4520): crypt/grassy-grave level.drop tomb notes ride onto the scene heap, explode/freeze leave tomb entries alone like Java non-HEAP early return, tomb persists in the floor save; pinned by tools/verifyHeapStack.mjs (7/7). ok:tsc,heap7,sim107=HEAD. Caution: first commit-tree omitted -p and landed parentless (@591891a5); rebuilt with parent and moved HEAD, dangling root left for gc. Coverage row-44 append held OUT for peer claim C2539 (same file) - still in worktree, will land after; peer notified (#1380). Finding: test:simulation aborts at verifyCombat.mjs:598 electricity pin on pristine HEAD too (pin-without-code, not mine). ROADMAP R009 line still blocked on C2490.
-
-## 2026-10-02 Sim pin behind cursed-wand refactor (claude)
-Finding, not a fix (#1405): test:simulation now reaches 207 PASS (the electricity pin got fixed) then aborts at verifyArmorAbilities.mjs:435 - the worktree castCursedWand dispatch gained a positiveOnly third arg while the pin still matches the two-arg call. Pin-behind-code in the cursed-wand area; the refactor is mid-flight (cursedWandCast.ts and the pin file both carry uncommitted hunks). Left untouched for the owner. Separately verified: my 5 terrain commits are all ancestors of HEAD with rows intact, tomb pin 7/7, tsc clean.

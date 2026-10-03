@@ -90,6 +90,21 @@ export function spawnHitFlash(layer: Container, alive: LiveBurst[], x: number, y
 	track(layer, alive, emitter, x, y, count, 0.6);
 }
 
+/** `Splash.at(p, dir, cone, color, n)` (`effects/Splash.java`, tag `v3.3.8`): `n` 4px `PixelParticle.Shrinking`
+ * pixels of life 0.5-1.0s, thrown at 40-80px/s inside `dir +- cone/2` and pulled down at 100px/s^2. `x`/`y`
+ * are the burst centre in tile units. The one stand-in: Java's particles stay fully opaque until they shrink
+ * away, which `scale [4, 0]` with a flat alpha reproduces. */
+export function spawnSplash(layer: Container, alive: LiveBurst[], x: number, y: number, dir: number, cone: number, color: number, n: number): void {
+	if (n <= 0) return;
+	const emitter = new ParticleEmitter({
+		texture: Texture.WHITE, max: n, rate: 0, life: [0.5, 1] as [number, number],
+		speed: [40, 80] as [number, number], angle: [dir - cone / 2, dir + cone / 2] as [number, number],
+		gravity: { x: 0, y: 100 }, scale: [4, 0] as [number, number], alpha: () => 1, tint: color,
+		spawn: { shape: 'rect', width: 0, height: 0 },
+	});
+	track(layer, alive, emitter, x, y, n, 1);
+}
+
 /** A short white chip burst for `Splash.at(cell, 0xFFFFFF, 5)` (`CrystalSpire.java`, v3.3.8).
  * The port uses five shrinking white pixels in place of Java's directional splash film. */
 export function spawnCrystalSplash(layer: Container, alive: LiveBurst[], x: number, y: number): void {
@@ -106,7 +121,7 @@ export function spawnCrystalSplash(layer: Container, alive: LiveBurst[], x: numb
  * tag `v3.3.8`). SPD's directional film particles are not available in the generic
  * white-pixel backend; burst counts, colors and broad direction are carried where known,
  * while timed emitter cadence and film artwork are simplified. */
-export type TrapSpeckKind = 'scream' | 'light' | 'frost' | 'ooze' | 'wool' | 'wound' | 'rock' | 'pitfall' | 'steam' | 'flame' | 'leaf' | 'blast' | 'elmo';
+export type TrapSpeckKind = 'scream' | 'light' | 'frost' | 'ooze' | 'wool' | 'wound' | 'rock' | 'pitfall' | 'steam' | 'flame' | 'splash' | 'leaf' | 'blast' | 'elmo';
 export function spawnTrapSpecks(layer: Container, alive: LiveBurst[], x: number, y: number, kind: TrapSpeckKind): void {
 	const options: Record<TrapSpeckKind, ParticleEmitterOptions & { count: number; duration: number }> = {
 		scream: { texture: Texture.WHITE, max: 3, rate: 0, life: 0.8, speed: [10, 18] as [number, number], angle: [-Math.PI * 0.72, -Math.PI * 0.28] as [number, number], scale: [4, 0] as [number, number], alpha: (t) => 1 - t, tint: 0xFFFF88, spawn: { shape: 'rect', width: TILE / 3, height: TILE / 3 }, count: 3, duration: 0.8 },
@@ -119,6 +134,9 @@ export function spawnTrapSpecks(layer: Container, alive: LiveBurst[], x: number,
 		pitfall: { texture: Texture.WHITE, max: 8, rate: 0, life: 0.8, speed: [8, 22] as [number, number], angle: [Math.PI * 0.35, Math.PI * 0.65] as [number, number], gravity: { x: 0, y: 36 }, scale: [4, 0] as [number, number], alpha: (t) => 1 - t, tint: 0x806044, spawn: { shape: 'rect', width: TILE, height: TILE }, count: 8, duration: 0.8 },
 		steam: { texture: Texture.WHITE, max: 10, rate: 0, life: 1, speed: [10, 15] as [number, number], angle: [-Math.PI * 0.55, -Math.PI * 0.45] as [number, number], spin: [0, Math.PI] as [number, number], scale: (t) => 1 + t, alpha: (t) => Math.sqrt(Math.min(t, 1 - t) * 0.5), tint: 0xCCCCCC, spawn: { shape: 'rect', width: TILE / 2, height: TILE / 2 }, count: 10, duration: 1 },
 		flame: { texture: Texture.WHITE, max: 10, rate: 0, life: 0.6, speed: 0, angle: [-Math.PI / 2, -Math.PI / 2] as [number, number], gravity: { x: 0, y: -80 }, scale: (t) => 4 * (1 - t), alpha: (t) => t < 1 / 5 ? t * 5 : 1 - t, tint: 0xEE7722, spawn: { shape: 'rect', width: TILE, height: TILE }, count: 10, duration: 0.6 },
+		//`SewerLevel.destroy()` (tag `v3.3.8`): `Splash.at(pos, 0xFF507B5D, 10)` when a
+		//barrel or alt burns - ten green-teal shards, same white-pixel stand-in.
+		splash: { texture: Texture.WHITE, max: 10, rate: 0, life: 0.6, speed: [8, 28] as [number, number], angle: [0, Math.PI * 2] as [number, number], scale: [3, 0] as [number, number], alpha: (t) => 1 - t, tint: 0x507B5D, spawn: { shape: 'rect', width: TILE / 2, height: TILE / 2 }, count: 10, duration: 0.6 },
 		//`Plant.wither()` (tag `v3.3.8`): `LeafParticle.GENERAL` bursts 6 leaves tinted
 		//at random from 0x004400 to 0x88CC44 - the white-pixel stand-in takes the
 		//midpoint 0x448822 as a single tint.
@@ -377,6 +395,18 @@ function blobCellEmitterOptions(layer: BlobVisualLayer): ParticleEmitterOptions 
 				angle: [0, Math.PI * 2] as [number, number],
 				spin: [200 * DEG, 300 * DEG] as [number, number],
 				scale: (t: number) => 2 - t,
+				alpha: speckHalfLifeAlpha(true),
+			};
+		}
+		case 'stormCloud': {
+			//`StormCloud.use()` pours `Speck.STORM` every 0.4s (life 1-3s); the film is a spinning, expanding pale-blue square here.
+			const interval = 0.4;
+			return {
+				...base, tint: 0x8EE3FF,
+				max: Math.ceil((1 / interval) * 3 * 2) + 8,
+				rate: 1 / interval, life: [1, 3] as [number, number], speed: 0,
+				angle: [0, Math.PI * 2] as [number, number], spin: [-30 * DEG, 30 * DEG] as [number, number],
+				scale: (t: number) => 1 + t,
 				alpha: speckHalfLifeAlpha(true),
 			};
 		}

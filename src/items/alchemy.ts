@@ -6,8 +6,12 @@ import { t } from '../i18n';
 import { MWL_CONSUMABLE_CLASS_TO_ID, MWL_ITEM_NODES, MWL_SPECIAL_ITEM_INVENTORY_RULES, MWL_TABLE_ROWS, mwlItemEffectValue } from '../mwlContent';
 import { SpdRandom } from '../spdRng';
 import { consumeToolkitEnergy, energizeToolkit, toolkitAvailableEnergy } from './artifactActions';
-import { Cat, randomUsingDefaults } from './generator';
+import { Cat, randomCategory, randomUsingDefaults } from './generator';
+import {
+	TRINKET_CATALYST_COST, TRINKET_CATALYST_OFFERS, canUpgradeTrinket, isTrinketId, trinketForClass, trinketUpgradeEnergyCost,
+} from '../simulation/trinkets';
 import { scrapRatioEnergy } from './alchemyRules';
+import { cookedFruitInstanceId, isPlainFruit, removeFruitUnits } from './blandfruit';
 
 /** This port's authored recipes always name one exact item id, never MWG 0.7.7's category or
  * predicate forms, so the ingredient id is narrowed back to a plain `string` from `Ingredient`'s
@@ -96,7 +100,7 @@ const MWL_ITEM_IDS = new Set([
 ]);
 for (const recipe of ALCHEMY_RECIPES) {
 	for (const ingredient of recipe.ingredients) {
-		if (!MWL_ITEM_IDS.has(ingredient.id)) {
+		if (!MWL_ITEM_IDS.has(ingredient.id) && !(recipe.id === 'unstableSpell' && (ingredient.id === 'scroll' || ingredient.id === 'stone'))) {
 			throw new Error(`MWL alchemy recipe ${recipe.id} references unknown ingredient item: ${ingredient.id}`);
 		}
 	}
@@ -209,6 +213,7 @@ export function alchemyEnergyFor(itemId: string, identified: boolean, quantity =
 
 /** `Recipe.SimpleRecipe.testIngredients()` rejects unidentified ingredients (Recipe.java:99-104). */
 export function canCraftAlchemy(inventory: Inventory, id: string): boolean {
+	if (id === 'unstableSpell') return canCraftUnstableSpell(inventory);
 	const recipe = alchemyRecipe(id);
 	return recipe !== undefined && recipe.ingredients.every((ingredient) => {
 		const item = inventory.find(ingredient.id);
@@ -220,8 +225,34 @@ export function canCraftAlchemy(inventory: Inventory, id: string): boolean {
 /** Resolves an authored recipe through MWG's all-or-nothing inventory transaction. */
 export function craftAlchemy(inventory: Inventory, id: string): boolean {
 	const recipe = alchemyRecipe(id);
+	if (id === 'unstableSpell') return craftUnstableSpell(inventory);
 	if (id === 'meatPie') return craftMeatPie(inventory); // Category slots (R079).
 	return recipe && canCraftAlchemy(inventory, id) ? craft(inventory, recipe) : false;
+}
+
+/** `UnstableSpell.Recipe.testIngredients()`'s wildcard pair (`UnstableSpell.java`, tag v3.3.8). */
+export function canCraftUnstableSpell(inventory: Inventory): boolean {
+	return inventory.items.some((item) => item.quantity > 0 && item.id.startsWith('scroll'))
+		&& inventory.items.some((item) => item.quantity > 0 && (item.id === 'stone' || item.id.startsWith('stoneOf')));
+}
+
+/** The selected-unit transaction keeps duplicate stacks and cancel paths exact. Exotic scroll
+ * subclasses absent from the port cannot appear; represented scroll and runestone families do. */
+export function craftUnstableSpell(inventory: Inventory, scroll?: AlchemyUnitRef, stone?: AlchemyUnitRef): boolean {
+	const chosen = scroll && stone
+		? scroll.id.startsWith('scroll') && (stone.id === 'stone' || stone.id.startsWith('stoneOf'))
+			? takeChosenUnits(inventory, [scroll, stone], (item) => item.id.startsWith('scroll') || item.id === 'stone' || item.id.startsWith('stoneOf'))
+			: undefined
+		: (() => {
+			const scrollItem = inventory.items.find((item) => item.quantity > 0 && item.id.startsWith('scroll'));
+			const stoneItem = inventory.items.find((item) => item.quantity > 0 && (item.id === 'stone' || item.id.startsWith('stoneOf')));
+			return scrollItem && stoneItem ? [{ id: scrollItem.id, instanceId: scrollItem.instanceId }, { id: stoneItem.id, instanceId: stoneItem.instanceId }] : undefined;
+		})();
+	if (!chosen || chosen.length !== 2) return false;
+	inventory.remove(chosen[0]!.id, 1, chosen[0]!.instanceId);
+	inventory.remove(chosen[1]!.id, 1, chosen[1]!.instanceId);
+	inventory.add({ id: 'unstableSpell', quantity: 1, stackable: true });
+	return true;
 }
 
 export const MEAT_PIE_PASTY_IDS = new Set(['pasty', 'phantomMeat']);
@@ -318,6 +349,16 @@ export function canCraftScrollToStone(inventory: Inventory): boolean {
 export const SCROLL_TO_EXOTIC: Readonly<Record<string, string>> = {
 	scrollMirror: 'scrollPrismatic',
 	scrollTeleportation: 'scrollPassage',
+	scrollUpgrade: 'scrollEnchantment',
+	scrollIdentify: 'scrollDivination',
+	scrollCleanse: 'scrollAntiMagic',
+	scrollRecharging: 'scrollMysticalEnergy',
+	scrollLullaby: 'scrollSirensSong',
+	scrollMapping: 'scrollForesight',
+	scrollRage: 'scrollChallenge',
+	scrollRetribution: 'scrollPsionicBlast',
+	scrollTerror: 'scrollDread',
+	scrollTransmutation: 'scrollMetamorphosis',
 };
 
 export function scrollExoticResult(scrollId: string): string | undefined {
@@ -360,6 +401,16 @@ export function canCraftScrollToExotic(inventory: Inventory): boolean {
 export const POTION_TO_EXOTIC: Readonly<Record<string, string>> = {
 	potionInvis: 'potionShrouding',
 	potionHealing: 'potionShielding',
+	potionParalyticGas: 'potionEarthenArmor',
+	potionPurity: 'potionCleansing',
+	potionHaste: 'potionStamina',
+	potionMindVision: 'potionMagicalSight',
+	potionLevitation: 'potionStormClouds',
+	potionToxicGas: 'potionCorrosiveGas',
+	potionFrost: 'potionSnapFreeze',
+	potionStrength: 'potionMastery',
+	potionFlame: 'potionDragonsBreath',
+	potionExperience: 'potionDivineInspiration',
 };
 
 /**
@@ -378,6 +429,16 @@ export function exoticRecycleAlternatives(id: string): string[] {
 		if (family.includes(id)) return family.filter((other) => other !== id);
 	}
 	return [];
+}
+
+/** `ExoticScroll.exoToReg`: the regular scroll an exotic one shares its rune (appearance) with. */
+export function scrollRegularCounterpart(scrollId: string): string | undefined {
+	return Object.entries(SCROLL_TO_EXOTIC).find(([, exotic]) => exotic === scrollId)?.[0];
+}
+
+/** The kind whose dealt appearance an item wears: an exotic potion or scroll wears its regular counterpart's (`ExoticPotion`/`ExoticScroll.reset()`). */
+export function appearanceKindOf(id: string): string {
+	return (id.startsWith('potion') ? potionRegularCounterpart(id) : id.startsWith('scroll') ? scrollRegularCounterpart(id) : undefined) ?? id;
 }
 
 export function potionExoticResult(potionId: string): string | undefined {
@@ -508,6 +569,54 @@ export function craftPotionSeed(
 }
 
 /**
+ * `Blandfruit.CookFruit.testIngredients()`/`brew()` (tag `v3.3.8`): one plain
+ * (`potionAttrib`-less) fruit plus any one seed with a potion mapping - each
+ * consumed one unit - brewed for 2 energy into a fruit imbued with the seed's
+ * potion (`cook()`). An explicit selection names both units, resolved whole with
+ * nothing consumed on failure like every other category recipe; without one the
+ * first eligible units brew. The cooked entry mints its per-potion instance id
+ * here so different brews never stack (Java's `isSimilar()` same-attrib rule).
+ */
+export interface CraftedCookFruit {
+	readonly potionId: string;
+	readonly instanceId: string;
+}
+
+export function canCraftCookFruit(inventory: Inventory): boolean {
+	return inventory.items.some((item) => item.quantity > 0 && isPlainFruit(item))
+		&& inventory.items.some((item) => item.quantity > 0 && seedPotionId(item) !== undefined);
+}
+
+export function craftCookFruit(inventory: Inventory, selected?: { fruit: AlchemyUnitRef; seed: AlchemyUnitRef }): CraftedCookFruit | undefined {
+	const potionIdFor = (ref: AlchemyUnitRef): string | undefined => {
+		const stack = inventory.items.find((item) => unitKey(item) === unitKey(ref));
+		return stack ? seedPotionId(stack) : undefined;
+	};
+	let fruit: AlchemyUnitRef | undefined;
+	let seed: AlchemyUnitRef | undefined;
+	let potionId: string | undefined;
+	if (selected) {
+		fruit = takeChosenUnits(inventory, [selected.fruit], (item) => isPlainFruit(item))?.[0];
+		seed = takeChosenUnits(inventory, [selected.seed], (item) => seedPotionId(item) !== undefined)?.[0];
+		if (!fruit || !seed) return undefined;
+		potionId = potionIdFor(seed);
+		if (!potionId) return undefined;
+	} else {
+		const fruitStack = inventory.items.find((item) => item.quantity > 0 && isPlainFruit(item));
+		const seedStack = inventory.items.find((item) => item.quantity > 0 && seedPotionId(item) !== undefined);
+		if (!fruitStack || !seedStack) return undefined;
+		fruit = { id: fruitStack.id, instanceId: fruitStack.instanceId };
+		seed = { id: seedStack.id, instanceId: seedStack.instanceId };
+		potionId = seedPotionId(seedStack);
+		if (!potionId) return undefined;
+	}
+	const fruitStack = inventory.items.find((item) => unitKey(item) === unitKey(fruit!) && isPlainFruit(item));
+	if (!fruitStack || !removeFruitUnits(inventory, fruitStack, 1)) return undefined;
+	inventory.remove(seed.id, 1, seed.instanceId);
+	return { potionId, instanceId: cookedFruitInstanceId(potionId) };
+}
+
+/**
  * The alchemy-pot window flow, moved out of `scenes/dungeonScene.ts` (file-size refactor:
  * one domain per commit, no behavior change). The scene keeps only a thin adapter that
  * builds the context; everything below reads the bag and the energy pool through it,
@@ -532,7 +641,7 @@ export interface AlchemyFlowContext {
 		entries: { id: string; instanceId?: string; identified?: boolean; quantity: number; note?: string }[],
 		onPick: (entry: { id: string; instanceId?: string }) => void,
 	) => void;
-	readonly itemDisplayName: (id: string, identified: boolean) => string;
+	readonly itemDisplayName: (id: string, identified: boolean, instanceId?: string) => string;
 	readonly refreshInventoryPanel: () => void;
 	readonly magicImmune?: boolean;
 	/** The slot window (`items/alchemySlots.ts`, R012): when the scene supplies it, `openAlchemyRecipes` opens it instead of the recipe picker. */
@@ -558,18 +667,29 @@ function spendAlchemyEnergy(scene: AlchemyFlowContext, cost: number): boolean {
 export type AlchemyIngredientSelection =
 	| { kind: 'seeds'; units: AlchemyUnitRef[] }
 	| { kind: 'scroll'; unit: AlchemyUnitRef }
+	| { kind: 'unstableSpell'; scroll: AlchemyUnitRef; stone: AlchemyUnitRef }
 	| { kind: 'meatPie'; ingredients: MeatPieIngredientSelection }
 	| { kind: 'alchemize'; seed: AlchemyUnitRef; stone: AlchemyUnitRef }
+	| { kind: 'cookFruit'; fruit: AlchemyUnitRef; seed: AlchemyUnitRef }
 	/** exact-id recipes: the bag transaction takes the authored ingredients by id */
 	| { kind: 'exact' };
 
 // Java's alchemy window adds specific carried units; the recipe row only names the
-// recipe, so these five category recipes pause here for one ingredient picker per unit
+// recipe, so these six category recipes pause here for one ingredient picker per unit
 // and finish through completeAlchemyRecipe below. Closing any picker aborts the brew
 // with nothing consumed, the way walking away from the pot does. Returns true when it
 // takes over, false for exact-id recipes (which fall through to the plain picker path).
 export function startAlchemyIngredientPick(scene: AlchemyFlowContext, recipe: AlchemyRecipe): boolean {
 	const chooseTitle = t('port.ui.alchemy.choose');
+	if (recipe.id === 'trinketCatalyst') { openTrinketCatalystFlow(scene); return true; }
+	if (recipe.id === 'upgradeTrinket') { startTrinketUpgrade(scene, chooseTitle); return true; }
+	if (recipe.id === 'unstableSpell') {
+		pickAlchemyUnits(scene, chooseTitle, (item) => item.id.startsWith('scroll'), 1, [], (scroll) => {
+			pickAlchemyUnits(scene, chooseTitle, (item) => item.id === 'stone' || item.id.startsWith('stoneOf'), 1, [], (stone) =>
+				completeAlchemyRecipe(scene, recipe, { kind: 'unstableSpell', scroll: scroll[0]!, stone: stone[0]! }));
+		});
+		return true;
+	}
 	if (recipe.id === 'potionSeed') {
 		pickAlchemyUnits(scene, chooseTitle, (item) => seedPotionId(item) !== undefined, 3, [], (selected) => completeAlchemyRecipe(scene, recipe, { kind: 'seeds', units: selected }));
 		return true;
@@ -602,7 +722,78 @@ export function startAlchemyIngredientPick(scene: AlchemyFlowContext, recipe: Al
 		});
 		return true;
 	}
+	//`Blandfruit.CookFruit` (tag `v3.3.8`): one *plain* fruit plus any one seed -
+	//the fruit picker admits only `potionAttrib`-less fruits (a cooked fruit can never
+	//cook again, Java's `fruit.potionAttrib == null` gate), the seed picker any seed
+	//with a potion mapping, either order Java's window allows collapsed here to
+	//fruit-first like the alchemize pair above.
+	if (recipe.id === 'blandfruit') {
+		pickAlchemyUnits(scene, chooseTitle, (item) => isPlainFruit({ id: item.id, potionAttrib: (item as { potionAttrib?: string }).potionAttrib }), 1, [], (fruits) => {
+			pickAlchemyUnits(scene, chooseTitle, (item) => seedPotionId(item) !== undefined, 1, [], (seeds) => completeAlchemyRecipe(scene, recipe, { kind: 'cookFruit', fruit: fruits[0]!, seed: seeds[0]! }));
+		});
+		return true;
+	}
 	return false;
+}
+
+let trinketInstanceCounter = 0;
+
+/**
+ * `TrinketCatalyst.Recipe.brew()` + `WndTrinket` (`items/trinkets/TrinketCatalyst.java`, tag `v3.3.8`): brewing a
+ * catalyst pays 6 energy once, rolls `NUM_TRINKETS` (4) trinkets from the TRINKET deck and keeps them on the
+ * catalyst (`rolledTrinkets`, so closing the window does not reroll - Java re-offers them at the next visit), and
+ * the chosen trinket replaces the catalyst, identified at +0. Simplified: Java opens a per-trinket info window
+ * with confirm/cancel before committing and its window cannot be dismissed; here the list pick commits, and a
+ * dismissed list is simply offered again on the next brew without a second charge.
+ */
+export function openTrinketCatalystFlow(scene: AlchemyFlowContext): void {
+	const cata = scene.bag.find('trinketCatalyst') as (ReturnType<typeof scene.bag.find> & { rolledTrinkets?: string[] }) | undefined;
+	if (!cata) { scene.say(t('port.log.alchemy.unavailable'), 'negative'); return; }
+	if (!cata.rolledTrinkets || cata.rolledTrinkets.length === 0) {
+		if (TRINKET_CATALYST_COST > alchemyEnergyAvailable(scene) || !spendAlchemyEnergy(scene, TRINKET_CATALYST_COST)) {
+			scene.say(t('port.log.alchemy.unavailable'), 'negative');
+			return;
+		}
+		const rolled: string[] = [];
+		while (rolled.length < TRINKET_CATALYST_OFFERS) {
+			const trinket = trinketForClass(randomCategory(Cat.TRINKET).cls);
+			if (trinket) rolled.push(trinket.id);
+		}
+		cata.rolledTrinkets = rolled;
+	}
+	const offers = cata.rolledTrinkets;
+	scene.openItemPicker(
+		t('items.trinkets.trinketcatalyst.window_title'),
+		offers.map((id, index) => ({ id, instanceId: `catalyst-offer:${index}`, identified: true, quantity: 1 })),
+		(pick) => {
+			const index = Number(pick.instanceId?.split(':')[1]);
+			const id = offers[index];
+			if (id === undefined || !scene.bag.find('trinketCatalyst')) return;
+			scene.bag.remove('trinketCatalyst', 1);
+			scene.bag.add({ id, quantity: 1, stackable: false, identified: true, level: 0, instanceId: `trinket:${id}:${++trinketInstanceCounter}` });
+			scene.say(t('port.log.alchemy.crafted', { item: scene.itemDisplayName(id, true) }), 'positive');
+			scene.refreshInventoryPanel();
+		},
+	);
+}
+
+/** `Trinket.UpgradeTrinket.brew()`: one trinket below +3 becomes `+1` for its own `upgradeEnergyCost()`. */
+export function startTrinketUpgrade(scene: AlchemyFlowContext, chooseTitle: string): void {
+	pickAlchemyUnits(scene, chooseTitle, (item) => isTrinketId(item.id) && canUpgradeTrinket((item as { level?: number }).level ?? 0), 1, [], (chosen) => upgradeTrinketUnit(scene, chosen[0]!));
+}
+
+/** The brew half of `Trinket.UpgradeTrinket`: pays `upgradeEnergyCost()` and raises the named carried trinket one level. */
+export function upgradeTrinketUnit(scene: AlchemyFlowContext, unit: AlchemyUnitRef): void {
+	const stack = scene.bag.items.find((item) => item.quantity > 0 && item.id === unit.id && (item.instanceId ?? undefined) === (unit.instanceId ?? undefined));
+	if (!stack || !canUpgradeTrinket(stack.level ?? 0)) { scene.say(t('port.log.alchemy.unavailable'), 'negative'); return; }
+	const cost = trinketUpgradeEnergyCost(stack.id, stack.level ?? 0);
+	if (cost > alchemyEnergyAvailable(scene) || !spendAlchemyEnergy(scene, cost)) {
+		scene.say(t('port.log.alchemy.unavailable'), 'negative');
+		return;
+	}
+	stack.level = (stack.level ?? 0) + 1;
+	scene.say(t('port.log.alchemy.crafted', { item: scene.itemDisplayName(stack.id, true, stack.instanceId) }), 'positive');
+	scene.refreshInventoryPanel();
 }
 
 // One ingredient picker per unit: rows are the eligible carried stacks with an uncovered
@@ -644,12 +835,26 @@ export function completeAlchemyRecipe(scene: AlchemyFlowContext, recipe: Alchemy
 		return;
 	}
 	let craftedResult: ReturnType<typeof craftPotionSeed>;
+	let craftedInstanceId: string | undefined;
 	let crafted: boolean;
 	if (recipe.id === 'potionSeed') {
 		craftedResult = craftPotionSeed(scene.bag, selected.kind === 'seeds' ? selected.units : undefined, scene);
 		crafted = craftedResult !== undefined;
 		if (craftedResult) scene.bag.add({ id: craftedResult.id, quantity: 1, stackable: true, identified: craftedResult.identified });
-	} else if (recipe.id === 'scrollToStone') crafted = craftScrollToStone(scene.bag, selected.kind === 'scroll' ? selected.unit : undefined);
+	} else if (recipe.id === 'blandfruit') {
+		const cooked = craftCookFruit(scene.bag, selected.kind === 'cookFruit' ? { fruit: selected.fruit, seed: selected.seed } : undefined);
+		crafted = cooked !== undefined;
+		if (cooked) {
+			craftedResult = { id: 'blandfruit', identified: true };
+			craftedInstanceId = cooked.instanceId;
+			//`potionAttrib` is this port's own payload field, not an `InventoryItem`
+			//member, so it rides a conditional spread past the literal check - the
+			//same dodge the weapon-upgrade add above uses for its own extras.
+			scene.bag.add({ id: 'blandfruit', quantity: 1, stackable: true, identified: true, instanceId: cooked.instanceId, ...(cooked.potionId ? { potionAttrib: cooked.potionId } : {}) });
+		}
+	} else if (recipe.id === 'unstableSpell') crafted = selected.kind === 'unstableSpell'
+		? craftUnstableSpell(scene.bag, selected.scroll, selected.stone) : false;
+	else if (recipe.id === 'scrollToStone') crafted = craftScrollToStone(scene.bag, selected.kind === 'scroll' ? selected.unit : undefined);
 	else if (recipe.id === 'meatPie') crafted = craftMeatPie(scene.bag, selected.kind === 'meatPie' ? selected.ingredients : undefined);
 	else if (recipe.id === 'scrollToExotic') crafted = craftScrollToExotic(scene.bag, selected.kind === 'scroll' ? selected.unit : undefined);
 	else if (recipe.id === 'potionToExotic') crafted = craftPotionToExotic(scene.bag, selected.kind === 'scroll' ? selected.unit : undefined);
@@ -669,7 +874,7 @@ export function completeAlchemyRecipe(scene: AlchemyFlowContext, recipe: Alchemy
 		: recipe.id === 'potionToExotic' ? potionExoticResult(chosenScroll) : undefined;
 	const resultId = craftedResult?.id ?? mappedResult ?? recipe.result.id;
 	const resultIdentified = craftedResult?.identified ?? true;
-	scene.say(t('port.log.alchemy.crafted', { item: scene.itemDisplayName(resultId, resultIdentified) }), 'positive');
+	scene.say(t('port.log.alchemy.crafted', { item: scene.itemDisplayName(resultId, resultIdentified, craftedInstanceId) }), 'positive');
 	scene.refreshInventoryPanel();
 }
 
@@ -694,7 +899,10 @@ export function openAlchemyRecipes(scene: AlchemyFlowContext): void {
 	if (scene.openAlchemySlots) { scene.openAlchemySlots(); return; }
 	const availableEnergy = alchemyEnergyAvailable(scene);
 	const recipes = ALCHEMY_RECIPES.filter((recipe) => recipe.energyCost <= availableEnergy && (
-		recipe.id === 'potionSeed' ? canCraftPotionSeed(scene.bag) : recipe.id === 'meatPie' ? canCraftMeatPie(scene.bag) : recipe.id === 'scrollToStone' ? canCraftScrollToStone(scene.bag) : recipe.id === 'scrollToExotic' ? canCraftScrollToExotic(scene.bag) : recipe.id === 'potionToExotic' ? canCraftPotionToExotic(scene.bag) : recipe.id === 'alchemize'
+		recipe.id === 'trinketCatalyst' ? scene.bag.find('trinketCatalyst') !== undefined :
+		recipe.id === 'upgradeTrinket' ? scene.bag.items.some((item) => item.quantity > 0 && isTrinketId(item.id) && canUpgradeTrinket(item.level ?? 0)) :
+		recipe.id === 'unstableSpell' ? canCraftUnstableSpell(scene.bag) :
+		recipe.id === 'potionSeed' ? canCraftPotionSeed(scene.bag) : recipe.id === 'blandfruit' ? canCraftCookFruit(scene.bag) : recipe.id === 'meatPie' ? canCraftMeatPie(scene.bag) : recipe.id === 'scrollToStone' ? canCraftScrollToStone(scene.bag) : recipe.id === 'scrollToExotic' ? canCraftScrollToExotic(scene.bag) : recipe.id === 'potionToExotic' ? canCraftPotionToExotic(scene.bag) : recipe.id === 'alchemize'
 			? scene.bag.items.some((item) => item.quantity > 0 && item.id.startsWith('seed'))
 				&& scene.bag.items.some((item) => item.quantity > 0 && item.id.startsWith('stoneOf'))
 			: canCraftAlchemy(scene.bag, recipe.id)
@@ -723,9 +931,11 @@ export function openAlchemyRecipes(scene: AlchemyFlowContext): void {
 				return;
 			}
 			const potionSeed = recipe?.id === 'potionSeed' ? craftPotionSeed(scene.bag, undefined, scene) : undefined;
+			const cookFruit = recipe?.id === 'blandfruit' ? craftCookFruit(scene.bag, undefined) : undefined;
 			const craftedResult = recipe?.id === 'potionSeed' ? potionSeed : undefined;
 			if (craftedResult) scene.bag.add({ id: craftedResult.id, quantity: 1, stackable: true, identified: craftedResult.identified });
-			const crafted = recipe?.id === 'potionSeed' ? craftedResult !== undefined : recipe?.id === 'scrollToStone' ? craftScrollToStone(scene.bag)
+			if (cookFruit) scene.bag.add({ id: 'blandfruit', quantity: 1, stackable: true, identified: true, instanceId: cookFruit.instanceId, ...(cookFruit.potionId ? { potionAttrib: cookFruit.potionId } : {}) });
+			const crafted = recipe?.id === 'potionSeed' ? craftedResult !== undefined : recipe?.id === 'blandfruit' ? cookFruit !== undefined : recipe?.id === 'scrollToStone' ? craftScrollToStone(scene.bag)
 				: recipe?.id === 'scrollToExotic' ? craftScrollToExotic(scene.bag)
 				: recipe?.id === 'potionToExotic' ? craftPotionToExotic(scene.bag)
 				: recipe?.id === 'alchemize' ? craftAlchemize(scene.bag) : recipe ? craftAlchemy(scene.bag, recipe.id) : false;
@@ -736,7 +946,8 @@ export function openAlchemyRecipes(scene: AlchemyFlowContext): void {
 			if (!spendAlchemyEnergy(scene, recipeCost)) return;
 			const resultId = craftedResult?.id ?? recipe.result.id;
 			const resultIdentified = craftedResult?.identified ?? true;
-			scene.say(t('port.log.alchemy.crafted', { item: scene.itemDisplayName(resultId, resultIdentified) }), 'positive');
+			const resultInstanceId = cookFruit?.instanceId;
+			scene.say(t('port.log.alchemy.crafted', { item: scene.itemDisplayName(resultId, resultIdentified, resultInstanceId) }), 'positive');
 			scene.refreshInventoryPanel();
 		},
 	);
