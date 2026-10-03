@@ -2074,6 +2074,38 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.ok(/triggerPortedPlantAt\(this: DungeonScene[\s\S]{0,1500}portedFeatures\.remove\(cell\)/.test(scene),
 			'hero wither uproots the feature like the mob and root paths');
 	});
+	check('R015 residual quest writes all land on attempts, not landed hits', () => {
+		//`StenchGas.evolve()` (tag `v3.3.8`): an unparalysed hero breathing the gas
+		//while its rat lives scores `questScores[0] -= 100` - the simulation write was
+		//already committed; the scene seam just never passed the hook through.
+		const blobs = readFileSync(new URL('../src/simulation/environmentalBlobs.ts', import.meta.url), 'utf8');
+		assert.ok(blobs.includes('context.addQuestScore?.(0, -100)'),
+			'the stench write fires while a live fetidRat shares the gas');
+		const traps = readFileSync(new URL('../src/scenes/dungeon/environmentFireTraps.ts', import.meta.url), 'utf8');
+		assert.ok(traps.includes('addQuestScore: (index, delta) => { addQuestScore(this, index, delta); },'),
+			'the blob seam carries the quest-score hook into the simulation');
+		//`Blacksmith.Quest.complete()` (tag `v3.3.8`): `questScores[2] += favor`.
+		const shop = readFileSync(new URL('../src/scenes/dungeon/npcShopBlacksmith.ts', import.meta.url), 'utf8');
+		assert.ok(shop.includes('addQuestScore(this, 2, this.blacksmithFavor);'),
+			'the turn-in writes the capped favor plus boss bonus to questScores[2]');
+		//`RotLasher.attack()` (tag `v3.3.8`) scores on the attempt, before the hit
+		//roll; `CorpseDust.DustWraith.attack()` counts per-wraith attempts (persisted)
+		//and scores at the 2nd and 3rd. Both hook the `attack()` head, never a proc.
+		const resolution = readFileSync(new URL('../src/scenes/dungeon/combatResolution.ts', import.meta.url), 'utf8');
+		assert.ok(resolution.includes("if (attacker.kind === 'rotLasher') addQuestScore(this, 1, -100);"),
+			'RotLasher scores every attempt against the hero, misses included');
+		assert.ok(resolution.includes('attacker.wraithAtkCount = (attacker.wraithAtkCount ?? 0) + 1;'),
+			'DustWraith counts its own attempts');
+		assert.ok(resolution.includes('if (attacker.wraithAtkCount === 2 || attacker.wraithAtkCount === 3) addQuestScore(this, 1, -100);'),
+			'the 2nd and 3rd wraith attempts score (first free, max -200 per wraith)');
+		const hits = readFileSync(new URL('../src/scenes/mobOnHit.ts', import.meta.url), 'utf8');
+		assert.ok(!hits.includes('ctx.addQuestScore?.(1, -100)'),
+			'the old landed-hit lasher write is gone (no double count)');
+		const tiles = readFileSync(new URL('../src/scenes/dungeon/coreSpawnTiles.ts', import.meta.url), 'utf8');
+		assert.ok(tiles.includes('wraithAtkCount: creature.wraithAtkCount,')
+			&& tiles.includes('wraithAtkCount: saved.wraithAtkCount,'),
+			'the wraith counter survives save/load like Java bundle field');
+	});
 	check('bomb detonations play BLAST and burst when destructive', () => {
 		//`Bomb.explode()` (tag `v3.3.8`, R062): BLAST on every detonation, plus the
 		//30-mote 0xEE7722 burst when `explodesDestructively()` - the MWL `baseBlast`

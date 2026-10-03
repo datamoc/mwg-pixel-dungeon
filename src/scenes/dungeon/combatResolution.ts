@@ -89,6 +89,19 @@ export const combatResolutionMethods: Record<string, any> = {
 	 * splits (numbers verbatim); Fury kindles below half HP.
 	 */
 	attack(this: DungeonScene, attacker: Creature, defender: Creature, accFactor = 1, damageMultiplier = 1): boolean {
+		//R015 quest-score attempts (both tag `v3.3.8`, both counted in the Java `attack()`
+		//overrides, so misses count too - these hook the attempt here, never a landed proc):
+		//`RotLasher.attack()` scores `questScores[1] -= 100` on every attempt against the
+		//hero (replacing the old landed-hit write in `mobOnHit`, which missed dodges);
+		//`CorpseDust.DustWraith.attack()` increments the wraith's own persisted counter
+		//instead, scoring at the 2nd and 3rd attempts (first free, max -200 per wraith).
+		if (defender.isHero) {
+			if (attacker.kind === 'rotLasher') addQuestScore(this, 1, -100);
+			else if (attacker.kind === 'dustWraith') {
+				attacker.wraithAtkCount = (attacker.wraithAtkCount ?? 0) + 1;
+				if (attacker.wraithAtkCount === 2 || attacker.wraithAtkCount === 3) addQuestScore(this, 1, -100);
+			}
+		}
 		//`DriedRose.GhostHero.weapon()`/`armor()` (DriedRose.java, tag v3.3.8) expose the ghost's
 		//own carried gear to the ordinary attack/defense proc pipeline. The port's mature proc hooks
 		//are scene-slot based, so install only the relevant slot for this synchronous exchange and

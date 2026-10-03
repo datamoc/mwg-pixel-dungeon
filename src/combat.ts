@@ -225,6 +225,9 @@ export interface Creature extends Combatant {
 	firstSummon?: boolean;
 	/** `Wraith.level`, set by `adjustStats()` at spawn and persisted (`storeInBundle`). */
 	wraithLevel?: number;
+	/** `CorpseDust.DustWraith.atkCount`, incremented per attack attempt vs the hero and
+	 * persisted (`ATK_COUNT`), scoring at the 2nd and 3rd attempts. */
+	wraithAtkCount?: number;
 	/** Tengu.arenaJumps: how many times it has relocated this fight */
 	arenaJumps?: number;
 	/** `PrisonBossLevel.State` collapse for this port's single arena: `cell` is Java's

@@ -225,13 +225,11 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	}
 	//RotLasher.attackProc() (RotLasher.java, tag v3.3.8): every landed hit cripples
 	//for 2 turns (`Buff.affect(enemy, Cripple.class, 2f)` - unconditional, like the
-	//caustic proc above, not damage-gated like Albino's).
+	//caustic proc above, not damage-gated like Albino's). (`RotLasher.attack()`'s own
+	//`questScores[1] -= 100` attempt write lives at the `attack()` head in
+	//combatResolution, where misses count too.)
 	if (attacker.kind === 'rotLasher') {
 		addBuff(defender, 'cripple', 2);
-		//`RotLasher.attack()` (tag `v3.3.8`): `questScores[1] -= 100` when it attacks the
-		//hero. Java fires on the attempt; this hook only sees landed hits, so a dodged
-		//lash scores nothing here.
-		if (defender.isHero) ctx.addQuestScore?.(1, -100);
 	}
 	//RotHeart.defenseProc() (RotHeart.java, tag v3.3.8): a struck heart seeds ToxicGas
 	//at its own cell with volume `5 + 3 * openNearby`, where openness counts non-solid

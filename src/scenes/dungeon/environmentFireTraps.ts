@@ -53,7 +53,7 @@ import { ETERNAL_FIRE_BURN, wardTexture, type BonesShape } from './shared';
 import { spawnTrapSpecks } from '../../ui/effectBursts';
 import { nonSolidDistanceMap } from '../../simulation/trapAreas';
 import { tenguDartPoisonAmount } from '../../simulation/tenguDart';
-import { addBossScore } from '../../rankings';
+import { addBossScore, addQuestScore } from '../../rankings';
 
 /** Java traps flood cells where `!level.solid`; this floor model exposes passability plus pit identity. */
 function trapAreaDistances(scene: DungeonScene, x: number, y: number, maxDistance: number): number[] {
@@ -1187,6 +1187,10 @@ export const environmentFireTrapsMethods = {
 			},
 			creatureAt: (x, y) => this.creatureAt(x, y),
 			addBuff: (target, id, duration) => addBuff(target, id, duration),
+			//R015 (`StenchGas.evolve()`, tag `v3.3.8`): the unparalysed-hero-breathes-gas-
+			//while-its-rat-lives `questScores[0] -= 100` write lives in the simulation;
+			//this hook carries it into the run totals like every other quest-score site.
+			addQuestScore: (index, delta) => { addQuestScore(this, index, delta); },
 			//`Inferno`/`Blizzard.evolve()` provisions (tag `v3.3.8`): reignited Burning,
 			//double chill steps, mutual annihilation (plus `Freezing`/`plantFreeze`), and
 			//inferno's flamable-terrain destruction with adjacent `Fire` 4 seeding.

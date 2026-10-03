@@ -147,6 +147,8 @@ export interface SavedCreature {
 	firstSummon?: boolean;
 	/** `Wraith.level` (`Wraith.java`, tag `v3.3.8`), set by `adjustStats()` at spawn. */
 	wraithLevel?: number;
+	/** `CorpseDust.DustWraith.atkCount` (`CorpseDust.java`, tag `v3.3.8`). */
+	wraithAtkCount?: number;
 	impShopkeeperGreeted?: boolean;
 	nextTurn: number | null;
 	isAlly?: boolean;

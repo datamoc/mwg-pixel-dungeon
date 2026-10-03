@@ -760,6 +760,9 @@ export const npcShopBlacksmithMethods = {
 	completeBlacksmithQuest(this: DungeonScene): void {
 		const gold = this.carriedDarkGold();
 		this.blacksmithFavor = blacksmithTurnInFavor(gold, this.blacksmithBossBeaten);
+		//`Blacksmith.Quest.complete()` (tag `v3.3.8`): `Statistics.questScores[2] += favor`
+		//(the favor above: capped DarkGold plus the boss bonus, computed beside it).
+		addQuestScore(this, 2, this.blacksmithFavor);
 		if (gold > 0) this.bag.remove('darkGold', gold);
 		if (this.bag.find('pickaxe')) this.bag.remove('pickaxe', 1);
 		this.finishBlacksmithQuest();
