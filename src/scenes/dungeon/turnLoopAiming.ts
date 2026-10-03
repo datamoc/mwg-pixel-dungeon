@@ -203,8 +203,9 @@ export const turnLoopAimingMethods = {
 		//`WandOfLightning` class: `Char.damage()` halves with `Math.round` on
 		//every holder (shock elemental, DM100, Pylon, BrightFist). The blob seam
 		//carries the `Electricity` class, `shockingArc` and the shock arc carry
-		//`Shocking`; darts and the Potential talent have no mob-damage seam of
-		//their own (stated, not silent).
+		//`Shocking`, and the stormvine (ShockingDart) proc carries it through its
+		//own `sourceElement: 'electric'` (`tippedDartEffects.ts`). `Potential` is an
+		//armor glyph that charges wands when the hero is hit - no damage seam.
 		if (wandType === 'lightning' && !victim.isHero
 			&& electricDamageHalved(victim.kind, victim.elementalType, victim.yogFistType)) damage = Math.round(damage * 0.5);
 			if (wandType === 'frost') {

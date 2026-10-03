@@ -89,9 +89,12 @@ export const tippedDartEffectsMethods = {
 				//`ShockingDart.proc()` (`ShockingDart.java`, tag `v3.3.8`): flat
 				//`NormalIntRange(5 + depth/4, 10 + depth/4)` electricity damage and no
 				//status at all - the old daze-3 with no damage was invented. (The
-				//lightning-arc presentation has no seam here.)
+				//lightning-arc presentation has no seam here.) The `Electricity` source
+				//class rides `sourceElement: 'electric'` through the shared dispatch, so
+				//shock elementals, DM100, the Pylon and BrightFist halve it like every
+				//other electric source.
 				{
-					this.applyCharacterDamage(target, Random.normalRange(5 + Math.floor(this.depth / 4), 10 + Math.floor(this.depth / 4)), { pierceArmor: true, cause: 'foe', skipAura: true });
+					this.applyCharacterDamage(target, Random.normalRange(5 + Math.floor(this.depth / 4), 10 + Math.floor(this.depth / 4)), { pierceArmor: true, cause: 'foe', skipAura: true, sourceElement: 'electric' });
 				}
 				break;
 			case 'sungrass':

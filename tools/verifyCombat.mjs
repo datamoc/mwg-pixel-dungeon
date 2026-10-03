@@ -1071,6 +1071,46 @@ export function verifyCombat(require, check) {
 		assert.ok(mobOnHit.includes("defender.kind === 'acidic'") && mobOnHit.includes('Roguelike.chebyshevDistance(defender, attacker) === 1'),
 			'acidic oozes adjacent attackers on the defender seam');
 	});
+	check('ChaosElemental rolls the cursed-wand table with itself as user, skipping accuracy and wand procs', () => {
+		//`ChaosElemental.meleeProc`/`rangedProc`/`zap` (`Elemental.java`, tag `v3.3.8`):
+		//melee calls the rolled effect directly with no FX; ranged goes through `cursedZap`
+		//(bolt FX at the call site) and always hits. A null origin means no wand-proc tail,
+		//and `positiveOnly` can never roll true for a non-hero user.
+		const cursed = readFileSync(new URL('../src/scenes/dungeon/hero/cursedWandCast.ts', import.meta.url), 'utf8');
+		assert.ok(cursed.includes('castCursedChaosEffect(this: DungeonScene, target: Creature | undefined, cell: Step, user: Creature, melee: boolean)'),
+			'the chaos entry takes the elemental as user plus a melee flag');
+		assert.ok(cursed.includes('cursedProcWandLevel = null;'),
+			'a chaos cast carries no wand origin, so the wand-proc tail skips');
+		assert.ok(cursed.includes("while (user !== undefined && effect === 'randomWand')"),
+			'RandomWand re-rolls for a non-hero user (valid() requires Hero)');
+		assert.ok(cursed.includes("effect === 'petrify' || (effect === 'sheepPolymorph' && !sheepTargetOk)"),
+			'Petrify and hero-targeted Sheep re-roll for a non-hero user');
+		assert.ok(cursed.includes("effect === 'randomTransmogrify' && (user !== undefined"),
+			'Transmogrify re-rolls with no origin wand');
+		assert.ok(cursed.includes("effect === 'heroShapeShift' && user !== undefined && !(chaosTarget && chaosTarget.isHero)"),
+			'ShapeShift re-rolls unless the collision target is the hero');
+		assert.ok(cursed.includes("if (caster !== this.hero) {") && cursed.includes("addBuff(target, 'hex')"),
+			'CurseEquipment hexes the collision target for a non-hero caster');
+		assert.ok(cursed.includes('chaosMelee ? { cells: [{ x: cell.x, y: cell.y }] }'),
+			'a chaos melee ConeOfColors affects only the collision cell (null cone)');
+		const ai = readFileSync(new URL('../src/scenes/dungeon/monsters/monsterAi.ts', import.meta.url), 'utf8');
+		assert.ok(ai.includes("if (type !== 'chaos' && !rollHit(monster, target, true)) {"),
+			'a chaos zap skips the accuracy roll and always hits');
+		assert.ok(ai.includes('this.castCursedChaosEffect(target, { x: target.x, y: target.y }, monster, false)'),
+			'ranged chaos delegates to the cursed-wand table with itself as user');
+		assert.ok(mobOnHitSource.includes("case 'chaos': ctx.castChaosMelee?.(defender, attacker); break;"),
+			'melee chaos delegates through the scene bridge instead of the old status stand-in');
+		assert.ok(!mobOnHitSource.includes("Random.element(['burning', 'chill', 'cripple', 'daze']"),
+			'the chaos harmful-status stand-in is gone');
+	});
+	check('the stormvine (ShockingDart) proc carries the Electricity source class', () => {
+		//`ShockingDart.proc()` (`ShockingDart.java`, tag `v3.3.8`) deals its flat roll as
+		//electricity damage, so ELECTRIC holders (shock elemental, DM100, Pylon,
+		//BrightFist) halve it through the shared `sourceElement` dispatch.
+		const darts = readFileSync(new URL('../src/scenes/dungeon/hero/tippedDartEffects.ts', import.meta.url), 'utf8');
+		assert.ok(darts.includes("sourceElement: 'electric'"),
+			'the stormvine proc marks its damage electric');
+	});
 	check('GrimTrap mixes half max with half current HP, and the stock-bomb blast is 4+d..12+3d with no falloff', () => {
 		// round(HT/2 + HP/2): full-health 100 -> 100 (hero-capped to 90 at the call site)
 		assert.equal(grimTrapDamage(100, 100), 100);

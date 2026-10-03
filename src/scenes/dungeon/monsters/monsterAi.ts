@@ -1123,28 +1123,34 @@ export const monsterAiMethods = {
 	 * `Elemental.zap()` is just `hit(this, enemy, true)` -> `rangedProc(enemy)`, and every
 	 * `rangedProc` is a pure status application - `FireElemental` reignites Burning (unless the
 	 * target stands in water), `FrostElemental` calls `Freezing.freeze`, `ShockElemental` applies
-	 * `Blindness.DURATION/2f`, and `ChaosElemental` delegates to a cursed-wand effect. This port
-	 * used to roll `NormalIntRange(20, 25)` on top of the status, damage real Java never deals -
-	 * an Elemental's threat at range is the status, not a hit. The shared port has no Blindness
-	 * or cursed-wand subsystem, so Shock uses Daze and Chaos uses one existing harmful status as
-	 * explicit stand-ins; Fire/Frost use the existing fire/chill/frost primitives. No explicit hit
+	 * `Blindness.DURATION/2f`, and `ChaosElemental` rolls the cursed-wand table with itself as
+	 * user (`castCursedChaosEffect`, ported 2026-10-03 - the old harmful-status stand-in is
+	 * gone). This port used to roll `NormalIntRange(20, 25)` on top of the status, damage
+	 * real Java never deals - an Elemental's threat at range is the status, not a hit. The
+	 * shared port has no Blindness subsystem, so Shock uses Daze as an explicit stand-in;
+	 * Fire/Frost use the existing fire/chill/frost primitives. No explicit hit
 	 * message is logged, matching Java (only the sprite zap and the buff's own announcement).
 	 *
 	 * `ShockElemental.meleeProc`'s electric arc is modelled in `combatResolution` (not
 	 * here): `planShockElementalArc` reproduces Java's `Shocking.arc` radius/order and
-	 * each hit lands armor-piercing via `ch.damage(round(dmg*0.4))`. Not modelled here:
-	 * the Chaos cursed-wand table. */
+	 * each hit lands armor-piercing via `ch.damage(round(dmg*0.4))`.
+	 *
+	 * A chaos cast plays this method's own bolt visual in place of Java's rainbow
+	 * MagicMissile (stated presentation reduction - the port has no tinted-missile seam),
+	 * and skips the accuracy roll below like Java's override does. */
 	elementalRangedTurn(this: DungeonScene, monster: Creature): boolean {
 		const target = this.rangedTarget(monster, 5);
 		if (!target) return false;
+		const type = monster.elementalType ?? 'fire';
 		//`Elemental.zap()` plays the sprite zap (an `attack` clone, tag `v3.3.8`).
 		this.playMonsterZap(monster);
-		if (!rollHit(monster, target, true)) {
+		//`ChaosElemental.zap()` skips the accuracy check and always hits
+		//(`Elemental.java`, tag `v3.3.8`); every other subtype rolls it here.
+		if (type !== 'chaos' && !rollHit(monster, target, true)) {
 			this.say(t('port.log.boltmisses', { who: capitalize(monster.name) }), 'negative');
 			return true;
 		}
 		this.spawnProjectile(monster, target);
-		const type = monster.elementalType ?? 'fire';
 		//`FireElemental.rangedProc()` (`Elemental.java`, tag `v3.3.8`) reignites
 		//Burning with an explicit 4, not the table-default 8.
 		if (type === 'fire' && this.level.get(target.x, target.y) !== WATER) reigniteBuff(target, 'burning', 4);
@@ -1153,7 +1159,10 @@ export const monsterAiMethods = {
 			//(tag `v3.3.8`) - a fire-typed target takes the backlash, never the chill.
 			if (applyElementalBacklash(target, 'chill') === 0 && !icyBuffImmune(target.kind, target.elementalType, 'chill')) target.buffs = applyChillFreeze(target.buffs, 3, resistedBuffDuration(target, 'chill', 1)).buffs;
 		} else if (type === 'shock') addBuff(target, 'daze');
-		else addBuff(target, Random.element(['burning', 'chill', 'cripple', 'daze'] as const) ?? 'daze');
+		//`ChaosElemental.rangedProc()` (`Elemental.java`, tag `v3.3.8`): `cursedZap` with
+		//a null origin and itself as user - the bolt FX above stands in for Java's rainbow
+		//missile, and the effect roll itself lives in `castCursedChaosEffect`.
+		else if (type === 'chaos') this.castCursedChaosEffect(target, { x: target.x, y: target.y }, monster, false);
 		return true;
 	},
 

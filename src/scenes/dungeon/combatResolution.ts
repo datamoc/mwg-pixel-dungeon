@@ -2150,6 +2150,9 @@ export const combatResolutionMethods: Record<string, any> = {
 			showHeal: (target, amount) => scene.showHeal(target, amount), spawnMonster: (kind, at) => scene.spawnMonster(kind, at),
 			subclass: () => scene.subclass(), talentRank: (id) => scene.talentRank(id), thiefSteal: (thief) => scene.thiefSteal(thief),
 			triggerPortedPlantAt: (x, y) => scene.triggerPortedPlantAt(x, y),
+			//ChaosElemental melee delegation: roll the cursed-wand table with the attacker
+			//as user at the defender's cell, with no FX (`Elemental.java`, tag `v3.3.8`).
+			castChaosMelee: (victim, elemental) => scene.castCursedChaosEffect(victim, { x: victim.x, y: victim.y }, elemental, true),
 			//`ShadowAlly.defenseProc`'s single roll, drawn in `attack()`; omitted by callers that
 			//are not an ordinary landed attack (e.g. `monsterAi`'s own hook), in which case
 			//`mobOnHit` draws it itself.

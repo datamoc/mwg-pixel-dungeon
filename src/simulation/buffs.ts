@@ -162,8 +162,10 @@ export function fieryElementalSourceDamage(
  * `resist()` halves `WandOfLightning`, `Shocking` (enchant procs and the shock
  * arc), `Electricity`, `ShockingDart` and `ShockElemental`-sourced damage with
  * `Math.round`. Holders are the shock elemental, DM100, the Pylon and BrightFist.
- * Pure predicate so the wand, blob and arc seams pin the same gate; `Potential`
- * has no mob-damage seam here, and shocking darts do not exist as an item. */
+ * Pure predicate so the wand, blob and arc seams pin the same gate; the stormvine
+ * (ShockingDart) proc carries the `Electricity` class through `sourceElement`
+ * (`tippedDartEffects.ts`), so dart damage halves here too. `Potential` is an armor
+ * glyph that charges wands on defense - it has no damage-dealing seam of its own. */
 export function electricDamageHalved(kind: string | undefined, elementalType: string | undefined, yogFistType: string | undefined): boolean {
 	if (kind === 'elemental') return (elementalType ?? 'fire') === 'shock';
 	if (kind === 'dm100' || kind === 'pylon') return true;

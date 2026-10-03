@@ -402,8 +402,8 @@ export function verifyArmorAbilities(require, check) {
 		}
 		assert.ok(source.includes('this.spawnSheep({ x: cx, y: cy }, 6)'), 'SummonSheep reuses the flock-trap spawn shape');
 		assert.ok(source.includes("activateGeyserTrapFlow({"), 'Geyser reuses the ported geyser-trap flow');
-		assert.ok(source.includes("addBuff(targetEligible ? target : this.hero, 'levitation')"), 'Levitate falls back to the caster when the target is ineligible');
-		assert.ok(source.includes("if (!mob.fleeing) mob.lastSeen = { x: this.hero.x, y: this.hero.y };"), 'Alarm wakes mobs toward the caster');
+		assert.ok(source.includes("addBuff(targetEligible ? target : caster, 'levitation')"), 'Levitate falls back to the caster when the target is ineligible');
+		assert.ok(source.includes("if (!mob.fleeing) mob.lastSeen = { x: caster.x, y: caster.y };"), 'Alarm wakes mobs toward the caster');
 		//AntiMagic.RESISTS lists CursedWand as a source class: HealthTransfer's damage half
 		//must zero against a magicImmune victim while its heal half still lands (fixed 2026-09-21).
 		assert.ok(source.includes('if (victim.magicImmune) return;'), 'HealthTransfer must RESISTS-gate its damage half only');
@@ -429,7 +429,7 @@ export function verifyArmorAbilities(require, check) {
 		assert.ok(source.includes("degrees: 90,") && source.includes("maxDistance: 8,"), 'ConeOfColors must build Java\'s exact 90-degree, 8-radius cone');
 		assert.ok(source.includes("trace: (coneFrom, coneTo) => this.coneRay(coneFrom, coneTo, false),"),
 			'ConeOfColors casts STOP_SOLID alone, so the ray must not stop at a character (coneRay\'s stopAtTarget: false)');
-		assert.ok(source.includes("if (coneCell.x === this.hero.x && coneCell.y === this.hero.y) continue;"),
+		assert.ok(source.includes("if (coneCell.x === caster.x && coneCell.y === caster.y) continue;"),
 			'ConeOfColors excludes the caster\'s own cell from the affected set, matching Java\'s `if (cell == user.pos) continue;`');
 		assert.ok(source.includes("Random.normalRange(5 + this.depth, 10 + this.depth * 2)"),
 			'ConeOfColors damage must be Java\'s NormalIntRange(5 + scalingDepth(), 10 + scalingDepth()*2)');

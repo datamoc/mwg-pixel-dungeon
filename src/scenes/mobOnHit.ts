@@ -48,6 +48,10 @@ export interface MobOnHitContext {
 	talentRank(id: string): number;
 	thiefSteal(thief: Creature): void;
 	triggerPortedPlantAt(x: number, y: number): void;
+	/** ChaosElemental melee delegation (`Elemental.java`, tag `v3.3.8`): the pure hook cannot
+	 * reach the scene's cursed-wand dispatcher, so the scene wrapper supplies this bridge.
+	 * Optional so headless callers keep their slim contexts (a missing bridge skips the proc). */
+	castChaosMelee?: (defender: Creature, attacker: Creature) => void;
 }
 
 /** monster-side on-hit hooks (all pre-existing, now grouped) */
@@ -79,13 +83,15 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	}
 	//Elemental meleeProc() (Elemental.java, tag `v3.3.8`): preserve each concrete subtype's
 	//contact effect. Shock delegates its recursive 40%-damage arc to the scene so the
-	//normal hero-absorption and kill seams still own HP mutation.
+	//normal hero-absorption and kill seams still own HP mutation. Chaos rolls the cursed-wand
+	//table with itself as user and no FX at all (Java's `meleeProc` calls the rolled effect
+	//directly, shortcutting `cursedZap`'s visuals); the old harmful-status stand-in is gone.
 	if (attacker.kind === 'elemental') {
 		switch (attacker.elementalType ?? 'fire') {
 			case 'fire': if (Random.chance(0.5) && ctx.level.get(defender.x, defender.y) !== WATER) reigniteBuff(defender, 'burning'); break;
 			case 'frost': if (Random.chance(1 / 3) || ctx.level.get(defender.x, defender.y) === WATER) addBuff(defender, 'frost'); break;
 			case 'shock': break;
-			case 'chaos': addBuff(defender, Random.element(['burning', 'chill', 'cripple', 'daze'] as const) ?? 'daze'); break;
+			case 'chaos': ctx.castChaosMelee?.(defender, attacker); break;
 		}
 	}
 	//Affection.proc() (items/armor/glyphs/Affection.java, tag 4.0.0-beta):
