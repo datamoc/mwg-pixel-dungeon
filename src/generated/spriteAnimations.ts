@@ -1822,7 +1822,7 @@ export const SPRITE_ANIMATIONS: Record<string, Record<string, { fps: number; loo
   // Hand-added, not generated: SmokeBomb.NinjaLog is not an actors/mobs sprite class, so the *Sprite.java glob never sees it (NinjaLogSprite is nested in actors/hero/abilities/rogue/SmokeBomb.java). Frames are that class: idle.frames(frames, 0) on a 0-speed animation and die.frames(frames, 1, 2, 3, 4) at 12fps.
   "ninjalog": {
     "idle": {
-      "fps": 0,
+      "fps": 1,
       "loop": true,
       "frames": [
         0
@@ -2081,14 +2081,14 @@ export const SPRITE_ANIMATIONS: Record<string, Record<string, { fps: number; loo
   },
   "rotlasher": {
     "idle": {
-      "fps": 0,
+      "fps": 1,
       "loop": true,
       "frames": [
         0
       ]
     },
     "run": {
-      "fps": 0,
+      "fps": 1,
       "loop": true,
       "frames": [
         0

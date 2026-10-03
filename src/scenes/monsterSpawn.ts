@@ -95,7 +95,10 @@ export function buildMonsterSprite(kind: AnyMonsterId, at: Step, profile: Monste
 			: baseKind.toLowerCase()
 	];
 	if (clips) {
-		for (const [name, clip] of Object.entries(clips)) sprite.add(name, clip.frames.map(index => frame(index)), clip);
+		//Java 0-fps clips are static single frames, but mwg's `Animation` throws on
+		//fps <= 0 (R116) - the table carries floored values, and this floors again so
+		//a future bad row degrades to a still frame instead of crashing the spawn.
+		for (const [name, clip] of Object.entries(clips)) sprite.add(name, clip.frames.map(index => frame(index)), { ...clip, fps: Math.max(1, clip.fps) });
 		sprite.play('idle');
 	}
 	sprite.x = at.x * TILE;

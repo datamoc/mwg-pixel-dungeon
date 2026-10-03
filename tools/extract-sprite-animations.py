@@ -128,7 +128,10 @@ def extract(text: str, stem: str) -> dict:
         speed = re.search(r'\b' + name + r'\s*=\s*new (?:MovieClip\.)?Animation\(\s*(\d+)\s*,\s*(true|false)\s*\)', text)
         frames = re.search(r'\b' + name + r'\.frames\(\s*' + var + r'\s*,\s*([\d,\s]+)\)', text)
         if speed and frames:
-            anims[name] = {'fps': int(speed[1]), 'loop': speed[2] == 'true',
+            # Java 0-fps clips are static single frames (noosa tolerates 0); mwg's
+            # `Animation` throws on fps <= 0 (R116), so floor at 1 - a single frozen
+            # frame renders identically at any positive fps.
+            anims[name] = {'fps': max(1, int(speed[1])), 'loop': speed[2] == 'true',
                            'frames': [int(n) for n in frames[1].split(',') if n.strip()]}
     # Aliases (`zap = attack.clone()`, and the reverse `attack = zap.clone()`)
     # resolve to the cloned clip's own values, whatever the direction: iterate
@@ -165,9 +168,10 @@ HAND_ADDED = {
 # the old hand-add got slightly wrong. Each cites its source; the single-frame
 # clips render identically at any fps, so these are record-keeping, not visual.
 FIXUPS = {
-    # NinjaLogSprite: `idle = new Animation( 0, true )`; mwg maps fps 0 to an
-    # infinite frame duration (frozen first frame), exactly Java's behaviour.
-    'ninjalog': {'idle': {'fps': 0, 'loop': True, 'frames': [0]}},
+    # NinjaLogSprite: `idle = new Animation( 0, true )` (static single frame); mwg's
+    # `Animation` throws on fps <= 0 (R116), so this carries fps 1 like every other
+    # Java 0-fps static - renders identically, never advances past frame 0.
+    'ninjalog': {'idle': {'fps': 1, 'loop': True, 'frames': [0]}},
 }
 
 

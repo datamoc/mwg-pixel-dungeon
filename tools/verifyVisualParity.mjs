@@ -44,8 +44,8 @@ for (const key of ['fungalcore', 'fungalsentry', 'fungalspinner', 'tormentedspir
 	pass(`table excludes ${key}`, !(key in table));
 }
 // Hand-added keys the extractor cannot produce survive regeneration.
-pass('ninjalog keeps its SmokeBomb frames (idle frozen, die 12fps)',
-	eq(clip('ninjalog', 'idle'), { fps: 0, loop: true, frames: [0] })
+pass('ninjalog keeps its SmokeBomb frames (idle static at floored fps 1, die 12fps)',
+	eq(clip('ninjalog', 'idle'), { fps: 1, loop: true, frames: [0] })
 	&& eq(clip('ninjalog', 'die'), { fps: 12, loop: false, frames: [1, 2, 3, 4] }));
 pass('spirit hawk keeps its SpiritHawk frames (6/8/12/12fps)',
 	eq(clip('spirithawk', 'idle'), { fps: 6, loop: true, frames: [0, 1] })
@@ -77,10 +77,18 @@ pass('spectral necromancer reads the shared necro sheet at c=16',
 		{ fps: 1, loop: true, frames: [16, 16, 16, 17, 16, 16, 16, 16, 17] }));
 pass('rat king is the base set (holiday/Ratmogrify variants have no port system)',
 	eq(clip('ratking', 'idle'), { fps: 2, loop: true, frames: [0, 0, 0, 1] }));
-// `RotLasher`: `new Animation(0, true)` freezes on the first frame; mwg maps
-// fps 0 to an infinite frame duration, the same frozen frame.
-pass('rot lasher idle/run keep Java fps 0 (frozen)',
-	clip('rotlasher', 'idle').fps === 0 && clip('rotlasher', 'run').fps === 0);
+// `RotLasher`: Java's `new Animation(0, ...)` statics arrive floored at fps 1 (R116) -
+//mwg's `Animation` throws on fps <= 0, and fps 1 on a single frame renders exactly
+//Java's frozen frame.
+pass('rot lasher idle/run keep Java single frames at floored fps 1',
+	eq(clip('rotlasher', 'idle'), { fps: 1, loop: true, frames: [0] })
+	&& eq(clip('rotlasher', 'run'), { fps: 1, loop: true, frames: [0] }));
+//R116: no clip anywhere in the table may carry fps <= 0 - mwg throws on spawn.
+for (const [key, anims] of Object.entries(table)) {
+	for (const [name, clipDef] of Object.entries(anims)) {
+		pass(`clip ${key}.${name} has positive fps`, clipDef.fps > 0);
+	}
+}
 
 // --- zap/operate: Java plays `zap` on ranged attacks, `operate` on devices --
 const zapKeys = Object.keys(table).filter((k) => 'zap' in table[k]).sort();
