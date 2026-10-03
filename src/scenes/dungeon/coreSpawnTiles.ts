@@ -1251,6 +1251,28 @@ export const coreSpawnTilesMethods = {
 		}
 	},
 
+	/** Recompute floor music from live state and play it (a no-op when the selection is
+	 * unchanged - the audio players' own track-key check absorbs that). Floor entry calls
+	 * it; the boss-bleed edge and the Wandmaker quest flips call it mid-floor, matching
+	 * Java's own replay points (`CavesBossLevel` etc. evaluate at scene entry, PrisonLevel
+	 * additionally replays when `Wandmaker.Quest.active()` flips). Java never replays for
+	 * Ghost completion, Amulet pickup, un-bleeding or boss death, and neither does this:
+	 * those keep playing until the next floor, exactly like Java's entry-evaluated music.
+	 * (The one deliberate improvement over entry-only: a boss that starts bleeding
+	 * mid-fight switches to its finale live, where Java would keep the boss track until
+	 * a save/load re-entry - the finale's whole point is sounding while the boss bleeds.) */
+	replayDungeonMusic(this: DungeonScene): void {
+		runState.audio.enterDungeon(regionForDepth(this.depth), {
+			boss: this.depth in BOSSES,
+			locked: this.floorLocked(),
+			bleeding: this.bossBleeding || this.bossBleedLatched,
+			ghostActive: this.quests.status('sadGhost') === 'active',
+			wandmakerActive: this.quests.status('wandmaker') === 'active',
+			amuletObtained: this.gameState.switch('amuletObtained'),
+			depth: this.depth,
+		});
+	},
+
 	enterLevel(this: DungeonScene): void {
 		//`AscensionChallenge.statModifier` reads a module-level flag in `combat.ts` (that module
 		//has no scene reference), so it is re-synced from the scene's own persisted field on
@@ -1349,7 +1371,7 @@ export const coreSpawnTilesMethods = {
 		const region = regionForDepth(this.depth);
 		const savedFloor = this.miningBranchActive ? null : this.floorStates.get(this.depth);
 		if (this.depth === 26) runState.audio.vaultMusic(this.gameState.switch('amuletObtained'));
-		else runState.audio.enterDungeon(region, this.depth in BOSSES);
+		else this.replayDungeonMusic();
 		this.terrainSheet = SpriteSheet.fromTexture(runState.sprites[region], TILE);
 
 		//One run seed owns every floor.  The previous depth-only seed made floor 1 identical

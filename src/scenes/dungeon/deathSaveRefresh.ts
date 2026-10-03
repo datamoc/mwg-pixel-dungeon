@@ -1427,6 +1427,14 @@ export const deathSaveRefreshMethods = {
 				this.bossBleeding = bleeding;
 				this.bossHealthBar.setColor(bleeding ? 0xff7777 : 0xffffff);
 				this.bossNameLabel.setColor(bleeding ? 0xff3030 : theme().color.textHighlight);
+				//R107: re-evaluate boss music live on the bleed edge (this covers DM300's
+				//fraction bleed plus every latch - DK P3, Yog P5 - through the one transition
+				//Java's bar already computes). Java evaluates boss music only at scene entry,
+				//so it would keep the boss track until a save/load re-entry; switching live
+				//is the deliberate improvement (row states it), and the audio players skip
+				//re-requesting an unchanged selection, so non-finale bosses never restart.
+				//The mining branch keeps its entry music: no replay there.
+				if (!this.miningBranchActive) this.replayDungeonMusic();
 			}
 		} else {
 			this.bossChrome.visible = false;

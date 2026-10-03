@@ -57,7 +57,7 @@ try {
 		'adapters/hungerSimulation', 'simulation/random', 'simulation/combatState', 'simulation/momentum', 'simulation/subclassPassives', 'simulation/mwlBuffDurations', 'simulation/mwlStatusImmunities', 'simulation/mwlMonsterImmunities', 'simulation/mwlMonsterStateStats', 'simulation/buffs', 'simulation/combat', 'simulation/entityId', 'talentEffects',
 		'adapters/combatSimulation', 'adapters/mwgRandom', 'combat', 'simulation/heroActions', 'adapters/heroActionSimulation', 'adapters/heroActions',
 	'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/warriorAbilities', 'simulation/huntressAbilities', 'simulation/duelistAbilities', 'simulation/mageAbilities', 'simulation/rogueAbilities', 'simulation/ratmogrify', 'simulation/fishingSpearProc', 'talents', 'armorAbilities', 'simulation/tenguAbility', 'simulation/tenguBeam', 'simulation/gooBoss', 'simulation/ratKingBoss', 'simulation/dm300Boss', 'simulation/gnollGeomancer', 'simulation/yogBoss', 'simulation/defenderDamageCurves', 'simulation/preparation', 'simulation/disintegration', 'items/wands', 'items/missiles', 'mechanics/cone', 'dungeonConstants',
-	'simulation/javaBlob', 'simulation/prismaticWandLight', 'simulation/swarmIntelligence', 'simulation/crystalSpire', 'simulation/fireSpread', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops', 'simulation/plantTriggers', 'simulation/teleport', 'simulation/trapAreas', 'simulation/tenguDart', 'simulation/teleportAppear', 'simulation/timeBubble', 'simulation/targeting', 'simulation/ripperLeap', 'simulation/succubusBlink', 'simulation/prismatic', 'simulation/mirrorImage', 'simulation/sentryTurn', 'simulation/brews', 'simulation/levelPopulation', 'simulation/smoke', 'simulation/deathBursts', 'simulation/pourAuras', 'simulation/skeletonExplosion', 'simulation/vertigo', 'simulation/ringKnow', 'simulation/actorCollision', 'simulation/wandering', 'simulation/zoomStep', 'simulation/chasmJump', 'simulation/spareWands', 'simulation/clericSpells', 'simulation/shockArc', 'simulation/geyserTrap', 'simulation/cursedWand', 'ui/buffOverlays', 'settings',
+	'simulation/javaBlob', 'simulation/prismaticWandLight', 'simulation/regionMusic', 'simulation/swarmIntelligence', 'simulation/crystalSpire', 'simulation/fireSpread', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops', 'simulation/plantTriggers', 'simulation/teleport', 'simulation/trapAreas', 'simulation/tenguDart', 'simulation/teleportAppear', 'simulation/timeBubble', 'simulation/targeting', 'simulation/ripperLeap', 'simulation/succubusBlink', 'simulation/prismatic', 'simulation/mirrorImage', 'simulation/sentryTurn', 'simulation/brews', 'simulation/levelPopulation', 'simulation/smoke', 'simulation/deathBursts', 'simulation/pourAuras', 'simulation/skeletonExplosion', 'simulation/vertigo', 'simulation/ringKnow', 'simulation/actorCollision', 'simulation/wandering', 'simulation/zoomStep', 'simulation/chasmJump', 'simulation/spareWands', 'simulation/clericSpells', 'simulation/shockArc', 'simulation/geyserTrap', 'simulation/cursedWand', 'ui/buffOverlays', 'settings',
 	// `actors/monsterSpawn` (plus its `monsters`/`challenges`/i18n chain) for the spawn-profile
 	// checks: the chaos-elemental roll, the rare-alt table, and the unported-mob absences.
 	'monsters', 'challenges', 'i18n/index', 'i18n/portStrings', 'i18n/portMineStrings', 'i18n/languages', 'i18n/spdKeys', 'generated/spdMessages', 'items/artifacts', 'actors/monsterSpawn',
@@ -1058,6 +1058,59 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.deepEqual([0, 1, 3].map((level) => prismaticWandLightDuration(2, true, level)), [2, 3, 5]);
 		assert.deepEqual([0, 1, 3].map((level) => prismaticWandLightDuration(4, false, level)), [10, 15, 25]);
 		assert.equal(prismaticWandLightDuration(8, false, 3), 0);
+	});
+	check('dungeon music selects Java region queues, tense loops and boss finales', () => {
+		//`*Level.playLevelMusic()` plus the three `*BossLevel` overrides (tag `v3.3.8`,
+		//R107): every region rotates `[R_1, R_2, R_2, R_1, R_3, R_3]` at chances
+		//`[1, 1, 0.5, 0.25, 1, 0.5]`, plays its tense loop under its own conditions,
+		//and switches a sealed bleeding finale-region arena to its `_boss_finale`.
+		const { selectDungeonMusic, filterMusicQueue, FINALE_REGIONS, REGION_QUEUE_SLOTS, REGION_QUEUE_CHANCES } = require('./simulation/regionMusic');
+		assert.deepEqual(REGION_QUEUE_SLOTS, [1, 2, 2, 1, 3, 3]);
+		assert.deepEqual(REGION_QUEUE_CHANCES, [1, 1, 0.5, 0.25, 1, 0.5]);
+		assert.deepEqual([...FINALE_REGIONS].sort(), ['caves', 'city', 'halls']);
+		const rolls = (vals) => { let i = 0; return () => vals[i++ % vals.length]; };
+		assert.deepEqual(filterMusicQueue(['a', 'b'], [1, 1], rolls([0.999, 0.999])), ['a', 'b']);
+		assert.deepEqual(filterMusicQueue(['a', 'b'], [0, 0], rolls([0, 0])), []);
+		assert.deepEqual(
+			filterMusicQueue(['1', '2', '2b', '1b', '3', '3b'], [1, 1, 0.5, 0.25, 1, 0.5], rolls([0, 0, 0.49, 0.24, 0, 0.49])),
+			['1', '2', '2b', '1b', '3', '3b'], 'flips below each chance pass');
+		assert.deepEqual(
+			filterMusicQueue(['1', '2', '2b', '1b', '3', '3b'], [1, 1, 0.5, 0.25, 1, 0.5], rolls([0, 0, 0.5, 0.25, 0, 0.5])),
+			['1', '2', '3'], 'boundary flips fail (<, not <=)');
+		const calm = { boss: false, locked: false, bleeding: false, ghostActive: false, wandmakerActive: false, amuletObtained: false, depth: 3 };
+		assert.deepEqual(selectDungeonMusic('sewers', calm, rolls([0])).files,
+			['sewers_1.ogg', 'sewers_2.ogg', 'sewers_2.ogg', 'sewers_1.ogg', 'sewers_3.ogg', 'sewers_3.ogg'],
+			'a calm floor plays the full regional queue');
+		assert.deepEqual(selectDungeonMusic('prison', { ...calm, wandmakerActive: true }, rolls([0])), { kind: 'track', file: 'prison_tense.ogg' });
+		assert.deepEqual(selectDungeonMusic('sewers', { ...calm, ghostActive: true }, rolls([0])), { kind: 'track', file: 'sewers_tense.ogg' });
+		assert.deepEqual(selectDungeonMusic('city', { ...calm, amuletObtained: true }, rolls([0])), { kind: 'track', file: 'city_tense.ogg' });
+		assert.deepEqual(selectDungeonMusic('sewers', { ...calm, amuletObtained: true, depth: 1 }, rolls([0])), { kind: 'track', file: 'theme_finale.ogg' },
+			'depth 1 plus the Amulet plays the theme finale');
+		assert.deepEqual(selectDungeonMusic('sewers', { ...calm, amuletObtained: true, depth: 2 }, rolls([0])), { kind: 'track', file: 'sewers_tense.ogg' });
+		for (const region of ['sewers', 'prison', 'caves', 'city', 'halls']) {
+			assert.deepEqual(selectDungeonMusic(region, { ...calm, boss: true }, rolls([0])), { kind: 'track', file: `${region}_boss.ogg` });
+		}
+		assert.deepEqual(selectDungeonMusic('caves', { ...calm, boss: true, locked: true, bleeding: true }, rolls([0])), { kind: 'track', file: 'caves_boss_finale.ogg' });
+		assert.deepEqual(selectDungeonMusic('caves', { ...calm, boss: true, locked: false, bleeding: true }, rolls([0])), { kind: 'track', file: 'caves_boss.ogg' },
+			'unsealed bleeding keeps the boss track');
+		assert.deepEqual(selectDungeonMusic('sewers', { ...calm, boss: true, locked: true, bleeding: true }, rolls([0])), { kind: 'track', file: 'sewers_boss.ogg' },
+			'finale regions only: Goo and Tengu have no finale file');
+		//Wiring: the audio seam plays the selection, the floor entry recomputes it from
+		//live state, and the bleed edge plus the Wandmaker flips replay it mid-floor.
+		const audioSource = readFileSync(new URL('../src/audio.ts', import.meta.url), 'utf8');
+		assert.match(audioSource, /const selection = selectDungeonMusic\(region, state, \(\) => Math\.random\(\)\);/,
+			'queue flips ride Math.random, never the gameplay RNG stream');
+		const tilesSource = readFileSync(new URL('../src/scenes/dungeon/coreSpawnTiles.ts', import.meta.url), 'utf8');
+		assert.match(tilesSource, /ghostActive: this\.quests\.status\('sadGhost'\) === 'active',/,
+			'floor entry reads the live Ghost quest state');
+		assert.match(tilesSource, /wandmakerActive: this\.quests\.status\('wandmaker'\) === 'active',/,
+			'floor entry reads the live Wandmaker quest state');
+		const deathSource = readFileSync(new URL('../src/scenes/dungeon/deathSaveRefresh.ts', import.meta.url), 'utf8');
+		assert.match(deathSource, /if \(!this\.miningBranchActive\) this\.replayDungeonMusic\(\);/,
+			'the bleed edge replays outside the mining branch');
+		const shopSource = readFileSync(new URL('../src/scenes/dungeon/npcShopBlacksmith.ts', import.meta.url), 'utf8');
+		assert.equal((shopSource.match(/this\.replayDungeonMusic\(\);/g) ?? []).length, 2,
+			'Wandmaker start and completion both replay prison music');
 	});
 	const initial = (extra = {}) => ({ hunger: 0, partialDamage: 0, hp: 20, maxHp: 20, ...extra });
 	check('WellFed pauses hunger, heals every 18 turns, and expires after its Java clock', () => {

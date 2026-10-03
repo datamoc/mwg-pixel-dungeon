@@ -1,5 +1,6 @@
 import { Audio } from 'mwg';
 import { isMusicMuted, isSfxMuted, setMusicMuted as persistMusicMuted, setSfxMuted as persistSfxMuted, musicVolume, sfxVolume, setMusicVolume as persistMusicVolume, setSfxVolume as persistSfxVolume, volumeCurve, playMusicInBackground } from './settings';
+import { selectDungeonMusic, type DungeonMusicConditions, type MusicRegion } from './simulation/regionMusic';
 
 /**
  * SPD's original OGG/MP3 assets, bundled as data URLs so the exported game still works from
@@ -37,7 +38,7 @@ function createElement(path: string): HTMLAudioElement {
 	return new globalThis.Audio(path);
 }
 
-export type AudioRegion = 'sewers' | 'prison' | 'caves' | 'city' | 'halls';
+export type AudioRegion = MusicRegion;
 
 const MUSIC_BASE_VOLUME = 0.42;
 
@@ -115,9 +116,17 @@ export class SpdAudio {
 		this.playMusicTracks(['theme_1.ogg', 'theme_2.ogg'], 0);
 	}
 
-	enterDungeon(region: AudioRegion, boss: boolean): void {
-		if (boss) this.playMusic(`${region}_boss.ogg`, 1);
-		else this.playMusicTracks([`${region}_1.ogg`, `${region}_2.ogg`], 1);
+	/** Floor-entry music and every live re-evaluation of it (bleed edges, quest flips):
+	 * boss depths keep the boss track with a sealed-and-bleeding finale, the regions play
+	 * their tense loop under their Java conditions or the chance-filtered rotation queue
+	 * (`simulation/regionMusic.ts` holds the tables). The queue flips ride `Math.random`,
+	 * never the gameplay RNG stream - music timing must not shift game outcomes (the same
+	 * reason the trample pitch wobble stays out of the seeded stream). The private players'
+	 * own track-key check absorbs redundant re-evaluations without restarting anything. */
+	enterDungeon(region: AudioRegion, state: DungeonMusicConditions): void {
+		const selection = selectDungeonMusic(region, state, () => Math.random());
+		if (selection.kind === 'track') this.playMusic(selection.file, 1);
+		else this.playMusicTracks(selection.files, 1);
 	}
 
 	/** `LastLevel.playLevelMusic()`: the endgame vault plays `THEME_FINALE` on loop while the

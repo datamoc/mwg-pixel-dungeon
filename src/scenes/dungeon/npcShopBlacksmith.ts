@@ -1144,7 +1144,13 @@ export const npcShopBlacksmithMethods = {
 			type,
 			hasItem: (id) => this.bag.find(id) !== undefined,
 			rotberrySeedInstance: () => this.bag.items.find((item) => item.id === 'seed' && (item as typeof item & { sourceClass?: string }).sourceClass === 'Rotberry')?.instanceId,
-			startQuest: () => this.quests.start('wandmaker'),
+			startQuest: () => {
+				this.quests.start('wandmaker');
+				//R107 (`PrisonLevel`, tag `v3.3.8`): the prison music replays when the
+				//Wandmaker quest flips active - the tense loop starts mid-floor. Anywhere
+				//else the selection is unchanged and the replay is a silent no-op.
+				this.replayDungeonMusic();
+			},
 			advanceQuest: () => this.quests.advanceStage('wandmaker', this.gameState),
 			offerReward: () => this.offerWandmakerReward(type),
 			say: (message) => this.say(message),
@@ -1227,6 +1233,9 @@ export const npcShopBlacksmithMethods = {
 			this.sprite(npc).destroy();
 			this.spriteFor.delete(npc.id);
 		}
+		//R107 (`PrisonLevel`, tag `v3.3.8`): completing the quest flips `active()` off,
+		//replaying the prison music drops the tense loop back to the rotation queue.
+		this.replayDungeonMusic();
 	},
 
 	/** The quest item the Wandmaker is currently waiting for, as it sits in the bag - the same
