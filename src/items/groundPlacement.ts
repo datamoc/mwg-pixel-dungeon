@@ -19,6 +19,12 @@ export interface GroundPlacementContext {
 	canPlaceFloorItem(x: number, y: number): boolean;
 	canPlaceTorch(x: number, y: number): boolean;
 	placeTorch(x: number, y: number): void;
+	/** R088: Java's torch candidates draw off the pushed level-seeded stream
+	 * (`RegularLevel.java:470-491`), not gameplay RNG. The scene supplies a room pick
+	 * over the same spawn-room list plus bounded draws, both riding one dedicated
+	 * depth-seeded roller (`torchRoller`), so torch cells are stable per floor. */
+	torchRoom(): Room;
+	torchInt(bound: number): number;
 	canPlaceKey(x: number, y: number): boolean;
 	spawnMimic(x: number, y: number, item: ItemPayload): void;
 	spawnGround(kind: string, x: number, y: number, item: ItemPayload, chest?: 'normal' | 'locked'): void;
@@ -75,17 +81,24 @@ export function placeGroundItems(context: GroundPlacementContext): number {
 	//Torch under DARKNESS and a second on LARGE floors, after ordinary generated heaps.
 	//Generic floors now retain LARGE through `genericLargeFeeling` (a dedicated depth-seeded
 	//Int(14) draw, `spdRng.ts`) - the torch loop above and the mob-count ceiling read it -
-	//while candidate-cell selection stays on the live RNG with the room-list filter below,
-	//and the separate pushed seed stream is still not reproduced.
+	//and the candidate cells below draw off their own dedicated depth-seeded stream too
+	//(`torchRoom`/`torchInt`, one roller per floor): stable across revisits and rebuilds,
+	//never touching or touched by gameplay RNG, like Java's pushed generator. The room
+	//list stays this port's generic rooms rather than Java's `StandardRoom`s (stated
+	//reduction, same as the ordinary-heap loop above); the 100-attempt cap and the
+	//`canPlaceTorch` eligibility are Java's own (`randomDropCell`, `RegularLevel.java:736`).
 	//The Java path uses its own pushed RNG seeded from the level stream; this adapter
-	//uses the live RNG for candidate selection because the framework scene has no Java
+	//uses the dedicated depth-seeded roller because the framework scene has no Java
 	//Random generator stack. It preserves the item count and eligible-cell constraints.
 	if (context.darknessChallenge) {
 		for (let i = 0; i < (context.largeFeeling ? 2 : 1); i++) {
 			for (let attempt = 0; attempt < 100; attempt++) {
-				const room = context.randomSpawnRoom();
-				const x = Random.range(room.left, room.right);
-				const y = Random.range(room.top, room.bottom);
+				const room = context.torchRoom();
+				//`Random.range` is inclusive at both ends, matching Java's `IntRange`
+				//over the room rect: `torchInt(width)` draws `[0, width)`, so the cell
+				//covers exactly the same `[left, right]` support as the old live draw.
+				const x = room.left + context.torchInt(room.right - room.left + 1);
+				const y = room.top + context.torchInt(room.bottom - room.top + 1);
 				if (!context.canPlaceTorch(x, y)) continue;
 				context.placeTorch(x, y);
 				break;

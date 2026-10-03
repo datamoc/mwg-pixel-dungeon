@@ -86,6 +86,27 @@ export function genericLargeFeeling(runSeed: bigint, depth: number): boolean {
 	return new SpdJavaRandom(spdSeedForDepth(runSeed, depth, 7)).nextInt(14) === 4;
 }
 
+/** Branch of `spdSeedForDepth` reserved for the torch-candidate stream below: branches
+ * 0/1 carry the levelgen streams and 7 the LARGE-feeling one-shot, so torches take 8. */
+export const TORCH_STREAM_BRANCH = 8;
+
+/**
+ * `RegularLevel.createItems()`' torch half (`RegularLevel.java:470-491`, tag `v3.3.8`):
+ * the one (two on LARGE) Torch drops draw off their own pushed generator - `pushGenerator`
+ * seeded by a `Random.Long()` off the level stream, popped right after - so held items,
+ * meta progress and talents cannot shift torch cells. This port has no generator stack
+ * at the placement seam, so the equivalent is a dedicated depth-seeded roller: one fresh
+ * `SpdJavaRandom` per floor, drawn sequentially (room pick, then cell coords per attempt),
+ * stable across revisits and rebuilds with no save field, exactly the `genericLargeFeeling`
+ * precedent. It is deliberately not bit-identical to Java (the room list stays this port's
+ * generic rooms rather than `StandardRoom`s, and the surrounding draw interleaving differs),
+ * only stable and stream-separated: torch draws can never shift, nor be shifted by, gameplay RNG.
+ */
+export function torchRoller(runSeed: bigint, depth: number): (bound: number) => number {
+	const rng = new SpdJavaRandom(spdSeedForDepth(runSeed, depth, TORCH_STREAM_BRANCH));
+	return (bound: number) => rng.nextInt(Math.max(1, bound));
+}
+
 /**
  * `Random.java`'s stack of generators (`Level.create()` pushes a *second*, distinct generator
  * seeded from `seedForDepth()`'s result - scrambled again via `pushGenerator(long)` - on top of

@@ -66,6 +66,7 @@ try {
 
 	const torchContext = (largeFeeling, darknessChallenge) => {
 		let torches = 0;
+		const cells = [];
 		const context = {
 			depth: 3,
 			isBossDepth: false,
@@ -74,25 +75,27 @@ try {
 			upgradeScrollDrops: 99,
 			noScrolls: false,
 			randomSpawnRoom: () => ({ left: 0, right: 4, top: 0, bottom: 4 }),
+			torchRoom: () => ({ left: 0, right: 4, top: 0, bottom: 4 }),
+			torchInt: () => 0,
 			generateItem: () => ({ cat: 0, level: 0 }),
 			materialize: (generated) => ({ id: 'x', quantity: 1, identified: true }),
 			canPlaceFloorItem: () => false,
 			canPlaceTorch: () => true,
-			placeTorch: () => { torches++; },
+			placeTorch: (x, y) => { torches++; cells.push([x, y]); },
 			canPlaceKey: () => false,
 			spawnMimic: () => {},
 			spawnGround: () => {},
 			placeUpgradeScroll: () => {},
 		};
 		placeGroundItems(context);
-		return torches;
+		return { torches, cells };
 	};
 
 	check('Torch count follows LARGE under DARKNESS through the shared placement', () => {
-		assert.equal(torchContext(true, true), 2, 'LARGE floor drops two Torches');
-		assert.equal(torchContext(false, true), 1, 'ordinary floor drops one Torch');
-		assert.equal(torchContext(true, false), 0, 'no Torches without DARKNESS even when LARGE');
-		assert.equal(torchContext(false, false), 0, 'no Torches without DARKNESS');
+		assert.equal(torchContext(true, true).torches, 2, 'LARGE floor drops two Torches');
+		assert.equal(torchContext(false, true).torches, 1, 'ordinary floor drops one Torch');
+		assert.equal(torchContext(true, false).torches, 0, 'no Torches without DARKNESS even when LARGE');
+		assert.equal(torchContext(false, false).torches, 0, 'no Torches without DARKNESS');
 	});
 
 	check('both LARGE consumers read the generic roll beside the painter feeling', () => {
@@ -105,6 +108,62 @@ try {
 		assert.match(rng, /new SpdJavaRandom\(spdSeedForDepth\(runSeed, depth, 7\)\)\.nextInt\(14\) === 4/,
 			'past depth 1 the roll is Int(14) === 4 on its own branch-7 stream');
 	});
+
+	check('torch candidates draw off a dedicated depth-seeded stream, stable per floor', () => {
+		//`RegularLevel.createItems()` torches draw off their own pushed generator
+		//(`RegularLevel.java:470-491`, tag `v3.3.8`), popped right after - gameplay RNG
+		//can neither shift torch cells nor be shifted by them. The port's equivalent is
+		//one `torchRoller` per floor (branch 8: 0/1 carry levelgen, 7 the LARGE roll).
+		const { torchRoller, TORCH_STREAM_BRANCH } = require(join(out, 'spdRng.js'));
+		assert.equal(TORCH_STREAM_BRANCH, 8, 'torches take branch 8');
+		//Bounds: every draw lands in [0, bound), so room-index and cell picks keep
+		//exactly the old live draw's support (`Random.range` is inclusive both ends).
+		const draw = torchRoller(99n, 5);
+		for (let i = 0; i < 200; i++) {
+			const v = draw(7);
+			assert.ok(v >= 0 && v < 7, `draw ${v} stays in [0, 7)`);
+		}
+		//Determinism: the same seed+depth rebuilds the same torch cells through the
+		//real placement loop (stub rooms, always placeable, two rooms to pick between).
+		const rooms = [{ left: 2, right: 9, top: 3, bottom: 8 }, { left: 12, right: 15, top: 1, bottom: 6 }];
+		const cellsFor = () => {
+			const cells = [];
+			const roller = torchRoller(123n, 5);
+			const context = {
+				depth: 5, isBossDepth: false, largeFeeling: true, darknessChallenge: true,
+				upgradeScrollDrops: 99, noScrolls: false,
+				randomSpawnRoom: () => rooms[0],
+				torchRoom: () => rooms[roller(rooms.length)],
+				torchInt: (bound) => roller(bound),
+				generateItem: () => ({ cat: 0, level: 0 }),
+				materialize: (generated) => ({ id: 'x', quantity: 1, identified: true }),
+				canPlaceFloorItem: () => false,
+				canPlaceTorch: () => true,
+				placeTorch: (x, y) => { cells.push([x, y]); },
+				canPlaceKey: () => false,
+				spawnMimic: () => {},
+				spawnGround: () => {},
+				placeUpgradeScroll: () => {},
+			};
+			placeGroundItems(context);
+			for (const [x, y] of cells) {
+				assert.ok(rooms.some((r) => x >= r.left && x <= r.right && y >= r.top && y <= r.bottom),
+					`torch cell [${x},${y}] sits inside a candidate room`);
+			}
+			return JSON.stringify(cells);
+		};
+		assert.equal(cellsFor(), cellsFor(), 'same seed+depth rebuilds identical torch cells');
+		//Wiring: the loop draws room+cells off the context stream, and the scene feeds it
+		//one dedicated roller per floor (same entrance-room skip as the ordinary loop).
+		const placement = readFileSync(join(root, 'src/items/groundPlacement.ts'), 'utf8');
+		assert.match(placement, /const room = context\.torchRoom\(\);[\s\S]{0,400}const x = room\.left \+ context\.torchInt\(room\.right - room\.left \+ 1\);/,
+			'the torch loop draws room and inclusive-both-ends cells off the context stream');
+		const blacksmith = readFileSync(join(root, 'src/scenes/dungeon/npcShopBlacksmith.ts'), 'utf8');
+		assert.match(blacksmith, /const torchDraw = torchRoller\(this\.runSeedLong, this\.depth\);/,
+			'the scene builds one dedicated torch roller per floor');
+		assert.match(blacksmith, /torchRoom: \(\) => \{\s*const first = this\.portedFloorActive \? 0 : 1;/,
+			'the seeded room pick keeps the ordinary loop entrance-room skip');
+	});
 } finally {
 }
-console.log('verifyTorchFeeling: ok (generic LARGE feeling, Torch count)');
+console.log('verifyTorchFeeling: ok (generic LARGE feeling, Torch count, Torch seeded stream)');

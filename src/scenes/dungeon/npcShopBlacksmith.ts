@@ -22,7 +22,7 @@ import { startTransmutationPick } from '../../items/transmutation';
 import { RING_DEFS } from '../../items/ringModifiers';
 import { CLASS_KEYS, RING_KEYS, WAND_KEYS, capitalize, has, language, t } from '../../i18n/index';
 import { SPD_STATUS_COLOR } from '../../ui/spdTheme';
-import { SpdRandom, genericLargeFeeling } from '../../spdRng';
+import { SpdRandom, genericLargeFeeling, torchRoller } from '../../spdRng';
 import { vaultCenterVisualFrames, vaultCenterWallFrames, vaultFloorFrames } from '../../spdLevelGen/vaultVisuals';
 import { buybackPrice, getShopPrice } from '../../items/shopPricing';
 import { Terrain } from '../../spdLevelGen/paintLevel';
@@ -1513,6 +1513,11 @@ export const npcShopBlacksmithMethods = {
 	 */
 	placeGroundItems(this: DungeonScene): void {
 		setGeneratorDepth(this.depth);
+		//R088 (`RegularLevel.java:470-491`, tag `v3.3.8`): torch candidates draw off
+		//one dedicated depth-seeded roller per floor (Java's pushed generator),
+		//sequential room-pick/cell draws with the same entrance-room skip as the
+		//ordinary loop below - stable across revisits, never gameplay RNG.
+		const torchDraw = torchRoller(this.runSeedLong, this.depth);
 		this.upgradeScrollDrops = placeGeneratedGroundItems({
 			depth: this.depth,
 			isBossDepth: this.depth in BOSSES,
@@ -1521,6 +1526,11 @@ export const npcShopBlacksmithMethods = {
 			upgradeScrollDrops: this.upgradeScrollDrops,
 			noScrolls: isChallengeEnabled('no_scrolls'),
 			randomSpawnRoom: () => this.randomSpawnRoom(),
+			torchRoom: () => {
+				const first = this.portedFloorActive ? 0 : 1;
+				return this.level.rooms[first + torchDraw(Math.max(0, this.level.rooms.length - first))] ?? this.level.rooms[0];
+			},
+			torchInt: (bound: number) => torchDraw(bound),
 			generateItem: () => generatorRandom(),
 			materialize: (generated) => this.generatedInventoryItem(generated),
 			canPlaceFloorItem: (x, y) => [FLOOR, GRASS, HIGH_GRASS].includes(this.level.get(x, y))
