@@ -43,6 +43,11 @@ const REGIONS: Record<string, [x: number, y: number, w: number, h: number]> = {
 	keyboard: [112, 32, 15, 12],
 	unchecked: [0, 48, 12, 12],
 	checked: [16, 48, 12, 12],
+	//Hero-select game options (R041): Java's SEED/CALENDAR art, template-matched
+	//against `interfaces/icons.png` at tag `v3.3.8` like the rows above
+	//(`tools/scratch/icons-match.mjs` regions SEED [176,16] and CALENDAR [224,16]).
+	seed: [208, 32, 15, 10],
+	calendar: [240, 16, 15, 12],
 };
 
 export type TitleIconName = keyof typeof REGIONS;

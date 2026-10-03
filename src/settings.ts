@@ -284,6 +284,28 @@ export function setScreenShake(value: number): void {
 	settingsStore().setItem(SCREEN_SHAKE_KEY, String(gateInt(String(value), 2, 0, 4)));
 }
 
+/** `SPDSettings.customSeed()` (`SPDSettings.java`, tag `v3.3.8`) - the custom-seed text,
+ * default empty (no custom seed). Capped at 20 chars like Java's `getString(..., 20)`. */
+export const CUSTOM_SEED_KEY = 'custom_seed';
+export function customSeed(): string {
+	return settingsStore().getItem(CUSTOM_SEED_KEY) ?? '';
+}
+
+export function setCustomSeed(value: string): void {
+	settingsStore().setItem(CUSTOM_SEED_KEY, value.slice(0, 20));
+}
+
+/** `SPDSettings.lastDaily()` - epoch millis of the last started daily, default 0. */
+export const LAST_DAILY_KEY = 'last_daily';
+export function lastDaily(): number {
+	const raw = Number(settingsStore().getItem(LAST_DAILY_KEY) ?? 0);
+	return Number.isFinite(raw) ? Math.max(0, Math.floor(raw)) : 0;
+}
+
+export function setLastDaily(value: number): void {
+	settingsStore().setItem(LAST_DAILY_KEY, String(Math.max(0, Math.floor(value))));
+}
+
 /** `SPDSettings.playMusicInBackground()` - default on. While off, hiding the page also
  * suspends the music (sound effects always suspend - only music has the background pass). */
 export function playMusicInBackground(): boolean {

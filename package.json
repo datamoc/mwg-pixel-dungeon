@@ -20,6 +20,7 @@
     "test:mwg": "node tools/verifyMwgCompatibility.mjs",
     "test:settings": "node tools/verifyDisplaySettings.mjs",
     "test:ui": "node tools/verifyBagLayout.mjs && node tools/verifyInterfaceMode.mjs",
+    "test:heroselect": "node tools/verifyHeroSelect.mjs",
     "test:beacon": "esbuild tools/verifyBeaconPush.ts --bundle --platform=node --format=esm --outfile=tools/scratch/verifyBeaconPush.mjs && node tools/scratch/verifyBeaconPush.mjs",
     "test:cloak": "esbuild tools/verifyCloak.ts --bundle --platform=node --format=esm --outfile=tools/scratch/verifyCloak.mjs && node tools/scratch/verifyCloak.mjs",
     "test:curseinfusion": "esbuild tools/verifyCurseInfusion.ts --bundle --platform=node --format=esm --outfile=tools/scratch/verifyCurseInfusion.mjs && node tools/scratch/verifyCurseInfusion.mjs",

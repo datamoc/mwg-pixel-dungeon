@@ -24,6 +24,69 @@ export function spdSeedValue(input: string | null): bigint | null {
 	return value;
 }
 
+/** `DungeonSeed.TOTAL_SEEDS` (26^9). */
+export const SEED_TOTAL = 5429503678976n;
+
+/**
+ * `DungeonSeed.convertFromText()` (`DungeonSeed.java`, tag `v3.3.8`): empty text is
+ * null (clear the custom seed); otherwise a code, a whitespace-tolerant number, or -
+ * failing those - the Java-long-overflow name hash (`31 * total + code unit`, UTF-16
+ * units like Java's `toCharArray`, `+ Long.MAX_VALUE` when negative, then mod total).
+ * The number branch normalizes non-negative like `spdSeedValue` (the port's seed
+ * convention everywhere seeds enter, including this panel) where Java keeps the sign.
+ */
+export function seedTextValue(input: string): bigint | null {
+	if (input.length === 0) return null;
+	const fromCodeOrNumber = spdSeedValue(input);
+	if (fromCodeOrNumber !== null) return fromCodeOrNumber;
+	let total = 0n;
+	for (let i = 0; i < input.length; i++) total = BigInt.asIntN(64, total * 31n + BigInt(input.charCodeAt(i)));
+	if (total < 0n) total += 9223372036854775807n;
+	return ((total % SEED_TOTAL) + SEED_TOTAL) % SEED_TOTAL;
+}
+
+/**
+ * `DungeonSeed.formatText()` (`DungeonSeed.java`, tag `v3.3.8`): a valid code
+ * re-renders in `XXX-XXX-XXX` form, anything else comes back unchanged.
+ */
+export function formatSeedText(input: string): string {
+	const code = input.replace(/[-\s]/g, '').toUpperCase();
+	if (!/^[A-Z]{9}$/.test(code) || spdSeedValue(input) === null) return input;
+	const seed = spdSeedValue(input)!;
+	if (seed < 0n || seed >= SEED_TOTAL) return input;
+	let digits = seed.toString(26);
+	let result = '';
+	for (let i = 0; i < 9; i++) {
+		if (i < digits.length) {
+			const c = digits[i]!;
+			result += c <= '9' ? String.fromCharCode(c.charCodeAt(0) + 17) : String.fromCharCode(c.charCodeAt(0) - 22);
+		} else result = 'A' + result;
+	}
+	return result.slice(0, 3) + '-' + result.slice(3, 6) + '-' + result.slice(6, 9);
+}
+
+/** Earliest daily run Java allows (2025-03-01), in whole UTC days since the epoch. */
+export const DAILY_EPOCH_DAYS = 20148;
+export const DAY_MS = 86400000;
+
+/**
+ * The daily-run day for a timestamp (`HeroSelectScene` daily button, tag `v3.3.8`):
+ * UTC-day floor, never before the 2025-03-01 epoch. The run seed is this day's
+ * millis plus `SEED_TOTAL` (out of user-seed range, `Dungeon.initSeed()`).
+ */
+export function dailySeedDay(nowMs: number): number {
+	return Math.max(DAILY_EPOCH_DAYS, Math.floor(nowMs / DAY_MS));
+}
+
+export function dailySeedValue(nowMs: number): bigint {
+	return BigInt(dailySeedDay(nowMs)) * BigInt(DAY_MS) + SEED_TOTAL;
+}
+
+/** `yyyy-MM-dd` in UTC for the daily seed label (`Dungeon.initSeed()`'s customSeedText). */
+export function dailySeedLabel(nowMs: number): string {
+	return new Date(dailySeedDay(nowMs) * DAY_MS).toISOString().slice(0, 10);
+}
+
 /** `Dungeon.java`'s depth switch: 1-4 Sewers, 5 SewerBoss, 6-9 Prison, 10 PrisonBoss, 11-14 Caves, 15 CavesBoss, 16-19 City, 20 CityBoss, 21-24 Halls, 25 HallsBoss, 26 LastLevel */
 export function regionForDepth(depth: number): Region {
 	if (depth <= 5) return 'sewers';

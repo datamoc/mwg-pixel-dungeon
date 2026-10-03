@@ -118,7 +118,7 @@ import { SpdToolbar } from '../ui/toolbar';
 import { StatusPane } from '../ui/statusPane';
 import { DungeonHud } from '../ui/dungeonHud';
 import { SpdAudio } from '../audio';
-import { onBrightnessChanged, onZoomChanged, screenShake, setZoomOffset, uiMode, zoomForOffset, zoomOffset } from '../settings';
+import { onBrightnessChanged, onZoomChanged, screenShake, setZoomOffset, uiMode, zoomForOffset, zoomOffset, customSeed, lastDaily } from '../settings';
 import { arcaneVisionDuration, assassinReachBonus, bountyHunterDropBonus, canImproviseProjectile, cleaveComboSeed, deathlessFuryTriggers, EMPOWERING_SCROLLS_BONUS, enhancedRingsDuration, enragedCatalystBonus, empoweredStrikeBonus, farsightMultiplier, ironStomachReduction, lethalHasteDuration, lightCloakArtifactBonus, lightCloakRechargeRate, allyWarpRange, monasticVigorShield, preservationChance, rejuvenatingStepHeal, seerShotDuration, SEER_SHOT_COOLDOWN, shieldBatteryGain, soulSiphonCharge, unencumberedSpiritEvasion, weaponRechargingDamage } from '../talentEffects';
 import { NEW_MOMENTUM, type Momentum } from '../simulation/momentum';
 import pixelFontUrl from '../assets/pixel_font.ttf';
@@ -277,6 +277,9 @@ import {
 import {
 	COLOR,
 	spdSeedValue,
+	seedTextValue,
+	dailySeedLabel,
+	SEED_TOTAL,
 	regionForDepth,
 	REGION_WATER,
 	REGION_GRASS,
@@ -1534,10 +1537,21 @@ export class DungeonScene extends Scene2D {
 		//every kind is drawn now, inside the seed, so later lookups never touch the RNG
 		const seedText = new URLSearchParams(window.location.search).get('seed');
 		const requestedSeed = spdSeedValue(seedText);
-		this.seededRun = Boolean(seedText?.trim());
-		this.runSeedLong = requestedSeed ?? BigInt(Random.int(1, 1 << 30));
+		//Game-options seeds (`HeroSelectScene.java`, tag `v3.3.8`): a daily run seeds
+		//from its date (out of user-seed range) and a custom seed from its text; both
+		//override the URL/dev seed, and the daily flag is consumed here so the next
+		//run starts clean. The label shows the seed text (custom text, daily date, or
+		//the URL text), falling back to the numeric seed exactly as before.
+		const daily = runState.pendingDaily;
+		runState.pendingDaily = false;
+		const customText = customSeed();
+		const dailyMs = daily ? lastDaily() : 0;
+		const panelSeed = daily && dailyMs > 0 ? BigInt(dailyMs) + SEED_TOTAL : seedTextValue(customText);
+		const panelLabel = daily && dailyMs > 0 ? dailySeedLabel(dailyMs) : customText;
+		this.seededRun = Boolean(panelLabel || seedText?.trim());
+		this.runSeedLong = panelSeed ?? requestedSeed ?? BigInt(Random.int(1, 1 << 30));
 		this.runSeed = Number(this.runSeedLong % 4294967296n) >>> 0;
-		this.runSeedLabel = seedText?.trim() || String(this.runSeed);
+		this.runSeedLabel = panelLabel || seedText?.trim() || String(this.runSeed);
 		//a new run: drop any cached ported floors so Dungeon.init()'s run-level resets
 		//(SecretRoom's budget, the SpecialRoom queue, Generator's decks) run again from scratch
 		resetPortedRun();
