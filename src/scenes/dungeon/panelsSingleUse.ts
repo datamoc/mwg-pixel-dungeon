@@ -1181,7 +1181,7 @@ export const panelsSingleUseMethods = {
 			displayName: (id, identified, instanceId) => this.itemDisplayName(id, identified, instanceId),
 			displayDescription: (id, instanceId) => {
 				const item = this.bag.items.find((candidate) => candidate.id === id && (candidate.instanceId ?? undefined) === (instanceId ?? undefined)) as (typeof this.bag.items[number] & { sourceClass?: string }) | undefined;
-				return itemDescription(id, item?.sourceClass);
+				return itemDescription(id, item?.sourceClass, this.subclass() === 'warden');
 			},
 			iconFrame: (id) => {
 				//The bag's own frame resolution, including a dealt potion/scroll appearance (`Potion.reset()`).

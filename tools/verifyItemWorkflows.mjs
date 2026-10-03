@@ -109,6 +109,30 @@ exports.buffBlocked = () => false;
 	const plantChallengeSource = readFileSync(join(root, 'src/scenes/dungeon/plantChallenge.ts'), 'utf8');
 	assert.match(plantChallengeSource, /Level\.plant\(seed,pos\).*NO_HERBALISM/,
 		'the challenge terrain helper documents Java plant semantics');
+	//R113: `Plant.Seed.onThrow()`'s Warden furrow plus the `warden_desc` examine halves
+	//(`plants/Plant.java`, tag `v3.3.8`).
+	assert.match(sharedDropSource,
+		/this\.bag\.remove\('seed', 1, seed\.instanceId\);\s*this\.manualPlants\.set\(cell, kind\);\s*this\.placePortedFeature\(cell, kind\);\s*\/\/`Plant\.Seed\.onThrow/,
+		'the furrow hook sits right after the plant registration, inside the planted branch');
+	const furrowSource = readFileSync(join(root, 'src/scenes/dungeon/npcShopBlacksmith.ts'), 'utf8');
+	assert.match(furrowSource, /if \(this\.subclass\(\) === 'warden'\) \{\s*for \(const \[dx, dy\] of Roguelike\.neighbourOffsets\(8\)\) \{/,
+		'a Warden planting furrows the eight neighbours (Plant.Seed.onThrow)');
+	assert.match(furrowSource, /if \(terrain !== FLOOR && terrain !== EMBERS && terrain !== GRASS\) continue;/,
+		'only EMPTY/EMBERS/GRASS equivalents furrow (EMPTY_DECO collapses into FLOOR; HIGH_GRASS skipped like Java)');
+	assert.match(furrowSource, /this\.level\.set\(nx, ny, HIGH_GRASS\);\s*this\.furrowedGrass\.add\(this\.level\.index\(nx, ny\)\);/,
+		'furrowed cells become HIGH_GRASS plus the furrowedGrass overlay bit (raw id 30)');
+	assert.match(furrowSource, /spawnTrapSpecks\(this\.effectLayer, this\.effectBursts, nx, ny, 'leaf'\)/,
+		'each furrowed cell bursts the shared leaf speck, FOV-gated');
+	assert.match(furrowSource, /return normalizePlantKindName\(sourceClass\) \?\? null;/,
+		'seedPlantKind delegates to the plant-text normalization so planter and descriptions cannot drift');
+	const displayNameSource = readFileSync(join(root, 'src/items/displayName.ts'), 'utf8');
+	assert.match(displayNameSource, /const seedKind = id === 'seed' \|\| sourceClass !== undefined \? normalizePlantKindName\(sourceClass \?\? id\) : undefined;/,
+		'seed descriptions resolve through the plant-text module, never the generic tables');
+	assert.match(displayNameSource, /if \(seedKind !== undefined\) return seedInfoBody\(seedKind, isWarden\);/,
+		'known seeds show the plant info body, with the warden_desc paragraph for a Warden');
+	const panelSource = readFileSync(join(root, 'src/ui/inventoryPanel.ts'), 'utf8');
+	assert.match(panelSource, /seedInfoBody\(normalizePlantKindName\(item\.sourceClass\) \?\? '', context\.isWarden === true\)/,
+		'bag seed rows show the plant info body with the viewer Warden state');
 	const regrowthBombSource = readFileSync(join(root, 'src/scenes/dungeon/regrowthBomb.ts'), 'utf8');
 	assert.match(regrowthBombSource, /mwlItemEffectValue\('regrowthBomb', 'bloomRadius'\)/,
 		'RegrowthBomb uses its authored Java radius');

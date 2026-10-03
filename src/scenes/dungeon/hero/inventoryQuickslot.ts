@@ -295,6 +295,8 @@ export const inventoryQuickslotMethods = {
 			armorStrReq: armorSTRReq(this.armorTier, this.armorLevel), heroStr: this.hero?.str ?? 0,
 			open: this.inventoryOpen,
 			items: this.bag.items,
+			//R113: seed rows show their plant `desc` (+ `warden_desc` for a Warden).
+			isWarden: this.subclass() === 'warden',
 			itemDescription: (id) => {
 				if (id !== 'toolkit') return undefined;
 				const toolkit = this.bag.find('toolkit') as (typeof this.bag.items[number] & { warmUpDelay?: number; cursed?: boolean }) | undefined;

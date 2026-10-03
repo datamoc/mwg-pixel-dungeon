@@ -41,8 +41,10 @@ import { hallsDemonSpawnerFloorFrames } from '../regions/halls';
 import { resolveWandPickup, wandInitialCharges, wandTypeFromSource } from '../../items/wands';
 import { newSpareWandCharges } from '../../simulation/spareWands';
 import { itemDescription, itemStatsLine } from '../../items/displayName';
+import { normalizePlantKindName } from '../../items/plantText';
+import { spawnTrapSpecks } from '../../ui/effectBursts';
 import { wandmakerQuestType, wandmakerQuestWands } from '../../spdLevelGen/wandmaker';
-import { CHEST_FRAME, CRYSTAL_CHEST_FRAME, DOOR, DOOR_CLOSED, FLOOR, GRASS, HIGH_GRASS, ITEM_FRAME, LOCKED_CHEST_FRAME, TERRAIN_FRAME, TILE, WALL, WATER, type GroundItemKind } from '../../dungeonConstants';
+import { CHEST_FRAME, CRYSTAL_CHEST_FRAME, DOOR, DOOR_CLOSED, EMBERS, FLOOR, GRASS, HIGH_GRASS, ITEM_FRAME, LOCKED_CHEST_FRAME, TERRAIN_FRAME, TILE, WALL, WATER, type GroundItemKind } from '../../dungeonConstants';
 import { REGION_GRASS, REGION_WATER, patchGenerate, type Region } from '../../genericDungeon';
 import { type Creature, type GroundItem, type Step } from '../../combat';
 import { nextEntityId } from '../../simulation/entityId';
@@ -81,16 +83,38 @@ export const npcShopBlacksmithMethods = {
 		this.bag.remove('seed', 1, seed.instanceId);
 		this.manualPlants.set(cell, kind);
 		this.placePortedFeature(cell, kind);
+		//`Plant.Seed.onThrow()` (`plants/Plant.java:160-169`, tag `v3.3.8`): a Warden's planting
+		//furrows every adjacent EMPTY/EMPTY_DECO/EMBERS/GRASS cell into FURROWED_GRASS (with an
+		//updateMap plus a 4-mote `LeafParticle.LEVEL_SPECIFIC` burst each). EMPTY_DECO collapses
+		//into this port's FLOOR (the coarse-grid convention), and FURROWED_GRASS itself is the
+		//`furrowedGrass` overlay over HIGH_GRASS (raw id 30, see the tile-sheet row), so each
+		//match becomes HIGH_GRASS plus the overlay bit, restitched like every other terrain
+		//change; the burst reuses the shared `leaf` speck (whose count is the seam's own 6, a
+		//stated presentation-count simplification, FOV-gated like the wither bursts).
+		//HIGH_GRASS neighbours are skipped exactly like Java skips them (its list has no
+		//HIGH_GRASS or FURROWED_GRASS entry), and only the terrain gates - never occupants.
+		if (this.subclass() === 'warden') {
+			for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
+				const nx = x + dx, ny = y + dy;
+				if (!this.level.inside(nx, ny)) continue;
+				const terrain = this.level.get(nx, ny);
+				if (terrain !== FLOOR && terrain !== EMBERS && terrain !== GRASS) continue;
+				this.level.set(nx, ny, HIGH_GRASS);
+				this.furrowedGrass.add(this.level.index(nx, ny));
+				this.restitchTilesAround(nx, ny);
+				this.featuresMap?.setLayerData('features', this.featureFrames());
+				if (this.fov.isVisible(nx, ny)) spawnTrapSpecks(this.effectLayer, this.effectBursts, nx, ny, 'leaf');
+			}
+		}
 		this.say(t('port.log.plantseed', { kind }), 'positive');
 		this.actionSpentTurn = true;
 		this.spendHeroTurn(1);
 	},
 
 	seedPlantKind(this: DungeonScene, sourceClass?: string): string | null {
-		const name = (sourceClass ?? '').toLowerCase().replace(/\$seed$|\.seed$/, '').split('.').pop() ?? '';
-		const supported = new Set(['blindweed', 'earthroot', 'fadeleaf', 'firebloom', 'icecap', 'mageroyal',
-			'rotberry', 'sorrowmoss', 'starflower', 'stormvine', 'sungrass', 'swiftthistle']);
-		return supported.has(name) ? name : null;
+		//Single-sourced on `plantText`'s normalization (same twelve kinds, same strip rule)
+		//so the planter and the description seam cannot drift apart.
+		return normalizePlantKindName(sourceClass) ?? null;
 	},
 
 	/**
@@ -1336,7 +1360,7 @@ export const npcShopBlacksmithMethods = {
 	 * that verified-live path is deliberately untouched, and this is its twin for the shelf. */
 	tradeItemBody(this: DungeonScene, item: { id: string; sourceClass?: string; tier?: number; level?: number }): string | undefined {
 		const parts = [
-			itemDescription(item.id, item.sourceClass),
+			itemDescription(item.id, item.sourceClass, this.subclass() === 'warden'),
 			itemStatsLine(item.id, { tier: item.tier, level: item.level, sourceClass: item.sourceClass, heroStr: this.hero.str }),
 		].filter((part): part is string => part !== undefined);
 		return parts.length > 0 ? parts.join('\n') : undefined;
@@ -1678,7 +1702,7 @@ export const npcShopBlacksmithMethods = {
 			offerPurchase: (name, price, buy) => this.openItemPicker(t(name), [
 				{ id: item.item?.id ?? 'gold', instanceId: item.item?.instanceId, identified: true, quantity: item.item?.quantity ?? 1, note: t('windows.wndtradeitem.buy', { '0': price }) },
 			], () => { buy(); this.pickupGroundItemAt(x, y); }, item.item ? [
-				itemDescription(item.item.id, item.item.sourceClass),
+				itemDescription(item.item.id, item.item.sourceClass, this.subclass() === 'warden'),
 				//`WndTradeItem extends WndInfoItem`: the body is the item's description plus its
 				//per-class stats line (damage/DR with Java's real STR sentences - wand charges
 				//are not shown because Java does not show them either, see `itemStatsLine`).

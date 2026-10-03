@@ -10,6 +10,7 @@ import { armorSTRReq, missileSTRReq, weaponSTRReq } from './strReq';
 import { TOME_SPELL_COST, type SubclassSpellId, type TalentSpellId, type TomeSpellId } from '../simulation/clericSpells';
 import { tomeSpellKey } from './holyTome';
 import { MWL_CONSUMABLE_DESCRIPTION_KEYS, MWL_EQUIPMENT_DESCRIPTION_KEYS, MWL_MISSILE_BY_CLASS, MWL_MISSILE_DESCRIPTION_KEYS, MWL_MISSILE_NAME_KEYS } from '../mwlContent';
+import { normalizePlantKindName, seedInfoBody } from './plantText';
 
 /**
  * `Item.desc()` for a bag id: the flavour text Java's item-info window prints as its body.
@@ -27,8 +28,16 @@ import { MWL_CONSUMABLE_DESCRIPTION_KEYS, MWL_EQUIPMENT_DESCRIPTION_KEYS, MWL_MI
  *
  * `undefined` when nothing has one for the id (a picker's synthetic action id, say). Callers then
  * show no body rather than the key.
+ *
+ * Seeds resolve through `plantText` (`plants/Plant.java`, tag `v3.3.8`): Java has no generic
+ * seed description - `Seed.desc()` is always its plant class's `desc` (plus `warden_desc`
+ * for a Warden), and `Seed.info()` wraps that in `plants.plant$seed.info`. `isWarden`
+ * carries the viewer's subclass; callers without one keep the previous generic outcome.
  */
-export function itemDescription(id: string, sourceClass?: string): string | undefined {
+export function itemDescription(id: string, sourceClass?: string, isWarden = false): string | undefined {
+	//Seeds first: a known plant kind never falls through to the generic tables below.
+	const seedKind = id === 'seed' || sourceClass !== undefined ? normalizePlantKindName(sourceClass ?? id) : undefined;
+	if (seedKind !== undefined) return seedInfoBody(seedKind, isWarden);
 	//The HolyTome is not one of the 13 real artifacts (no `artifacts.mwl` row, so no
 	//authored description key): its body is SPD's own tag-`v3.3.8`
 	//`items.artifacts.holytome.desc` under a `port.*` key (see `portStrings.ts`).

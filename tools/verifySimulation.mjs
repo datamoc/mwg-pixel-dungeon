@@ -2014,8 +2014,8 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		//in the hero's FOV - on the hero, mob and empty-root wither paths alike.
 		const scene = readSceneSource();
 		const bursts = readFileSync(new URL('../src/ui/effectBursts.ts', import.meta.url), 'utf8');
-		assert.equal((scene.match(/'leaf'\)/g) ?? []).length, 3,
-			'hero, mob and empty-root withers all burst leaves');
+		assert.equal((scene.match(/'leaf'\)/g) ?? []).length, 4,
+			'hero, mob and empty-root withers plus the R113 planting furrow all burst leaves');
 		assert.ok(/tint: 0x448822/.test(bursts), 'leaf carries the GENERAL midpoint tint');
 		assert.ok(/leaf: \{[\s\S]*?count: 6/.test(bursts), 'leaf bursts six');
 		assert.ok(/triggerPortedPlantAt\(this: DungeonScene[\s\S]{0,1500}portedFeatures\.remove\(cell\)/.test(scene),
